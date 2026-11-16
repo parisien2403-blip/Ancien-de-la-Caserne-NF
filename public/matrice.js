@@ -13154,10 +13154,14 @@ function construireJouffroy(A, L, scene) {
   for (const [x, nx] of [[XB0, 1], [XB1, -1]]) pl(12, 1.4, platreM, x + nx * .01, Y2 + 3.5, -122, nx > 0 ? Math.PI / 2 : -Math.PI / 2);
   // les corniches de bois doré, au-dessus des devantures
   const doreM = mat({ color: 0xb08a48, metalness: .5, roughness: .45 });
+  const grainT0 = () => tT(64, 128, (c, w, h) => { c.fillStyle = "#d0c8bc"; c.fillRect(0, 0, w, h); for (let k = 0; k < 30; k++) { c.strokeStyle = `rgba(90,60,30,${.06 + (k % 4) * .03})`; c.beginPath(); c.moveTo((k * 17) % w, 0); c.lineTo((k * 17) % w + 2, h); c.stroke(); } });
   for (const [x, z0, z1, y, s] of [[-2, 0, ZC1, 3.62, 1], [2, 0, ZC0, 3.62, -1], [XB0, ZC0, ZFIN, Y2 + 3.42, 1], [XB1, ZC0, ZFIN, Y2 + 3.42, -1]]) box(.16, .14, Math.abs(z1 - z0), doreM, x + s * .08, y, (z0 + z1) / 2);
+  // (10.26) l'entresol : des pilastres de bois clair entre les fenêtres, leurs chapiteaux dorés
+  { const pil = mat({ map: grainT0(), color: 0xd8c8a8, roughness: .6 }); for (const [x, z0, z1, ya, yb, s2] of [[-2, -7, ZC1, 3.7, 7.2, 1], [2, -7, ZC0, 3.7, 7.2, -1], [XB0, ZC0, -116, Y2 + 3.5, Y2 + 6.0, 1], [XB1, ZC0, -116, Y2 + 3.5, Y2 + 6.0, -1]])
+      for (let z = z0; z >= z1; z -= 2.4) { box(.14, yb - ya, .1, pil, x + s2 * .05, (ya + yb) / 2, z); box(.2, .1, .16, doreM, x + s2 * .07, yb - .1, z); } }
 
   /* une devanture : la toile peinte (bandeau, vitrines éclairées et ce qu'on voit dedans, soubassement), posée sur le mur ; s = 1 : mur ouest (regarde l'est) ; s = -1 : mur est */
-  const devanture = (x, z0, z1, y0, h, s, o) => { const lz = Math.abs(z1 - z0), W = Math.max(64, Math.round(lz * 64)), H = Math.round(h * 64);
+  const devantureP = (x, z0, z1, y0, h, s, o) => { const lz = Math.abs(z1 - z0), W = Math.max(64, Math.round(lz * 64)), H = Math.round(h * 64);
     const t = tT(W, H, (c, w, hh) => { c.fillStyle = o.fond || "#3a2a1e"; c.fillRect(0, 0, w, hh); const nv = o.nv || Math.max(1, Math.round(lz / 2.2)), bh = o.bandeau ?? 38, sb = o.socle ?? 26;
       if (o.peint) { o.peint(c, w, hh); return; }
       for (let i = 0; i < nv; i++) { const x0 = 8 + i * (w - 16) / nv + 5, wv = (w - 16) / nv - 10, y0 = bh + 8, hv = hh - bh - sb - 14; const g = c.createLinearGradient(0, y0, 0, y0 + hv); g.addColorStop(0, o.lumiere || "#f6e2b8"); g.addColorStop(1, o.lumiere2 || "#c89a62"); c.fillStyle = g; c.fillRect(x0, y0, wv, hv);
@@ -13168,6 +13172,58 @@ function construireJouffroy(A, L, scene) {
       c.fillStyle = o.socleC || "#4a3a30"; c.fillRect(0, hh - sb, w, sb); c.fillStyle = "rgba(255,255,255,.08)"; c.fillRect(0, hh - sb, w, 3);
       c.fillStyle = o.bandeauC || o.fond || "#3a2a1e"; c.fillRect(0, 0, w, bh); if (o.nom) { c.fillStyle = o.nomC || "#e8c878"; c.font = o.police || `bold ${Math.round(bh * .62)}px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle"; for (const px of (o.nomX || [.5])) c.fillText(o.nom, w * px, bh / 2 + 2); } });
     const m = lumT(t, o.jour ?? .25, o.nuit ?? 1.0); pl(lz, h, m, x + s * .02, y0 + h / 2, (z0 + z1) / 2, s > 0 ? Math.PI / 2 : -Math.PI / 2); };
+
+  /* (10.26) les devantures en relief : la boiserie (pilastres, meneaux, corniche dorée, le bandeau peint aux lettres d'or), le soubassement de marbre ou de bois,
+     la vraie glace, et derrière, la boutique qu'on voit au travers — le parquet, les murs, les étagères garnies, les objets posés en vitrine, les petites suspensions allumées */
+  const grainT = tT(128, 256, (c, w, h) => { c.fillStyle = "#c8c0b4"; c.fillRect(0, 0, w, h); for (let k = 0; k < 70; k++) { c.strokeStyle = `rgba(${60 + (k * 37) % 60},${40 + (k * 13) % 30},20,${.08 + (k % 5) * .03})`; c.lineWidth = 1 + (k % 3); c.beginPath(); const x0 = (k * 53) % w; c.moveTo(x0, 0); for (let y = 0; y <= h; y += 16) c.lineTo(x0 + Math.sin(y / 30 + k) * 3, y); c.stroke(); } }, true);
+  const marbreT = tT(256, 128, (c, w, h) => { c.fillStyle = "#6a5650"; c.fillRect(0, 0, w, h); for (let k = 0; k < 26; k++) { c.strokeStyle = k % 3 ? "rgba(230,215,205,.35)" : "rgba(30,20,18,.4)"; c.lineWidth = .5 + (k % 4) * .6; c.beginPath(); let x = (k * 71) % w, y = 0; c.moveTo(x, y); while (y < h) { x += Math.sin(y * .07 + k) * 9; y += 9; c.lineTo(x, y); } c.stroke(); } }, true);
+  const parquetT = tT(128, 128, (c, w, h) => { for (let r = 0; r < 8; r++) for (let k = 0; k < 2; k++) { c.fillStyle = ["#8a5a32", "#7a4e2a", "#94643a", "#6e4426"][(r + k * 3) % 4]; c.fillRect(k * 64 + (r % 2) * 32 - 32, r * 16, 64, 16); c.fillRect(k * 64 + (r % 2) * 32 + 32, r * 16, 64, 16); c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(0, r * 16, w, 1); } }, true);
+  const M_ = {}, bois = (hex) => M_["b" + hex] || (M_["b" + hex] = mat({ map: grainT, color: hex, roughness: .5, metalness: .05 }));
+  parquetT.repeat.set(3, 2); const marbre = M_.marbre = mat({ map: marbreT, roughness: .25, metalness: .1 }), parquetM = mat({ map: parquetT, roughness: .5 }), dore2 = mat({ color: 0xc8a050, metalness: .85, roughness: .28 });
+  const glaceM = new THREE.MeshStandardMaterial({ color: 0xe4eef4, transparent: true, opacity: .1, roughness: .02, metalness: .9, depthWrite: false });
+  const plafIntM = lum(mat({ color: 0xfff4e0, emissive: 0xfff0d8, emissiveIntensity: .25 }), .25, .7), suspM = lum(mat({ color: 0xfff6e0, emissive: 0xffe2a8, emissiveIntensity: .8 }), .8, 2.2);
+  const PAL = [0xc83a2a, 0x3a6ab0, 0xe8c050, 0xf2f0ea, 0x2a8a5a, 0x8a4ab0, 0xd87a2a, 0x1a1a1c, 0xe86a8a, 0x6ab0d8].map(c => mat({ color: c, roughness: .4 }));
+  const refletT = tT(256, 256, (c, w, h) => { c.clearRect(0, 0, w, h); for (const [x, l, a] of [[40, 50, .14], [110, 18, .1], [170, 34, .08], [215, 10, .12]]) { const gr = c.createLinearGradient(0, 0, w, 0); c.fillStyle = `rgba(255,255,255,${a})`; c.beginPath(); c.moveTo(x, 0); c.lineTo(x + l, 0); c.lineTo(x + l - 90, h); c.lineTo(x - 90, h); c.fill(); void gr; } });
+  const refletM = new THREE.MeshBasicMaterial({ map: refletT, transparent: true, depthWrite: false, opacity: .9 });
+  const aplatir = (g) => { g.updateMatrixWorld(true); for (const m of [...g.children]) scene.attach(m); scene.remove(g); };
+  const devanture = (x, z0, z1, y0, h, s, o) => { if (o.peint) return devantureP(x, z0, z1, y0, h, s, o);
+    const L0 = Math.abs(z1 - z0), g = new THREE.Group(); g.position.set(x, y0, (z0 + z1) / 2); g.rotation.y = s > 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(g);
+    const nv = o.nv || Math.max(1, Math.round(L0 / 2.2)), hb = o.hb ?? .55, hf = o.hf ?? .62, D = o.prof ?? 1.5, bw = (L0 - .32) / nv, bm = bois(parseInt((o.cadre || o.fond || "#3a2a1e").slice(1), 16)), bf = bois(parseInt((o.fond || "#3a2a1e").slice(1), 16));
+    const porte = o.porte ?? (nv >= 2 ? nv - 1 : -1), yv0 = hb, yv1 = h - hf;
+    // la boutique, derrière : le mur du fond peint (les étagères, la marchandise), le parquet, les côtés, le plafond éclairé
+    const fond = tT(Math.max(64, Math.round(L0 * 80)), Math.round((h - .2) * 80), (c, w, hh) => { const gr = c.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, o.lumiere || "#f6e2b8"); gr.addColorStop(1, o.lumiere2 || "#c89a62"); c.fillStyle = gr; c.fillRect(0, 0, w, hh);
+      c.fillStyle = "rgba(255,240,210,.25)"; c.fillRect(0, 0, w, 10); c.fillStyle = "rgba(90,60,30,.5)"; c.fillRect(0, 10, w, 4);   // (la corniche)
+      for (let i = 0; i < nv; i++) { const x0 = i * w / nv + 6, ww = w / nv - 12; if (o.dedans) o.dedans(c, x0, hh * .08, ww, hh * .66, i); }
+      c.fillStyle = "#5a3a22"; c.fillRect(0, hh * .78, w, hh * .22); c.strokeStyle = "rgba(30,18,8,.6)"; c.lineWidth = 2; for (let x = 8; x < w; x += 46) c.strokeRect(x, hh * .8, 38, hh * .16);   // (le lambris de bois)
+      c.fillStyle = "rgba(255,220,150,.18)"; for (let i = 0; i < nv; i++) { c.beginPath(); c.ellipse((i + .5) * w / nv, hh * .12, w / nv * .4, hh * .2, 0, 0, 7); c.fill(); } });   // (la lumière des suspensions)
+    const mf = lumT(fond, .5, 1.1); pl(L0 - .2, h - .2, mf, 0, (h - .2) / 2 + .02, -D, 0, g);
+    const sol = add(new THREE.PlaneGeometry(L0 - .2, D), parquetM, 0, .02, -D / 2, g); sol.rotation.x = -Math.PI / 2;
+    const pf = add(new THREE.PlaneGeometry(L0 - .2, D), plafIntM, 0, h - .2, -D / 2, g); pf.rotation.x = Math.PI / 2;
+    const cote = M_["c" + (o.lumiere2 || "x")] || (M_["c" + (o.lumiere2 || "x")] = lum(mat({ color: new THREE.Color(o.lumiere2 || "#c89a62").multiplyScalar(.8), emissive: new THREE.Color(o.lumiere2 || "#c89a62"), emissiveIntensity: .15 }), .15, .5));
+    for (const sg of [-1, 1]) pl(D, h - .2, cote, sg * (L0 / 2 - .1), (h - .2) / 2, -D / 2, -sg * Math.PI / 2, g);
+    // la vitrine : un plancher surélevé, des objets posés, une étagère ; les suspensions
+    for (let i = 0; i < nv; i++) { const bx = -L0 / 2 + .16 + bw * (i + .5); if (i !== porte) { box(bw - .06, .04, .7, parquetM, bx, hb - .02, -.4, g);
+        if (!o.vide) for (let k = 0; k < 4; k++) { const px = bx - bw / 2 + .2 + k * (bw - .4) / 3, m = PAL[(i * 3 + k + L0 * 7 | 0) % PAL.length], hh2 = .12 + ((k * 7 + i * 3) % 5) * .06;
+          if (k % 2) add(new THREE.CylinderGeometry(.06, .07, hh2, 10), m, px, hb + hh2 / 2, -.28 - (k % 3) * .1, g); else box(.13, hh2, .1, m, px, hb + hh2 / 2, -.3 - (k % 3) * .08, g); }
+        box(bw - .2, .03, .3, bm, bx, hb + .75, -D + .2, g); }
+      add(new THREE.SphereGeometry(.07, 10, 8), suspM, bx, h - hf - .35, -D * .45, g); box(.01, .3, .01, bm, bx, h - hf - .15, -D * .45, g); }
+    // la glace
+    pl(L0 - .3, h - hf - .02, glaceM, 0, (h - hf) / 2 + .01, .07, 0, g); pl(L0 - .3, h - hf - hb, refletM, 0, (h - hf + hb) / 2, .075, 0, g);
+    // la boiserie : pilastres, meneaux, soubassements, la porte, l'imposte, le bandeau et sa corniche
+    for (const sg of [-1, 1]) { box(.18, h, .24, bm, sg * (L0 / 2 - .09), h / 2, .1, g); box(.24, .12, .3, dore2, sg * (L0 / 2 - .09), h - hf - .05, .12, g); box(.22, .1, .28, bm, sg * (L0 / 2 - .09), .05, .12, g); }
+    for (let i = 1; i < nv; i++) box(.09, yv1 - .02, .14, bm, -L0 / 2 + .16 + bw * i, yv1 / 2, .09, g);
+    box(L0 - .3, .07, .16, bm, 0, yv1 - .03, .1, g);   // (la traverse haute)
+    for (let i = 0; i < nv; i++) { const bx = -L0 / 2 + .16 + bw * (i + .5);
+      if (i === porte) { const pw = Math.min(.95, bw - .12); for (const sg of [-1, 1]) box(.07, yv1 - .1, .1, bm, bx + sg * pw / 2, (yv1 - .1) / 2, .11, g); box(pw, .07, .1, bm, bx, yv1 * .38, .11, g); box(pw, .3, .06, bm, bx, .15, .1, g);
+        add(new THREE.CylinderGeometry(.015, .015, .5, 8), dore2, bx + pw * .32, 1.15, .17, g); box(pw + .1, .05, .12, bm, bx, yv1 - .12, .11, g); if (bw - pw > .3) for (const sg of [-1, 1]) box((bw - pw) / 2 - .05, hb, .14, o.marbre ? marbre : bf, bx + sg * (pw / 2 + (bw - pw) / 4), hb / 2, .08, g); }
+      else { box(bw - .08, hb, .14, o.marbre ? marbre : bf, bx, hb / 2, .08, g); box(bw - .08, .05, .2, bm, bx, hb, .11, g);
+        if (o.arcs) { const a = add(new THREE.TorusGeometry(bw / 2 - .08, .03, 6, 20, Math.PI), bm, bx, yv1 - bw / 2 - .02, .1, g); a.scale.y = Math.min(1, .55 / (bw / 2)); }
+        else if (!o.sansMeneau && bw > 1.4) box(.04, yv1 - hb, .08, bm, bx, (yv1 + hb) / 2, .08, g); } }
+    box(L0, hf, .16, bf, 0, h - hf / 2, .08, g); box(L0 + .1, .1, .32, dore2, 0, h + .03, .1, g); box(L0, .06, .2, dore2, 0, h - hf - .03, .11, g);
+    if (o.nom) { const tn = tT(Math.round(L0 * 110), Math.round(hf * 110), (c, w, hh) => { c.clearRect(0, 0, w, hh); c.font = o.police ? o.police.replace(/\d+px/, (m) => Math.round(parseInt(m) * 1.7) + "px") : `bold ${Math.round(hh * .55)}px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle";
+        for (const px of (o.nomX || [.5])) { c.fillStyle = "rgba(0,0,0,.45)"; c.fillText(o.nom, w * px + 2, hh / 2 + 3); c.fillStyle = o.nomC || "#e8c878"; c.fillText(o.nom, w * px, hh / 2 + 1); } });
+      pl(L0 - .2, hf * .9, lum(mat({ map: tn, transparent: true, emissive: 0xffffff, emissiveMap: tn, emissiveIntensity: .15, metalness: .3, roughness: .4 }), .15, .7), 0, h - hf / 2, .165, 0, g); }
+    aplatir(g); };
 
   // dedans : des étagères et des objets ; des bijoux ; des tables ; des affiches encadrées ; des livres
   let gE = 7; const hE = () => (gE = (gE * 16807) % 2147483647) / 2147483647;
@@ -13186,9 +13242,9 @@ function construireJouffroy(A, L, scene) {
   devanture(-2, -.3, -6.9, 0, H, 1, { fond: "#2a5a3a", nom: "", nv: 2, lumiere: "#f8d890", dedans: etageres(["#e8c050", "#c83a2a", "#f2f0ea", "#7a4a26"]), cadre: "#1a3a22" });   // (le porche : la vitrine d'angle)
   devanture(-2, -7, -18, 0, H, 1, { fond: "#8a9a7a", bandeauC: "#7d8e6c", nom: "Spécialités d'Auvergne  ·  Billard français  ·  Fromage & Charcuterie", nomC: "#f4f0e0", police: `italic bold 24px ${serif}`, nv: 5, arcs: true, cadre: "#6a7a5a", lumiere: "#f0c070", lumiere2: "#8a4a2a", dedans: salle, socleC: "#5a6a4a" });
   devanture(-2, -18, -21.6, 0, H, 1, { fond: "#5a3a22", nom: "CHILLY'S", nomC: "#f4e8c8", nv: 1, sansMeneau: true, lumiere: "#fff6e0", lumiere2: "#e8dcc0", dedans: etageres(["#f2f2f2", "#1a1a1a", "#3a8a6a", "#e86a8a", "#d8d0c0"]) });
-  devanture(-2, -21.6, -27.6, 0, H, 1, { fond: "#7a1e2a", bandeauC: "#8a2232", bandeau: 52, nom: "AMOUR DE PIERRES — Bijoux & Minéraux", nomC: "#f2e6cc", police: `bold 28px ${serif}`, nv: 2, cadre: "#c8a050", dedans: bijoux, socleC: "#3a2a24" });
+  devanture(-2, -21.6, -27.6, 0, H, 1, { fond: "#7a1e2a", bandeauC: "#8a2232", bandeau: 52, marbre: true, nom: "AMOUR DE PIERRES — Bijoux & Minéraux", nomC: "#f2e6cc", police: `bold 28px ${serif}`, nv: 2, cadre: "#c8a050", dedans: bijoux, socleC: "#3a2a24" });
   devanture(-2, -27.6, -30.8, 0, H, 1, { fond: "#2a2e32", nom: "", nv: 2, lumiere: "#5a5040", lumiere2: "#2a2420", cadre: "#4a5258" });   // (le hall vitré de l'hôtel)
-  devanture(-2, -30.8, -37.2, 0, H, 1, { fond: "#4a5662", bandeauC: "#3e4954", nom: "SALON  DES  MIROIRS", nomC: "#d8c890", police: `24px ${serif}`, nv: 3, cadre: "#3a444e", lumiere: "#e8e0d0", lumiere2: "#8a7a6a", dedans: (c, x, y, w, h) => { c.fillStyle = "#ece8e0"; c.beginPath(); c.ellipse(x + w / 2, y + h * .55, w * .14, h * .12, 0, 0, 7); c.fill(); c.strokeStyle = "#555"; c.lineWidth = 2; c.stroke(); }, socleC: "#2a3038" });
+  devanture(-2, -30.8, -37.2, 0, H, 1, { fond: "#4a5662", bandeauC: "#3e4954", marbre: true, nom: "SALON  DES  MIROIRS", nomC: "#d8c890", police: `24px ${serif}`, nv: 3, cadre: "#3a444e", lumiere: "#e8e0d0", lumiere2: "#8a7a6a", dedans: (c, x, y, w, h) => { c.fillStyle = "#ece8e0"; c.beginPath(); c.ellipse(x + w / 2, y + h * .55, w * .14, h * .12, 0, 0, 7); c.fill(); c.strokeStyle = "#555"; c.lineWidth = 2; c.stroke(); }, socleC: "#2a3038" });
   devanture(-2, -37.2, -49.5, 0, H, 1, { fond: "#8a6a3a", bandeauC: "#6a4a26", nom: "MARKS & SPENCER  FOOD", nomC: "#f2ead8", police: `bold 24px Arial`, nomX: [.3, .75], nv: 5, cadre: "#a07a40", lumiere: "#fff6e8", lumiere2: "#e8dcc8", dedans: (c, x, y, w, h, i) => { c.fillStyle = "#c83a3a"; c.beginPath(); c.moveTo(x, y); c.lineTo(x + w, y); c.lineTo(x + w - 10, y + 16); c.lineTo(x + 10, y + 16); c.fill(); etageres(["#3a8a3a", "#e8c050", "#c83a3a", "#f2f2f2", "#8a5a2a"])(c, x, y + 20, w, h - 20, i); } });
   devanture(-2, -49.5, -55.2, 0, H, 1, { fond: "#d8ccb0", bandeauC: "#c8bc9e", nom: "", nv: 2, cadre: "#a8986e", lumiere: "#fff2dc", dedans: etageres(["#e86a8a", "#6ab0d8", "#f2d050", "#8a5ab0"]) });
   devanture(-2, -55.2, -64.4, 0, H, 1, { fond: "#e8dfc8", bandeauC: "#e2d8bc", nom: "Pain d'Épices", nomC: "#4a3a2a", police: `italic bold 28px ${serif}`, nomX: [.3], nv: 3, cadre: "#b8a478", lumiere: "#fff0d8", lumiere2: "#e0c8a0", dedans: (c, x, y, w, h, i) => { etageres(["#c83a2a", "#3a6ab0", "#e8c050", "#f2f0ea", "#5a8a3a"])(c, x, y, w, h * .55, i); c.fillStyle = "#8a5a3a"; c.fillRect(x + w * .2, y + h * .7, w * .25, h * .18); c.fillStyle = "#f2e8d8"; c.beginPath(); c.moveTo(x + w * .55, y + h * .9); c.lineTo(x + w * .75, y + h * .6); c.lineTo(x + w * .95, y + h * .9); c.fill(); } });   // (jouets anciens, maisons de poupées)
@@ -13198,12 +13254,12 @@ function construireJouffroy(A, L, scene) {
   devanture(2, -7, -12.2, 0, H, -1, { fond: "#2e3236", nom: "", nv: 2, cadre: "#4a5258", lumiere: "#e8e0d0", lumiere2: "#8a8478", dedans: etageres(["#f2f2f2", "#2a2a2a", "#c8a040"]) });
   devanture(2, -12.2, -17.6, 0, H, -1, { fond: "#18181a", nom: "HÔTEL RONCERAY", nomC: "#c8a050", police: `bold 22px ${serif}`, nv: 1, sansMeneau: true, lumiere: "#5a4030", lumiere2: "#1a1210", cadre: "#2a2420", dedans: (c, x, y, w, h) => { c.strokeStyle = "#5a4a3a"; c.lineWidth = 3; for (let k = 0; k < 5; k++) { c.beginPath(); c.arc(x + w / 2, y + h * .3, 10 + k * 9, Math.PI, 0); c.stroke(); } c.fillStyle = "#2a2018"; c.fillRect(x + w * .2, y + h * .45, w * .6, h * .5); c.strokeRect(x + w * .25, y + h * .5, w * .5, h * .4); } });   // (la porte sculptée noire)
   devanture(2, -17.6, -24.8, 0, H, -1, { fond: "#2a2a2c", nom: "", nv: 3, cadre: "#3a3a3e", lumiere: "#fff4e0", dedans: etageres(["#e8c050", "#f2f0ea", "#c83a2a", "#3a6ab0"]) });
-  devanture(2, -24.8, -31.2, 0, H, -1, { fond: "#c8a050", bandeauC: "#c09848", nom: "LA CURE GOURMANDE", nomC: "#5a3a1a", police: `bold 24px ${serif}`, nv: 2, cadre: "#d8b868", lumiere: "#ffd890", lumiere2: "#d88a3a", dedans: etageres(["#f2f0ea", "#c83a2a", "#e8c050", "#3a6ab0", "#8a5a2a"]), socleC: "#3a3030" });
+  devanture(2, -24.8, -31.2, 0, H, -1, { fond: "#c8a050", bandeauC: "#c09848", marbre: true, nom: "LA CURE GOURMANDE", nomC: "#5a3a1a", police: `bold 24px ${serif}`, nv: 2, cadre: "#d8b868", lumiere: "#ffd890", lumiere2: "#d88a3a", dedans: etageres(["#f2f0ea", "#c83a2a", "#e8c050", "#3a6ab0", "#8a5a2a"]), socleC: "#3a3030" });
   devanture(2, -31.2, -36.6, 0, H, -1, { fond: "#3e4248", nom: "", nv: 2, cadre: "#5a6068", lumiere: "#e0e8ee", lumiere2: "#9aa4ac", dedans: etageres(["#f2f2f2", "#8a8a8a", "#3a3a3a"]) });
   devanture(2, -36.6, -37.8, 0, H, -1, { fond: "#141416", nom: "", nv: 1, lumiere: "#2a2622", lumiere2: "#141210", cadre: "#2a2a2a", peint: (c, w, h) => { c.fillStyle = "#141416"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8a050"; c.font = `italic 30px ${serif}`; c.textAlign = "center"; c.fillText("16", w / 2, 60); c.strokeStyle = "#2a2a2e"; c.lineWidth = 6; c.strokeRect(8, 80, w - 16, h - 100); } });
-  devanture(2, -37.8, -49.6, 0, H, -1, { fond: "#b8141e", bandeauC: "#a8121c", bandeau: 50, nom: "Grévin  ·  la Boutique", nomC: "#f4ece0", police: `italic bold 32px ${serif}`, nv: 3, cadre: "#d8b048", sansMeneau: true, lumiere: "#bcd0e8", lumiere2: "#e8d8c0", socleC: "#5a4440",
+  devanture(2, -37.8, -49.6, 0, H, -1, { fond: "#b8141e", bandeauC: "#a8121c", bandeau: 50, marbre: true, nom: "Grévin  ·  la Boutique", nomC: "#f4ece0", police: `italic bold 32px ${serif}`, nv: 3, cadre: "#d8b048", sansMeneau: true, lumiere: "#bcd0e8", lumiere2: "#e8d8c0", socleC: "#5a4440",
     dedans: (c, x, y, w, h, i) => { if (i === 0) { c.fillStyle = "#3a0a10"; c.fillRect(x + w * .3, y + h * .2, w * .4, h * .8); return; } for (let k = 0; k < 3; k++) { c.fillStyle = ["#f2d860", "#e86a5a", "#f2f0ea"][k]; c.beginPath(); c.ellipse(x + w * (.25 + k * .25), y + h * .5, w * .07, h * .28, (k - 1) * .4, 0, 7); c.fill(); } } });   // (la vitrine peinte : des danseuses)
-  devanture(2, -49.6, -55.6, 0, H, -1, { fond: "#2a1a1e", bandeauC: "#6a1424", nom: "LA MAISON DU ROY", nomC: "#e8c878", police: `bold 22px ${serif}`, nv: 2, cadre: "#1a1012", lumiere: "#f4ece4", lumiere2: "#c8b8a8", dedans: (c, x, y, w, h) => { c.fillStyle = "#1a1a1e"; c.beginPath(); c.moveTo(x + w * .45, y + h * .3); c.lineTo(x + w * .3, y + h); c.lineTo(x + w * .6, y + h); c.fill(); c.fillStyle = "#f2f0ea"; c.font = "bold 12px Arial"; c.fillText("ÉLU", x + w * .45, y + h * .6); } });
+  devanture(2, -49.6, -55.6, 0, H, -1, { fond: "#2a1a1e", bandeauC: "#6a1424", marbre: true, nom: "LA MAISON DU ROY", nomC: "#e8c878", police: `bold 22px ${serif}`, nv: 2, cadre: "#1a1012", lumiere: "#f4ece4", lumiere2: "#c8b8a8", dedans: (c, x, y, w, h) => { c.fillStyle = "#1a1a1e"; c.beginPath(); c.moveTo(x + w * .45, y + h * .3); c.lineTo(x + w * .3, y + h); c.lineTo(x + w * .6, y + h); c.fill(); c.fillStyle = "#f2f0ea"; c.font = "bold 12px Arial"; c.fillText("ÉLU", x + w * .45, y + h * .6); } });
   devanture(2, -55.6, -64.6, 0, H, -1, { fond: "#d8c8b0", bandeauC: "#5a7a6a", nom: "Le Valentin  ·  Salon de thé  ·  Pâtisserie", nomC: "#f4ead2", police: `italic bold 24px ${serif}`, nv: 3, cadre: "#b8a07a", lumiere: "#fff2e0", lumiere2: "#e8c8a8",
     dedans: (c, x, y, w, h, i) => { c.fillStyle = "#f2e8dc"; c.fillRect(x, y + h * .62, w, h * .3); for (let k = 0; k < 6; k++) { c.fillStyle = ["#e86a8a", "#8a4a2a", "#f2d860", "#f2f0ea", "#c83a2a", "#5a2a1a"][(k + i) % 6]; c.beginPath(); c.arc(x + 10 + k * (w - 20) / 6, y + h * .68, 6, 0, 7); c.fill(); } c.strokeStyle = "rgba(200,160,80,.8)"; c.lineWidth = 2; c.beginPath(); c.arc(x + w / 2, y + h * .35, w * .25, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); } });
   devanture(2, -64.6, -68.9, 0, H, -1, { fond: "#2a2420", bandeauC: "#1a1614", nom: "Galerie Fayet — Cannes & Parapluies", nomC: "#d8c890", police: `italic 18px ${serif}`, nv: 2, cadre: "#c8a050", lumiere: "#f6e4c8", lumiere2: "#b08860", dedans: (c, x, y, w, h) => { for (let k = 0; k < 9; k++) { c.strokeStyle = ["#3a2418", "#1a1a1a", "#7a5a3a", "#c8a050"][k % 4]; c.lineWidth = 4; c.beginPath(); c.moveTo(x + 8 + k * (w - 16) / 9, y + h); c.lineTo(x + 8 + k * (w - 16) / 9, y + 20); c.arc(x + 14 + k * (w - 16) / 9, y + 20, 6, Math.PI, 0); c.stroke(); } } });
@@ -13216,16 +13272,46 @@ function construireJouffroy(A, L, scene) {
       c.fillStyle = "#3a464e"; for (let k = 0; k < 5; k++) c.fillRect(30 + k * (w - 60) / 5, 30, (w - 60) / 5 - 24, h - 130); });
     pl(11.8, 3.6, lumT(t, .2, .8), 2 - .02, 5.4, -43.7, -Math.PI / 2); }
 
-  /* ---------- l'Hôtel Chopin, au bout de la grande galerie ; au-dessus, la façade blanche et sa grande horloge ---------- */
-  { const t = tT(256, 230, (c, w, h) => { c.fillStyle = "#c8945a"; c.fillRect(0, 0, w, h); c.fillStyle = "#2a201a"; c.fillRect(14, 8, w - 28, 44); c.strokeStyle = "#c8a050"; c.lineWidth = 2; c.strokeRect(20, 13, w - 40, 34);
-      c.fillStyle = "#e8c878"; c.font = `bold 30px ${serif}`; c.textAlign = "center"; c.fillText("HÔTEL  CHOPIN", w / 2, 42);
-      c.fillStyle = "#3a2216"; c.fillRect(14, 58, w - 28, h - 64); for (const [x0, ww] of [[20, 80], [w - 100, 80]]) { const g = c.createLinearGradient(0, 64, 0, 170); g.addColorStop(0, "#f2dcb0"); g.addColorStop(1, "#8a5a32"); c.fillStyle = g; c.fillRect(x0, 64, ww, 110);
-        c.strokeStyle = "#2a160c"; c.lineWidth = 3; for (let k = 1; k < 4; k++) { c.beginPath(); c.moveTo(x0 + k * ww / 4, 64); c.lineTo(x0 + k * ww / 4, 174); c.stroke(); } for (let k = 1; k < 5; k++) { c.beginPath(); c.moveTo(x0, 64 + k * 22); c.lineTo(x0 + ww, 64 + k * 22); c.stroke(); }
-        c.fillStyle = "rgba(255,250,240,.55)"; c.fillRect(x0 + 2, 66, 14, 100); c.fillRect(x0 + ww - 16, 66, 14, 100); }
-      c.fillStyle = "#4a2c1c"; c.fillRect(w / 2 - 28, 64, 56, h - 70); c.strokeStyle = "#2a160c"; c.strokeRect(w / 2 - 22, 72, 44, 80); c.strokeRect(w / 2 - 22, 160, 44, 56);
-      c.strokeStyle = "#6a4a30"; c.lineWidth = 4; for (const x0 of [20, w - 100]) { c.beginPath(); c.moveTo(x0 + 20, 196); c.lineTo(x0 + 40, 186); c.lineTo(x0 + 60, 196); c.lineTo(x0 + 40, 206); c.closePath(); c.stroke(); } });
-    pl(4, H, lumT(t, .25, 1), 0, H / 2, ZC0 + .02); }
-  for (const x of [-1.6, 1.6]) { add(new THREE.CylinderGeometry(.22, .17, .45, 12), mat({ color: 0x2a2a2c }), x, .23, ZC0 + .5); for (const [dx, dy, r] of [[0, 1.1, .4], [.15, .8, .3], [-.12, 1.4, .3], [0, 1.65, .22]]) add(new THREE.IcosahedronGeometry(r, 1), mat({ color: 0x3a6a4a, flatShading: true }), x + dx, dy, ZC0 + .5); add(new THREE.CylinderGeometry(.03, .04, .9, 6), mat({ color: 0x5a4030 }), x, .7, ZC0 + .5); }
+  /* ---------- l'Hôtel Chopin, au bout de la grande galerie (d'après la photo) : la devanture de bois sombre sculpté, les fenêtres à petits carreaux et leurs rideaux de dentelle,
+     la porte vitrée au milieu, l'enseigne noire aux lettres d'or en relief, le hall qu'on aperçoit (la réception, la lampe rouge, les cadres), les ficus en pot, la plaque « H » ---------- */
+  { const g = new THREE.Group(); g.position.set(0, 0, ZC0); scene.add(g); const acajou = bois(0x3a2216), acajouC = bois(0x5a3624), ocre = bois(0xc8945a);
+    // le hall, derrière
+    const hall = tT(400, 300, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#e8c890"); gr.addColorStop(1, "#8a5a32"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      c.fillStyle = "#6a3a22"; c.fillRect(0, h * .55, w, h * .45); for (let k = 0; k < 6; k++) { c.fillStyle = "#2a1a10"; c.fillRect(20 + k * 64, 40 + (k % 2) * 16, 40, 52); c.fillStyle = ["#c8a878", "#8a6a4a", "#d8c8a8"][k % 3]; c.fillRect(24 + k * 64, 44 + (k % 2) * 16, 32, 44); }
+      c.fillStyle = "#3a2216"; c.fillRect(w * .3, h * .5, w * .4, h * .2); c.fillStyle = "#5a3624"; c.fillRect(w * .3, h * .5, w * .4, 8); c.fillStyle = "#c83a2a"; c.beginPath(); c.moveTo(w * .62, h * .36); c.lineTo(w * .68, h * .36); c.lineTo(w * .7, h * .44); c.lineTo(w * .6, h * .44); c.fill(); c.fillStyle = "#c8a050"; c.fillRect(w * .645, h * .44, 4, 20);
+      c.fillStyle = "#2a1810"; for (let k = 0; k < 7; k++) c.fillRect(w * .78 + k * 8, h * .9 - k * 18, 60, 6); });
+    pl(3.8, 3.0, lumT(hall, .35, 1.0), 0, 1.6, -2.2, 0, g); { const f = add(new THREE.PlaneGeometry(3.8, 2.2), parquetM, 0, .02, -1.1, g); f.rotation.x = -Math.PI / 2; }
+    for (const sg of [-1, 1]) pl(2.2, 3.1, bois(0x7a4a2a), sg * 1.9, 1.55, -1.1, -sg * Math.PI / 2, g); { const pf = add(new THREE.PlaneGeometry(3.8, 2.2), plafIntM, 0, 3.0, -1.1, g); pf.rotation.x = Math.PI / 2; }
+    add(new THREE.SphereGeometry(.12, 12, 10), suspM, 0, 2.6, -1.0, g);
+    // les rideaux de dentelle, drapés de chaque côté des fenêtres
+    const dent = tT(128, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = "rgba(250,246,236,.85)"; c.beginPath(); c.moveTo(0, 0); c.lineTo(w * .55, 0); c.quadraticCurveTo(w * .25, h * .5, w * .4, h); c.lineTo(0, h); c.fill();
+      c.strokeStyle = "rgba(200,190,170,.6)"; for (let k = 0; k < 9; k++) { c.beginPath(); c.moveTo(k * 7, 0); c.quadraticCurveTo(k * 4, h * .5, k * 5, h); c.stroke(); } });
+    const dentM = new THREE.MeshStandardMaterial({ map: dent, transparent: true, side: THREE.DoubleSide, roughness: .9, depthWrite: false });
+    for (const [cx, sg] of [[-1.12, -1], [-1.12, 1], [1.12, -1], [1.12, 1]]) { const p = pl(.4, 1.95, dentM, cx + sg * .38, 1.75, -.12, 0, g); if (sg > 0) p.scale.x = -1; }
+    // la façade de bois sculpté
+    box(4.0, .16, .3, marbre, 0, .08, .12, g);   // (le socle de marbre)
+    for (const x of [-1.92, -.5, .5, 1.92]) { box(.2, 3.05, .24, acajou, x, 1.6, .1, g); for (let k = 0; k < 9; k++) box(.07, .07, .05, acajouC, x, .35 + k * .3, .24, g); }   // (les montants, leurs perles sculptées)
+    for (const cx of [-1.21, 1.21]) { box(1.22, .7, .16, acajou, cx, .5, .08, g);   // (les allèges, et leur losange sculpté)
+      const lo = box(.32, .32, .04, acajouC, cx, .5, .18, g); lo.rotation.z = Math.PI / 4; box(1.0, .5, .03, acajouC, cx, .5, .17, g).scale.set(1, 1, 1);
+      pl(1.22, 1.95, glaceM, cx, 1.83, .05, 0, g); for (let k = 1; k < 4; k++) box(.03, 1.95, .04, acajou, cx - .61 + k * .305, 1.83, .07, g); for (let k = 1; k < 5; k++) box(1.22, .03, .04, acajou, cx, .86 + k * .39, .07, g);
+      box(1.3, .08, .14, acajou, cx, .86, .1, g); box(1.3, .08, .14, acajou, cx, 2.82, .1, g); }
+    // la porte : vitrée en haut (petits carreaux), à panneaux en bas, ses poignées de laiton
+    box(.8, .08, .14, acajou, 0, 2.82, .1, g); pl(.78, 1.6, glaceM, 0, 2.0, .05, 0, g); for (let k = 1; k < 3; k++) box(.03, 1.6, .04, acajou, -.39 + k * .26, 2.0, .07, g); for (let k = 1; k < 4; k++) box(.78, .03, .04, acajou, 0, 1.2 + k * .4, .07, g);
+    box(.8, 1.15, .1, acajou, 0, .62, .06, g); for (const sg of [-1, 1]) { box(.26, .8, .03, acajouC, sg * .19, .62, .12, g); add(new THREE.CylinderGeometry(.015, .015, .32, 8), dore2, sg * .07, 1.2, .16, g); }
+    // l'imposte et l'enseigne : le bandeau noir, son cadre d'or, les lettres d'or en relief
+    box(4.0, .5, .2, acajou, 0, 3.08, .1, g);
+    const ens = tT(800, 140, (c, w, h) => { c.fillStyle = "#16120e"; c.fillRect(0, 0, w, h); c.strokeStyle = "#c8a050"; c.lineWidth = 4; c.strokeRect(12, 12, w - 24, h - 24); c.lineWidth = 2; c.strokeRect(22, 22, w - 44, h - 44);
+      for (const [x, sg] of [[34, 1], [w - 34, -1]]) { c.beginPath(); c.arc(x + sg * 14, 34, 10, 0, 6); c.stroke(); c.beginPath(); c.arc(x + sg * 14, h - 34, 10, 0, 6); c.stroke(); }
+      c.font = `bold 92px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "#4a3418"; c.fillText("HÔTEL  CHOPIN", w / 2 + 4, h / 2 + 7); const gg = c.createLinearGradient(0, 30, 0, h - 30); gg.addColorStop(0, "#fff0b8"); gg.addColorStop(.5, "#e0b050"); gg.addColorStop(1, "#a07020"); c.fillStyle = gg; c.fillText("HÔTEL  CHOPIN", w / 2, h / 2 + 3); });
+    pl(3.9, .68, lumT(ens, .2, .8), 0, 3.42, .21, 0, g); box(4.06, .08, .3, dore2, 0, 3.8, .14, g); box(4.06, .06, .26, acajou, 0, 3.05, .2, g);
+    // de chaque côté, les colonnes de bois ocre du passage, la plaque « H » et les affichettes
+    for (const sg of [-1, 1]) box(.2, 3.9, .2, ocre, sg * 2.05, 1.95, .1, g);
+    const hT = tT(64, 96, (c, w, h) => { c.fillStyle = "#b81e2a"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2f0ea"; c.font = "bold 48px Arial"; c.textAlign = "center"; c.fillText("H", w / 2, 52); c.font = "16px Arial"; c.fillText("★★", w / 2, 82); });
+    pl(.22, .32, mat({ map: hT }), 1.9, 2.2, .26, 0, g);
+    aplatir(g); }
+  for (const x of [-1.55, .72]) { add(new THREE.CylinderGeometry(.2, .15, .42, 14), mat({ color: 0x2a2a2c, roughness: .4 }), x, .21, ZC0 + .55);   // (les ficus, dans leur pot)
+    for (let k = 0; k < 3; k++) { const t = add(new THREE.CylinderGeometry(.02, .03, 1.3, 6), bois(0x6a5040), x + (k - 1) * .04, .95, ZC0 + .55); t.rotation.z = (k - 1) * .12; }
+    for (let k = 0; k < 34; k++) { const a = k * 2.4, r = .12 + (k % 5) * .07, y = 1.15 + (k % 9) * .1; add(new THREE.IcosahedronGeometry(.09 + (k % 3) * .03, 0), mat({ color: [0x2e5a3a, 0x3a6a44, 0x4a7a50][k % 3], flatShading: true }), x + Math.cos(a) * r, y, ZC0 + .55 + Math.sin(a) * r); } }
   { const t = tT(256, 230, (c, w, h) => { c.fillStyle = "#f2efe8"; c.fillRect(0, 0, w, h); c.strokeStyle = "#d8d0c0"; c.lineWidth = 4; c.strokeRect(6, 6, w - 12, h - 12);
       for (const x0 of [40, w - 104]) { c.fillStyle = "#4a5862"; c.fillRect(x0, 40, 64, 150); c.strokeStyle = "#f2efe8"; c.lineWidth = 5; c.beginPath(); c.moveTo(x0 + 32, 40); c.lineTo(x0 + 32, 190); c.moveTo(x0, 90); c.lineTo(x0 + 64, 90); c.moveTo(x0, 140); c.lineTo(x0 + 64, 140); c.stroke(); c.fillStyle = "#1a1a1c"; c.fillRect(x0 - 4, 170, 72, 6); } });
     pl(4, 3.6, mat({ map: t }), 0, 5.4, ZC0 + .02); }
@@ -13378,9 +13464,9 @@ function construireJouffroy(A, L, scene) {
     scene = sc; }
 
   /* ---------- la lumière : le jour tombe de la verrière ; le soir, les vitrines et les lanternes ---------- */
-  const amb = new THREE.AmbientLight(0xfff6ea, 1.0), haut = new THREE.DirectionalLight(0xffffff, .9), hem = new THREE.HemisphereLight(0xf4f8ff, 0x8a8070, .9);
+  const amb = new THREE.AmbientLight(0xfff0dc, .85), haut = new THREE.DirectionalLight(0xfffaf0, .8), hem = new THREE.HemisphereLight(0xf4f8ff, 0x9a8468, .85);
   haut.position.set(4, 30, -40); scene.add(amb, haut, hem);
-  L.setNuit = (n) => { L.nuit = n; amb.intensity = n ? .32 : 1.0; amb.color.setHex(n ? 0xffd8a8 : 0xfff6ea); haut.intensity = n ? .05 : .9; hem.intensity = n ? .25 : .9;
+  L.setNuit = (n) => { L.nuit = n; amb.intensity = n ? .32 : .85; amb.color.setHex(n ? 0xffd8a8 : 0xfff0dc); haut.intensity = n ? .05 : .8; hem.intensity = n ? .25 : .85;
     verM.color.setHex(n ? 0x1a2440 : 0xffffff); verM2.color.setHex(n ? 0x1a2440 : 0xffffff); for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; };
   L.setNuit(false);
 
@@ -13396,6 +13482,7 @@ function construireJouffroy(A, L, scene) {
   L.portails.push({ dans: (x, z) => Math.abs(x) < 1.6 && z > -.2, vers: "rex", arrivee: [-103.5, -12.4], yaw: 0, indice: [0, -.4] });   // (on ressort sur le boulevard Montmartre)
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [XB0 - .5, 2.5, ZFIN - 1, 3]; L.boite = [XB0, 2, ZFIN, 3]; L.plafond = 8.4;
   L.depart = [0, -2.5]; L.cam = { pos: [0, 2.2, 1.5], vise: [0, 1.6, -12] };
+  fusionStatique(scene, L, 0);   // (10.26 : tout ce qui ne bouge pas, regroupé — fluide sur téléphone)
 }
 /* ===================== (10.11) le carrefour Bonne-Nouvelle : le Grand Rex, le McDonald's, Marie Belle, le bar d'angle — d'après les photos =====================
    le boulevard (est-ouest), la rue du Faubourg-Poissonnière (au nord), la rue Poissonnière (au sud) ; on y vient en bus (l'arrêt devant le McDonald's) */
