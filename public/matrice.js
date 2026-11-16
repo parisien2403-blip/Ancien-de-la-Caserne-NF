@@ -13752,6 +13752,13 @@ function construireJouffroy(A, L, scene) {
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [XB0 - .5, 2.5, ZFIN - 1, 3]; L.boite = [XB0, 2, ZFIN, 3]; L.plafond = 8.4;
   L.depart = [0, -2.5]; L.cam = { pos: [0, 2.2, 1.5], vise: [0, 1.6, -12] };
   fusionStatique(scene, L, 0);   // (10.26 : tout ce qui ne bouge pas, regroupé — fluide sur téléphone)
+  /* (10.26) la musique du passage : « Le Festin », en boucle, tant qu'on y est. Un seul lecteur pour toute la partie ; il s'arrête dès qu'on en sort,
+     et reprend au début quand on revient. Le volume monte doucement à l'entrée (sur iPhone, où il ne se règle pas, elle part à son niveau) */
+  { const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (!M || M.L !== L) return; const A2 = (window.__festin = window.__festin || Object.assign(new Audio("sons/festin.mp3"), { loop: true, preload: "auto" }));
+      if (A2.paused && !A2._essai) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
+      if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
+      if (!A2.paused) try { A2.volume = Math.min(.55, A2.volume + .006); } catch (e) {} };
+    quitterLieu.add(() => { const A2 = window.__festin; if (A2) { A2.pause(); try { A2.currentTime = 0; } catch (e) {} } }); }
 }
 /* ===================== (10.11) le carrefour Bonne-Nouvelle : le Grand Rex, le McDonald's, Marie Belle, le bar d'angle — d'après les photos =====================
    le boulevard (est-ouest), la rue du Faubourg-Poissonnière (au nord), la rue Poissonnière (au sud) ; on y vient en bus (l'arrêt devant le McDonald's) */
