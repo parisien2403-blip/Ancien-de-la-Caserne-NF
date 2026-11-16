@@ -13770,8 +13770,11 @@ function construireJouffroy(A, L, scene) {
   /* ---------- la lumière : le jour tombe de la verrière ; le soir, les vitrines et les lanternes ---------- */
   const amb = new THREE.AmbientLight(0xfff0dc, .85), haut = new THREE.DirectionalLight(0xfffaf0, .8), hem = new THREE.HemisphereLight(0xf4f8ff, 0x9a8468, .85);
   haut.position.set(4, 30, -40); scene.add(amb, haut, hem);
-  L.setNuit = (n) => { L.nuit = n; amb.intensity = n ? .32 : .85; amb.color.setHex(n ? 0xffd8a8 : 0xfff0dc); haut.intensity = n ? .05 : .8; hem.intensity = n ? .25 : .85;
-    verM.color.setHex(n ? 0x1a2440 : 0xffffff); verM2.color.setHex(n ? 0x1a2440 : 0xffffff); for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; };
+  /* (10.29) la nuit : la verrière devient noire, plus de lumière du ciel ; ce sont les lanternes et les vitrines qui éclairent le passage, d'une lumière chaude, dorée (pas blanche) */
+  const chaudes = []; if (!(MOBILE || GPU_MODESTE)) for (const [x, y, z] of [[0, 3.6, -6], [0, 3.8, -18], [0, 3.8, -30], [0, 3.8, -42], [0, 3.8, -54], [0, 3.8, -66], [-5.5, 3.4, -70.2], [-10.2, Y2 + 3.2, -82], [-10.2, Y2 + 3.2, -96], [-10.2, Y2 + 3.2, -110], [-10.2, Y2 + 3.0, -122]]) { const pl2 = new THREE.PointLight(0xffb060, 0, 14, 1.6); pl2.position.set(x, y, z); scene.add(pl2); chaudes.push(pl2); }
+  L.setNuit = (n) => { L.nuit = n; amb.intensity = n ? (chaudes.length ? .3 : .55) : .85; amb.color.setHex(n ? 0xffa850 : 0xfff0dc); haut.intensity = n ? 0 : .8;
+    hem.intensity = n ? .35 : .85; hem.color.setHex(n ? 0xffb868 : 0xf4f8ff); hem.groundColor.setHex(n ? 0x5a3418 : 0x9a8468); for (const p2 of chaudes) p2.intensity = n ? 9 : 0;
+    verM.color.setHex(n ? 0x0a0e1a : 0xffffff); verM2.color.setHex(n ? 0x0a0e1a : 0xffffff); for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn * 1.25 : j; };
   L.setNuit(false);
 
   /* ---------- où l'on marche ; la hauteur (l'escalier) ; la caméra reste dans la galerie ---------- */
@@ -14463,8 +14466,6 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   const BARS = [[11, 16], [22, 11.5], [6.5, 26], [11, -16], [24, -11.5], [7, -28], [-72, 11.5], [-94, -11.5], [-86, -11.5]];   // (le bar Madeleine, le Gymnase Café, le Starbucks)
   let sonBar = null; quitterLieu.add(() => { if (sonBar) { sonBar.pause(); sonBar.volume = 0; } });
   // (10.18) devant le Hard Rock Café : « Back in Black » à 60 % sur le trottoir devant l'entrée, qui baisse quand on s'éloigne (plus rien au-delà de 22 m)
-  const SANS_MUSIQUE_HR = false;   // (10.23 : coupée pour essayer — c'était bien elle ; 10.24 : remise, lue directement sans passer par le service worker)
-  let sonHR = null; quitterLieu.add(() => { if (sonHR) { sonHR.pause(); sonHR.volume = 0; } });
   // (10.19) devant le Rex Club : les morceaux de Depeche Mode de la discothèque de la salle des fêtes, à la suite, 60 % devant l'entrée, qui baissent quand on s'éloigne
   let sonRC = null, listeRC = null, iRC = 0; quitterLieu.add(() => { if (sonRC) { sonRC.pause(); sonRC.volume = 0; } });
   const chargerRC = () => { if (listeRC) return; listeRC = []; fetch("/api/musiques", { headers: { Authorization: "Bearer " + M.ctx.token } }).then(r => r.ok ? r.json() : []).then(l => {
@@ -14475,9 +14476,6 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   const majSonRC = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonRC) sonRC.pause(); return; } const p = moi.g.position, d = Math.hypot(p.x + 50, p.z - 12);
     const cible = Math.max(0, Math.min(1, (22 - d) / 17)) * .6; if (cible > 0) chargerRC(); if (!sonRC) { if (!cible) return; pisteRC(); if (!sonRC) return; }
     volSon(sonRC, cible); };
-  const majSonHR = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonHR) sonHR.pause(); return; } const p = moi.g.position, d = Math.hypot(p.x + 90, p.z + 11.5);
-    const cible = Math.max(0, Math.min(1, (22 - d) / 17)) * .6; if (!sonHR) { if (!cible) return; sonHR = new Audio("sons/hardrock.mp3"); sonHR.loop = true; sonHR.volume = 0; }
-    volSon(sonHR, cible); };
   /* (10.20) le volume d'un son qu'on approche : on suit notre propre niveau (sur iPhone, le volume d'un son ne se règle pas — il reste à fond) ;
      on coupe le son quand on s'éloigne, et sur iPhone, on ne le joue que tout près de sa source */
   const volSon = (a, cible) => { a._v = (a._v || 0) + (cible - (a._v || 0)) * .06; try { a.volume = Math.max(0, Math.min(1, a._v)); } catch (e) {}
@@ -14492,7 +14490,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   let nV = null, tp = 0;
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm;
-    majFeux(tm); majSonBar(); if (!SANS_MUSIQUE_HR) majSonHR(); majSonRC(); { const rougeB = L.feuEtat(tm).B !== "vert"; for (const o of [stopO, stopE]) { const i = L.obstRue.indexOf(o); if (rougeB && i < 0) L.obstRue.push(o); else if (!rougeB && i >= 0) L.obstRue.splice(i, 1); } }
+    majFeux(tm); majSonBar(); majSonRC();   /* (10.29 : plus de musique au Hard Rock) */ { const rougeB = L.feuEtat(tm).B !== "vert"; for (const o of [stopO, stopE]) { const i = L.obstRue.indexOf(o); if (rougeB && i < 0) L.obstRue.push(o); else if (!rougeB && i >= 0) L.obstRue.splice(i, 1); } }
     if (M && M.L === L) for (const [k, Q] of L.passRex.entries()) { const P = Q.P; let p = M.gens.get(Q.num); const ici = !L.apo && (!L.nuit || k % 3 !== 2) && (!M.sansFigurants || (!PETIT && k % 2 === 0)), tenueH = M.hiver && P.tenue !== "survet" && !P.chaud ? "manteauC" : P.tenue;   // (l'hiver : les manteaux ; le clochard garde sa grosse veste kaki)
       if (p && p.info.tenue !== tenueH) { retirerAncien(Q.num); p = null; }
       if (!ici) { if (p) retirerAncien(Q.num); if (Q.acc) Q.acc.visible = false; if (Q.laisse) Q.laisse.visible = false; continue; }
