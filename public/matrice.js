@@ -13490,7 +13490,11 @@ function construireJouffroy(A, L, scene) {
       pl(lg, HH - 1.0, papier(lg), 0, 1.0 + (HH - 1.0) / 2, 0, 0, w); box(lg, 1.0, .04, rougeL, 0, .5, .02, w); box(lg, .07, .08, rougeC, 0, 1.0, .04, w); box(lg, .12, .05, mat({ color: 0x5a1012 }), 0, .06, .04, w);
       const n = Math.max(1, Math.round(lg / .9)); for (let k = 0; k < n; k++) { const x = -lg / 2 + (k + .5) * lg / n; box(lg / n - .2, .62, .02, rougeC, x, .52, .05, w); box(lg / n - .3, .52, .02, rougeL, x, .52, .06, w); }
       box(lg, .08, .06, mat({ color: 0xf2ece0 }), 0, HH - .04, .03, w); void nx; void nz; return w; };
-    lambris(HX0, HZ0, HX0, HZ1); lambris(HX1, HZ1, HX1, HZ0); lambris(HX0 + 1.4, HZ1, HX1, HZ1);
+    lambris(HX0, HZ0, HX0, HZ1); lambris(HX1, HZ1 + 1.2, HX1, HZ0);
+    // (10.30) au fond du mur est, l'ouverture encadrée de rouge, du sol au plafond presque : l'escalier y tourne et continue de monter, vers les étages
+    { const oz0 = HZ1, oz1 = HZ1 + 1.2, ozm = (oz0 + oz1) / 2, yO = 3.6, rc = mat({ color: 0xb02a2c, roughness: .5 }); pl(oz1 - oz0, HH - yO, papier(1.2), HX1 - .01, yO + (HH - yO) / 2, ozm, -Math.PI / 2, g);
+      for (const zz of [oz0 + .05, oz1]) box(.12, yO, .1, rc, HX1 - .04, yO / 2, zz, g); box(.12, .1, oz1 - oz0, rc, HX1 - .04, yO, ozm, g);
+      const cr = mat({ color: 0xd8c098, emissive: 0x4a2a08, emissiveIntensity: .35 }); for (const zz of [oz0, oz1]) pl(1.6, yO, cr, HX1 + .8, yO / 2, zz, zz === oz0 ? 0 : Math.PI, g); pl(oz1 - oz0, yO, mat({ color: 0x5a4030 }), HX1 + 1.6, yO / 2, ozm, -Math.PI / 2, g); { const pf = add(new THREE.PlaneGeometry(1.6, oz1 - oz0), mat({ color: 0x3a2a20 }), HX1 + .8, yO, ozm, g); pf.rotation.x = Math.PI / 2; } } lambris(HX0 + 1.4, HZ1, HX1, HZ1);
     { const w = lambris(HX0, HZ1, HX0 + 1.4, HZ1); void w; }
     // le sol (vieux parquet) et le plafond
     const parqT = tT(256, 256, (c, w, h) => { for (let r = 0; r < 16; r++) { let x = -(r * 37 % 90); while (x < w) { const l = 60 + (x * 7 + r * 13) % 70; c.fillStyle = ["#7a5236", "#8a5e3c", "#6e4a30", "#94683f", "#7e563a"][Math.abs(x + r) % 5 | 0]; c.fillRect(x, r * 16, l, 16); c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(x, r * 16, 1, 16); x += l; } c.fillStyle = "rgba(30,15,5,.45)"; c.fillRect(0, r * 16, w, 1); } }, true); parqT.repeat.set(2.5, 3);
@@ -13541,9 +13545,9 @@ function construireJouffroy(A, L, scene) {
       box(.54, .1, .52, cm, 0, .46, .03, f); box(.5, .06, .48, cap, 0, .53, .03, f); const d = box(.5, .82, .1, cap, 0, .98, -.26, f); d.rotation.x = -.12; { const tp = add(new THREE.CylinderGeometry(.06, .06, .5, 12), cm, 0, 1.38, -.31, f); tp.rotation.z = Math.PI / 2; }
       for (const sg of [-1, 1]) { const fr = box(.05, .9, .06, boisF, sg * .27, .98, -.29, f); fr.rotation.x = -.12; const ac = add(new THREE.TorusGeometry(.18, .028, 6, 14, Math.PI * 1.2), boisF, sg * .3, .6, -.02, f); ac.rotation.y = Math.PI / 2; ac.rotation.x = -.2;
         add(new THREE.SphereGeometry(.04, 8, 6), boisF, sg * .3, .62, .2, f); const l1 = box(.04, .5, .045, boisF, sg * .24, .22, .2, f); l1.rotation.x = -.35; const l2 = box(.04, .52, .045, boisF, sg * .24, .23, -.22, f); l2.rotation.x = .45; box(.05, .05, .44, boisF, sg * .25, .43, 0, f); } };
-    fauteuil(1.45, HZ0 - .85, Math.PI - .5, 0x1e2e24, "#1e2e24"); fauteuil(1.35, HZ1 + 2.05, Math.PI * 1.25, 0x2e5a44, "#2e5a44");
+    fauteuil(1.45, HZ0 - .85, Math.PI - .5, 0x1e2e24, "#1e2e24"); fauteuil(1.55, HZ1 + 2.55, Math.PI * 1.3, 0x2e5a44, "#2e5a44");
     // le piano droit, contre le mur est : le cadre de bois, le clavier, le pupitre, les bougeoirs, la lampe à l'abat-jour rouge, le buste blanc
-    { const p2 = new THREE.Group(); p2.position.set(HX1 - .32, 0, HZ1 + 3.2); p2.rotation.y = -Math.PI / 2; g.add(p2);
+    { const p2 = new THREE.Group(); p2.position.set(HX1 - .32, 0, HZ1 + 3.36); p2.rotation.y = -Math.PI / 2; g.add(p2);
       box(1.45, 1.25, .55, boisM, 0, .62, -.05, p2); box(1.4, .08, .3, boisF, 0, .75, .3, p2); box(1.3, .04, .18, mat({ color: 0xf6f2e8 }), 0, .8, .32, p2); for (let k = 0; k < 18; k++) box(.03, .03, .1, mat({ color: 0x141414 }), -.6 + k * .072, .83, .28, p2);
       box(1.4, .5, .05, boisF, 0, 1.0, .28, p2); for (const sg of [-1, 1]) { box(.1, .7, .3, boisF, sg * .68, .35, .3, p2); const ch = add(new THREE.CylinderGeometry(.012, .012, .25, 6), laiton2(), sg * .55, 1.08, .32, p2); ch.rotation.z = sg * .8; add(new THREE.CylinderGeometry(.018, .018, .2, 8), mat({ color: 0xf6f2e8 }), sg * .64, 1.28, .38, p2); add(new THREE.SphereGeometry(.02, 6, 5), suspM, sg * .64, 1.4, .38, p2); }
       add(new THREE.CylinderGeometry(.02, .07, .5, 10), laiton2(), .5, 1.5, -.1, p2); add(new THREE.CylinderGeometry(.13, .22, .26, 16, 1, true), lum(mat({ color: 0xc82a2a, emissive: 0xff5a30, emissiveIntensity: .25, side: THREE.DoubleSide }), .25, 1.1), .5, 1.82, -.1, p2);
@@ -13552,9 +13556,9 @@ function construireJouffroy(A, L, scene) {
     // le portrait rond de Chopin, au-dessus du piano
     { const t = tT(128, 160, (c, w, h) => { c.fillStyle = "#3a2410"; c.beginPath(); c.ellipse(w / 2, h / 2, 62, 78, 0, 0, 7); c.fill(); c.fillStyle = "#c8a050"; c.beginPath(); c.ellipse(w / 2, h / 2, 56, 72, 0, 0, 7); c.fill(); c.fillStyle = "#efe6d4"; c.beginPath(); c.ellipse(w / 2, h / 2, 48, 64, 0, 0, 7); c.fill();
         c.fillStyle = "#5a4a3a"; c.beginPath(); c.ellipse(w / 2, h / 2 - 8, 16, 21, 0, 0, 7); c.fill(); c.fillStyle = "#2a1c12"; c.beginPath(); c.arc(w / 2, h / 2 - 22, 18, Math.PI, 0); c.fill(); c.fillStyle = "#1a1410"; c.fillRect(w / 2 - 22, h / 2 + 14, 44, 40); c.fillStyle = "#efe6d4"; c.fillRect(w / 2 - 5, h / 2 + 12, 10, 10); });
-      pl(.45, .56, photoM("portrait"), HX1 - .03, 2.35, HZ1 + 3.2, -Math.PI / 2, g); void t; }
+      pl(.45, .56, photoM("portrait"), HX1 - .03, 2.35, HZ1 + 3.36, -Math.PI / 2, g); void t; }
     // la cheminée de marbre brun, au fond du mur est : son miroir doré, les deux petites lampes rouges, le livre d'or vert
-    { const cz = HZ1 + 1.8, x = HX1, mb = mat({ map: marbreT, color: 0x8a5a4a, roughness: .25 }), chm = new THREE.Group(); chm.position.set(x, 0, cz); chm.rotation.y = -Math.PI / 2; g.add(chm);
+    { const cz = HZ1 + 1.9, x = HX1, mb = mat({ map: marbreT, color: 0x8a5a4a, roughness: .25 }), chm = new THREE.Group(); chm.position.set(x, 0, cz); chm.rotation.y = -Math.PI / 2; g.add(chm);
       box(1.3, .08, .38, mb, 0, 1.12, .18, chm); box(1.2, .1, .3, mb, 0, 1.04, .15, chm); for (const sg of [-1, 1]) { box(.2, 1.0, .3, mb, sg * .5, .5, .15, chm); } box(.8, .25, .28, mb, 0, .9, .14, chm); box(.8, .76, .05, mat({ color: 0x141210 }), 0, .4, .02, chm); box(1.4, .02, .5, mat({ color: 0x1e1c1a }), 0, .01, .35, chm);
       const mir = mat({ color: 0xc4d0d4, metalness: .25, roughness: .12, emissive: 0x6a6458, emissiveIntensity: .35 }), orM = mat({ color: 0xc8a050, metalness: .8, roughness: .3 }); box(.8, 1.0, .03, mir, 0, 1.75, .04, chm); box(.92, .07, .06, orM, 0, 2.28, .05, chm); box(.92, .07, .06, orM, 0, 1.22, .05, chm); for (const sg of [-1, 1]) box(.07, 1.1, .06, orM, sg * .44, 1.75, .05, chm); { const f = add(new THREE.CircleGeometry(.18, 16, 0, Math.PI), orM, 0, 2.31, .06, chm); void f; box(.3, .14, .05, mat({ color: 0x5a6a5a }), 0, 2.38, .08, chm); for (const sg of [-1, 1]) { const v = add(new THREE.TorusGeometry(.08, .02, 6, 12, Math.PI * 1.4), orM, sg * .3, 2.3, .07, chm); v.rotation.z = sg > 0 ? 0 : Math.PI; } }
       for (const sg of [-1, 1]) { add(new THREE.CylinderGeometry(.015, .04, .22, 8), orM, sg * .45, 1.27, .2, chm); add(new THREE.CylinderGeometry(.07, .1, .12, 12, 1, true), lum(mat({ color: 0xd84a3a, emissive: 0xff7040, emissiveIntensity: .3, side: THREE.DoubleSide }), .3, 1.3), sg * .45, 1.42, .2, chm); }
@@ -13574,17 +13578,14 @@ function construireJouffroy(A, L, scene) {
       pl(.34, .44, photoM("petit"), -.95, 2.15, z + .02, 0, g); pl(.36, .41, photoM("gravcoul"), .7, 2.3, z + .02, 0, g); if (0) cad(-.95, 2.15, .32, .4, (c) => { c.fillStyle = "#c83a2a"; c.fillRect(20, 40, 56, 40); c.fillStyle = "#e8c050"; c.fillRect(30, 50, 36, 20); });
       cad(1.95, 2.0, .2, .28, (c) => { c.fillStyle = "#6a5a4a"; c.fillRect(30, 30, 36, 50); });
       // la porte rouge du fond, à droite, qui mène aux étages
-      // (10.30) en haut de l'escalier, le palier et l'entrée vers les étages : l'ouverture encadrée de rouge, dans le mur du fond, à droite ; derrière, le couloir dans la pénombre
-      { const yP = 12 * .19; box(1.35, yP, .85, mat({ color: 0x9a1e22, roughness: .55 }), 1.92, yP / 2, z + .43, g); box(1.37, .05, .87, mat({ color: 0x2e5a3a, roughness: .95 }), 1.92, yP + .01, z + .43, g); box(1.37, .03, .03, mat({ color: 0xc8a050, metalness: .8 }), 1.92, yP + .02, z + .87, g);
-        box(.95, 2.1, .03, mat({ color: 0x3a2a1e, emissive: 0x2a1408, emissiveIntensity: .3 }), 1.95, yP + 1.05, z + .005, g); for (const sg of [-1, 1]) box(.09, 2.15, .1, rougeC, 1.95 + sg * .5, yP + 1.08, z + .05, g); box(1.09, .09, .1, rougeC, 1.95, yP + 2.15, z + .05, g);
-        box(.04, 1.5, .04, mat({ color: 0xf2f0ea }), HX1 - .12, .75, z + .12, g);   // (le tuyau blanc, dans l'angle)
-        box(.05, .9, .05, mat({ color: 0x1a1a1a, metalness: .4 }), 1.27, yP + .45, z + .87, g); } }
+    }
     // l'escalier tournant (d'après les photos) : la première marche arrondie au tapis rouge, puis la montée vers le fond qui tourne à droite jusqu'au palier ;
     // le tapis vert sur les marches et les contremarches, les nez dorés, le dessous fermé de lambris rouge, la rampe de bois qui s'enroule, les barreaux de fer, le pilier de laiton à boule
     { const tapisV = mat({ color: 0x2e5a3a, roughness: .95 }), tapisR = mat({ color: 0xa8202a, roughness: .95 }), nez = mat({ color: 0xc8a050, metalness: .8, roughness: .3 }), fer = mat({ color: 0x1a1a1a, metalness: .4, roughness: .5 }), rampe = mat({ color: 0x7a4422, roughness: .3 }), dessous = mat({ color: 0x9a1e22, roughness: .55 });
-      const hS = .19, W = 1.0, steps = []; const sx = .35, sz = HZ1 + 2.3;
+      const hS = .19, W = .95, steps = []; const sx = .35, sz = HZ1 + 2.67;
       for (let k = 0; k < 5; k++) steps.push([sx, sz - k * .28, -Math.PI / 2]);   // (la volée droite, vers le fond)
       const ccx = sx + .85, ccz = sz - 4 * .28 - .1; for (let k = 1; k <= 7; k++) { const a = Math.PI + k * (Math.PI / 2) / 7; steps.push([ccx + Math.cos(a) * .85, ccz - Math.abs(Math.sin(a)) * .85, -Math.PI / 2 + k * (Math.PI / 2) / 7]); }   // (le quart tournant, à droite)
+      for (let k = 1; k <= 6; k++) steps.push([ccx + k * .3, ccz - .85, 0]);   // (puis tout droit vers l'est : dans l'ouverture, et ça continue de monter, hors de vue)
       const pts = [];
       steps.forEach(([x, z, dir], k) => { const y = (k + 1) * hS, dx = Math.cos(dir), dz = Math.sin(dir), lx = dz, lz = -dx;   // (dir : vers où l'on monte ; l : la gauche)
         const st = new THREE.Group(); st.position.set(x, 0, z); st.rotation.y = -dir - Math.PI / 2; g.add(st);   // (local : +z vers le bas de l'escalier, x en travers)
@@ -13602,14 +13603,14 @@ function construireJouffroy(A, L, scene) {
     { const t2 = new THREE.Group(); t2.position.set(-.85, 0, HZ1 + .5); g.add(t2); box(.42, .05, .42, boisF, 0, .55, 0, t2); box(.42, .45, .05, boisF, 0, .8, -.19, t2); for (const [a, b] of [[-.18, -.18], [.18, -.18], [-.18, .18], [.18, .18]]) box(.04, .55, .04, boisF, a, .27, b, t2); }   // (la chaise du réceptionniste)
     // sous l'escalier, la malle noire et son coussin rouge ; le radiateur rouge, près de la cheminée ; la plante en pot rouge et blanc, sur le petit meuble ; le canapé de cuir vert, devant la réception
     box(.5, .55, .4, mat({ color: 0x141414, roughness: .4 }), .35, .28, HZ1 + .45, g); box(.5, .08, .4, mat({ color: 0xc8202a, roughness: .9 }), .35, .6, HZ1 + .45, g);
-    for (let k = 0; k < 8; k++) box(.05, .55, .1, mat({ color: 0xb02a2a, metalness: .3 }), 1.65 + k * .07, .35, HZ1 + .95, g);
+    
     add(new THREE.CylinderGeometry(.06, .05, .12, 10), mat({ color: 0xc8202a }), HX0 + 1.3, 1.85, HZ1 + .08, g); for (let k = 0; k < 6; k++) add(new THREE.SphereGeometry(.05, 6, 5), mat({ color: k % 2 ? 0x3a6a3a : 0xe86a8a }), HX0 + 1.3 + Math.cos(k) * .05, 1.97, HZ1 + .08 + Math.sin(k) * .05, g);
     chesterfield(HX0 + .5, HZ1 + 2.6, Math.PI / 2, 1.3, "#2a5a46", 0x2a5a46);
     aplatir(g);
     // la lumière chaude du hall
-    if (!(MOBILE || GPU_MODESTE)) for (const [x, y, z, i2] of [[0, HH - .7, HZ0 - 2.4, 7], [1.9, 1.9, HZ1 + 3.2, 4], [-1.3, 1.6, HZ1 + 1.25, 4], [2.1, 1.5, HZ1 + 1.8, 3]]) { const lh = new THREE.PointLight(0xff9a3c, i2, 6, 1.5); lh.position.set(x, y, z); scene.add(lh); }   // (la lumière du hall : orangée, jour et nuit — le lustre, les lampes)
-    L.obJ = (L.obJ || []).concat([[HX0 + .5, HZ0 - 1.6, .55], [HX0 + .5, HZ0 - .9, .55], [HX0 + .5, HZ0 - 2.3, .55], [-1.75, HZ0 - .45, .4], [1.45, HZ0 - .85, .45], [1.35, HZ1 + 2.05, .45], [HX1 - .32, HZ1 + 2.8, .5], [HX1 - .32, HZ1 + 3.6, .5],
-      [HX1 - .2, HZ1 + 1.8, .55], [-.85, HZ1 + 1.25, .7], [-1.4, HZ1 + 1.25, .45], [-.3, HZ1 + 1.25, .45], [HX0 + .45, HZ1 + 2.3, .5], [HX0 + .45, HZ1 + 2.9, .5], [.35, HZ1 + 2.4, .6], [.35, HZ1 + 1.8, .55], [.35, HZ1 + 1.3, .55], [.8, HZ1 + .9, .55], [1.3, HZ1 + .6, .55], [1.05, HZ1 + 2.45, .3]]);
+    if (!(MOBILE || GPU_MODESTE)) for (const [x, y, z, i2] of [[0, HH - .7, HZ0 - 2.4, 7], [1.9, 1.9, HZ1 + 3.36, 4], [-1.3, 1.6, HZ1 + 1.25, 4], [2.1, 1.5, HZ1 + 1.9, 3]]) { const lh = new THREE.PointLight(0xff9a3c, i2, 6, 1.5); lh.position.set(x, y, z); scene.add(lh); }   // (la lumière du hall : orangée, jour et nuit — le lustre, les lampes)
+    L.obJ = (L.obJ || []).concat([[HX0 + .5, HZ0 - 1.6, .55], [HX0 + .5, HZ0 - .9, .55], [HX0 + .5, HZ0 - 2.3, .55], [-1.75, HZ0 - .45, .4], [1.45, HZ0 - .85, .45], [1.55, HZ1 + 2.55, .45], [HX1 - .32, HZ1 + 3.0, .5], [HX1 - .32, HZ1 + 3.75, .5],
+      [HX1 - .2, HZ1 + 1.9, .55], [-.85, HZ1 + 1.25, .7], [-1.4, HZ1 + 1.25, .45], [-.3, HZ1 + 1.25, .45], [HX0 + .45, HZ1 + 2.3, .5], [HX0 + .45, HZ1 + 2.9, .5], [.35, HZ1 + 2.85, .6], [.35, HZ1 + 2.3, .55], [.35, HZ1 + 1.8, .55], [.6, HZ1 + 1.1, .55], [1.1, HZ1 + .65, .55], [1.7, HZ1 + .6, .55], [2.2, HZ1 + .6, .55], [1.05, HZ1 + 2.82, .3]]);
     L.hallChopin = { x0: HX0, x1: HX1, z0: HZ0, z1: HZ1, h: HH }; }
   for (const x of [-1.55, .72]) { add(new THREE.CylinderGeometry(.2, .15, .42, 14), mat({ color: 0x2a2a2c, roughness: .4 }), x, .21, ZC0 + .55);   // (les ficus, dans leur pot)
     for (let k = 0; k < 3; k++) { const t = add(new THREE.CylinderGeometry(.02, .03, 1.3, 6), bois(0x6a5040), x + (k - 1) * .04, .95, ZC0 + .55); t.rotation.z = (k - 1) * .12; }
