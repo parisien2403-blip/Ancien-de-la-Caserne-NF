@@ -13453,7 +13453,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   /* une terrasse le long d'une façade : (fx, fz) le point de départ sur la façade, (ux, uz) le sens de la façade, (nx, nz) vers la rue ; lg, prof ; coul : le bas des paravents */
   const terrasseP = (fx, fz, ux, uz, nx, nz, lg, prof, coul, evite = []) => { const ry = Math.atan2(nx, nz), nR = Math.max(1, Math.floor((prof - .8) / 1.15)), nC = Math.floor(lg / 1.35);
     for (let r = 0; r < nR; r++) for (let c = 0; c < nC; c++) { const t = .7 + c * 1.35, d = .65 + r * 1.15, x = fx + ux * t + nx * d, z = fz + uz * t + nz * d; if (evite.some(([ex, ez]) => Math.hypot(ex - x, ez - z) < 1.1)) continue;
-      table(x, z); for (const sg of [-1, 1]) { const cx = x + ux * sg * .45, cz = z + uz * sg * .45; chaise(cx, cz, ry); if (hz() < .45) assis(cx, cz, ry, nk++); } }   // (les chaises côte à côte, face à la rue, à la parisienne)
+      table(x, z); for (const sg of [-1, 1]) { const cx = x + ux * sg * .45, cz = z + uz * sg * .45; chaise(cx, cz, ry); if (hz() < (PETIT ? .15 : (MOBILE || GPU_MODESTE) ? .25 : .45)) assis(cx, cz, ry, nk++); } }   // (les chaises côte à côte, face à la rue, à la parisienne)
     // les paravents vitrés, côté chaussée, et sur les deux bouts
     const ex = (t, d) => [fx + ux * t + nx * d, fz + uz * t + nz * d], pd = prof - .1, panneaux = [];
     for (let t = 0; t < lg - .1; t += 1.6) panneaux.push([t, Math.min(t + 1.5, lg), pd]);
@@ -13696,10 +13696,10 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     // (10.19) du monde sur les trottoirs, le jour comme la nuit : des promeneurs en volume (comme les clients des terrasses), qui vont et viennent le long du boulevard et des deux rues
     { const PR = [NO, SO, [[12, -9.4], [100, -9.4]], [[12, 9.4], [100, 9.4]], [[-7, -12], [-7, -100]], [[5.4, -12], [5.4, -100]], [[-4.6, 12], [-4.6, 100]], [[4.6, 12], [4.6, 100]]],
         PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
-      for (let k = 0; k < 22; k++) { const f = k % 2 === 1, R = PR[k % PR.length], m = personne3D({ taille: f ? 1.62 + (k % 3) * .04 : 1.72 + (k % 4) * .04, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a", "#a5532a"][k % 6], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#1a1a1c"][k % 4], chaussures: ["#1a1a1a", "#3a2418", "#f2f2f2"][k % 3], coif: f ? (k % 3 ? "long" : "court") : k % 5 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 4 === 0 });
+      for (let k = 0, nW = PETIT ? 4 : (MOBILE || GPU_MODESTE) ? 8 : 22; k < nW; k++) { const f = k % 2 === 1, R = PR[k % PR.length], m = personne3D({ taille: f ? 1.62 + (k % 3) * .04 : 1.72 + (k % 4) * .04, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a", "#a5532a"][k % 6], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#1a1a1c"][k % 4], chaussures: ["#1a1a1a", "#3a2418", "#f2f2f2"][k % 3], coif: f ? (k % 3 ? "long" : "court") : k % 5 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 4 === 0 });
         const i0 = (k * 7) % R.length, nx = R[Math.min(i0 + 1, R.length - 1)], a0 = R[i0], u = ((k * 37) % 100) / 100; m.position.set(a0[0] + (nx[0] - a0[0]) * u, .12, a0[1] + (nx[1] - a0[1]) * u); m.userData.poser("marche", 0); scene.add(m);
         MARCH.push({ m, R, i: Math.min(i0 + 1, R.length - 1), sens: 1, v: 1.05 + (k % 5) * .1 }); } }
-    const choix = PASSANTS.filter(P => P && P.acc !== "poussette" && P.acc !== "caddie").slice(0, 26);   // (10.19) plus de passants ; ni poussette ni grand-mère au caddie, au Rex
+    const choix = PASSANTS.filter(P => P && P.acc !== "poussette" && P.acc !== "caddie").slice(0, PETIT ? 10 : (MOBILE || GPU_MODESTE) ? 14 : 26);   // (10.20 : moins sur téléphone)   // (10.19) plus de passants ; ni poussette ni grand-mère au caddie, au Rex
     L.passRex = choix.map((P, k) => ({ P, num: k < 20 ? -170 - k : -220 - k, route: k < 4 ? TOUR.map(([x, z]) => [x + (k % 2 ? .6 : -.6), z + (k > 1 ? .6 : -.6)]) : LEGS[(k - 4) % LEGS.length], boucle: k < 4, i: k < 4 ? k : 0, sens: 1 }));
     // (10.13) le clochard, sa veste kaki et son caddie de supermarché plein de détritus ; des passants avec leur chien en laisse
     L.passRex.push({ P: { nom: "Le clochard", tenue: "civil", couleur: "#5e5c34", bas: "#3a3a30", pieds: "#3a3028", tete: ["clochardBN", { peau: "#c89a76", ch: "#3e2a1a", coif: "long", moustache: true, sourcils: "#2a1a10" }], acc: "chariot", allure: .5, chaud: true }, num: -190, route: NO, boucle: false, i: 0, sens: 1 },
@@ -13762,6 +13762,8 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     for (const P of MARCHE) { P.t += dt * P.v / P.L; const u = (Math.sin(P.t * Math.PI) + 1) / 2, sens = Math.cos(P.t * Math.PI) > 0 ? 1 : -1, g = P.g, dx = Math.cos(P.ry), dz = -Math.sin(P.ry);
       g.position.x = P.x0 + dx * (u - .5) * P.L; g.position.z = P.z0 + dz * (u - .5) * P.L; g.rotation.y = P.ry + (sens > 0 ? 0 : Math.PI) + Math.PI / 2;
       const b = Math.sin(tm / 170 + P.x0); g.userData.J.forEach((j, k) => j.rotation.x = (k ? 1 : -1) * b * .45); g.userData.B.forEach((a, k) => a.rotation.x = (k ? -1 : 1) * b * .35); } };
+  // (10.20) sur téléphone : pas de lampes ponctuelles (une trentaine : chaque pixel les calcule toutes) — les enseignes et les vitrines restent lumineuses d'elles-mêmes
+  if (MOBILE || GPU_MODESTE) { const enl = []; scene.traverse(o => { if (o.isPointLight || o.isSpotLight) enl.push(o); }); for (const o of enl) o.parent && o.parent.remove(o); }
   L.depart = [-20, -10.5]; L.taille = 1.85; L.suivi = { d: 7.5, h: 6.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-117, 117, -117, 117]; L.cam = { pos: [-20, 7, 0], vise: [-20, 2, -12] };
 }
