@@ -14395,8 +14395,69 @@ const feux = []; const feu = (x, z, ry, axe) => { const g = new THREE.Group(); g
   box(.3, .62, .22, mat({ color: 0x1a1c1e }), 0, 2.05, .16, g); const P2 = BH.map((t, k) => { const m = new THREE.MeshBasicMaterial({ map: t, color: 0x333333 }); add(new THREE.PlaneGeometry(.24, .24), m, 0, 2.2 - k * .27, .28, g); return m; });
   feux.push({ axe, L3, P2 }); return g; };
 // (les feux des voitures du boulevard : aux passages ouest et est ; ceux des rues : aux passages nord et sud — tous sur le trottoir)
-feu(-6, -9.3, Math.PI, "R"); feu(6, -9.3, Math.PI, "R"); feu(-5, 9.3, 0, "R"); feu(5, 9.3, 0, "R"); feu(-12.7, -8.9, Math.PI / 2, "B"); feu(12.7, 8.9, -Math.PI / 2, "B"); feu(-12.7, 8.9, Math.PI / 2, "B"); feu(12.7, -8.9, -Math.PI / 2, "B");
+feu(-6, -9.3, Math.PI, "R"); feu(6, -9.3, Math.PI, "R");   /* (10.49 : plus de feux au passage entre le bar Madeleine et le Rex) */ feu(-12.7, -8.9, Math.PI / 2, "B"); feu(12.7, 8.9, -Math.PI / 2, "B"); feu(-12.7, 8.9, Math.PI / 2, "B"); feu(12.7, -8.9, -Math.PI / 2, "B");
 L.feuEtat = (tm) => { const c = (tm / 1000) % 38; return { B: c < 20 ? "vert" : c < 23 ? "orange" : "rouge", R: c < 23 ? "rouge" : c < 35 ? "vert" : "orange" }; };
+/* (10.49) le soir : la première de « The Lost Boys » au Grand Rex, façon Festival de Cannes — le tapis rouge de la porte d'angle jusqu'au bout du trottoir,
+   les poteaux dorés et leurs cordons de velours, les barrières de sécurité, derrière elles les photographes et leurs flashs, les agents de sécurité en noir ;
+   sur le tapis, les garçons de Génération perdue, bien sapés (pas en vampires), qui montent les marches de la gloire */
+{ const TR = new THREE.Group(), r0 = 9.5, LG = 6.9, cx = -16.6 + (r0 + LG / 2) * Math.SQRT1_2, cz = 22.6 - (r0 + LG / 2) * Math.SQRT1_2; TR.position.set(cx, .13, cz); TR.rotation.y = Math.PI * .75; TR.visible = false; scene.add(TR);
+  const loc = (x, z) => { const c = Math.cos(TR.rotation.y), s2 = Math.sin(TR.rotation.y); return [cx + x * c + z * s2, cz - x * s2 + z * c]; };   // (le repère du tapis : z le long du tapis, de la porte (-LG/2) au trottoir (+LG/2))
+  const tapisT = tT(64, 256, (c, w, h) => { c.fillStyle = "#a80c18"; c.fillRect(0, 0, w, h); for (let k = 0; k < 2200; k++) { c.fillStyle = `rgba(${k % 2 ? "60,0,0" : "255,80,80"},.12)`; c.fillRect(Math.random() * w, Math.random() * h, 1, 2); } c.fillStyle = "#c8a040"; c.fillRect(0, 0, 3, h); c.fillRect(w - 3, 0, 3, h); });
+  { const t = add(new THREE.PlaneGeometry(2.4, LG + .4), mat({ map: tapisT, roughness: .95 }), 0, .005, 0, TR); t.rotation.x = -Math.PI / 2; }
+  const or = mat({ color: 0xd8b048, metalness: .8, roughness: .3 }), velours = mat({ color: 0x8a0814, roughness: .9 }), acier = mat({ color: 0x9aa0a6, metalness: .6, roughness: .45 });
+  for (const sg of [-1, 1]) {   // les poteaux dorés et les cordons de velours, de part et d'autre du tapis
+    for (let k = 0; k <= 6; k++) { const z = -LG / 2 + .3 + k * (LG - .6) / 6; add(new THREE.CylinderGeometry(.025, .025, .95, 8), or, sg * 1.35, .48, z, TR); add(new THREE.CylinderGeometry(.13, .15, .04, 14), or, sg * 1.35, .02, z, TR); add(new THREE.SphereGeometry(.05, 10, 8), or, sg * 1.35, .97, z, TR);
+      if (k < 6) { const cd = add(new THREE.TorusGeometry((LG - .6) / 12, .022, 6, 14, Math.PI), velours, sg * 1.35, .88, z + (LG - .6) / 12, TR); cd.rotation.set(0, Math.PI / 2, Math.PI); } }
+    for (let k = 0; k < 4; k++) { const z = -LG / 2 + .9 + k * 1.75, B = new THREE.Group(); B.position.set(sg * 1.8, 0, z); TR.add(B);   // les barrières de sécurité, en métal, derrière les cordons
+      for (const y of [.12, 1.0]) { const tb = add(new THREE.CylinderGeometry(.022, .022, 1.7, 6), acier, 0, y, 0, B); tb.rotation.x = Math.PI / 2; }
+      for (const zz of [-.85, .85]) { add(new THREE.CylinderGeometry(.022, .022, 1.0, 6), acier, 0, .56, zz, B); const pd = add(new THREE.CylinderGeometry(.018, .018, .5, 6), acier, 0, .04, zz, B); pd.rotation.z = Math.PI / 2; }
+      for (let b = 0; b < 12; b++) add(new THREE.CylinderGeometry(.009, .009, .88, 4), acier, 0, .56, -.78 + b * .142, B); } }
+  // les photographes, derrière les barrières : l'appareil devant l'œil, le flash au-dessus ; les flashs crépitent
+  const PH = [], FL = [], flashM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }), noirB = mat({ color: 0x141414, roughness: .5 });
+  const flashG = new THREE.SphereGeometry(.16, 8, 6), pf = new THREE.PointLight(0xf0f4ff, 0, 7, 2); TR.add(pf);
+  const nP = PETIT ? 8 : (MOBILE || GPU_MODESTE) ? 12 : 22, PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc"];
+  for (let k = 0; k < nP; k++) { const sg = k % 2 ? 1 : -1, rang = (k >> 1) % 2, z = -LG / 2 + .5 + (k >> 1) * (LG - .7) / Math.max(1, (nP >> 1) - 1) + (rang ? .25 : 0), f = k % 5 === 2;
+    const m = personne3D({ taille: f ? 1.66 : 1.74 + (k % 3) * .03, peau: PE[k % 5], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a"][k % 4], haut: ["#2a2a30", "#3a3028", "#1a1a1c", "#4a5a3a", "#5a4636"][k % 5], bas: ["#26324e", "#2a2a30", "#3a3028"][k % 3], chaussures: "#1a1a1a", coif: f ? "queue" : k % 4 ? "court" : "chauve", pantalon: true });
+    m.position.set(sg * (rang ? 2.75 : 2.25), rang ? .06 : 0, z); m.rotation.y = -sg * Math.PI / 2 + (k % 3 - 1) * .25; TR.add(m); m.userData.poser("debout", 0); const P = m.userData.parts;
+    P.bras.forEach((b, i) => { const s3 = i ? 1 : -1; b.e.rotation.set(-1.35, 0, s3 * -.45); b.c.rotation.x = -1.25; });
+    const ap = new THREE.Group(); ap.position.set(0, -.01, .17); P.tete.add(ap); add(new THREE.BoxGeometry(.15, .1, .08), noirB, 0, 0, 0, ap); const ob = add(new THREE.CylinderGeometry(.035, .04, .09, 10), noirB, .02, 0, .08, ap); ob.rotation.x = Math.PI / 2;
+    add(new THREE.BoxGeometry(.06, .05, .05), noirB, -.03, .1, .01, ap); const fl = new THREE.Mesh(flashG, flashM.clone()); fl.position.set(-.03, .11, .06); fl.scale.set(.5, .5, .5); ap.add(fl); FL.push({ fl, t0: 0, per: 2.6 + (k * 1.37) % 3.1, ph: k * .71 }); PH.push(m); }
+  // les cameramen de la télévision : la grosse caméra sur l'épaule, sa lampe allumée
+  for (let k = 0, nC = PETIT ? 2 : (MOBILE || GPU_MODESTE) ? 2 : 4; k < nC; k++) { const sg = k % 2 ? -1 : 1, z = -LG / 2 + 1.6 + (k >> 1) * 2.6;
+    const m = personne3D({ taille: 1.8, peau: PE[(k + 2) % 5], ch: ["#141010", "#5a3a22"][k % 2], haut: ["#3a4a5a", "#2a2a30"][k % 2], bas: "#2a2a30", chaussures: "#1a1a1a", coif: "court", pantalon: true });
+    m.position.set(sg * 2.5, 0, z); m.rotation.y = -sg * Math.PI / 2; TR.add(m); m.userData.poser("debout", 0); const P = m.userData.parts;
+    P.bras[1].e.rotation.set(-2.6, 0, .2); P.bras[1].c.rotation.x = -.4; P.bras[0].e.rotation.set(-1.2, 0, .3); P.bras[0].c.rotation.x = -.8;
+    const cam = new THREE.Group(); cam.position.set(.17, .5, .05); P.buste.add(cam); add(new THREE.BoxGeometry(.16, .24, .52), noirB, 0, 0, 0, cam); const ob = add(new THREE.CylinderGeometry(.07, .08, .2, 12), noirB, 0, 0, .34, cam); ob.rotation.x = Math.PI / 2;
+    add(new THREE.BoxGeometry(.1, .06, .06), mat({ color: 0xfff8e0, emissive: 0xfff4d0, emissiveIntensity: 2 }), 0, .16, .2, cam); add(new THREE.BoxGeometry(.04, .04, .1), mat({ color: 0x8a1010, emissive: 0xff2020, emissiveIntensity: 1.5 }), .06, .1, -.2, cam); }
+  // deux limousines noires, garées le long du trottoir, devant le tapis
+  const LIMO = new THREE.Group(); LIMO.visible = false; scene.add(LIMO);
+  { const laque = mat({ color: 0x08080a, roughness: .18, metalness: .7 }), vit = mat({ color: 0x0c1014, roughness: .05, metalness: .5 }), chrome = mat({ color: 0xd8dce0, metalness: .9, roughness: .2 }), pneu = mat({ color: 0x111111 }), phare = mat({ color: 0xfff6d8, emissive: 0xfff0c0, emissiveIntensity: 1.2 }), feuR = mat({ color: 0xc8102e, emissive: 0xff1010, emissiveIntensity: .8 });
+    for (const zc of [16.6, 25.4]) { const g = new THREE.Group(); g.position.set(-2.75, .12, zc); g.rotation.y = -Math.PI / 2; LIMO.add(g);   // (le nez vers le carrefour)
+      box(8.2, .7, 1.9, laque, 0, .6, 0, g); box(5.6, .55, 1.76, vit, -.3, 1.22, 0, g); box(5.7, .07, 1.78, laque, -.3, 1.52, 0, g); box(1.2, .5, 1.8, laque, 3.4, 1.0, 0, g);
+      for (const sd of [-1, 1]) { box(8.0, .04, .02, chrome, 0, .9, sd * .96, g); for (const x of [-1.2, .6]) box(.05, .55, .02, laque, x, 1.22, sd * .89, g); }
+      box(.06, .25, 1.6, chrome, 4.12, .62, 0, g); for (const sd of [-1, 1]) { box(.05, .14, .32, phare, 4.13, .78, sd * .62, g); box(.05, .16, .3, feuR, -4.12, .8, sd * .7, g); }
+      for (const x of [-3, 3]) for (const sd of [-1, 1]) { const w = add(new THREE.CylinderGeometry(.36, .36, .26, 14), pneu, x, .36, sd * .9, g); w.rotation.x = Math.PI / 2; const j = add(new THREE.CylinderGeometry(.2, .2, .27, 10), chrome, x, .36, sd * .9, g); j.rotation.x = Math.PI / 2; } } }
+  // les agents de sécurité : costume noir, chemise blanche, l'oreillette ; deux à la porte, deux au bout du tapis
+  for (const [x, z, ry] of [[-1.05, -LG / 2 + .1, 0], [1.05, -LG / 2 + .1, 0], [-1.05, LG / 2 + .2, Math.PI], [1.05, LG / 2 + .2, Math.PI]]) { const m = personne3D({ taille: 1.88, peau: ["#8d5a3b", "#efc7a4", "#c78f62", "#6a4028"][(x > 0) + 2 * (z > 0)], ch: "#141010", haut: "#0e0e10", bas: "#0e0e10", chaussures: "#0a0a0a", coif: (x > 0) ? "chauve" : "court", pantalon: true });
+    m.position.set(x, 0, z); m.rotation.y = ry; TR.add(m); m.userData.poser("debout", 0); const P = m.userData.parts; P.bras.forEach((b, i) => { b.e.rotation.set(-.35, 0, (i ? 1 : -1) * -.25); b.c.rotation.x = -1.2; });
+    add(new THREE.BoxGeometry(.05, .2, .02), mat({ color: 0xf4f2ee }), 0, .3, .07, P.buste); add(new THREE.SphereGeometry(.014, 6, 5), noirB, .12, 0, 0, P.tete); }
+  // les garçons de Génération perdue, en tenue de soirée, sur le tapis
+  const LBT = [["michael", "#141416", "#141416", "#0e0e0e"], ["david", "#f2f0ea", "#f2f0ea", "#e8e4dc"], ["sam", "#22324f", "#22324f", "#1a1a1a"], ["dwayne", "#1a1a1e", "#1a1a1e", "#0e0e0e"], ["marko", "#5a1a2a", "#141416", "#0e0e0e"], ["paul", "#2a2a30", "#2a2a30", "#0e0e0e"], ["edgar", "#3a4a3a", "#2a3028", "#1a1a1a"], ["alan", "#3a3e46", "#3a3e46", "#1a1a1a"], ["tim", "#141416", "#141416", "#0e0e0e"]];
+  const STARS = LBT.map((d, k) => ({ d, num: -300 - k, u: (k / LBT.length + .05) % 1, cote: k % 2 ? .45 : -.45, v: .14 + (k % 3) * .02, arret: 0 }));
+  const sortir = () => { for (const S of STARS) if (M && M.gens.get(S.num)) retirerAncien(S.num); }; quitterLieu.add(sortir);
+  const a0 = L.anim; let tp = 0; L.anim = (tm) => { a0 && a0(tm); const ok = !!M && M.L === L && !!L.nuit && !L.apo && !M.sansFigurants; TR.visible = LIMO.visible = ok;
+    if (!ok) { pf.intensity = 0; tp = 0; for (const S of STARS) if (M && M.gens.get(S.num)) retirerAncien(S.num); return; }
+    const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; let fort = 0, fp = null;
+    for (const F of FL) { const c = ((tm / 1000 + F.ph) % F.per); const a = c < .09 ? 1 - c / .09 : 0; F.fl.material.opacity = a; if (a > fort) { fort = a; fp = F.fl; } }   // (les flashs, chacun à son rythme)
+    if (fp) { fp.getWorldPosition(pf.position); TR.worldToLocal(pf.position); } pf.intensity = fort * 6;
+    for (const [k, S] of STARS.entries()) { let p = M.gens.get(S.num); const [n, haut, bas, pieds] = S.d;
+      if (S.arret > 0) S.arret -= dt; else { S.u += dt * S.v / LG; if (((S.u * 7 + k) | 0) !== ((S.u * 7 - dt * S.v / LG * 7 + k) | 0)) S.arret = 2.5 + (k % 3); }   // (ils avancent doucement, s'arrêtent poser pour les photographes)
+      if (S.u >= 1) { S.u -= 1; if (p) { retirerAncien(S.num); p = null; } }   // (arrivés à la porte, ils entrent ; d'autres arrivent au bout du tapis)
+      const [x, z] = loc(S.cote, LG / 2 - .3 - S.u * (LG - .6));
+      if (!p) { ajouterAncien({ numero: S.num, nom: n[0].toUpperCase() + n.slice(1), tenue: "costume", couleur: haut, bas, pieds, teteUrl: `images/santacarla/${n}-tete.webp`, reglage: { devant: true, ...(["sam", "edgar", "alan"].includes(n) ? { k: 1.3, dy: 6 } : {}) }, pnj: true, x, z }); p = M.gens.get(S.num); if (!p) continue; p.info.allure = .5; }
+      p.cible = null; p.chemin = []; p.g.position.x = x; p.g.position.z = z;
+      const ry = TR.rotation.y + Math.PI; p.g.rotation.y = S.arret > 0 ? ry + (S.cote > 0 ? -1.2 : 1.2) : ry; } };
+}
 const majFeux = (tm) => { const E = L.feuEtat(tm); for (const F of feux) { const e = E[F.axe]; F.L3[0].m.color.setHex(e === "rouge" ? F.L3[0].c : 0x202020); F.L3[1].m.color.setHex(e === "orange" ? F.L3[1].c : 0x202020); F.L3[2].m.color.setHex(e === "vert" ? F.L3[2].c : 0x202020);
     const pv = e === "rouge"; F.P2[0].color.setHex(pv ? 0x333333 : 0xffffff); F.P2[1].color.setHex(pv ? 0xffffff : 0x333333); } };   // (le bonhomme vert quand les voitures de ce feu ont le rouge)
 // les panneaux : sens interdit (rue du Faubourg-Poissonnière en sens unique vers le nord), obligation de tourner, les bornes bleues des îlots
@@ -14413,7 +14474,7 @@ for (const s of [-1, 1]) for (let i = 0; i < 14; i++) box(.13, .85, .13, mat({ c
 // (la colonne Morris : retirée)
 { const g = new THREE.Group(); g.position.set(10.5, 0, 16.5); scene.add(g); box(3.2, 2.6, 2, mat({ color: 0x2a4a3a }), 0, 1.3, 0, g); box(3.6, .25, 2.4, mat({ color: 0x1e3a28 }), 0, 2.7, 0, g); add(new THREE.ConeGeometry(2.0, .9, 4), mat({ color: 0x1e3a28 }), 0, 3.3, 0, g, Math.PI / 4);
   box(3.1, 1.8, .05, lum(mat({ map: tT(256, 128, (c) => { for (let i = 0; i < 8; i++) { c.fillStyle = ["#e8302a", "#2a5ac8", "#f2d040", "#e85a8a"][i % 4]; c.fillRect((i % 4) * 64 + 4, Math.floor(i / 4) * 64 + 4, 56, 56); } }), emissive: 0xffffff, emissiveIntensity: .05 }), .05, .6), 0, 1.5, -1.03, g); }   // (le kiosque à journaux)
-{ add(new THREE.CylinderGeometry(.08, .12, 4.2, 8), fonte, -6.5, 2.1, 13); const h = add(new THREE.CylinderGeometry(.42, .42, .16, 24), mat({ color: 0xf2f2ee }), -6.5, 4.2, 13); h.rotation.x = Math.PI / 2; }   // (l'horloge)
+if (0) { add(new THREE.CylinderGeometry(.08, .12, 4.2, 8), fonte, -6.5, 2.1, 13); const h = add(new THREE.CylinderGeometry(.42, .42, .16, 24), mat({ color: 0xf2f2ee }), -6.5, 4.2, 13); h.rotation.x = Math.PI / 2; }   // (l'horloge : retirée en 10.49, elle tombait sur le tapis rouge)
 const cone = (x, z) => { add(new THREE.ConeGeometry(.2, .6, 12), mat({ color: 0xf28a1e }), x, .45, z); };
 void cone;   // (les cônes : retirés)
 
