@@ -14249,6 +14249,16 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
   box(14, 8, 20, mat({ color: 0xece4d2 }), -50, 26, 26, g);   // (l'immeuble plus haut, derrière)
   // l'aile de la rue Poissonnière : en gradins, des fenêtres en bandes
   box(16, 20, 38, [creme, mat({ map: ailT }), creme, creme, creme, creme], -16, 10, 42, g); box(10, 4, 30, creme, -19, 22, 44, g);
+  // (10.40) sur l'aile de la rue Poissonnière, près de la tour (d'après la photo) : trois fenêtres carrées alignées, aux cadres bleu sombre ;
+  // au-dessus, l'auvent Art déco qui sort de la façade — le dessus plat, le dessous en biais, et ses ailettes verticales
+  { const A = new THREE.Group(); A.position.set(-7.95, 0, 33); g.add(A);   // (local +x : vers la rue)
+    const cadreB = mat({ color: 0x23324a, roughness: .4 }), vitreB = lum(mat({ color: 0x3a4a6a, emissive: 0xffb050, emissiveIntensity: 0, roughness: .15, metalness: .3 }), 0, .7);
+    for (const z of [-2.4, 0, 2.4]) { box(.12, 1.7, 1.6, cadreB, .06, 9.6, z, A); box(.14, 1.45, 1.35, vitreB, .07, 9.6, z, A); box(.16, .06, 1.35, cadreB, .08, 9.6, z, A); box(.25, .12, 1.8, creme, .12, 8.7, z, A); }
+    const prof = 2.2, y0 = 12.6, y1 = 14.6, L2 = 7.5;
+    box(prof, .35, L2, creme, prof / 2, y1, 0, A);   // (le dessus)
+    { const sh = new THREE.Shape(); sh.moveTo(0, y0); sh.lineTo(prof, y1 - .2); sh.lineTo(prof, y1); sh.lineTo(0, y1); sh.lineTo(0, y0); const ge = new THREE.ExtrudeGeometry(sh, { depth: L2, bevelEnabled: false }); ge.translate(0, 0, -L2 / 2); add(ge, creme, 0, 0, 0, A); }   // (le profil en biais)
+    for (let k = 0; k < 7; k++) { const z = -L2 / 2 + .4 + k * (L2 - .8) / 6, sh = new THREE.Shape(); sh.moveTo(0, y0 - .2); sh.lineTo(prof + .1, y1 - .35); sh.lineTo(prof + .1, y1 + .1); sh.lineTo(0, y1 + .1); const ge = new THREE.ExtrudeGeometry(sh, { depth: .14, bevelEnabled: false }); add(ge, creme, 0, 0, z - .07, A); }   // (les ailettes)
+    box(.3, 5, L2 + .4, creme, .15, y1 + 2.8, 0, A); }
   // la grande entrée, à l'angle : des portes vitrées sur toute la courbe, et derrière, le hall éclairé — dorures, lustres, tapis rouge
   { const hall = tT(1024, 200, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#f6d89a"); gr.addColorStop(.6, "#d8a058"); gr.addColorStop(1, "#8a1a1e"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
       for (let x = 40; x < w; x += 120) { c.fillStyle = "rgba(255,250,220,.95)"; c.beginPath(); c.arc(x, 22, 12, 0, 7); c.fill(); c.strokeStyle = "rgba(255,240,200,.6)"; c.lineWidth = 2; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 12); c.stroke(); }   // (les lustres)
