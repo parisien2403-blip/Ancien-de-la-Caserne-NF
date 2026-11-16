@@ -14240,7 +14240,7 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
 
 /* ===================== le Grand Rex (sud-ouest), d'après les photos ===================== */
 { const g = new THREE.Group(); scene.add(g);
-  const creme = lum(mat({ color: 0xf0e9da, roughness: .65, emissive: 0xffd8a0, emissiveIntensity: 0 }), 0, .4), rouge = lum(mat({ color: 0xb8141e, roughness: .45, emissive: 0xff2020, emissiveIntensity: 0 }), 0, .9), noirM = mat({ color: 0x141418, roughness: .4 });
+  const creme = lum(mat({ color: 0xf0e9da, roughness: .65, emissive: 0xffa850, emissiveIntensity: 0 }), 0, .8), rouge = lum(mat({ color: 0xb8141e, roughness: .45, emissive: 0xff2020, emissiveIntensity: 0 }), 0, .9), noirM = mat({ color: 0x141418, roughness: .4 });
   const ailT = tT(512, 512, (c) => { c.fillStyle = "#efe8d8"; c.fillRect(0, 0, 512, 512); for (let x = 0; x < 512; x += 128) { c.fillStyle = "rgba(0,0,0,.05)"; c.fillRect(x, 0, 4, 512); } for (let y = 300; y < 420; y += 70) for (let x = 40; x < 512; x += 90) { c.fillStyle = "#2a2e34"; c.fillRect(x, y, 28, 50); } });
   // le grand mur du boulevard : blanc, son cadre rouge et l'immense « REX » rouge
   const mur = tT(1024, 512, (c) => { c.fillStyle = "#f2eee4"; c.fillRect(0, 0, 1024, 512); c.strokeStyle = "#c01a24"; c.lineWidth = 12; c.strokeRect(36, 50, 952, 420); c.fillStyle = "#c01a24"; c.font = "bold 300px Arial Narrow, Arial"; c.textAlign = "center"; c.fillText("R E X", 520, 380); });
@@ -14264,12 +14264,18 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
   box(38, 6.0, .3, lum(mat({ map: rdc, emissive: 0xffffff, emissiveIntensity: .05, emissiveMap: rdc }), .05, .5), -35, 3.0, 14.1, g); box(.3, 6.0, 38, mat({ map: rdc }), -8.1, 3.0, 42, g);   // (le rez-de-chaussée, plus haut : les portes, et les affiches au-dessus)
   box(38, 1.0, 1.4, rouge, -35, 6.5, 13.4, g); box(1.4, 1.0, 38, rouge, -7.4, 6.5, 42, g);
   { const c = add(new THREE.CylinderGeometry(9.6, 9.6, 1.0, 40, 1, false, Math.PI * .5, Math.PI / 2), rouge, -16.6, 6.5, 22.6, g); const b = add(new THREE.CylinderGeometry(9.3, 9.3, 1.6, 40, 1, false, Math.PI * .5, Math.PI / 2), noirM, -16.6, 5.2, 22.6, g); }   // (l'angle : la marquise courbe, son bandeau noir)
+  // (10.39) les rangées d'ampoules de la marquise, tout autour de l'angle, allumées le soir ; « LE GRAND REX » au-dessus de l'entrée
+  { const bT = tT(512, 32, (c, w, h) => { c.fillStyle = "#1a1210"; c.fillRect(0, 0, w, h); for (let x = 8; x < w; x += 16) { const gg = c.createRadialGradient(x, h / 2, 1, x, h / 2, 7); gg.addColorStop(0, "#fffbe0"); gg.addColorStop(.5, "#ffc840"); gg.addColorStop(1, "rgba(255,160,40,0)"); c.fillStyle = gg; c.fillRect(x - 8, 0, 16, h); } }, true); bT.repeat.set(10, 1);
+    const bM = lum(mat({ map: bT, emissive: 0xffffff, emissiveMap: bT, emissiveIntensity: .05 }), .05, 1.8);
+    for (const y of [7.05, 5.95]) { add(new THREE.CylinderGeometry(9.65, 9.65, .18, 40, 1, true, Math.PI * .5, Math.PI / 2), bM, -16.6, y, 22.6, g); box(38, .18, .05, bM, -35, y, 12.68, g); box(.05, .18, 38, bM, -6.68, y, 42, g); }
+    const tGR = tT(512, 64, (c, w, h) => { c.fillStyle = "#141010"; c.fillRect(0, 0, w, h); c.fillStyle = "#f8f0dc"; c.font = "bold 40px Arial"; c.textAlign = "center"; c.fillText("LE  GRAND  REX", w / 2, 48); });
+    const gr2 = new THREE.Mesh(new THREE.PlaneGeometry(4, .5), lum(mat({ map: tGR, emissive: 0xffffff, emissiveMap: tGR, emissiveIntensity: .1 }), .1, 1.2)); gr2.position.set(-16.6 + Math.cos(Math.PI * .75) * 9.75 * -1, 7.35, 22.6 - Math.sin(Math.PI * .75) * 9.75); gr2.rotation.y = Math.PI * .75; g.add(gr2); }
   // la tour d'angle : un pylône à fronton plat, face au carrefour
   const T = new THREE.Group(); T.position.set(-14, 0, 20); T.rotation.y = Math.PI * .75; g.add(T);
   box(14, 24, 8, creme, 0, 17, -1, T);   // (le corps du pylône, de 5 à 29 m)
   // les trois baies cannelées (vitrages à cercles concentriques), leurs filets rouges ; les quatre colonnes rondes entre elles
   const baie = tT(256, 1024, (c) => { c.fillStyle = "#c8c0b0"; c.fillRect(0, 0, 256, 1024); for (let y = 0; y < 1024; y += 96) for (let r = 60; r > 6; r -= 9) { c.strokeStyle = r % 18 ? "rgba(120,100,70,.55)" : "rgba(255,240,210,.7)"; c.lineWidth = 3; c.beginPath(); c.arc(128, y + 48, r, 0, 7); c.stroke(); } });
-  const mB = lum(mat({ map: baie, emissive: 0xffa040, emissiveIntensity: 0, emissiveMap: baie, roughness: .3 }), 0, 1.7);
+  const mB = lum(mat({ map: baie, emissive: 0xffa040, emissiveIntensity: 0, emissiveMap: baie, roughness: .3 }), 0, 2.2);
   for (const x of [-3.6, 0, 3.6]) { box(2.6, 17, .3, mB, x, 14, 3.1, T); box(.18, 17.4, .2, rouge, x - 1.4, 14, 3.25, T); box(.18, 17.4, .2, rouge, x + 1.4, 14, 3.25, T); }
   for (const x of [-5.4, -1.8, 1.8, 5.4]) add(new THREE.CylinderGeometry(.55, .55, 18, 16), creme, x, 14.5, 3.0, T);
   // les avancées de part et d'autre (sans écran) ; sur le pylône, la grande affiche de « Génération perdue » (The Lost Boys), comme les grandes affiches d'avant-première
@@ -14280,16 +14286,16 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
   // la corniche en saillie, puis « REX » sous la tourelle ; la tourelle ronde à colonnes, en deux étages ; les lettres « REX » au sommet
   box(16, .7, 9.5, creme, 0, 29.3, -.6, T); box(16.4, .2, 9.9, lum(mat({ color: 0xf2e0b0, emissive: 0xffd080, emissiveIntensity: 0 }), 0, 1), 0, 29.0, -.6, T);
   const lt = (col) => tT(512, 200, (c) => { c.font = "bold 190px Arial Black, Arial"; c.textAlign = "center"; c.lineWidth = 10; c.strokeStyle = col === "#ffd040" ? "#ffe890" : "#5a5e66"; c.strokeText("REX", 256, 180); c.fillStyle = col; c.fillText("REX", 256, 180); });
-  { const p = new THREE.Mesh(new THREE.PlaneGeometry(5, 1.8), lum(new THREE.MeshStandardMaterial({ map: lt("#d8dce0"), transparent: true, emissive: 0xffd080, emissiveIntensity: 0 }), 0, .8)); p.position.set(0, 30.8, 3.6); T.add(p); }
-  const lumT = lum(mat({ color: 0xf4ead8, emissive: 0xffc070, emissiveIntensity: 0, roughness: .5 }), 0, .45), fen = lum(mat({ color: 0x3a3a40, emissive: 0xffb040, emissiveIntensity: 0 }), 0, .9);
+  const lumT = lum(mat({ color: 0xf4ead8, emissive: 0xffa040, emissiveIntensity: 0, roughness: .5 }), 0, 1.3), fen = lum(mat({ color: 0x3a3a40, emissive: 0xffb040, emissiveIntensity: 0 }), 0, .9);
   [[5.2, 6, 29.6, 12], [3.8, 5, 35.6, 10]].forEach(([R, h, y, n]) => { add(new THREE.CylinderGeometry(R - .5, R - .3, h, 32), fen, 0, y + h / 2, -1, T);
     for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; add(new THREE.CylinderGeometry(.42, .42, h, 12), lumT, Math.sin(a) * R, y + h / 2, -1 + Math.cos(a) * R, T); add(new THREE.SphereGeometry(.5, 10, 8), lumT, Math.sin(a) * R, y + h + .1, -1 + Math.cos(a) * R, T); }
     add(new THREE.CylinderGeometry(R + .5, R + .5, .4, 32), lumT, 0, y + h + .2, -1, T); });
   add(new THREE.CylinderGeometry(3, 3.3, 1.4, 32), lumT, 0, 41.5, -1, T);
   // les trois lettres « REX » tout en haut : grandes, face au carrefour (et de dos) ; argentées le jour, dorées et allumées le soir
-  { const jour = lt("#d8dce2"), soir = lt("#ffd040"); for (const [z, ry] of [[1.6, 0], [-3.6, Math.PI]]) { const m = lum(new THREE.MeshStandardMaterial({ map: jour, transparent: true, alphaTest: .3, side: THREE.DoubleSide, metalness: .4, roughness: .35, emissive: 0xffc030, emissiveIntensity: 0, emissiveMap: soir }), 0, 2.2);
-      const p = new THREE.Mesh(new THREE.PlaneGeometry(11, 4.6), m); p.position.set(0, 46.2, z * .6 - 1); p.rotation.y = ry; T.add(p); }
-    for (const sx of [-3.5, 0, 3.5]) box(.14, 4.4, .14, fonte, sx, 45.2, -1, T); box(9, .18, .18, fonte, 0, 43.9, -1, T);   // (l'armature qui les porte)
+  // (10.39) un seul « REX », tout en haut, posé sur la tourelle et qui en épouse l'arrondi (d'après la photo) ; argenté le jour, en ampoules dorées allumées le soir
+  { const jour = lt("#d8dce2"), soir = lt("#ffd040"), arc = Math.PI * .78; const m = lum(new THREE.MeshStandardMaterial({ map: jour, transparent: true, alphaTest: .3, side: THREE.DoubleSide, metalness: .4, roughness: .35, emissive: 0xffc030, emissiveIntensity: 0, emissiveMap: soir }), 0, 2.4);
+    const p = add(new THREE.CylinderGeometry(4.1, 4.1, 5.2, 40, 1, true, -arc / 2, arc), m, 0, 45.0, -1, T); void p;
+    for (const a of [-arc / 2 + .05, 0, arc / 2 - .05]) box(.14, 4.4, .14, fonte, Math.sin(a) * 3.95, 44.6, -1 + Math.cos(a) * 3.95, T); add(new THREE.TorusGeometry(3.95, .08, 6, 24, arc), fonte, 0, 42.5, -1, T).rotation.set(Math.PI / 2, 0, Math.PI / 2 - arc / 2 - Math.PI / 2);
     const halo = new THREE.PointLight(0xffc040, 0, 30, 2); halo.position.set(0, 46.2, 3); T.add(halo); NUIT.push([{ set emissiveIntensity(v) { halo.intensity = v; } }, 0, 25]); }
   // l'enseigne verticale « REX » rouge au bout du grand mur, et le « REX CLUB » en dessous
   const vert = tT(128, 512, (c) => { c.fillStyle = "#c01a24"; c.fillRect(0, 0, 128, 512); c.strokeStyle = "#f2eee4"; c.lineWidth = 6; c.strokeRect(8, 8, 112, 496); c.fillStyle = "#f2eee4"; c.font = "bold 140px Arial"; c.textAlign = "center"; c.fillText("R", 64, 160); c.fillText("E", 64, 320); c.fillText("X", 64, 480); });
