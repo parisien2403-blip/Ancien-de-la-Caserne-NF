@@ -14389,7 +14389,7 @@ const majFeux = (tm) => { const E = L.feuEtat(tm); for (const F of feux) { const
 const disque = (x, z, ry, f, h = 2.6) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); box(.07, h, .07, mat({ color: 0x8a8e94 }), 0, h / 2, 0, g); const t = tT(128, 128, f); add(new THREE.CircleGeometry(.35, 24), new THREE.MeshBasicMaterial({ map: t }), 0, h + .2, .05, g); return g; };
 const sensInterdit = (c) => { c.fillStyle = "#d81e2a"; c.beginPath(); c.arc(64, 64, 62, 0, 7); c.fill(); c.fillStyle = "#fff"; c.fillRect(16, 52, 96, 24); };
 const flecheD = (c) => { c.fillStyle = "#1e5ac8"; c.beginPath(); c.arc(64, 64, 62, 0, 7); c.fill(); c.fillStyle = "#fff"; c.fillRect(24, 56, 60, 16); c.beginPath(); c.moveTo(80, 36); c.lineTo(108, 64); c.lineTo(80, 92); c.fill(); };
-disque(-5.6, -16, Math.PI, sensInterdit); disque(5.6, 15.5, 0, sensInterdit); disque(-7.5, 15.5, Math.PI / 4, flecheD);
+disque(-5.6, -16, Math.PI, sensInterdit); disque(5.6, 15.5, 0, sensInterdit); void flecheD;   // (10.44 : plus de panneau à flèche bleue devant le Rex)
 // (les îlots et leurs bornes, au milieu des passages piétons du boulevard : retirés)
 // les réverbères parisiens (double crosse), les potelets, la colonne Morris, le kiosque à journaux, l'horloge
 const reverb = (x, z, ry) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); add(new THREE.CylinderGeometry(.09, .16, 7, 10), fonte, 0, 3.5, 0, g);
