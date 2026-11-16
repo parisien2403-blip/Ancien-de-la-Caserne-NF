@@ -13148,16 +13148,16 @@ function construireJouffroy(A, L, scene) {
     c.fillStyle = "rgba(255,255,255,.35)"; c.fillRect(0, 0, 8, h); c.fillRect(w - 8, 0, 8, h); }, true);
   const hautCreme = hautT("#efe6d2", "#7a5a32"), hautGris = hautT("#e4e2dc", "#5a5e62");
   const mur = (x, z0, z1, y0, y1, nx, tex0) => { const lz = Math.abs(z1 - z0), t = tex0.clone(); t.needsUpdate = true; t.repeat.set(lz / 2.4, 1); pl(lz, y1 - y0, mat({ map: t }), x + nx * .01, (y0 + y1) / 2, (z0 + z1) / 2, nx > 0 ? Math.PI / 2 : -Math.PI / 2); };
-  mur(-2, -7, ZC1, 3.6, 7.2, 1, hautCreme); mur(2, -7, ZC0, 3.6, 7.2, -1, hautCreme);
+  mur(-2, -7, ZC1, 3.6, 7.2, 1, hautCreme); mur(2, -7, -67.4, 3.6, 7.2, -1, hautCreme);   /* (10.28 : plus de mur devant la gravure du Grévin) */
   mur(XB0, ZC0, -116, Y2 + 3.4, Y2 + 6.0, 1, hautGris); mur(XB1, ZC0, -116, Y2 + 3.4, Y2 + 6.0, -1, hautGris);
   for (const [x, nx] of [[-2, 1], [2, -1]]) { const lz = 7; pl(lz, .6, platreM, x + nx * .01, 3.9, -3.5, nx > 0 ? Math.PI / 2 : -Math.PI / 2); }   // (le porche, en haut)
   for (const [x, nx] of [[XB0, 1], [XB1, -1]]) pl(12, 1.4, platreM, x + nx * .01, Y2 + 3.5, -122, nx > 0 ? Math.PI / 2 : -Math.PI / 2);
   // les corniches de bois doré, au-dessus des devantures
   const doreM = mat({ color: 0xb08a48, metalness: .5, roughness: .45 });
   const grainT0 = () => tT(64, 128, (c, w, h) => { c.fillStyle = "#d0c8bc"; c.fillRect(0, 0, w, h); for (let k = 0; k < 30; k++) { c.strokeStyle = `rgba(90,60,30,${.06 + (k % 4) * .03})`; c.beginPath(); c.moveTo((k * 17) % w, 0); c.lineTo((k * 17) % w + 2, h); c.stroke(); } });
-  for (const [x, z0, z1, y, s] of [[-2, 0, ZC1, 3.62, 1], [2, 0, ZC0, 3.62, -1], [XB0, ZC0, ZFIN, Y2 + 3.42, 1], [XB1, ZC0, ZFIN, Y2 + 3.42, -1]]) box(.16, .14, Math.abs(z1 - z0), doreM, x + s * .08, y, (z0 + z1) / 2);
+  for (const [x, z0, z1, y, s] of [[-2, 0, ZC1, 3.62, 1], [2, 0, -67.4, 3.62, -1], [XB0, ZC0, ZFIN, Y2 + 3.42, 1], [XB1, ZC0, ZFIN, Y2 + 3.42, -1]]) box(.16, .14, Math.abs(z1 - z0), doreM, x + s * .08, y, (z0 + z1) / 2);
   // (10.26) l'entresol : des pilastres de bois clair entre les fenêtres, leurs chapiteaux dorés
-  { const pil = mat({ map: grainT0(), color: 0xd8c8a8, roughness: .6 }); for (const [x, z0, z1, ya, yb, s2] of [[-2, -7, ZC1, 3.7, 7.2, 1], [2, -7, ZC0, 3.7, 7.2, -1], [XB0, ZC0, -116, Y2 + 3.5, Y2 + 6.0, 1], [XB1, ZC0, -116, Y2 + 3.5, Y2 + 6.0, -1]])
+  { const pil = mat({ map: grainT0(), color: 0xd8c8a8, roughness: .6 }); for (const [x, z0, z1, ya, yb, s2] of [[-2, -7, ZC1, 3.7, 7.2, 1], [2, -7, -67.4, 3.7, 7.2, -1], [XB0, ZC0, -116, Y2 + 3.5, Y2 + 6.0, 1], [XB1, ZC0, -116, Y2 + 3.5, Y2 + 6.0, -1]])
       for (let z = z0; z >= z1; z -= 2.4) { box(.14, yb - ya, .1, pil, x + s2 * .05, (ya + yb) / 2, z); box(.2, .1, .16, doreM, x + s2 * .07, yb - .1, z); } }
 
   /* une devanture : la toile peinte (bandeau, vitrines éclairées et ce qu'on voit dedans, soubassement), posée sur le mur ; s = 1 : mur ouest (regarde l'est) ; s = -1 : mur est */
@@ -13427,15 +13427,15 @@ function construireJouffroy(A, L, scene) {
     { const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const c = M && M.camera && M.camera.position; if (c) S.visible = Math.hypot(c.x - S.position.x, c.z - S.position.z) < ((MOBILE || GPU_MODESTE) ? 13 : 24); }; }   // (les statues : seulement de près)
     const statue = (x, y, z, s2, o2, ry = 0) => { const m = personne3D(o2); m.position.set(x, y, z); m.scale.setScalar(s2); m.rotation.y = ry; m.userData.poser("debout", 0); S.add(m); return m; };
     const P0 = { chaussures: "#2a2a2a", pantalon: true };
-    statue(-1.65, 4.05, .1, .85, { ...P0, taille: 1.8, peau: "#e8c8a8", ch: "#e8e4dc", haut: "#2a4a8a", bas: "#e8e2d0", chaussures: "#7a8a96", coif: "court" }, .25);
+    statue(-1.65, 4.05, .1, 1.0, { ...P0, taille: 1.8, peau: "#e8c8a8", ch: "#e8e4dc", haut: "#2a4a8a", bas: "#e8e2d0", chaussures: "#7a8a96", coif: "court" }, .25);
     { const f = new THREE.Group(); f.position.set(-1.25, 4.05, .05); S.add(f); add(new THREE.CylinderGeometry(.015, .015, 2.0, 6), Mc(0x5a4a3a), 0, 1.0, 0, f); for (const [k, col] of [[0, 0x2a3a8a], [1, 0xf2f0ea], [2, 0xc8202a]]) { const b = add(new THREE.PlaneGeometry(.16, .6), Mc(col, { side: THREE.DoubleSide }), .09 + k * .16, 1.6, 0, f); b.rotation.y = .5; } }
-    statue(1.65, 4.05, .1, .85, { ...P0, taille: 1.8, peau: "#e0c0a0", ch: "#5a3a22", haut: "#8a8a92", bas: "#b84a4a", coif: "court" }, -.25);
+    statue(1.65, 4.05, .1, 1.0, { ...P0, taille: 1.8, peau: "#e0c0a0", ch: "#5a3a22", haut: "#8a8a92", bas: "#b84a4a", coif: "court" }, -.25);
     { add(new THREE.CylinderGeometry(.012, .012, 2.2, 6), Mc(0x5a4a3a), 1.95, 5.15, .1, S); add(new THREE.ConeGeometry(.05, .28, 6), Mc(0xb8bcc0, { metalness: .8 }), 1.95, 6.35, .1, S); }
     [[-.5, { taille: 1.65, peau: "#f0d0b8", ch: "#c8a878", haut: "#e8e2d0", bas: "#e8e2d0", robe: true, pantalon: false, coif: "long" }], [-.2, { taille: 1.85, peau: "#e8c8a8", ch: "#3a2a1a", haut: "#7ab0c8", bas: "#d8d0c0", coif: "long" }],
      [.15, { taille: 1.8, peau: "#e8c8a8", ch: "#e8e4dc", haut: "#c82a2a", bas: "#c82a2a", robe: true, pantalon: false, coif: "chauve" }], [.48, { taille: 1.75, peau: "#e8c8a8", ch: "#2a1a10", haut: "#2a6a4a", bas: "#efe8d8", chaussures: "#1a1a1a", coif: "court" }]]
-      .forEach(([x, o2], k) => statue(x, 4.68 + (k % 2) * .06, .08 - (k % 2) * .1, .66, { ...P0, ...o2 }));
-    statue(0, 4.68, .2, .42, { ...P0, taille: 1.4, peau: "#f0d0b8", ch: "#e8e4dc", haut: "#8ac0c8", bas: "#e8e4dc", coif: "court" });
-    for (const k of [0, 1, 2, 3]) statue(-.45 + k * .3, 5.35, -.15, .52, { ...P0, taille: 1.75, peau: "#e8c8a8", ch: ["#3a2a1a", "#c8a878", "#5a3a22", "#e8e4dc"][k], haut: ["#8a6a4a", "#5a6a8a", "#a87a5a", "#6a4a6a"][k], bas: "#3a3028", coif: "court" }); }
+      .forEach(([x, o2], k) => statue(x * 1.1, 4.68 + (k % 2) * .06, .08 - (k % 2) * .1, .8, { ...P0, ...o2 }));
+    statue(0, 4.68, .22, .5, { ...P0, taille: 1.4, peau: "#f0d0b8", ch: "#e8e4dc", haut: "#8ac0c8", bas: "#e8e4dc", coif: "court" });
+    for (const k of [0, 1, 2, 3]) statue(-.45 + k * .3, 5.55, -.15, .6, { ...P0, taille: 1.75, peau: "#e8c8a8", ch: ["#3a2a1a", "#c8a878", "#5a3a22", "#e8e4dc"][k], haut: ["#8a6a4a", "#5a6a8a", "#a87a5a", "#6a4a6a"][k], bas: "#3a3028", coif: "court" }); }
   // les statuettes dorées du Grévin, dans leurs niches, en haut de la devanture rouge
   for (let z = -38.6; z > -49.6; z -= .9) { const x = 1.86; add(new THREE.CapsuleGeometry(.05, .16, 3, 8), dore2, x, 4.14, z); add(new THREE.SphereGeometry(.045, 8, 6), dore2, x, 4.34, z); add(new THREE.ConeGeometry(.08, .1, 8), dore2, x, 4.0, z); box(.12, .04, .2, dore2, x, 3.94, z); }
   // le tapis rouge de La Cure Gourmande, devant sa porte
