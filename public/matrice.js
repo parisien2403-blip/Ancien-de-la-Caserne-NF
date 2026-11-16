@@ -13078,7 +13078,7 @@ function construireRex(A, L, scene) {
   const add = (geo, m, x, y, z, par = scene, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.castShadow = true; o.receiveShadow = true; par.add(o); return o; };
   const box = (w, h, d, m, x, y, z, par = scene, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, par, ry);
   let graine = 11; const al = () => (graine = (graine * 16807) % 2147483647) / 2147483647;
-  const NUIT = [], FILE = [], VID = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
+  const NUIT = [], FILE = [], VID = [], MARCH = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
 /* ===================== le sol ===================== */
 // le boulevard (Poissonnière à l'ouest, Bonne-Nouvelle à l'est) : est-ouest, chaussée z ∈ [-8, 8] ; trottoirs jusqu'à ±14
 // la rue du Faubourg-Poissonnière (au nord) : chaussée x ∈ [-5, 5], trottoirs jusqu'à ±9 ; la rue Poissonnière (au sud) : chaussée x ∈ [-4, 4], trottoirs jusqu'à ±8
@@ -13693,8 +13693,14 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   { const TOUR = [[-11, -11], [11, -11], [11, 11], [-11, 11]];   // (le tour du carrefour, par les quatre passages piétons)
     const NO = [[-12, -13.1], [-80, -13.1], [-82, -9.5], [-100, -9.5]], SO = [[-12, 10.8], [-15, 9.3], [-57, 9.3], [-60, 10.8], [-67, 10.8], [-68.5, 11.6], [-72.5, 11.6], [-74, 10.8], [-100, 10.8]];   // (10.17) on contourne la terrasse du Hard Rock, la bouche de métro du Starbucks ; (10.18) côté Rex, au bord du trottoir : ni dans les files du cinéma, ni dans les barrières du Rex Club
     const LEGS = [NO, [[12, -9.4], [100, -9.4]], [[12, 9.4], [100, 9.4]], SO, [[-7, -12], [-7, -100]], [[5.4, -12], [5.4, -100]], [[-4.6, 12], [-4.6, 100]], [[4.6, 12], [4.6, 100]]];
-    const choix = [0, 1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 16, 17, 18, 19].map(k => PASSANTS[k]).filter(P => P && P.acc !== "poussette");   // (10.17) pas de poussette au Rex
-    L.passRex = choix.map((P, k) => ({ P, num: -170 - k, route: k < 4 ? TOUR.map(([x, z]) => [x + (k % 2 ? .6 : -.6), z + (k > 1 ? .6 : -.6)]) : LEGS[(k - 4) % LEGS.length], boucle: k < 4, i: k < 4 ? k : 0, sens: 1 }));
+    // (10.19) du monde sur les trottoirs, le jour comme la nuit : des promeneurs en volume (comme les clients des terrasses), qui vont et viennent le long du boulevard et des deux rues
+    { const PR = [NO, SO, [[12, -9.4], [100, -9.4]], [[12, 9.4], [100, 9.4]], [[-7, -12], [-7, -100]], [[5.4, -12], [5.4, -100]], [[-4.6, 12], [-4.6, 100]], [[4.6, 12], [4.6, 100]]],
+        PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
+      for (let k = 0; k < 22; k++) { const f = k % 2 === 1, R = PR[k % PR.length], m = personne3D({ taille: f ? 1.62 + (k % 3) * .04 : 1.72 + (k % 4) * .04, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a", "#a5532a"][k % 6], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#1a1a1c"][k % 4], chaussures: ["#1a1a1a", "#3a2418", "#f2f2f2"][k % 3], coif: f ? (k % 3 ? "long" : "court") : k % 5 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 4 === 0 });
+        const i0 = (k * 7) % R.length, nx = R[Math.min(i0 + 1, R.length - 1)], a0 = R[i0], u = ((k * 37) % 100) / 100; m.position.set(a0[0] + (nx[0] - a0[0]) * u, .12, a0[1] + (nx[1] - a0[1]) * u); m.userData.poser("marche", 0); scene.add(m);
+        MARCH.push({ m, R, i: Math.min(i0 + 1, R.length - 1), sens: 1, v: 1.05 + (k % 5) * .1 }); } }
+    const choix = PASSANTS.filter(P => P && P.acc !== "poussette" && P.acc !== "caddie").slice(0, 26);   // (10.19) plus de passants ; ni poussette ni grand-mère au caddie, au Rex
+    L.passRex = choix.map((P, k) => ({ P, num: k < 20 ? -170 - k : -220 - k, route: k < 4 ? TOUR.map(([x, z]) => [x + (k % 2 ? .6 : -.6), z + (k > 1 ? .6 : -.6)]) : LEGS[(k - 4) % LEGS.length], boucle: k < 4, i: k < 4 ? k : 0, sens: 1 }));
     // (10.13) le clochard, sa veste kaki et son caddie de supermarché plein de détritus ; des passants avec leur chien en laisse
     L.passRex.push({ P: { nom: "Le clochard", tenue: "civil", couleur: "#5e5c34", bas: "#3a3a30", pieds: "#3a3028", tete: ["clochardBN", { peau: "#c89a76", ch: "#3e2a1a", coif: "long", moustache: true, sourcils: "#2a1a10" }], acc: "chariot", allure: .5, chaud: true }, num: -190, route: NO, boucle: false, i: 0, sens: 1 },
       { P: { nom: "Une dame et son chien", tenue: "tailleur", couleur: "#6a3a4a", pieds: "#2a1a14", tete: ["dameChien", { peau: "#f0d0b4", ch: "#a5532a", coif: "carre", femme: true }], acc: "chien", allure: .75 }, num: -191, route: [[12, -9.4], [100, -9.4]], boucle: false, i: 0, sens: 1 },
@@ -13705,6 +13711,16 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   let sonBar = null; quitterLieu.add(() => { if (sonBar) { sonBar.pause(); sonBar.volume = 0; } });
   // (10.18) devant le Hard Rock Café : « Back in Black » à 60 % sur le trottoir devant l'entrée, qui baisse quand on s'éloigne (plus rien au-delà de 22 m)
   let sonHR = null; quitterLieu.add(() => { if (sonHR) { sonHR.pause(); sonHR.volume = 0; } });
+  // (10.19) devant le Rex Club : les morceaux de Depeche Mode de la discothèque de la salle des fêtes, à la suite, 60 % devant l'entrée, qui baissent quand on s'éloigne
+  let sonRC = null, listeRC = null, iRC = 0; quitterLieu.add(() => { if (sonRC) { sonRC.pause(); sonRC.volume = 0; } });
+  const chargerRC = () => { if (listeRC) return; listeRC = []; fetch("/api/musiques", { headers: { Authorization: "Bearer " + M.ctx.token } }).then(r => r.ok ? r.json() : []).then(l => {
+      const n = t => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/['’]/g, "");
+      listeRC = (Array.isArray(l) ? l : []).filter(m => /depeche/.test(n(m.artiste)) || AIR_DM.test(n(m.titre))); iRC = Math.floor(Math.random() * Math.max(1, listeRC.length)); }).catch(() => {}); };
+  const pisteRC = () => { if (!listeRC || !listeRC.length) return; const m = listeRC[iRC % listeRC.length]; iRC++; const v = sonRC ? sonRC.volume : 0; if (sonRC) sonRC.pause();
+    sonRC = new Audio(`/api/musiques/${m.id}/fichier?t=${encodeURIComponent(M.ctx.token)}`); sonRC.volume = v; sonRC.addEventListener("ended", () => { if (M && M.L === L) { pisteRC(); sonRC.play().catch(() => {}); } }); };
+  const majSonRC = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonRC) sonRC.pause(); return; } const p = moi.g.position, d = Math.hypot(p.x + 50, p.z - 12);
+    const cible = Math.max(0, Math.min(1, (22 - d) / 17)) * .6; if (cible > 0) chargerRC(); if (!sonRC) { if (!cible) return; pisteRC(); if (!sonRC) return; }
+    if (cible > 0 && sonRC.paused) sonRC.play().catch(() => {}); sonRC.volume = Math.max(0, Math.min(1, sonRC.volume + (cible - sonRC.volume) * .06)); if (!cible && sonRC.volume < .01 && !sonRC.paused) sonRC.pause(); };
   const majSonHR = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonHR) sonHR.pause(); return; } const p = moi.g.position, d = Math.hypot(p.x + 90, p.z + 11.5);
     const cible = Math.max(0, Math.min(1, (22 - d) / 17)) * .6; if (!sonHR) { if (!cible) return; sonHR = new Audio("sons/hardrock.mp3"); sonHR.loop = true; sonHR.volume = 0; }
     if (cible > 0 && sonHR.paused) sonHR.play().catch(() => {}); sonHR.volume = Math.max(0, Math.min(1, sonHR.volume + (cible - sonHR.volume) * .06)); if (!cible && sonHR.volume < .01 && !sonHR.paused) sonHR.pause(); };
@@ -13717,8 +13733,8 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   let nV = null, tp = 0;
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm;
-    majFeux(tm); majSonBar(); majSonHR(); { const rougeB = L.feuEtat(tm).B !== "vert"; for (const o of [stopO, stopE]) { const i = L.obstRue.indexOf(o); if (rougeB && i < 0) L.obstRue.push(o); else if (!rougeB && i >= 0) L.obstRue.splice(i, 1); } }
-    if (M && M.L === L) for (const [k, Q] of L.passRex.entries()) { const P = Q.P; let p = M.gens.get(Q.num); const ici = !L.apo && (!L.nuit || k % 3 === 0) && (!M.sansFigurants || (!PETIT && k % 2 === 0)), tenueH = M.hiver && P.tenue !== "survet" && !P.chaud ? "manteauC" : P.tenue;   // (l'hiver : les manteaux ; le clochard garde sa grosse veste kaki)
+    majFeux(tm); majSonBar(); majSonHR(); majSonRC(); { const rougeB = L.feuEtat(tm).B !== "vert"; for (const o of [stopO, stopE]) { const i = L.obstRue.indexOf(o); if (rougeB && i < 0) L.obstRue.push(o); else if (!rougeB && i >= 0) L.obstRue.splice(i, 1); } }
+    if (M && M.L === L) for (const [k, Q] of L.passRex.entries()) { const P = Q.P; let p = M.gens.get(Q.num); const ici = !L.apo && (!L.nuit || k % 3 !== 2) && (!M.sansFigurants || (!PETIT && k % 2 === 0)), tenueH = M.hiver && P.tenue !== "survet" && !P.chaud ? "manteauC" : P.tenue;   // (l'hiver : les manteaux ; le clochard garde sa grosse veste kaki)
       if (p && p.info.tenue !== tenueH) { retirerAncien(Q.num); p = null; }
       if (!ici) { if (p) retirerAncien(Q.num); if (Q.acc) Q.acc.visible = false; if (Q.laisse) Q.laisse.visible = false; continue; }
       if (!p) { const [x, z] = Q.route[Q.i]; ajouterAncien({ numero: Q.num, nom: P.nom, tenue: tenueH, echarpe: ["#c8202a", "#e8c040", "#2f8a4a", "#f2f0ea"][k % 4], couleur: tenueH === "manteauC" ? ["#3a3028", "#22324f", "#5a3a2a", "#3a3a40"][k % 4] : P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x, z });
@@ -13735,6 +13751,10 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
           Q.laisse.visible = true; const ps = Q.laisse.geometry.attributes.position; ps.setXYZ(0, g.x + hz * .25, g.y + 1.0, g.z - hx * .25); ps.setXYZ(1, D.position.x - hx * .25, D.position.y + .42, D.position.z - hz * .25); ps.needsUpdate = true; }
         else { Q.acc.visible = true; Q.acc.position.set(g.x + hx * av - hz * lat, g.y, g.z + hz * av + hx * lat); Q.acc.rotation.y = Math.atan2(-hz, hx) + (P.acc === "poussette" ? Math.PI : 0); } } }
     for (const [k, m] of FILE.entries()) { const P = m.userData.parts; m.userData.poser("debout", tm); if (k % 2 === 0) { P.bras[0].e.rotation.x = -.5 + Math.sin(tm / 400 + k) * .2; P.tete.rotation.y = Math.sin(tm / 1100 + k) * .4; } }
+    { const dtM = Math.min(.1, Math.max(0, (tm - (L.tMarch || tm)) / 1000)); L.tMarch = tm;
+      for (const W of MARCH) { const m = W.m, [tx, tz] = W.R[W.i], dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
+        if (d < .15) { if (W.i + W.sens < 0 || W.i + W.sens >= W.R.length) W.sens = -W.sens; W.i += W.sens; continue; }
+        const v = Math.min(d, W.v * dtM); m.position.x += dx / d * v; m.position.z += dz / d * v; m.rotation.y = Math.atan2(dx, dz); m.userData.poser("marche", tm * W.v / 1.2); } }   // (10.19) les promeneurs
     for (const m of VID) { const P = m.userData.parts, c = (tm / 1000) % 9; m.userData.poser("debout", tm);
       if (c < 2.2) { P.bras[1].e.rotation.set(-1.5, 0, .25); P.bras[1].c.rotation.x = -.25; P.tete.rotation.y = .5; }   // (la main levée : « une minute… »)
       else { for (const [i, sg] of [[0, 1], [1, -1]]) { P.bras[i].e.rotation.set(-.75, 0, sg * -.55); P.bras[i].c.rotation.x = -1.75; } P.tete.rotation.y = Math.sin(tm / 1700) * .5; } }   // (les bras croisés, il surveille)
@@ -13957,7 +13977,7 @@ function animerPigeons(t) {
 function animerSonRue() {
   if (!M || !M.L) { if (sonRue) sonRue.pause(); return; } const moi = M.moiNum && M.gens.get(M.moiNum), p = moi && moi.g.position;
   const dehors = !!p && (!M.cine || (M.L.busL && M.L.busL.phase !== "rien")) && !M.L.apo && !M.L.sh && (M.lieu === "rue" || M.lieu === "rex" || (M.lieu === "grande" && typeof DH_ !== "undefined" && (DH_.rue(p.x, p.z) || (M.L.busL && M.L.busL.phase !== "rien"))));   // (10.12 : aussi pendant le trajet en bus, et au carrefour du Grand Rex)
-  const cible = dehors && !M.halloween ? (M.rueVol ?? .5) : 0;
+  const cible = dehors && !M.halloween ? Math.min(1, (M.rueVol ?? .5) * 1.4) : 0;   // (10.19 : un peu plus fort, quel que soit le réglage de la table de mixage)
   if (!sonRue) { if (!cible) return; sonRue = new Audio("sons/ville-paris.mp3"); sonRue.loop = true; sonRue.volume = 0; }
   if (cible > 0 && sonRue.paused) sonRue.play().catch(() => {});
   sonRue.volume = Math.max(0, Math.min(1, sonRue.volume + (cible - sonRue.volume) * .04));
