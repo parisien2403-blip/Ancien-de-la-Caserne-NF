@@ -13669,6 +13669,9 @@ function construireJouffroy(A, L, scene) {
     add(new THREE.CylinderGeometry(.06, .05, .12, 10), mat({ color: 0xc8202a }), HX0 + 1.3, 1.85, HZ1 + .08, g); for (let k = 0; k < 6; k++) add(new THREE.SphereGeometry(.05, 6, 5), mat({ color: k % 2 ? 0x3a6a3a : 0xe86a8a }), HX0 + 1.3 + Math.cos(k) * .05, 1.97, HZ1 + .08 + Math.sin(k) * .05, g);
     chesterfield(HX0 + .5, HZ1 + 2.6, Math.PI / 2, 1.3, "#2a5a46", 0x2a5a46);
     aplatir(g);
+    // (10.35) la réceptionniste, debout derrière le comptoir, tournée vers l'entrée
+    { const m = personne3D({ taille: 1.66, peau: "#f0d0b4", ch: "#5a3a22", haut: "#1e2236", bas: "#1e2236", chaussures: "#1a1a1a", coif: "long", robe: true, pantalon: false, parle: true }); m.position.set(-1.5, 0, HZ1 + .72); m.rotation.y = 0; m.userData.poser("debout", 0); scene.add(m);
+      const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const P = m.userData.parts; if (!P) return; P.tete.rotation.y = Math.sin(tm / 2300) * .45; P.bras[1].e.rotation.x = -.5 + Math.sin(tm / 1700) * .08; }; }
     // la lumière chaude du hall
     if (!(MOBILE || GPU_MODESTE)) for (const [x, y, z, i2] of [[0, HH - .7, HZ0 - 2.4, 7], [1.9, 1.9, HZ1 + 3.95, 4], [-1.9, 1.6, HZ1 + 1.2, 4], [2.1, 1.5, HZ1 + 2.5, 3]]) { const lh = new THREE.PointLight(0xff9a3c, i2, 6, 1.5); lh.position.set(x, y, z); scene.add(lh); }   // (la lumière du hall : orangée, jour et nuit — le lustre, les lampes)
     // (10.32) les meubles : on ne passe plus au travers
