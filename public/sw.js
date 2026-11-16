@@ -1,7 +1,7 @@
 // Service worker : permet d'installer l'appli (Android, iPhone, PC) et de l'ouvrir sans réseau.
 // Les pages sont servies « réseau d'abord » (toujours la dernière version), les images « cache d'abord ».
 // Le courrier et le registre (/api/) ne sont jamais mis en cache.
-const CACHE = "caserne-nf-v851";
+const CACHE = "caserne-nf-v852";
 const SHELL = ["/", "/images/garde.jpg", "/images/pierre.jpg", "/images/escaliers/brique.jpg", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", e => {
@@ -16,7 +16,7 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/videos/") || url.pathname === "/version.json") return;   // (les vidéos : lues par morceaux, jamais mises en cache)
+  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/videos/") || url.pathname === "/version.json" || e.request.headers.has("range") || url.pathname.endsWith(".mp3")) return;   // (les musiques : lues par morceaux par le navigateur, jamais par ici — un gros fichier faisait saccader les téléphones)   // (les vidéos : lues par morceaux, jamais mises en cache)
 
   if (e.request.mode === "navigate") {
     // seule la page d'accueil est gardée pour l'ouverture hors ligne (pas la page de la borne)

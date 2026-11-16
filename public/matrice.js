@@ -13711,7 +13711,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   const BARS = [[11, 16], [22, 11.5], [6.5, 26], [11, -16], [24, -11.5], [7, -28], [-72, 11.5], [-94, -11.5], [-86, -11.5]];   // (le bar Madeleine, le Gymnase Café, le Starbucks)
   let sonBar = null; quitterLieu.add(() => { if (sonBar) { sonBar.pause(); sonBar.volume = 0; } });
   // (10.18) devant le Hard Rock Café : « Back in Black » à 60 % sur le trottoir devant l'entrée, qui baisse quand on s'éloigne (plus rien au-delà de 22 m)
-  const SANS_MUSIQUE_HR = true;   // (10.23, pour voir : la musique du Hard Rock coupée — est-ce elle qui fait saccader les téléphones ?)
+  const SANS_MUSIQUE_HR = false;   // (10.23 : coupée pour essayer — c'était bien elle ; 10.24 : remise, lue directement sans passer par le service worker)
   let sonHR = null; quitterLieu.add(() => { if (sonHR) { sonHR.pause(); sonHR.volume = 0; } });
   // (10.19) devant le Rex Club : les morceaux de Depeche Mode de la discothèque de la salle des fêtes, à la suite, 60 % devant l'entrée, qui baissent quand on s'éloigne
   let sonRC = null, listeRC = null, iRC = 0; quitterLieu.add(() => { if (sonRC) { sonRC.pause(); sonRC.volume = 0; } });
