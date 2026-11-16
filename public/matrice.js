@@ -13711,6 +13711,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   const BARS = [[11, 16], [22, 11.5], [6.5, 26], [11, -16], [24, -11.5], [7, -28], [-72, 11.5], [-94, -11.5], [-86, -11.5]];   // (le bar Madeleine, le Gymnase Café, le Starbucks)
   let sonBar = null; quitterLieu.add(() => { if (sonBar) { sonBar.pause(); sonBar.volume = 0; } });
   // (10.18) devant le Hard Rock Café : « Back in Black » à 60 % sur le trottoir devant l'entrée, qui baisse quand on s'éloigne (plus rien au-delà de 22 m)
+  const SANS_MUSIQUE_HR = true;   // (10.23, pour voir : la musique du Hard Rock coupée — est-ce elle qui fait saccader les téléphones ?)
   let sonHR = null; quitterLieu.add(() => { if (sonHR) { sonHR.pause(); sonHR.volume = 0; } });
   // (10.19) devant le Rex Club : les morceaux de Depeche Mode de la discothèque de la salle des fêtes, à la suite, 60 % devant l'entrée, qui baissent quand on s'éloigne
   let sonRC = null, listeRC = null, iRC = 0; quitterLieu.add(() => { if (sonRC) { sonRC.pause(); sonRC.volume = 0; } });
@@ -13739,7 +13740,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   let nV = null, tp = 0;
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm;
-    majFeux(tm); majSonBar(); majSonHR(); majSonRC(); { const rougeB = L.feuEtat(tm).B !== "vert"; for (const o of [stopO, stopE]) { const i = L.obstRue.indexOf(o); if (rougeB && i < 0) L.obstRue.push(o); else if (!rougeB && i >= 0) L.obstRue.splice(i, 1); } }
+    majFeux(tm); majSonBar(); if (!SANS_MUSIQUE_HR) majSonHR(); majSonRC(); { const rougeB = L.feuEtat(tm).B !== "vert"; for (const o of [stopO, stopE]) { const i = L.obstRue.indexOf(o); if (rougeB && i < 0) L.obstRue.push(o); else if (!rougeB && i >= 0) L.obstRue.splice(i, 1); } }
     if (M && M.L === L) for (const [k, Q] of L.passRex.entries()) { const P = Q.P; let p = M.gens.get(Q.num); const ici = !L.apo && (!L.nuit || k % 3 !== 2) && (!M.sansFigurants || (!PETIT && k % 2 === 0)), tenueH = M.hiver && P.tenue !== "survet" && !P.chaud ? "manteauC" : P.tenue;   // (l'hiver : les manteaux ; le clochard garde sa grosse veste kaki)
       if (p && p.info.tenue !== tenueH) { retirerAncien(Q.num); p = null; }
       if (!ici) { if (p) retirerAncien(Q.num); if (Q.acc) Q.acc.visible = false; if (Q.laisse) Q.laisse.visible = false; continue; }
