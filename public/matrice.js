@@ -14297,6 +14297,15 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
     for (const y of [7.05, 5.95]) { add(new THREE.CylinderGeometry(9.65, 9.65, .18, 40, 1, true, Math.PI * .5, Math.PI / 2), bM, -16.6, y, 22.6, g); box(38, .18, .05, bM, -35, y, 12.68, g); box(.05, .18, 38, bM, -6.68, y, 42, g); }
     const tGR = tT(512, 64, (c, w, h) => { c.fillStyle = "#141010"; c.fillRect(0, 0, w, h); c.fillStyle = "#f8f0dc"; c.font = "bold 40px Arial"; c.textAlign = "center"; c.fillText("LE  GRAND  REX", w / 2, 48); });
     const gr2 = new THREE.Mesh(new THREE.PlaneGeometry(4, .5), lum(mat({ map: tGR, emissive: 0xffffff, emissiveMap: tGR, emissiveIntensity: .1 }), .1, 1.2)); gr2.position.set(-16.6 + Math.cos(Math.PI * .75) * 9.75 * -1, 7.35, 22.6 - Math.sin(Math.PI * .75) * 9.75); gr2.rotation.y = Math.PI * .75; g.add(gr2); }
+  /* (10.52) la grande porte d'entrée, à l'angle : des scintillements rouges qui pétillent sur toute la façade vitrée, comme des paillettes */
+  { const N = PETIT ? 120 : 300, pos = new Float32Array(N * 3), ph = new Float32Array(N), vt = new Float32Array(N);
+    for (let k = 0; k < N; k++) { const th = Math.PI * .5 + Math.random() * Math.PI * .5, r = 9.42; pos[k * 3] = -16.6 + r * Math.sin(th); pos[k * 3 + 1] = .3 + Math.random() * 4.0; pos[k * 3 + 2] = 22.6 + r * Math.cos(th); ph[k] = Math.random() * 100; vt[k] = .6 + Math.random() * 1.8; }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3)); geo.setAttribute("ph", new THREE.BufferAttribute(ph, 1)); geo.setAttribute("vt", new THREE.BufferAttribute(vt, 1));
+    const U = { t: { value: 0 }, f: { value: .7 } }, sm = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: "attribute float ph; attribute float vt; uniform float t; varying float a; void main(){ float c = fract(t * vt * .35 + ph); a = pow(max(0., 1. - abs(c - .5) * 6.), 2.); vec4 mv = modelViewMatrix * vec4(position, 1.); gl_PointSize = (26. + 46. * a) * 6. / -mv.z; gl_Position = projectionMatrix * mv; }",
+      fragmentShader: "uniform float f; varying float a; void main(){ vec2 q = gl_PointCoord - .5; float d = length(q); float etoile = max(0., 1. - d * 2.2) + max(0., 1. - abs(q.x) * 14.) * max(0., 1. - abs(q.y) * 2.2) * .7 + max(0., 1. - abs(q.y) * 14.) * max(0., 1. - abs(q.x) * 2.2) * .7; gl_FragColor = vec4(1., .02 + .12 * etoile * etoile, .04, min(1., etoile * a * f * 1.6)); }" });
+    const pts = new THREE.Points(geo, sm); pts.frustumCulled = false; scene.add(pts);
+    const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); U.t.value = tm / 1000; pts.visible = !!L.nuit && !L.apo; };   /* (seulement le soir) */ }
   // la tour d'angle : un pylône à fronton plat, face au carrefour
   const T = new THREE.Group(); T.position.set(-14, 0, 20); T.rotation.y = Math.PI * .75; g.add(T);
   box(14, 24, 8, creme, 0, 17, -1, T);   // (le corps du pylône, de 5 à 29 m)
@@ -14314,7 +14323,7 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
     const raz = () => { cx.fillStyle = "#050000"; cx.fillRect(0, 0, 128, 512); D.length = 0; for (let k = 0; k < 14; k++) D.push(nouv()); tps = 0; fond = 0; }; raz();
     const scr = mat({ color: 0x000000, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 1.1, roughness: .3 });
     for (const sx of [-1, 1]) { const e = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 18.5), scr); e.position.set(sx * 9, 18, .52); T.add(e); box(3.7, 18.7, .08, noirM, sx * 9, 18, .47, T); }
-    const a0 = L.anim; let tp = 0, acc = 0; L.anim = (tm) => { a0 && a0(tm); const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; acc += dt; if (acc < 1 / 20) return; const d = acc; acc = 0; tps += d;
+    const a0 = L.anim; let tp = 0, acc = 0; L.anim = (tm) => { a0 && a0(tm); const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; acc += dt; scr.emissiveIntensity = L.nuit ? 1.1 : 0; if (!L.nuit || acc < 1 / 20) return; const d = acc; acc = 0; tps += d;   /* (les écrans : seulement le soir ; éteints le jour) */
       if (M && M.camera && M.L === L) { const c = M.camera.position; if ((c.x + 14) ** 2 + (c.z - 20) ** 2 > 140 ** 2) return; }
       if (tps > 26) { fond += d * .6; cx.fillStyle = `rgba(5,0,0,${Math.min(1, d * 1.2)})`; cx.fillRect(0, 0, 128, 512); if (fond > 1.6) raz(); tx.needsUpdate = true; return; }   // (l'écran s'éteint)
       if (Math.random() < d * 3) D.push(nouv());
