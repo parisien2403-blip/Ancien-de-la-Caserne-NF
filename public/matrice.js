@@ -13540,7 +13540,41 @@ function construireJouffroy(A, L, scene) {
       c.fillStyle = "#1e2a5a"; c.fillRect(w * .72, h * .52, 34, 42); c.fillStyle = "#f2d860"; c.fillRect(w * .76, h * .56, 12, 10); c.fillStyle = "#4a90c8"; c.fillRect(w * .86, h * .52, 30, 30);
       c.strokeStyle = "#3aa0b8"; c.lineWidth = 8; c.strokeRect(10, h * .5, w * .4, h * .42); c.strokeRect(w * .6 - 10, h * .5, w * .4, h * .42); c.fillStyle = "#4ab4cc"; c.fillRect(w * .42, h * .5, w * .16, h * .48); c.fillStyle = "rgba(200,230,240,.5)"; c.fillRect(w * .44, h * .52, w * .12, h * .3);
       c.fillStyle = "#6a4a3e"; c.fillRect(0, h - 32, w, 32); c.strokeStyle = "rgba(230,200,190,.4)"; c.lineWidth = 1; for (let k = 0; k < 9; k++) { c.beginPath(); c.moveTo(k * 40, h - 32); c.lineTo(k * 40 + 30, h); c.stroke(); } });
-    pl(XB1 - XB0, 6.4, lumT(t, .25, .95), (XB0 + XB1) / 2, Y2 + 3.2, ZC1 - .02, Math.PI); }
+    t.repeat.set(1, .5); t.offset.set(0, .5); pl(XB1 - XB0, 3.2, lumT(t, .25, .95), (XB0 + XB1) / 2, Y2 + 4.8, ZC1 - .02, Math.PI); box(XB1 - XB0, .5, .1, mat({ color: 0x4ab4cc, roughness: .45 }), (XB0 + XB1) / 2, Y2 + 2.95, ZC1 - .04);
+    /* (10.28) le bas, en vrai volume (d'après les photos) : deux vitrines encadrées de turquoise, la porte vitrée au milieu, le soubassement de marbre rouge veiné ;
+       dedans, les étagères de verre éclairées, couvertes de jouets : super-héros, Stormtrooper, train électrique, figurines en boîte, petites voitures, bols ; au fond, le mur rouge, les t-shirts, le tourniquet de cartes */
+    const G = new THREE.Group(); G.position.set((XB0 + XB1) / 2, Y2, ZC1); G.rotation.y = Math.PI; scene.add(G);
+    const W = XB1 - XB0, HB = 2.7, turq = mat({ color: 0x4ab4cc, roughness: .45 }), mrouge = mat({ map: marbreT, color: 0xc89a8a, roughness: .3 }), verreE = new THREE.MeshStandardMaterial({ color: 0xe0f0f4, transparent: true, opacity: .3, roughness: .05, depthWrite: false });
+    const fondI = lum(mat({ color: 0xb83a3a, emissive: 0x8a1a1a, emissiveIntensity: .35 }), .35, .8), boisI = lum(mat({ color: 0xd8a868, emissive: 0x8a5a2a, emissiveIntensity: .3 }), .3, .7);
+    box(W, HB - .2, .05, fondI, 0, (HB - .2) / 2, -1.3, G); { const f = add(new THREE.PlaneGeometry(W, 1.3), parquetM, 0, .01, -.65, G); f.rotation.x = -Math.PI / 2; } { const f = add(new THREE.PlaneGeometry(W, 1.3), plafIntM, 0, HB - .2, -.65, G); f.rotation.x = Math.PI / 2; }
+    for (let k = 0; k < 4; k++) add(new THREE.SphereGeometry(.06, 8, 6), suspM, -1.2 + k * .8, HB - .28, -.5, G);
+    // le soubassement de marbre, les montants turquoise, la porte, la traverse
+    for (const sx of [-1, 1]) { box(1.2, .55, .12, mrouge, sx * 1.12, .28, .04, G); box(.12, HB, .16, turq, sx * (W / 2 - .06), HB / 2, .05, G); box(.1, HB, .14, turq, sx * .52, HB / 2, .05, G); }
+    box(W, .14, .18, turq, 0, HB - .07, .06, G); box(W, .08, .16, turq, 0, .58, .06, G); for (const sx of [-1, 1]) box(1.2, .05, .14, turq, sx * 1.12, 1.6, .05, G);
+    box(.95, .5, .06, turq, 0, .25, .05, G); box(.06, 2.1, .08, turq, -.44, 1.3, .06, G); box(.06, 2.1, .08, turq, .44, 1.3, .06, G); add(new THREE.CylinderGeometry(.015, .015, .25, 8), dore2, .32, 1.15, .12, G);
+    for (const sx of [-1, 0, 1]) pl(sx ? 1.2 : .9, sx ? 2.0 : 1.9, glaceM, sx * 1.12, sx ? 1.6 : 1.45, .06, 0, G);
+    // les étagères de verre éclairées, dans chaque vitrine
+    const fig = (x, y, z, k, sc = 1) => { const T2 = [[0x2a4ab0, 0xc82a2a, 0xf0c9a6], [0xf2f2f2, 0x1a1a1a, 0xf2f2f2], [0x3a9a3a, 0x3a9a3a, 0x3a9a3a], [0xc82a2a, 0x2a8a3a, 0xf0c9a6], [0x1a1a1a, 0x1a1a1a, 0x2a2a2a], [0xe8c838, 0x2a4ab0, 0xf0c9a6], [0xe86a2a, 0x1a1a1a, 0xf0c9a6], [0x8a3ab0, 0xf2d838, 0xf0c9a6]][k % 8];
+      const s2 = .1 * sc; add(new THREE.CapsuleGeometry(s2 * .35, s2 * .9, 3, 8), Mc(T2[0]), x, y + s2 * .9, z, G); add(new THREE.SphereGeometry(s2 * .32, 8, 6), Mc(T2[2]), x, y + s2 * 1.75, z, G);
+      for (const e of [-1, 1]) add(new THREE.CapsuleGeometry(s2 * .12, s2 * .5, 3, 6), Mc(T2[0]), x + e * s2 * .45, y + s2 * 1.0, z, G);
+      if (k % 8 === 0 || k % 8 === 4) { const c2 = add(new THREE.PlaneGeometry(s2 * .9, s2 * 1.2), Mc(T2[1], { side: THREE.DoubleSide }), x, y + s2 * 1.0, z - s2 * .3, G); c2.rotation.x = .2; }   // (la cape)
+      box(s2 * .9, s2 * .12, s2 * .9, Mc(0x1a1a1a), x, y + s2 * .06, z, G); };
+    const funko = (x, y, z, k) => { const c2 = [0x1a1a1a, 0xf2f2f2, 0x2a4ab0, 0xc82a2a][k % 4]; box(.13, .17, .1, Mc(c2), x, y + .085, z, G); box(.09, .1, .01, Mc(0xe0eef4, { transparent: true, opacity: .5 }), x, y + .1, z + .051, G); add(new THREE.SphereGeometry(.03, 8, 6), Mc(0xf0c9a6), x, y + .11, z + .02, G); };
+    const voiture = (x, y, z, k) => { const c2 = [0xc82a2a, 0x2a6ab0, 0xf2d838, 0x1a1a1a, 0xf2f2f2][k % 5]; box(.1, .035, .05, Mc(c2, { metalness: .5 }), x, y + .03, z, G); box(.05, .025, .045, Mc(c2, { metalness: .5 }), x - .005, y + .06, z, G); };
+    for (const sx of [-1, 1]) { const cx = sx * 1.12;
+      for (let r = 0; r < 4; r++) { const y = .65 + r * .42; box(1.1, .015, .5, verreE, cx, y, -.35, G); box(1.1, .01, .02, lum(mat({ color: 0xf0f0ff, emissive: 0xc8d8ff, emissiveIntensity: .8 }), .8, 1.8), cx, y - .01, -.12, G);
+        for (let k = 0; k < 6; k++) { const x = cx - .45 + k * .18, z = -.3 - (k % 2) * .12, n = r * 6 + k + (sx > 0 ? 40 : 0);
+          if (r === 0) (k % 2 ? voiture : funko)(x, y, z, n); else if (r === 3 && sx < 0 && k < 3) { } else if (r === 2 && sx > 0) funko(x, y, z, n); else fig(x, y, z, n, r === 3 ? 1.6 : 1.1); } }
+      box(1.1, .06, .9, boisI, cx, .6, -.5, G); }
+    // le train électrique, rouge et noir, sur l'étagère du haut, à gauche
+    { const y = .65 + 3 * .42 + .02; add(new THREE.CylinderGeometry(.045, .045, .22, 10), Mc(0xb81e1e, { metalness: .4 }), -1.45, y + .06, -.3, G).rotation.z = Math.PI / 2; box(.08, .1, .09, Mc(0x1a1a1a), -1.3, y + .07, -.3, G); add(new THREE.CylinderGeometry(.015, .02, .06, 8), Mc(0x1a1a1a), -1.5, y + .13, -.3, G);
+      for (let k = 0; k < 2; k++) box(.16, .08, .08, Mc([0x8a1a1a, 0x2a2a2a][k]), -1.1 + k * .2, y + .05, -.3, G); for (let k = 0; k < 4; k++) add(new THREE.CylinderGeometry(.022, .022, .01, 10), Mc(0x1a1a1a), -1.5 + k * .12, y + .02, -.25, G).rotation.x = Math.PI / 2; }
+    // le Stormtrooper, en grand, à gauche ; les bols et les tasses
+    { const x = -.85, y = .65 + .42; add(new THREE.CylinderGeometry(.07, .08, .2, 12), Mc(0xf6f6f6), x, y + .1, -.25, G); add(new THREE.SphereGeometry(.075, 12, 10), Mc(0xf6f6f6), x, y + .26, -.25, G); box(.08, .02, .01, Mc(0x1a1a1a), x, y + .27, -.177, G); }
+    for (let k = 0; k < 3; k++) add(new THREE.CylinderGeometry(.06, .04, .07, 12), Mc([0xf2f0ea, 0xc82a2a, 0x1a1a1a][k]), 1.5 - k * .14, .64, -.2, G);
+    // au fond, derrière la porte : le tourniquet de cartes, les t-shirts suspendus
+    { add(new THREE.CylinderGeometry(.015, .015, 1.7, 6), Mc(0x2a2c30, { metalness: .7 }), 0, .85, -.95, G); for (let k = 0; k < 12; k++) box(.12, .16, .01, PAL[k % PAL.length], -.18 + (k % 4) * .12, .7 + (k / 4 | 0) * .2, -.8, G); for (let k = 0; k < 3; k++) box(.3, .4, .02, Mc([0xf2f0ea, 0x2a3a5a, 0xe8c838][k]), -.3 + k * .3, 1.9, -1.25, G); }
+    aplatir(G); }
 
   { const creme = mat({ color: 0xefe6d2 }); pl(2.6, 5.0, creme, -3.3, 2.5, ZC1 - .01, Math.PI); pl(3.5, 2.2, creme, -2 + .01, 6.1, (ZC0 + ZC1) / 2, Math.PI / 2);
     pl(XB1 - XB0, 1.4, platreM, (XB0 + XB1) / 2, 5.6, ZC0 - .01, Math.PI); pl(4, 5, platreM, 0, 6.7, -7.01, Math.PI); }
