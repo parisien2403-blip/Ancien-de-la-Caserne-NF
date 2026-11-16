@@ -14308,6 +14308,21 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
   // les avancées de part et d'autre (sans écran) ; sur le pylône, la grande affiche de « Génération perdue » (The Lost Boys), comme les grandes affiches d'avant-première
   const jaq = (cle) => { const t = new THREE.TextureLoader().load(`images/videofutur/jaquette-${cle}.webp`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
   for (const sx of [-1, 1]) box(4, 20, 6, creme, sx * 9, 18, -2.5, T);
+  /* (10.51) sur les avancées de part et d'autre, les deux grands écrans : du sang qui coule, goutte après goutte, jusqu'à tout recouvrir, puis l'écran s'éteint et ça recommence */
+  { const cv = document.createElement("canvas"); cv.width = 128; cv.height = 512; const cx = cv.getContext("2d"), tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+    const D = [], nouv = () => ({ x: Math.random() * 128, y: -10, l: 2 + Math.random() * 6, v: 25 + Math.random() * 70, a: 0 }); let tps = 0, fond = 0;
+    const raz = () => { cx.fillStyle = "#050000"; cx.fillRect(0, 0, 128, 512); D.length = 0; for (let k = 0; k < 14; k++) D.push(nouv()); tps = 0; fond = 0; }; raz();
+    const scr = mat({ color: 0x000000, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 1.1, roughness: .3 });
+    for (const sx of [-1, 1]) { const e = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 18.5), scr); e.position.set(sx * 9, 18, .52); T.add(e); box(3.7, 18.7, .08, noirM, sx * 9, 18, .47, T); }
+    const a0 = L.anim; let tp = 0, acc = 0; L.anim = (tm) => { a0 && a0(tm); const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; acc += dt; if (acc < 1 / 20) return; const d = acc; acc = 0; tps += d;
+      if (M && M.camera && M.L === L) { const c = M.camera.position; if ((c.x + 14) ** 2 + (c.z - 20) ** 2 > 140 ** 2) return; }
+      if (tps > 26) { fond += d * .6; cx.fillStyle = `rgba(5,0,0,${Math.min(1, d * 1.2)})`; cx.fillRect(0, 0, 128, 512); if (fond > 1.6) raz(); tx.needsUpdate = true; return; }   // (l'écran s'éteint)
+      if (Math.random() < d * 3) D.push(nouv());
+      for (const g of D) { const y0 = g.y; g.y += g.v * d * (.6 + Math.random() * .8); const gr = cx.createLinearGradient(0, y0 - 4, 0, g.y + 6); gr.addColorStop(0, "#5a0004"); gr.addColorStop(1, "#c8000a");
+        cx.fillStyle = gr; cx.fillRect(g.x - g.l / 2, y0 - 2, g.l, g.y - y0 + 4); cx.fillStyle = "#e01018"; cx.beginPath(); cx.arc(g.x, g.y + 2, g.l * .7, 0, 7); cx.fill(); cx.fillStyle = "rgba(255,160,160,.5)"; cx.fillRect(g.x - g.l * .25, g.y - 1, 1, 3); }   // (la coulée, sa goutte au bout, un reflet)
+      for (let k = D.length - 1; k >= 0; k--) if (D[k].y > 530) D.splice(k, 1);
+      if (tps < 1.5) { cx.fillStyle = "#8a0008"; for (let x = 0; x < 128; x += 4) cx.fillRect(x, 0, 4, 3 + Math.random() * 6); }   // (le haut de l'écran se gorge de sang)
+      tx.needsUpdate = true; }; } 
   { const af = new THREE.Mesh(new THREE.PlaneGeometry(10.6, 15.0), lum(mat({ map: jaq("lb"), emissive: 0xff8078, emissiveIntensity: .05, emissiveMap: jaq("lb"), roughness: .6 }), .05, .75)); af.position.set(0, 14.5, 3.75); T.add(af);
     box(11.2, .4, .5, noirM, 0, 22.2, 3.6, T); box(11.2, .4, .5, noirM, 0, 6.8, 3.6, T); }
   /* (10.50) les projecteurs, posés sur la bande rouge de la marquise : des lyres noires tournées vers le haut, qui baignent la grande affiche de lumière rouge, le soir */
@@ -14841,6 +14856,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     const fige = Math.abs(a.volume - Math.max(0, Math.min(1, a._v))) > .05, jouer = fige ? cible > .25 : a._v > .01;
     if (jouer && a.paused) a.play().catch(() => {}); else if (!jouer && !a.paused) a.pause(); };
   const majSonBar = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonBar) sonBar.pause(); return; } const p = moi.g.position; let d = 99; for (const [x, z] of BARS) d = Math.min(d, Math.hypot(p.x - x, p.z - z));
+    if (L.nuit && !L.apo) d = Math.min(d, Math.hypot(p.x + 7.4, p.z - 13.4) - 1.5);   // (10.51) le soir, le brouhaha de la foule autour du tapis rouge de l'avant-première
     const cible = Math.max(0, Math.min(1, (16 - d) / 12)) * (M.barVol ?? .7);   // (à 4 m d'un bar : le volume plein ; plus rien au-delà de 16 m)
     if (!sonBar) { if (!cible) return; sonBar = new Audio("sons/fete-discussions.mp3"); sonBar.loop = true; sonBar.volume = 0; }
     volSon(sonBar, cible); };
