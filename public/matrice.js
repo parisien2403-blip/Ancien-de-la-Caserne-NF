@@ -13583,7 +13583,7 @@ function construireJouffroy(A, L, scene) {
     // l'escalier tournant (d'après les photos) : la première marche arrondie au tapis rouge, puis la montée vers le fond qui tourne à droite jusqu'au palier ;
     // le tapis vert sur les marches et les contremarches, les nez dorés, le dessous fermé de lambris rouge, la rampe de bois qui s'enroule, les barreaux de fer, le pilier de laiton à boule
     { const tapisV = mat({ color: 0x2e5a3a, roughness: .95 }), tapisR = mat({ color: 0xa8202a, roughness: .95 }), nez = mat({ color: 0xc8a050, metalness: .8, roughness: .3 }), fer = mat({ color: 0x1a1a1a, metalness: .4, roughness: .5 }), rampe = mat({ color: 0x7a4422, roughness: .3 }), dessous = mat({ color: 0x9a1e22, roughness: .55 });
-      const hS = .17, W = .82, steps = []; const sx = -.05, sz = HZ1 + 1.75;
+      const hS = .17, W = 1.0, steps = []; const sx = -.05, sz = HZ1 + 1.75;
       // (le tracé, d'après la photo : petit et serré contre le mur du fond — on part vers le fond, on tourne aussitôt à droite, et l'on monte le long du mur du fond jusqu'à l'ouverture du mur de droite, puis au-delà)
       for (let k = 0; k < 2; k++) steps.push([sx, sz - k * .27, -Math.PI / 2]);
       { const R0 = .62, cxT = sx + R0, czT = sz - .27 - .05; for (let k = 1; k <= 5; k++) { const a = Math.PI + k * (Math.PI / 2) / 5; steps.push([cxT + Math.cos(a) * R0, czT + Math.sin(a) * R0, -Math.PI / 2 + k * (Math.PI / 2) / 5]); }
@@ -13592,10 +13592,10 @@ function construireJouffroy(A, L, scene) {
       const pts = [];
       steps.forEach(([x, z, dir], k) => { const y = (k + 1) * hS, dx = Math.cos(dir), dz = Math.sin(dir), lx = dz, lz = -dx;   // (dir : vers où l'on monte ; l : la gauche)
         const st = new THREE.Group(); st.position.set(x, 0, z); st.rotation.y = -dir - Math.PI / 2; g.add(st);   // (local : +z vers le bas de l'escalier, x en travers)
-        box(W, hS, .3, tapisV, 0, y - hS / 2 - .02, 0, st); void dessous;   // (10.30 : plus de mur rouge dessous, juste les marches, comme sur la photo) box(W + .02, .05, .34, tapisV, 0, y - .02, .01, st); box(W + .02, hS - .02, .03, tapisV, 0, y - hS / 2 - .02, .16, st); box(W + .03, .03, .03, nez, 0, y - .01, .17, st);
+        box(W, y - .02, .3, tapisV, 0, (y - .02) / 2, 0, st); void dessous;   // (10.30 : un escalier plein, chaque marche posée sur la précédente, tout en tapis vert — pas de mur rouge) box(W + .02, .05, .34, tapisV, 0, y - .02, .01, st); box(W + .02, hS - .02, .03, tapisV, 0, y - hS / 2 - .02, .16, st); box(W + .03, .03, .03, nez, 0, y - .01, .17, st);
         const xr = x + lx * (W / 2 - .04), zr = z + lz * (W / 2 - .04); box(.016, .9, .016, fer, xr, y + .45, zr, g); pts.push(new THREE.Vector3(xr, y + .9, zr)); });
       // la première marche, arrondie, au tapis rouge
-      { box(W + .3, hS, .4, tapisR, sx, hS / 2, sz + .3, g); const b2 = add(new THREE.CylinderGeometry(.2, .2, hS, 16, 1, false, 0, Math.PI), tapisR, sx - (W + .3) / 2, hS / 2, sz + .3, g); b2.rotation.y = Math.PI; box(W + .3, .03, .03, nez, sx, hS, sz + .5, g); }
+      { box(W + .35, .08, .45, tapisR, sx, .04, sz + .3, g); box(W + .35, hS - .08, .45, tapisV, sx, .08 + (hS - .08) / 2, sz + .3, g); for (const [yy, hh, m2] of [[.04, .08, tapisR], [.08 + (hS - .08) / 2, hS - .08, tapisV]]) { const b2 = add(new THREE.CylinderGeometry(.225, .225, hh, 18, 1, false, 0, Math.PI), m2, sx - (W + .35) / 2, yy, sz + .3, g); b2.rotation.y = Math.PI; const b3 = add(new THREE.CylinderGeometry(.225, .225, hh, 18, 1, false, 0, Math.PI), m2, sx + (W + .35) / 2, yy, sz + .3, g); void b3; } box(W + .35, .03, .03, nez, sx, hS, sz + .53, g); }   // (la grosse marche du bas, arrondie des deux côtés, la bande rouge au pied)
       // le pilier de laiton à boule, la rampe qui part de lui et s'enroule
       const xn = sx - (W / 2 - .04), zn = sz + .35; add(new THREE.CylinderGeometry(.03, .045, 1.05, 12), nez, xn, .52 + hS, zn, g); add(new THREE.SphereGeometry(.055, 12, 10), nez, xn, 1.1 + hS, zn, g); for (const y of [.35, .7]) add(new THREE.TorusGeometry(.04, .012, 6, 12), nez, xn, y + hS, zn, g).rotation.x = Math.PI / 2;
       pts.unshift(new THREE.Vector3(xn, 1.06 + hS, zn)); add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 48, .03, 8, false), rampe, 0, 0, 0, g);
