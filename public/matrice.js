@@ -13083,6 +13083,10 @@ function construireJouffroy(A, L, scene) {
   const add = (geo, m, x, y, z, par = scene, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.receiveShadow = true; par.add(o); return o; };
   const box = (w, h, d, m, x, y, z, par = scene, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, par, ry);
   const pl = (w, h, m, x, y, z, ry = 0, par = scene) => add(new THREE.PlaneGeometry(w, h), m, x, y, z, par, ry);
+  const chevalet2 = (par, x, z, ry, m, bo, H = 1.35, W = .8) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; par.add(g); const a = .22;
+    for (const f of [-1, 1]) { for (const sg of [-1, 1]) { const l = box(.045, H / Math.cos(a), .045, bo, sg * (W / 2 + .02), H / 2, f * Math.tan(a) * H / 2, g); l.rotation.x = -f * a; }
+      box(W + .08, .04, .05, bo, 0, H * .28, f * Math.tan(a) * H * .72, g); const p = pl(W, W * 1.3, m, 0, H * .62, f * (Math.tan(a) * H * .38 + .03), f > 0 ? 0 : Math.PI, g); p.rotation.x = f > 0 ? -a : a; }
+    box(W + .1, .05, .06, bo, 0, H - .02, 0, g); };   // (10.28) le chevalet en A : la même image des deux côtés
   const NUIT = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
   const lumT = (t, j = .22, n = .95) => lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: j }), j, n);
   const Y2 = -1.4, XB0 = -12, XB1 = -8.5, ZC0 = -72, ZC1 = -68.5, ZFIN = -128;   // (la seconde galerie, 1,4 m plus bas)
@@ -13439,8 +13443,6 @@ function construireJouffroy(A, L, scene) {
   // les statuettes dorées du Grévin, dans leurs niches, en haut de la devanture rouge
   for (let z = -38.6; z > -49.6; z -= .9) { const x = 1.86; add(new THREE.CapsuleGeometry(.05, .16, 3, 8), dore2, x, 4.14, z); add(new THREE.SphereGeometry(.045, 8, 6), dore2, x, 4.34, z); add(new THREE.ConeGeometry(.08, .1, 8), dore2, x, 4.0, z); box(.12, .04, .2, dore2, x, 3.94, z); }
   // le tapis rouge de La Cure Gourmande, devant sa porte
-  { const t = tT(128, 96, (c, w, h) => { c.fillStyle = "#b8141e"; c.fillRect(0, 0, w, h); c.strokeStyle = "#e8c050"; c.lineWidth = 3; c.strokeRect(6, 6, w - 12, h - 12); c.fillStyle = "#e8c050"; c.font = "italic bold 16px Georgia"; c.textAlign = "center"; c.fillText("La Cure", w / 2, 44); c.fillText("Gourmande", w / 2, 64); });
-    box(1.0, .02, .62, [Mc(0x8a0e16), Mc(0x8a0e16), mat({ map: t, roughness: 1 }), Mc(0x8a0e16), Mc(0x8a0e16), Mc(0x8a0e16)], 1.45, .01, -28.4).rotation.y = Math.PI / 2; }   // (le paillasson, devant la porte)
   // le haut du Grévin : rouge, la frise de statuettes dorées
   { const t = tT(768, 240, (c, w, h) => { c.fillStyle = "#b8141e"; c.fillRect(0, 0, w, h); c.fillStyle = "#d8b048"; c.fillRect(0, h - 22, w, 8); c.fillRect(0, 10, w, 6);
       for (let k = 0; k < 16; k++) { const x = 24 + k * (w - 48) / 15; c.beginPath(); c.arc(x, h - 72, 7, 0, 7); c.fill(); c.fillRect(x - 5, h - 66, 10, 30); c.fillRect(x - 9, h - 40, 18, 8); }
@@ -13567,11 +13569,11 @@ function construireJouffroy(A, L, scene) {
   // devant : les deux chevalets d'affiches (la bouteille, « Épaule jeté ») et le présentoir « MUSIC »
   { const gB = new THREE.Group(); gB.position.set(0, Y2, 0); scene.add(gB); const bo = mat({ color: 0x7a4a2a, roughness: .6 });
     const aff = (draw) => mat({ map: tT(96, 128, (c, w, h) => { c.fillStyle = "#f4f2ee"; c.fillRect(0, 0, w, h); c.strokeStyle = "#1a1a1a"; c.lineWidth = 3; c.strokeRect(3, 3, w - 6, h - 6); draw(c, w, h); }) });
-    const ch2 = (x, z, m) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = Math.PI / 2; gB.add(g); for (const sg of [-1, 1]) { const l = box(.04, .9, .04, bo, sg * .28, .45, 0, g); l.rotation.x = .25; } box(.6, .03, .2, bo, 0, .38, .08, g); const p = pl(.55, .72, m, 0, .78, .06, 0, g); p.rotation.x = -.25; };
+    const ch2 = (x, z, m) => { chevalet2(gB, x + .25, z, Math.PI / 2, m, bo); }; const ch2old = (x, z, m) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = Math.PI / 2; gB.add(g); for (const sg of [-1, 1]) { const l = box(.04, .9, .04, bo, sg * .28, .45, 0, g); l.rotation.x = .25; } box(.6, .03, .2, bo, 0, .38, .08, g); const p = pl(.55, .72, m, 0, .78, .06, 0, g); p.rotation.x = -.25; };
     ch2(XB0 + .45, -68.9, aff((c, w, h) => { c.fillStyle = "#c8c050"; c.beginPath(); c.ellipse(w / 2, h * .62, 14, 32, 0, 0, 7); c.fill(); c.fillRect(w / 2 - 5, h * .25, 10, 20); c.fillStyle = "#c82a2a"; c.fillRect(w / 2 - 5, h * .2, 10, 8); }));
     ch2(XB0 + .45, -71.6, aff((c, w, h) => { c.fillStyle = "#2a3a7a"; for (const x of [32, 64]) { c.beginPath(); c.arc(x, 44, 8, 0, 7); c.fill(); c.fillRect(x - 8, 52, 16, 36); c.fillRect(x - 10, 88, 8, 22); c.fillRect(x + 2, 88, 8, 22); } c.fillStyle = "#1a1a1a"; c.font = "10px Georgia"; c.textAlign = "center"; c.fillText("ÉPAULE  JETÉ", w / 2, h - 10); }));
     { const g = new THREE.Group(); g.position.set(XB0 + .5, 0, -73.2); gB.add(g); box(.06, 1.7, .5, Mc(0x1a1a1a), 0, .85, 0, g); const t = tT(64, 256, (c, w, h) => { c.fillStyle = "#1a1a1a"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2f0ea"; c.font = "bold 18px Georgia"; c.textAlign = "center"; [..."MUSIC"].forEach((l, k) => c.fillText(l, w / 2, 40 + k * 28)); for (let k = 0; k < 8; k++) { c.fillStyle = "#c8282a"; c.fillRect(6, 180 + k * 9, w - 12, 6); } });
-      pl(.5, 1.6, mat({ map: t }), .04, .85, 0, Math.PI / 2, g); } L.obJ = [[XB0 + .45, -68.9, .45], [XB0 + .45, -71.6, .45], [XB0 + .5, -73.2, .4]]; }
+      pl(.5, 1.6, mat({ map: t }), .04, .85, 0, Math.PI / 2, g); } L.obJ = [[XB0 + .7, -68.9, .65], [XB0 + .7, -71.6, .65], [XB0 + .5, -73.2, .4]]; }
   /* (10.27) La Boîte à Joujoux, d'après la photo : la façade bleu turquoise, la petite fenêtre « Maison Gilbert » et son balcon, l'enseigne en lettres blanches cursives,
      les vitrines pleines : figurines de super-héros, le train, le Stormtrooper, les Tintin, le sac et le t-shirt suspendus ; la porte turquoise */
   { const t = tT(300, 500, (c, w, h) => { c.fillStyle = "#4ab4cc"; c.fillRect(0, 0, w, h); c.fillStyle = "#3aa0b8"; for (const y of [h * .36, h * .46]) c.fillRect(0, y, w, 8);
@@ -13710,7 +13712,8 @@ function construireJouffroy(A, L, scene) {
   for (const x of [-6.5, -3.4]) lanterne(x, 0, ZC0 + .25, 4.0, .01);
 
   /* ---------- le mobilier : les tables du café et ses tabourets, la terrasse du Valentin, les tourniquets de cartes postales, les chevalets d'estampes ---------- */
-  const OB = [...(L.obJ || [])];   // (les obstacles, pour ne pas marcher dedans)
+  const OB = [...(L.obJ || [])];
+   // (les obstacles, pour ne pas marcher dedans)
   const boisT = mat({ color: 0xb06a3a, roughness: .6 }), noirT = mat({ color: 0x1e1a18, roughness: .5 }), nappe = mat({ color: 0xf4f2ee, roughness: .9 });
   const tabouret = (x, z) => { add(new THREE.CylinderGeometry(.18, .18, .05, 14), boisT, x, .72, z); for (let k = 0; k < 3; k++) { const a = k * 2.1; const l = add(new THREE.CylinderGeometry(.015, .02, .72, 6), boisT, x + Math.cos(a) * .12, .36, z + Math.sin(a) * .12); l.rotation.z = Math.cos(a) * .12; } add(new THREE.TorusGeometry(.13, .012, 6, 16), boisT, x, .3, z).rotation.x = Math.PI / 2; };
   const tableBistro = (x, z, sq = true, blanc = false) => { if (sq) box(.62, .04, .62, blanc ? nappe : noirT, x, .76, z); else add(new THREE.CylinderGeometry(.32, .32, .04, 16), blanc ? nappe : noirT, x, .76, z); add(new THREE.CylinderGeometry(.03, .03, .74, 8), noirT, x, .38, z); add(new THREE.CylinderGeometry(.22, .24, .03, 12), noirT, x, .02, z); OB.push([x, z, .5]); };
@@ -13767,9 +13770,9 @@ function construireJouffroy(A, L, scene) {
   { const gB = new THREE.Group(); gB.position.y = Y2; scene.add(gB); const sc = scene; scene = gB;   // (la seconde galerie : 1,4 m plus bas)
     tourniquet(-11.35, -75.2); tourniquet(-11.35, -79.5); tourniquet(-11.35, -82.2);
     // les chevalets d'estampes, devant la galerie d'affiches et Paris de Photo
-    for (const z of [-88, -91, -103.5, -106, -109]) { const g = new THREE.Group(); g.position.set(-11.35, 0, z); g.rotation.y = Math.PI / 2; gB.add(g); for (const s of [-1, 1]) { const l = box(.04, 1.1, .04, boisT, s * .3, .55, 0, g); l.rotation.z = s * .1; } box(.7, .04, .3, boisT, 0, .45, .05, g);
+    for (const z of [-88, -91, -103.5, -106, -109]) {
       const t = tT(96, 128, (c, w, h) => { c.fillStyle = "#f4f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#1a1a1a"; c.fillRect(6, 6, w - 12, h - 12); c.fillStyle = ["#e8c050", "#c83a2a", "#3a6ab0", "#e8e0c8"][Math.abs(z | 0) % 4]; c.fillRect(12, 12, w - 24, h - 24); });
-      for (let k = 0; k < 3; k++) { const p = pl(.6, .8, mat({ map: t }), 0, .9, .02 - k * .06, 0, g); p.rotation.x = -.18; } OB.push([-11.35, z, .5]); }
+      chevalet2(gB, -11.0, z, Math.PI / 2, mat({ map: t }), boisT); OB.push([-11.0, z, .65]); }
     { const t = tT(160, 120, (c, w, h) => { c.fillStyle = "#14161a"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2f0ea"; c.font = "bold 18px Arial"; c.textAlign = "center"; c.fillText("Expo photo à l'étage", w / 2, 28); c.font = "italic 12px Arial"; c.fillText("Photo exhibition upstairs", w / 2, 46); for (let k = 0; k < 4; k++) { c.fillStyle = "#f2f0ea"; c.fillRect(14 + k * 36, 62, 30, 40); c.fillStyle = "#666"; c.fillRect(18 + k * 36, 66, 22, 24); } });
       const g = new THREE.Group(); g.position.set(-11.3, 0, -98.6); g.rotation.y = Math.PI / 2; gB.add(g); box(.9, .8, .4, mat({ color: 0x14161a }), 0, .4, 0, g); pl(.9, .65, mat({ map: t }), 0, 1.0, .1, 0, g).rotation.x = -.3; OB.push([-11.3, -98.6, .5]); }
     // les tables de livres, devant la Librairie du Passage
