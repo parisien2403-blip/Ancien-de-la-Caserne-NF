@@ -13703,6 +13703,11 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     quitterLieu.add(() => { for (const Q of L.passRex) { if (M && M.gens.get(Q.num)) retirerAncien(Q.num); if (Q.acc) Q.acc.visible = false; if (Q.laisse) Q.laisse.visible = false; } }); }
   const BARS = [[11, 16], [22, 11.5], [6.5, 26], [11, -16], [24, -11.5], [7, -28], [-72, 11.5], [-94, -11.5], [-86, -11.5]];   // (le bar Madeleine, le Gymnase Café, le Starbucks)
   let sonBar = null; quitterLieu.add(() => { if (sonBar) { sonBar.pause(); sonBar.volume = 0; } });
+  // (10.18) devant le Hard Rock Café : « Back in Black » à 60 % sur le trottoir devant l'entrée, qui baisse quand on s'éloigne (plus rien au-delà de 22 m)
+  let sonHR = null; quitterLieu.add(() => { if (sonHR) { sonHR.pause(); sonHR.volume = 0; } });
+  const majSonHR = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonHR) sonHR.pause(); return; } const p = moi.g.position, d = Math.hypot(p.x + 90, p.z + 11.5);
+    const cible = Math.max(0, Math.min(1, (22 - d) / 17)) * .6; if (!sonHR) { if (!cible) return; sonHR = new Audio("sons/hardrock.mp3"); sonHR.loop = true; sonHR.volume = 0; }
+    if (cible > 0 && sonHR.paused) sonHR.play().catch(() => {}); sonHR.volume = Math.max(0, Math.min(1, sonHR.volume + (cible - sonHR.volume) * .06)); if (!cible && sonHR.volume < .01 && !sonHR.paused) sonHR.pause(); };
   const majSonBar = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonBar) sonBar.pause(); return; } const p = moi.g.position; let d = 99; for (const [x, z] of BARS) d = Math.min(d, Math.hypot(p.x - x, p.z - z));
     const cible = Math.max(0, Math.min(1, (16 - d) / 12)) * (M.barVol ?? .7);   // (à 4 m d'un bar : le volume plein ; plus rien au-delà de 16 m)
     if (!sonBar) { if (!cible) return; sonBar = new Audio("sons/fete-discussions.mp3"); sonBar.loop = true; sonBar.volume = 0; }
@@ -13712,7 +13717,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   let nV = null, tp = 0;
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm;
-    majFeux(tm); majSonBar(); { const rougeB = L.feuEtat(tm).B !== "vert"; for (const o of [stopO, stopE]) { const i = L.obstRue.indexOf(o); if (rougeB && i < 0) L.obstRue.push(o); else if (!rougeB && i >= 0) L.obstRue.splice(i, 1); } }
+    majFeux(tm); majSonBar(); majSonHR(); { const rougeB = L.feuEtat(tm).B !== "vert"; for (const o of [stopO, stopE]) { const i = L.obstRue.indexOf(o); if (rougeB && i < 0) L.obstRue.push(o); else if (!rougeB && i >= 0) L.obstRue.splice(i, 1); } }
     if (M && M.L === L) for (const [k, Q] of L.passRex.entries()) { const P = Q.P; let p = M.gens.get(Q.num); const ici = !L.apo && (!L.nuit || k % 3 === 0) && (!M.sansFigurants || (!PETIT && k % 2 === 0)), tenueH = M.hiver && P.tenue !== "survet" && !P.chaud ? "manteauC" : P.tenue;   // (l'hiver : les manteaux ; le clochard garde sa grosse veste kaki)
       if (p && p.info.tenue !== tenueH) { retirerAncien(Q.num); p = null; }
       if (!ici) { if (p) retirerAncien(Q.num); if (Q.acc) Q.acc.visible = false; if (Q.laisse) Q.laisse.visible = false; continue; }
