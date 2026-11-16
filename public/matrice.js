@@ -13419,27 +13419,15 @@ function construireJouffroy(A, L, scene) {
     const frise = tT(1024, 128, (c, w, h) => { c.fillStyle = "#d0202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#a81820"; c.fillRect(0, h - 10, w, 10);
       const sil = (x, col, t) => { c.fillStyle = col; c.beginPath(); c.arc(x, 26, 9, 0, 7); c.fill(); if (t === 1) { c.beginPath(); c.moveTo(x - 8, 36); c.lineTo(x + 8, 36); c.lineTo(x + 20, 104); c.lineTo(x - 20, 104); c.fill(); } else { c.fillRect(x - 8, 35, 16, 36); c.lineWidth = 6; c.strokeStyle = col; c.beginPath(); c.moveTo(x - 4, 70); c.lineTo(x - 12 - t * 3, 104); c.moveTo(x + 4, 70); c.lineTo(x + 10 + t * 4, 104); c.moveTo(x + 6, 44); c.lineTo(x + 24, 30 + t * 6); c.stroke(); } };
       [["#2a1a14", 1], ["#f0a838", 0], ["#6a5a3a", 1], ["#4a4030", 1], ["#e0a040", 2], ["#7ab8a0", 3]].forEach(([col, t], k) => sil(90 + k * 168, col, t)); });
-    box(Lg, .9, .16, lumT(frise, .2, .8), 0, 3.5, .1, g); box(Lg + .05, .06, .2, Mc(0xa81820), 0, 3.08, .12, g);
+    box(Lg, .58, .16, [rouge, rouge, rouge, rouge, lumT(frise, .2, .8), rouge], 0, 3.29, .1, g); box(Lg + .05, .06, .2, Mc(0xa81820), 0, 3.08, .12, g);
     const titre = tT(768, 128, (c, w, h) => { c.fillStyle = "#d0202a"; c.fillRect(0, 0, w, h); c.font = `86px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "rgba(80,0,0,.45)"; c.fillText("Musée   Grévin", w / 2 + 4, h / 2 + 6); c.fillStyle = "#fbf7ef"; c.fillText("Musée   Grévin", w / 2, h / 2 + 2); });
-    box(2.6, .55, .22, [rouge, rouge, rouge, rouge, lumT(titre, .2, .85), rouge], 0, 4.22, .12, g);
-    // la grande gravure : le fond gris-bleu, le socle de marbre vert, les deux colonnes rouges et leurs chapiteaux, la corniche
-    box(Lg, 3.1, .1, Mc(0xc4ccd0, { roughness: .9 }), 0, 5.95, -.25, g); box(2.0, .2, .55, vertM, 0, 4.58, -.02, g); for (const sg of [-1, 1]) box(.6, .1, .5, vertM, sg * 1.7, 4.0, -.02, g);
-    for (const sg of [-1, 1]) { box(.18, 2.4, .18, Mc(0xa8323a), sg * .92, 5.88, .02, g); box(.26, .14, .26, Mc(0x9a8a6a), sg * .92, 7.12, .02, g); box(.26, .14, .26, Mc(0x2a2a2a), sg * .92, 4.72, .02, g); }
-    box(Lg + .1, .32, .4, Mc(0xb02a30), 0, 7.4, .02, g); box(Lg + .2, .08, .46, Mc(0xc8a050, { metalness: .5 }), 0, 7.22, .04, g); box(Lg + .2, .1, .46, Mc(0x8a5a38), 0, 7.6, .04, g);
-    aplatir(g);
-    const S = new THREE.Group(); S.position.copy(g.position); S.rotation.copy(g.rotation); scene.add(S);
-    { const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const c = M && M.camera && M.camera.position; if (c) S.visible = Math.hypot(c.x - S.position.x, c.z - S.position.z) < ((MOBILE || GPU_MODESTE) ? 13 : 24); }; }   // (les statues : seulement de près)
-    const statue = (x, y, z, s2, o2, ry = 0) => { const m = personne3D(o2); m.position.set(x, y, z); m.scale.setScalar(s2); m.rotation.y = ry; m.userData.poser("debout", 0); S.add(m); return m; };
-    const P0 = { chaussures: "#2a2a2a", pantalon: true };
-    statue(-1.65, 4.05, .1, 1.0, { ...P0, taille: 1.8, peau: "#e8c8a8", ch: "#e8e4dc", haut: "#2a4a8a", bas: "#e8e2d0", chaussures: "#7a8a96", coif: "court" }, .25);
-    { const f = new THREE.Group(); f.position.set(-1.25, 4.05, .05); S.add(f); add(new THREE.CylinderGeometry(.015, .015, 2.0, 6), Mc(0x5a4a3a), 0, 1.0, 0, f); for (const [k, col] of [[0, 0x2a3a8a], [1, 0xf2f0ea], [2, 0xc8202a]]) { const b = add(new THREE.PlaneGeometry(.16, .6), Mc(col, { side: THREE.DoubleSide }), .09 + k * .16, 1.6, 0, f); b.rotation.y = .5; } }
-    statue(1.65, 4.05, .1, 1.0, { ...P0, taille: 1.8, peau: "#e0c0a0", ch: "#5a3a22", haut: "#8a8a92", bas: "#b84a4a", coif: "court" }, -.25);
-    { add(new THREE.CylinderGeometry(.012, .012, 2.2, 6), Mc(0x5a4a3a), 1.95, 5.15, .1, S); add(new THREE.ConeGeometry(.05, .28, 6), Mc(0xb8bcc0, { metalness: .8 }), 1.95, 6.35, .1, S); }
-    [[-.5, { taille: 1.65, peau: "#f0d0b8", ch: "#c8a878", haut: "#e8e2d0", bas: "#e8e2d0", robe: true, pantalon: false, coif: "long" }], [-.2, { taille: 1.85, peau: "#e8c8a8", ch: "#3a2a1a", haut: "#7ab0c8", bas: "#d8d0c0", coif: "long" }],
-     [.15, { taille: 1.8, peau: "#e8c8a8", ch: "#e8e4dc", haut: "#c82a2a", bas: "#c82a2a", robe: true, pantalon: false, coif: "chauve" }], [.48, { taille: 1.75, peau: "#e8c8a8", ch: "#2a1a10", haut: "#2a6a4a", bas: "#efe8d8", chaussures: "#1a1a1a", coif: "court" }]]
-      .forEach(([x, o2], k) => statue(x * 1.1, 4.68 + (k % 2) * .06, .08 - (k % 2) * .1, .8, { ...P0, ...o2 }));
-    statue(0, 4.68, .22, .5, { ...P0, taille: 1.4, peau: "#f0d0b8", ch: "#e8e4dc", haut: "#8ac0c8", bas: "#e8e4dc", coif: "court" });
-    for (const k of [0, 1, 2, 3]) statue(-.45 + k * .3, 5.55, -.15, .6, { ...P0, taille: 1.75, peau: "#e8c8a8", ch: ["#3a2a1a", "#c8a878", "#5a3a22", "#e8e4dc"][k], haut: ["#8a6a4a", "#5a6a8a", "#a87a5a", "#6a4a6a"][k], bas: "#3a3028", coif: "court" }); }
+    box(3.2, .44, .2, [rouge, rouge, rouge, rouge, lumT(titre, .2, .85), rouge], 0, 3.8, .12, g);
+    // (10.28) la grande gravure peinte et sculptée, d'après la photo : le groupe historique entre les deux colonnes rouges, le volontaire et son drapeau, le hallebardier, les deux lanternes à couronne
+    const gT = new THREE.TextureLoader().load("images/grevin-gravure.jpg"); gT.colorSpace = THREE.SRGBColorSpace; gT.anisotropy = 4;
+    const hG = 3.2, wG = hG / .735; pl(wG, hG, lum(mat({ map: gT, emissive: 0xffffff, emissiveMap: gT, emissiveIntensity: .3, roughness: .8 }), .3, .6), 0, 4.02 + hG / 2, .1, 0, g);
+    box(wG + .1, .1, .3, Mc(0x22322a, { roughness: .25 }), 0, 4.03, .1, g);   // (la tablette de marbre vert, sous la gravure)
+    for (const sg of [-1, 1]) box((Lg - wG) / 2 + .02, hG + .3, .14, rouge, sg * (wG / 2 + (Lg - wG) / 4), 4.0 + (hG + .3) / 2, .06, g);
+    aplatir(g); }
   // les statuettes dorées du Grévin, dans leurs niches, en haut de la devanture rouge
   for (let z = -38.6; z > -49.6; z -= .9) { const x = 1.86; add(new THREE.CapsuleGeometry(.05, .16, 3, 8), dore2, x, 4.14, z); add(new THREE.SphereGeometry(.045, 8, 6), dore2, x, 4.34, z); add(new THREE.ConeGeometry(.08, .1, 8), dore2, x, 4.0, z); box(.12, .04, .2, dore2, x, 3.94, z); }
   // le tapis rouge de La Cure Gourmande, devant sa porte
