@@ -14308,8 +14308,19 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
   // les avancées de part et d'autre (sans écran) ; sur le pylône, la grande affiche de « Génération perdue » (The Lost Boys), comme les grandes affiches d'avant-première
   const jaq = (cle) => { const t = new THREE.TextureLoader().load(`images/videofutur/jaquette-${cle}.webp`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
   for (const sx of [-1, 1]) box(4, 20, 6, creme, sx * 9, 18, -2.5, T);
-  { const af = new THREE.Mesh(new THREE.PlaneGeometry(10.6, 15.0), lum(mat({ map: jaq("lb"), emissive: 0xffffff, emissiveIntensity: .05, emissiveMap: jaq("lb"), roughness: .6 }), .05, .75)); af.position.set(0, 14.5, 3.75); T.add(af);
+  { const af = new THREE.Mesh(new THREE.PlaneGeometry(10.6, 15.0), lum(mat({ map: jaq("lb"), emissive: 0xff8078, emissiveIntensity: .05, emissiveMap: jaq("lb"), roughness: .6 }), .05, .75)); af.position.set(0, 14.5, 3.75); T.add(af);
     box(11.2, .4, .5, noirM, 0, 22.2, 3.6, T); box(11.2, .4, .5, noirM, 0, 6.8, 3.6, T); }
+  /* (10.50) les projecteurs, posés sur la bande rouge de la marquise : des lyres noires tournées vers le haut, qui baignent la grande affiche de lumière rouge, le soir */
+  { const carc = mat({ color: 0x141416, roughness: .4, metalness: .6 }), lent = lum(mat({ color: 0x5a0a0a, emissive: 0xff1a1a, emissiveIntensity: 0 }), 0, 3), conM = new THREE.MeshBasicMaterial({ color: 0xff2020, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const conG = new THREE.CylinderGeometry(.18, 1.6, 7.5, 16, 1, true); conG.translate(0, 3.75, 0);
+    for (let k = 0; k < 5; k++) { const x = -4.4 + k * 2.2, P = new THREE.Group(); P.position.set(x, 7.25, 5.4); T.add(P); box(.5, .12, .5, carc, 0, 0, 0, P);
+      const tete = new THREE.Group(); tete.position.y = .35; tete.rotation.x = -.42; P.add(tete); const c = add(new THREE.CylinderGeometry(.2, .26, .55, 14), carc, 0, 0, 0, tete); void c; const l = add(new THREE.CircleGeometry(.18, 14), lent, 0, .28, 0, tete); l.rotation.x = -Math.PI / 2;
+      for (const sg of [-1, 1]) box(.04, .45, .1, carc, sg * .28, .15, 0, P);
+      const cone = new THREE.Mesh(conG, conM); cone.position.y = .3; tete.add(cone); }
+    NUIT.push([{ set emissiveIntensity(v) { conM.opacity = v; } }, 0, .2]);
+    { const gT = tT(64, 256, (c, w, h) => { const g = c.createLinearGradient(0, h, 0, 0); g.addColorStop(0, "rgba(255,40,30,1)"); g.addColorStop(.45, "rgba(255,30,30,.55)"); g.addColorStop(1, "rgba(255,20,20,.15)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });   // (le halo rouge des projecteurs sur l'affiche, plus fort en bas)
+      const gM = new THREE.MeshBasicMaterial({ map: gT, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }), gl = new THREE.Mesh(new THREE.PlaneGeometry(11.6, 15.6), gM); gl.position.set(0, 14.6, 3.8); T.add(gl);
+      NUIT.push([{ set emissiveIntensity(v) { gM.opacity = v; } }, 0, .55]); } }
   // la corniche en saillie, puis « REX » sous la tourelle ; la tourelle ronde à colonnes, en deux étages ; les lettres « REX » au sommet
   box(16, .7, 9.5, creme, 0, 29.3, -.6, T); box(16.4, .2, 9.9, lum(mat({ color: 0xf2e0b0, emissive: 0xffd080, emissiveIntensity: 0 }), 0, 1), 0, 29.0, -.6, T);
   const lt = (col) => tT(512, 200, (c) => { c.font = "bold 190px Arial Black, Arial"; c.textAlign = "center"; c.lineWidth = 10; c.strokeStyle = col === "#ffd040" ? "#ffe890" : "#5a5e66"; c.strokeText("REX", 256, 180); c.fillStyle = col; c.fillText("REX", 256, 180); });
