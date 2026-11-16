@@ -13492,9 +13492,10 @@ function construireJouffroy(A, L, scene) {
       box(lg, .08, .06, mat({ color: 0xf2ece0 }), 0, HH - .04, .03, w); void nx; void nz; return w; };
     lambris(HX0, HZ0, HX0, HZ1); lambris(HX1, HZ1 + 1.15, HX1, HZ0); lambris(HX1, HZ1, HX1, HZ1 + .12);
     // (10.30) dans le mur de droite, près du fond, l'ouverture encadrée de rouge : l'escalier, qui monte le long du mur du fond, y entre et continue vers les étages
-    const OZ0 = HZ1 + .12, OZ1 = HZ1 + 1.15; { const ozm = (OZ0 + OZ1) / 2, yO = 4.35, rc = mat({ color: 0xb02a2c, roughness: .5 }); pl(OZ1 - OZ0, HH - yO, papier(1.0), HX1 - .01, yO + (HH - yO) / 2, ozm, -Math.PI / 2, g);
+    const OZ0 = HZ1 + .12, OZ1 = HZ1 + 1.15; { const ozm = (OZ0 + OZ1) / 2, yO = 4.4, yC = 14 * .17, rc = mat({ color: 0xb02a2c, roughness: .5 }); pl(OZ1 - OZ0, HH - yO, papier(1.0), HX1 - .01, yO + (HH - yO) / 2, ozm, -Math.PI / 2, g);
       for (const zz of [OZ0, OZ1]) box(.12, yO, .1, rc, HX1 - .04, yO / 2, zz, g); box(.12, .1, OZ1 - OZ0, rc, HX1 - .04, yO, ozm, g);
-      const cr = mat({ color: 0xd8c098, emissive: 0x4a2a08, emissiveIntensity: .35 }); for (const zz of [OZ0, OZ1]) pl(1.8, yO, cr, HX1 + .9, yO / 2, zz, zz === OZ0 ? 0 : Math.PI, g); pl(OZ1 - OZ0, yO, mat({ color: 0x5a4030 }), HX1 + 1.8, yO / 2, ozm, -Math.PI / 2, g); { const pf = add(new THREE.PlaneGeometry(1.8, OZ1 - OZ0), mat({ color: 0x3a2a20 }), HX1 + .9, yO, ozm, g); pf.rotation.x = Math.PI / 2; } } lambris(HX0 + 1.4, HZ1, HX1, HZ1);
+      const cr = mat({ color: 0xd8c098, emissive: 0x4a2a08, emissiveIntensity: .35 }); for (const zz of [OZ0, OZ1]) pl(1.8, yO - yC, cr, HX1 + .9, (yO + yC) / 2, zz, zz === OZ0 ? 0 : Math.PI, g); pl(OZ1 - OZ0, yO - yC, mat({ color: 0x5a4030 }), HX1 + 1.8, (yO + yC) / 2, ozm, -Math.PI / 2, g);
+      { const fl = add(new THREE.PlaneGeometry(1.8, OZ1 - OZ0), mat({ color: 0x2e5a3a, roughness: .95 }), HX1 + .9, yC + .005, ozm, g); fl.rotation.x = -Math.PI / 2; box(.12, Math.min(1, yC), OZ1 - OZ0, mat({ color: 0x9a1e22 }), HX1 + .06, Math.min(1, yC) / 2, ozm, g); if (yC > 1) pl(OZ1 - OZ0, yC - 1, papier(1.0), HX1 - .01, 1 + (yC - 1) / 2, ozm, -Math.PI / 2, g); }   /* (le couloir, de plain-pied avec la dernière marche ; sous le seuil, le mur) */ { const pf = add(new THREE.PlaneGeometry(1.8, OZ1 - OZ0), mat({ color: 0x3a2a20 }), HX1 + .9, yO, ozm, g); pf.rotation.x = Math.PI / 2; } } lambris(HX0 + 1.4, HZ1, HX1, HZ1);
     { const w = lambris(HX0, HZ1, HX0 + 1.4, HZ1); void w; }
     // le sol (vieux parquet) et le plafond
     const parqT = tT(256, 256, (c, w, h) => { for (let r = 0; r < 16; r++) { let x = -(r * 37 % 90); while (x < w) { const l = 60 + (x * 7 + r * 13) % 70; c.fillStyle = ["#7a5236", "#8a5e3c", "#6e4a30", "#94683f", "#7e563a"][Math.abs(x + r) % 5 | 0]; c.fillRect(x, r * 16, l, 16); c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(x, r * 16, 1, 16); x += l; } c.fillStyle = "rgba(30,15,5,.45)"; c.fillRect(0, r * 16, w, 1); } }, true); parqT.repeat.set(2.5, 3);
@@ -13582,16 +13583,16 @@ function construireJouffroy(A, L, scene) {
     // l'escalier tournant (d'après les photos) : la première marche arrondie au tapis rouge, puis la montée vers le fond qui tourne à droite jusqu'au palier ;
     // le tapis vert sur les marches et les contremarches, les nez dorés, le dessous fermé de lambris rouge, la rampe de bois qui s'enroule, les barreaux de fer, le pilier de laiton à boule
     { const tapisV = mat({ color: 0x2e5a3a, roughness: .95 }), tapisR = mat({ color: 0xa8202a, roughness: .95 }), nez = mat({ color: 0xc8a050, metalness: .8, roughness: .3 }), fer = mat({ color: 0x1a1a1a, metalness: .4, roughness: .5 }), rampe = mat({ color: 0x7a4422, roughness: .3 }), dessous = mat({ color: 0x9a1e22, roughness: .55 });
-      const hS = .19, W = .82, steps = []; const sx = -.05, sz = HZ1 + 1.75;
+      const hS = .17, W = .82, steps = []; const sx = -.05, sz = HZ1 + 1.75;
       // (le tracé, d'après la photo : petit et serré contre le mur du fond — on part vers le fond, on tourne aussitôt à droite, et l'on monte le long du mur du fond jusqu'à l'ouverture du mur de droite, puis au-delà)
       for (let k = 0; k < 2; k++) steps.push([sx, sz - k * .27, -Math.PI / 2]);
       { const R0 = .62, cxT = sx + R0, czT = sz - .27 - .05; for (let k = 1; k <= 5; k++) { const a = Math.PI + k * (Math.PI / 2) / 5; steps.push([cxT + Math.cos(a) * R0, czT + Math.sin(a) * R0, -Math.PI / 2 + k * (Math.PI / 2) / 5]); }
-        const zL = czT - R0; for (let k = 1; k <= 10; k++) steps.push([cxT + k * .27, zL, 0]); }
+        const zL = czT - R0; for (let k = 1; k <= 7; k++) steps.push([cxT + k * .27, zL, 0]); }   // (jusqu'au seuil de l'ouverture : derrière, c'est un couloir, de plain-pied)
       const ccx = 1.2;
       const pts = [];
       steps.forEach(([x, z, dir], k) => { const y = (k + 1) * hS, dx = Math.cos(dir), dz = Math.sin(dir), lx = dz, lz = -dx;   // (dir : vers où l'on monte ; l : la gauche)
         const st = new THREE.Group(); st.position.set(x, 0, z); st.rotation.y = -dir - Math.PI / 2; g.add(st);   // (local : +z vers le bas de l'escalier, x en travers)
-        box(W, y - .03, .3, dessous, 0, (y - .03) / 2, 0, st); box(W + .02, .05, .34, tapisV, 0, y - .02, .01, st); box(W + .02, hS - .02, .03, tapisV, 0, y - hS / 2 - .02, .16, st); box(W + .03, .03, .03, nez, 0, y - .01, .17, st);
+        box(W, hS, .3, tapisV, 0, y - hS / 2 - .02, 0, st); void dessous;   // (10.30 : plus de mur rouge dessous, juste les marches, comme sur la photo) box(W + .02, .05, .34, tapisV, 0, y - .02, .01, st); box(W + .02, hS - .02, .03, tapisV, 0, y - hS / 2 - .02, .16, st); box(W + .03, .03, .03, nez, 0, y - .01, .17, st);
         const xr = x + lx * (W / 2 - .04), zr = z + lz * (W / 2 - .04); box(.016, .9, .016, fer, xr, y + .45, zr, g); pts.push(new THREE.Vector3(xr, y + .9, zr)); });
       // la première marche, arrondie, au tapis rouge
       { box(W + .3, hS, .4, tapisR, sx, hS / 2, sz + .3, g); const b2 = add(new THREE.CylinderGeometry(.2, .2, hS, 16, 1, false, 0, Math.PI), tapisR, sx - (W + .3) / 2, hS / 2, sz + .3, g); b2.rotation.y = Math.PI; box(W + .3, .03, .03, nez, sx, hS, sz + .5, g); }
