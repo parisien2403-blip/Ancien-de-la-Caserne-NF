@@ -4941,9 +4941,10 @@ function circulationRue(L, scene, O) {
     const dt = avant ? Math.min(.1, (t - avant) / 1000) : 0; avant = t;
     for (const v of enRoute) v.g.visible = !(M && M.halloween);
     const obst = O.nom && L.obstRue || []; if (obst.some(o => Math.abs(o.z - O.z) < 2 && Math.abs(o.x - O.x0) < 16)) prochain = Math.max(prochain, t + 600);   /* (le camion de livraison s'engage : on attend qu'il soit passé) */
+    const leger = typeof MOBILE !== "undefined" && (MOBILE || GPU_MODESTE); if (leger && enRoute.length >= 5) prochain = Math.max(prochain, t + 800);   // (10.22) sur téléphone : cinq voitures au plus par voie
     if (t > prochain && !L.apo && !(M && M.halloween)) { const dernier = enRoute[enRoute.length - 1];
       if (!dernier || (dernier.g.position.x - O.x0) * O.sens > 12 + dernier.L + 6) { const r0 = Math.random(), v = r0 < .14 ? busVrai() : r0 < .32 ? moto() : r0 < .6 ? citadineVraie() : voiture(); v.g.position.set(O.x0, O.y, O.z); v.g.rotation.y = O.sens > 0 ? 0 : Math.PI; scene.add(v.g); enRoute.push(v);
-        prochain = t + (O.dense ? (Math.random() < .5 ? 1300 + Math.random() * 1800 : 3000 + Math.random() * 4500) : Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
+        prochain = t + (O.dense && !leger ? (Math.random() < .5 ? 1300 + Math.random() * 1800 : 3000 + Math.random() * 4500) : Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
       else prochain = t + 800; }
     for (let i = enRoute.length - 1; i >= 0; i--) { const v = enRoute[i], dev = enRoute[i - 1];
       // la vitesse voulue : on freine et on s'arrête devant quelqu'un sur la chaussée (≈ 1 m avant), et derrière le véhicule qui précède (pas de dépassement) ; on repart quand c'est libre
@@ -13755,15 +13756,19 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
           if (!Q.laisse || Q.laisse.parent !== scene) { Q.laisse = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: [0xc8202a, 0x2a5ac8, 0x1a1a1a][Q.num % 3 + 2 > 2 ? 0 : (-Q.num) % 3] })); scene.add(Q.laisse); }
           Q.laisse.visible = true; const ps = Q.laisse.geometry.attributes.position; ps.setXYZ(0, g.x + hz * .25, g.y + 1.0, g.z - hx * .25); ps.setXYZ(1, D.position.x - hx * .25, D.position.y + .42, D.position.z - hz * .25); ps.needsUpdate = true; }
         else { Q.acc.visible = true; Q.acc.position.set(g.x + hx * av - hz * lat, g.y, g.z + hz * av + hx * lat); Q.acc.rotation.y = Math.atan2(-hz, hx) + (P.acc === "poussette" ? Math.PI : 0); } } }
-    for (const [k, m] of FILE.entries()) { const P = m.userData.parts; m.userData.poser("debout", tm); if (k % 2 === 0) { P.bras[0].e.rotation.x = -.5 + Math.sin(tm / 400 + k) * .2; P.tete.rotation.y = Math.sin(tm / 1100 + k) * .4; } }
+    for (const [k, m] of FILE.entries()) { if (!m.visible) continue; const P = m.userData.parts; m.userData.poser("debout", tm); if (k % 2 === 0) { P.bras[0].e.rotation.x = -.5 + Math.sin(tm / 400 + k) * .2; P.tete.rotation.y = Math.sin(tm / 1100 + k) * .4; } }
+    // (10.22) les personnages lointains : ni dessinés, ni animés (au-delà de 34 m sur téléphone, 70 m sur ordinateur) — tout le boulevard en enfilade faisait ramer les téléphones
+    if (tm - (L.tCull || 0) > 300 && M.camera) { L.tCull = tm; const c = M.camera.position, R2 = ((MOBILE || GPU_MODESTE) ? 34 : 70) ** 2, v3 = new THREE.Vector3();
+      for (const m of FILE.concat(TERR, VID)) { if (!m.userData.wp) m.userData.wp = m.getWorldPosition(new THREE.Vector3()); const w = m.userData.wp; m.visible = (w.x - c.x) ** 2 + (w.z - c.z) ** 2 < R2; }
+      for (const W of MARCH) W.m.visible = (W.m.position.x - c.x) ** 2 + (W.m.position.z - c.z) ** 2 < R2; void v3; }
     { const dtM = Math.min(.1, Math.max(0, (tm - (L.tMarch || tm)) / 1000)); L.tMarch = tm;
       for (const W of MARCH) { const m = W.m, [tx, tz] = W.R[W.i], dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
         if (d < .15) { if (W.i + W.sens < 0 || W.i + W.sens >= W.R.length) W.sens = -W.sens; W.i += W.sens; continue; }
-        const v = Math.min(d, W.v * dtM); m.position.x += dx / d * v; m.position.z += dz / d * v; m.rotation.y = Math.atan2(dx, dz); m.userData.poser("marche", tm * W.v / 1.2); } }   // (10.19) les promeneurs
-    for (const m of VID) { const P = m.userData.parts, c = (tm / 1000) % 9; m.userData.poser("debout", tm);
+        const v = Math.min(d, W.v * dtM); m.position.x += dx / d * v; m.position.z += dz / d * v; m.rotation.y = Math.atan2(dx, dz); if (m.visible) m.userData.poser("marche", tm * W.v / 1.2); } }   // (10.19) les promeneurs
+    for (const m of VID) { if (!m.visible) continue; const P = m.userData.parts, c = (tm / 1000) % 9; m.userData.poser("debout", tm);
       if (c < 2.2) { P.bras[1].e.rotation.set(-1.5, 0, .25); P.bras[1].c.rotation.x = -.25; P.tete.rotation.y = .5; }   // (la main levée : « une minute… »)
       else { for (const [i, sg] of [[0, 1], [1, -1]]) { P.bras[i].e.rotation.set(-.75, 0, sg * -.55); P.bras[i].c.rotation.x = -1.75; } P.tete.rotation.y = Math.sin(tm / 1700) * .5; } }   // (les bras croisés, il surveille)
-    for (const [k, m] of TERR.entries()) { const P = m.userData.parts, b = (tm / 1000 + k * 1.7) % 7; m.userData.poser("assis", tm); if (b < 1.3) { P.bras[1].e.rotation.x = -1.3; P.bras[1].c.rotation.x = -1.9; P.tete.rotation.x = -.15; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.9; P.tete.rotation.x = 0; } }
+    for (const [k, m] of TERR.entries()) { if (!m.visible) continue; const P = m.userData.parts, b = (tm / 1000 + k * 1.7) % 7; m.userData.poser("assis", tm); if (b < 1.3) { P.bras[1].e.rotation.x = -1.3; P.bras[1].c.rotation.x = -1.9; P.tete.rotation.x = -.15; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.9; P.tete.rotation.x = 0; } }
     for (const P of MARCHE) { P.t += dt * P.v / P.L; const u = (Math.sin(P.t * Math.PI) + 1) / 2, sens = Math.cos(P.t * Math.PI) > 0 ? 1 : -1, g = P.g, dx = Math.cos(P.ry), dz = -Math.sin(P.ry);
       g.position.x = P.x0 + dx * (u - .5) * P.L; g.position.z = P.z0 + dz * (u - .5) * P.L; g.rotation.y = P.ry + (sens > 0 ? 0 : Math.PI) + Math.PI / 2;
       const b = Math.sin(tm / 170 + P.x0); g.userData.J.forEach((j, k) => j.rotation.x = (k ? 1 : -1) * b * .45); g.userData.B.forEach((a, k) => a.rotation.x = (k ? -1 : 1) * b * .35); } };
