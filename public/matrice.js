@@ -13478,7 +13478,7 @@ function construireJouffroy(A, L, scene) {
       c.strokeStyle = "rgba(200,190,170,.6)"; for (let k = 0; k < 9; k++) { c.beginPath(); c.moveTo(k * 7, 0); c.quadraticCurveTo(k * 4, h * .5, k * 5, h); c.stroke(); } });
     const dentM = new THREE.MeshStandardMaterial({ map: dent, transparent: true, side: THREE.DoubleSide, roughness: .9, depthWrite: false });
     const hotT = tT(256, 96, (c, w, h) => { c.clearRect(0, 0, w, h); c.font = `bold 70px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "#5a3a10"; c.fillText("HOTEL", w / 2 + 3, h / 2 + 4); const gg = c.createLinearGradient(0, 10, 0, h - 10); gg.addColorStop(0, "#fff0a0"); gg.addColorStop(1, "#c89020"); c.fillStyle = gg; c.fillText("HOTEL", w / 2, h / 2); });
-    for (const [x, w2] of [[-1.21, 1.0], [0, .6], [1.21, 1.0]]) pl(w2, w2 * .38, new THREE.MeshBasicMaterial({ map: hotT, transparent: true, depthWrite: false, side: THREE.DoubleSide }), x, 1.95, .09, 0, g);
+    for (const [x, w2] of [[-1.21, 1.0], [1.21, 1.0]]) pl(w2, w2 * .38, new THREE.MeshBasicMaterial({ map: hotT, transparent: true, depthWrite: false, side: THREE.DoubleSide }), x, 1.95, .09, 0, g);
     { const ov = add(new THREE.TorusGeometry(.2, .03, 6, 24), acajou, 0, 2.55, .1, g); ov.scale.x = 1.3; for (let k = 0; k < 3; k++) { const b2 = box(.5, .015, .015, acajou, 0, 2.55, .09, g); b2.rotation.z = (k - 1) * .7; } }
     for (const [cx, sg] of [[-1.12, -1], [-1.12, 1], [1.12, -1], [1.12, 1]]) { const p = pl(.4, 1.95, dentM, cx + sg * .38, 1.75, -.12, 0, g); if (sg > 0) p.scale.x = -1; }
     // la façade de bois sculpté
@@ -13837,7 +13837,7 @@ function construireJouffroy(A, L, scene) {
   drapeau(-2, 1, -23.4, 2.95, .95, .55, plaque("#3a2228", "Amour\nde Pierres", "#f2e6d0", `24px ${serif}`, "Bijoux & Minéraux"));
   drapeau(-2, 1, -31.4, 3.0, .85, .55, plaque("#2a2e32", "SALON des\nMIROIRS", "#f2f0ea", `bold 22px Arial`));
   drapeau(-2, 1, -38.4, 3.0, .75, .5, plaque("#ecebe6", "M&S\nFOOD", "#3a3a3a", `bold 26px Arial`));
-  drapeau(2, -1, -26.2, 3.0, .85, .55, plaque("#e0b040", "LA CURE\nGOURMANDE", "#4a2a12", `bold 22px ${serif}`));
+  drapeau(2, -1, -26.2, 3.0, .85, .55, plaque("#e0b040", "LA CURE\nGOURMANDE", "#4a2a12", `bold 17px ${serif}`));
   drapeau(2, -1, -50.4, 3.0, .7, .62, plaque("#8a1a2a", "LA MAISON\ndu Roy", "#e8c878", `bold 20px ${serif}`));
   drapeau(2, -1, -56.2, 3.0, .8, .45, plaque("#dfe8e2", "le Valentin", "#3a5a4a", `italic 26px ${serif}`));
   drapeau(-2, 1, -56.0, 3.0, .85, .55, (c, w, h) => { plaque("#ece4cc", "Pain d'Épices", "#4a3a2a", `italic bold 24px ${serif}`)(c, w, h); c.fillStyle = "#6a4a2a"; c.beginPath(); c.arc(w / 2, 22, 10, 0, 7); c.fill(); });
@@ -14272,7 +14272,7 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
 const tronc = mat({ color: 0x6a5a4a }), feuil = mat({ color: 0x5f7a44, roughness: 1, flatShading: true }), branche = mat({ color: 0x4a3c30 });
 const platane = (x, z, nu) => { add(new THREE.CylinderGeometry(.22, .3, 6, 8), tronc, x, 3, z); if (nu) { for (let i = 0; i < 6; i++) { const b = add(new THREE.CylinderGeometry(.05, .1, 3.5, 5), branche, x, 6.5, z); b.rotation.z = (al() - .5) * 1.4; b.rotation.x = (al() - .5) * 1.4; } return; }
   for (let i = 0; i < 3; i++) { const f = add(new THREE.IcosahedronGeometry(2.2 + al(), 0), feuil, x + (al() - .5) * 2, 7.5 + al() * 1.5, z + (al() - .5) * 2); f.scale.y = .75; } };
-for (let x = -125; x <= 125; x += 8.5) { if (Math.abs(x) < 16) continue; if (x !== -91) platane(x, -12.2, false); platane(x, 12.2, Math.abs(x) < 30); }
+for (let x = -125; x <= 125; x += 8.5) { if (Math.abs(x) < 16) continue; if (x !== -91 && x !== -108 && x !== -99.5) platane(x, -12.2, false); platane(x, 12.2, Math.abs(x) < 30); }
 // les feux tricolores : à chaque passage piéton, un pour les voitures, un petit pour les piétons
 /* (10.13) les feux tricolores : sur les trottoirs ; pour les piétons, le bonhomme rouge (arrêté) et le bonhomme vert (qui marche), comme les vrais.
    Ils changent ensemble : le boulevard, puis les rues ; les voitures s'arrêtent au feu rouge, les passants attendent le bonhomme vert */
@@ -14359,7 +14359,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     const ryF = Math.atan2(-uz, ux);   // (un paravent parallèle à la façade)
     for (const [t0, t1] of panneaux) { if ((t0 / 1.6) % 4 === 3) { const [x, z] = ex((t0 + t1) / 2, pd); bac(x, z, t1 - t0 - .1, ryF); continue; } paravent(ex(t0, pd), ex(t1, pd), ryF); }   // (un bac à plantes tous les quatre panneaux)
     const ryC = Math.atan2(-nz, nx); for (const t of [.05, lg - .05]) { paravent(ex(t, .2), ex(t, pd * .55), ryC); const [x, z] = ex(t, pd * .8); bac(x, z, pd * .4, ryC); } };   // (les bouts : un paravent, et un bac à plantes)
-  const ARB = []; for (let x = -125; x <= 125; x += 8.5) { if (Math.abs(x) < 16) continue; ARB.push([x, 12.2]); if (x !== -91) ARB.push([x, -12.2]); }   // (devant le Hard Rock, pas d'arbre : l'entrée)   // (les platanes : pas de table dedans)
+  const ARB = []; for (let x = -125; x <= 125; x += 8.5) { if (Math.abs(x) < 16) continue; ARB.push([x, 12.2]); if (x !== -91 && x !== -108 && x !== -99.5) ARB.push([x, -12.2]); }   // (devant le Hard Rock, pas d'arbre : l'entrée)   // (les platanes : pas de table dedans)
   ARB.push([14, -9.5], [40, -9.5], [14, 9.5], [40, 9.5]);
   /* (10.13) les portes des bars : grandes portes vitrées à deux battants, cadre de bois sombre, barres de poussée dorées ; derrière la vitre, l'intérieur — le comptoir en zinc,
      les bouteilles sur les étagères éclairées, le miroir, les suspensions, le barman, des clients */
@@ -14475,20 +14475,32 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
       c.fillStyle = "#dcdad4"; c.fillRect(vx - 70, h * .32, 140, 18); c.fillStyle = "#18181a"; c.font = "bold 12px Arial"; c.textAlign = "center"; c.fillText("VISITEZ LES GALERIES", vx, h * .32 + 13);
       c.fillStyle = "rgba(255,230,170,.95)"; for (const x of [vx - 60, vx + 60]) { c.beginPath(); c.arc(x, h * .27, 9, 0, 7); c.fill(); } });
     vue.repeat.set(1 / 3.4, 1 / 5.3); vue.offset.set(.5, 0); add(new THREE.ShapeGeometry(arc(new THREE.Shape()), 16), mat({ map: vue }), 0, 0, .03, G);
-    for (const x of [-3.4, -2.05, 2.05, 3.4]) { add(new THREE.CylinderGeometry(.26, .26, 6.0, 20), blanc, x, 3.0, .75, G); box(.7, .3, .7, blanc, x, .15, .75, G); box(.66, .25, .66, blanc, x, 6.05, .75, G); }
-    const tPJ = tT(820, 120, (c, w, h) => { c.fillStyle = "#f2f0ea"; c.fillRect(0, 0, w, h); c.strokeStyle = "#cfcac0"; c.lineWidth = 6; c.strokeRect(20, 18, w - 40, h - 36); c.fillStyle = "#c4c0b8"; c.font = "bold 74px 'Arial Black', Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("PASSAGE  JOUFFROY", w / 2 + 3, h / 2 + 5); c.fillStyle = "#8a8680"; c.fillText("PASSAGE  JOUFFROY", w / 2, h / 2 + 2); });
-    box(8.4, 1.25, .95, [blanc, blanc, blanc, blanc, mat({ map: tPJ }), blanc], 0, 6.85, .47, G); box(4.2, .6, .5, blanc, 0, 7.75, .3, G);
-    const tR2 = tT(256, 64, (c, w, h) => { c.fillStyle = "#f2f0ea"; c.fillRect(0, 0, w, h); c.fillStyle = "#b8141e"; c.font = "bold 40px Arial"; c.textAlign = "center"; c.fillText("RONCERAY", w / 2, 48); }); add(new THREE.PlaneGeometry(2.4, .6), mat({ map: tR2 }), 0, 7.75, .56, G);
-    const tHR = tT(80, 480, (c, w, h) => { c.fillStyle = "#3a3a3c"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8e4dc"; c.font = "bold 40px Arial"; c.textAlign = "center"; [..."HÔTEL RONCERAY"].forEach((l, i) => c.fillText(l, w / 2, 36 + i * 32)); });
-    add(new THREE.PlaneGeometry(.55, 4.8), mat({ map: tHR }), 2.72, 3.2, .52, G);
-    const tOr = tT(80, 480, (c, w, h) => { c.fillStyle = "#e4e0d6"; c.fillRect(0, 0, w, h); c.strokeStyle = "#8a8478"; c.lineWidth = 3; for (let k = 0; k < 8; k++) { c.beginPath(); c.arc(w / 2, 40 + k * 56, 18, 0, 7); c.stroke(); c.beginPath(); c.moveTo(w / 2, 58 + k * 56); c.lineTo(w / 2, 78 + k * 56); c.stroke(); } });
-    add(new THREE.PlaneGeometry(.55, 4.8), mat({ map: tOr }), -2.72, 3.2, .52, G);
+    // (10.32) d'après la photo : deux pilastres plats de chaque côté, leurs panneaux en creux, leur socle ; l'archivolte de l'arc ; les affiches jaunes en bas ;
+    // le bandeau gris sombre « PASSAGE JOUFFROY » en lettres blanches, la corniche ; l'enseigne verticale noire « HÔTEL RONCERAY » ; et devant, les deux grands candélabres de fonte
+    const serif = "Georgia, 'Times New Roman', serif", creme2 = mat({ color: 0xe4ded0, roughness: .75 }), pl = (w, h, m, x, y, z, ry, par) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.position.set(x, y, z); o.rotation.y = ry || 0; par.add(o); return o; }, lumT = (t, j, n) => lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: j }), j, n);
+    for (const x of [-3.3, -2.2, 2.2, 3.3]) { box(.62, 6.2, .24, blanc, x, 3.1, .62, G); box(.38, 2.4, .03, creme2, x, 4.4, .75, G); box(.38, 2.0, .03, creme2, x, 1.6, .75, G); box(.74, .35, .32, blanc, x, .17, .62, G); box(.74, .14, .32, blanc, x, 6.15, .62, G); }
+    { const av = add(new THREE.TorusGeometry(1.82, .09, 8, 32, Math.PI), blanc, 0, 3.6, .55, G); void av; box(.34, .5, .2, blanc, 0, 5.5, .58, G); }   // (l'archivolte, la clé)
+    const affJ = (titre) => mat({ map: tT(96, 160, (c, w, h) => { c.fillStyle = "#f2c838"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8202a"; c.font = "bold 16px Georgia"; c.textAlign = "center"; c.fillText(titre, w / 2, 24); c.fillStyle = "#e86a2a"; c.beginPath(); c.arc(w / 2, 80, 26, 0, 7); c.fill(); c.fillStyle = "#3a2a1a"; c.fillRect(w / 2 - 12, 100, 24, 30); c.fillStyle = "#c8202a"; c.fillRect(8, h - 24, w - 16, 14); }) });
+    for (const [x, t] of [[-2.2, "Grévin"], [2.2, "Grévin"]]) pl(.5, .85, affJ(t), x, 1.3, .79, 0, G);
+    const tPJ = tT(1024, 112, (c, w, h) => { c.fillStyle = "#4a4c50"; c.fillRect(0, 0, w, h); c.strokeStyle = "#8a8c90"; c.lineWidth = 4; c.strokeRect(6, 6, w - 12, h - 12); c.fillStyle = "#f4f2ec"; c.font = `bold 70px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("PASSAGE   JOUFFROY", w / 2, h / 2 + 3); });
+    box(7.4, .7, .3, [mat({ color: 0x4a4c50 }), mat({ color: 0x4a4c50 }), mat({ color: 0x4a4c50 }), mat({ color: 0x4a4c50 }), lumT(tPJ, .2, .7), mat({ color: 0x4a4c50 })], 0, 6.65, .62, G);
+    box(8.2, .16, .5, blanc, 0, 7.08, .45, G); box(8.0, .1, .4, blanc, 0, 6.24, .55, G);
+    const tHR = tT(80, 640, (c, w, h) => { c.fillStyle = "#16181a"; c.fillRect(0, 0, w, h); c.strokeStyle = "#8a8c90"; c.lineWidth = 3; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = "#f4f2ec"; c.font = "bold 40px Arial"; c.textAlign = "center"; [..."HÔTEL RONCERAY"].forEach((l, i) => c.fillText(l, w / 2, 46 + i * 42)); });
+    box(.5, 4.0, .1, [mat({ color: 0x16181a }), mat({ color: 0x16181a }), mat({ color: 0x16181a }), mat({ color: 0x16181a }), lumT(tHR, .25, .9), mat({ color: 0x16181a })], 2.75, 3.9, .8, G);
+    // les candélabres parisiens : le socle, le fût cannelé, les bagues, la crosse, la lanterne vitrée et sa couronne
+    const fonte2 = mat({ color: 0x1c221e, metalness: .5, roughness: .45 }), vitreL = lum(new THREE.MeshStandardMaterial({ color: 0xfff2d0, emissive: 0xffd890, emissiveIntensity: .15, transparent: true, opacity: .85, roughness: .2 }), .15, 1.7);
+    for (const sg of [-1, 1]) { const cg = new THREE.Group(); cg.position.set(sg * 3.7, 0, 2.1); G.add(cg);
+      box(.5, .25, .5, fonte2, 0, .125, 0, cg); add(new THREE.CylinderGeometry(.18, .24, .9, 8), fonte2, 0, .7, 0, cg); add(new THREE.TorusGeometry(.2, .04, 6, 16), fonte2, 0, 1.15, 0, cg).rotation.x = Math.PI / 2;
+      add(new THREE.CylinderGeometry(.075, .11, 2.6, 12), fonte2, 0, 2.45, 0, cg); for (const y of [1.6, 2.4, 3.2, 3.75]) add(new THREE.TorusGeometry(.1, .025, 6, 14), fonte2, 0, y, 0, cg).rotation.x = Math.PI / 2;
+      add(new THREE.CylinderGeometry(.13, .06, .3, 10), fonte2, 0, 3.9, 0, cg); add(new THREE.CylinderGeometry(.18, .12, .5, 6, 1, true), vitreL, 0, 4.3, 0, cg); for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; box(.02, .52, .02, fonte2, Math.cos(a) * .16, 4.3, Math.sin(a) * .16, cg); }
+      add(new THREE.ConeGeometry(.24, .22, 6), fonte2, 0, 4.66, 0, cg); add(new THREE.SphereGeometry(.05, 8, 6), fonte2, 0, 4.82, 0, cg); add(new THREE.ConeGeometry(.03, .14, 6), fonte2, 0, 4.92, 0, cg); add(new THREE.SphereGeometry(.09, 10, 8), vitreL, 0, 4.25, 0, cg); }
+    L.obstLamp = [[PX - 3.7, -11.9], [PX + 3.7, -11.9]];
     const grT = tT(128, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = "#121214"; for (let x = 4; x < w; x += 14) c.fillRect(x, 10, 4, h - 10); c.fillRect(0, 20, w, 6); c.fillRect(0, h - 30, w, 6); });
     for (const sg of [-1, 1]) { add(new THREE.PlaneGeometry(1.3, 3.4), new THREE.MeshBasicMaterial({ map: grT, transparent: true, side: THREE.DoubleSide }), sg * 1.62, 1.7, .4, G, Math.PI / 2);
       box(.04, .04, .7, mat({ color: 0x1a1a1c }), sg * .95, 4.1, .35, G); add(new THREE.SphereGeometry(.15, 12, 10), lum(new THREE.MeshStandardMaterial({ color: 0xf8f0dc, emissive: 0xffd890, emissiveIntensity: .1 }), .1, 1.6), sg * .95, 3.6, .7, G); add(new THREE.ConeGeometry(.15, .14, 10), mat({ color: 0x3a3226 }), sg * .95, 3.8, .7, G); }
     L.portails.push({ dans: (x, z) => Math.abs(x - PX) < 1.4 && z < -13.4, vers: "jouffroy", arrivee: [0, -2.5], yaw: Math.PI, indice: [PX, -13.1] }); }
   // où l'on marche : partout, sauf dans les immeubles
-  L.limites = (x, z) => Math.abs(x) < 117 && Math.abs(z) < 117 && !(x < -9.2 && z < -14.2) && !(x > 9.2 && z < -14.2) && !(x > 8.2 && z > 14.2) && !(x < -8.2 && z > 14.2) && Math.hypot(x + 16.6, z - 22.6) > 10.2 && !(Math.abs(x + 35.6) < 1.7 && Math.abs(z + 10.3) < 1.2) && !(Math.abs(x + 70.5) < 2.5 && Math.abs(z - 9.8) < 1.3) && !(Math.abs(x + 43.6) < 2.5 && Math.abs(z + 10.4) < 1.3);   // (le kiosque, la bouche de métro)
+  L.limites = (x, z) => Math.abs(x) < 117 && Math.abs(z) < 117 && !(x < -9.2 && z < -14.2) && !(x > 9.2 && z < -14.2) && !(x > 8.2 && z > 14.2) && !(x < -8.2 && z > 14.2) && Math.hypot(x + 16.6, z - 22.6) > 10.2 && !(Math.abs(x + 35.6) < 1.7 && Math.abs(z + 10.3) < 1.2) && !(Math.abs(x + 70.5) < 2.5 && Math.abs(z - 9.8) < 1.3) && !(Math.abs(x + 43.6) < 2.5 && Math.abs(z + 10.4) < 1.3) && !(L.obstLamp || []).some(([lx, lz]) => Math.hypot(x - lx, z - lz) < .4);   // (le kiosque, la bouche de métro)
   L.hauteur = () => .12;
   // les rangées d'immeubles haussmanniens qui continuent le long du boulevard et des deux rues (boutiques variées en rez-de-chaussée)
   { const BOUT = [["#2a3a5a", "PHARMACIE"], ["#5a2a1a", "BOULANGERIE"], ["#1a1a1a", "TABAC"], ["#3a5a3a", "PRIMEUR"], ["#6a1a2a", "CAFÉ"], ["#2a2a3a", "OPTICIEN"], ["#4a3a2a", "LIBRAIRIE"], ["#1a3a4a", "BANQUE"], ["#7a5a1a", "CRÊPERIE"], ["#3a1a3a", "THÉÂTRE"]];
