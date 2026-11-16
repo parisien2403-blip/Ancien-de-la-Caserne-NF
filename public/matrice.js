@@ -9158,6 +9158,9 @@ export async function ouvrir(ctx) {
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) MD.sosfantomes.cineFinaleGB(); else MD.sosfantomes.cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
     // l'appartement : la vue à la première personne d'elle-même en y entrant (on peut la quitter) ; en sortant, la vue normale revient
+    // (10.38) le passage Jouffroy : toujours à la première personne (on ne peut pas la quitter) ; en sortant, la vue normale revient
+    if (M.lieu === "jouffroy" && !M.premiere && !M.cine && M.gens.get(M.moiNum)) { premiere(true); M.fpJouffroy = true; }
+    else if (M.lieu !== "jouffroy" && M.fpJouffroy) { M.fpJouffroy = false; if (M.premiere) premiere(false); }
     if (M.lieu === "appart" && !M.fpAppart && !M.cine && M.gens.get(M.moiNum)) { M.fpAppart = true; if (!M.premiere) { premiere(true); M.fpAuto = true; } }
     else if (M.lieu !== "appart" && M.fpAppart) { M.fpAppart = false; if (M.fpAuto && M.premiere) premiere(false); M.fpAuto = false; }
     /* l'arrivée : l'écran « Ouverture des grilles… » reste là jusqu'à ce que la main soit prête — plus d'aperçu de la caserne, ni d'écran noir, avant qu'elle descende */
@@ -14016,6 +14019,23 @@ function construireJouffroy(A, L, scene) {
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [XB0 - .5, 2.5, ZFIN - 1, 3]; L.boite = [XB0, 2, ZFIN, 3]; L.plafond = 8.4;
   L.depart = [0, -2.5]; L.cam = { pos: [0, 2.2, 1.5], vise: [0, 1.6, -12] };
   fusionStatique(scene, L, 0);   // (10.26 : tout ce qui ne bouge pas, regroupé — fluide sur téléphone)
+  /* (10.38) du monde dans le passage : des promeneurs qui vont et viennent, flânent devant les vitrines ; à l'entrée, au café, des gens attablés sur les tabourets, qui mangent */
+  { const PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
+    const gens = (k, o = {}) => { const f = k % 2 === 1; return personne3D({ taille: f ? 1.62 + (k % 3) * .04 : 1.72 + (k % 4) * .03, peau: PE[k % 5], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a"][k % 5], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#1a1a1c"][k % 4], chaussures: ["#1a1a1a", "#3a2418"][k % 2], coif: f ? "long" : k % 4 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 3 === 0, ...o }); };
+    const leger = MOBILE || GPU_MODESTE, W = [];
+    const routes = [[[0, -3], [0, -66]], [[.45, -66], [.45, -4]], [[-.4, -6], [-.4, -64]], [[.2, -30], [.2, -62]], [[-10.25, -74], [-10.25, -124]], [[-10.0, -122], [-10.0, -76]]];
+    const nW = leger ? 5 : 9;
+    for (let k = 0; k < nW; k++) { const R = routes[k % routes.length], m = gens(k + 3), u = ((k * 37) % 100) / 100, y = R[0][0] < -5 ? Y2 : 0;
+      m.position.set(R[0][0] + (R[1][0] - R[0][0]) * u, y, R[0][1] + (R[1][1] - R[0][1]) * u); m.userData.poser("marche", 0); scene.add(m); W.push({ m, R, i: 1, v: .8 + (k % 4) * .12, pause: 0, y }); }
+    // au café, à l'entrée : attablés sur les hauts tabourets, une assiette, un verre ; de temps en temps une bouchée
+    const S = [], assiette = mat({ color: 0xf6f4ee, roughness: .3 }), plat = [mat({ color: 0xd89a48 }), mat({ color: 0x8a5a2a }), mat({ color: 0x6aa04a })], vin = new THREE.MeshStandardMaterial({ color: 0x8a1a2a, transparent: true, opacity: .8 });
+    [[-9.2, 1], [-9.2, -1], [-12, 1], [-14.8, -1], [-14.8, 1]].forEach(([z, sg], k) => { if (leger && k > 2) return; const m = gens(k + 11); m.position.set(-1.3, .745 - m.userData.hipY + .02, z + sg * .55); m.rotation.y = sg > 0 ? Math.PI : 0; m.userData.poser("assis", 0); scene.add(m); S.push(m);
+      add(new THREE.CylinderGeometry(.13, .11, .02, 16), assiette, -1.3, .79, z + sg * .17); add(new THREE.SphereGeometry(.06, 8, 6), plat[k % 3], -1.3, .81, z + sg * .17).scale.y = .4; add(new THREE.CylinderGeometry(.03, .025, .1, 10), vin, -1.18, .83, z + sg * .2); });
+    let tp = 0; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const c = M && M.camera && M.camera.position;
+      for (const w of W) { const m = w.m; if (w.pause > 0) { w.pause -= dt; m.userData.poser("debout", tm); continue; } const [tx, tz] = w.R[w.i], dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
+        if (d < .2) { w.i = 1 - w.i; w.pause = 1.5 + (tm % 3000) / 1000; continue; } if ((tm / 1000 + w.v * 10) % 14 < dt * 1.2) { w.pause = 2.5; m.rotation.y += Math.PI / 2 * (m.position.x < -5 ? (m.position.x < -10.25 ? -1 : 1) : (m.position.x < 0 ? -1 : 1)); continue; }   // (de temps en temps, il s'arrête devant une vitrine)
+        const v = Math.min(d, w.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.rotation.y = Math.atan2(dx, dz); m.position.y = w.y; m.visible = !c || Math.hypot(c.x - m.position.x, c.z - m.position.z) < (leger ? 22 : 45); if (m.visible) m.userData.poser("marche", tm * w.v / 1.1); }
+      for (const [k, m] of S.entries()) { const P = m.userData.parts, b = (tm / 1000 + k * 1.9) % 5; m.userData.poser("assis", tm); if (b < 1) { P.bras[1].e.rotation.x = -1.35; P.bras[1].c.rotation.x = -1.9; P.tete.rotation.x = .15; } else { P.bras[1].e.rotation.x = -.6; P.bras[1].c.rotation.x = -.8; P.tete.rotation.x = 0; } } }; }
   /* (10.26) la musique du passage : « Le Festin », en boucle, tant qu'on y est. Un seul lecteur pour toute la partie ; il s'arrête dès qu'on en sort,
      et reprend au début quand on revient. Le volume monte doucement à l'entrée (sur iPhone, où il ne se règle pas, elle part à son niveau) */
   { const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (!M || M.L !== L) return; const A2 = (window.__festin = window.__festin || Object.assign(new Audio("sons/festin.mp3"), { loop: true, preload: "auto" }));
@@ -15471,7 +15491,7 @@ function laserFP(cacher) { let A = M.armeFP;
 function cibleFP(liste) { const cam = viseurVR() || M.camera, f = cam.getWorldDirection(new THREE.Vector3()); let best = null, ba = .14;
   for (const z of liste) { const y = (z.y || 0) + 1.1, v = new THREE.Vector3(z.x - cam.position.x, y - cam.position.y, z.z - cam.position.z), d = v.length(); if (d > 25) continue; const a = v.normalize().angleTo(f); if (a < ba) { ba = a; best = z; } }
   return best; }
-export function premiere(on) { if (!M) return;   /* (pour tout le monde) */ const moi = M.gens.get(M.moiNum);
+export function premiere(on) { if (!M) return; if (!on && M.lieu === "jouffroy") { bulle("👁 Dans le passage Jouffroy, la vue reste à la première personne", 1800); return; }   /* (pour tout le monde) */ const moi = M.gens.get(M.moiNum);
   if (on && !M.premiere) { const f = M.camera.getWorldDirection(new THREE.Vector3()); M.fpYaw = Math.atan2(-f.x, -f.z); M.fpPitch = 0; }
   M.premiere = !!on; if (!on && moi) { moi.g.visible = true; placerCamera(true); } M.ctx.surPremiere && M.ctx.surPremiere(M.premiere);
   bulle(on ? "👁 Vue à la première personne <small>(joystick droit ou glisser le doigt : regarder autour de soi)</small>" : "🎥 Vue normale", 2200); }
