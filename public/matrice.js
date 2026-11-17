@@ -9172,8 +9172,7 @@ export async function ouvrir(ctx) {
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) MD.sosfantomes.cineFinaleGB(); else MD.sosfantomes.cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
     // l'appartement : la vue à la première personne d'elle-même en y entrant (on peut la quitter) ; en sortant, la vue normale revient
     // (10.38) le passage Jouffroy : toujours à la première personne (on ne peut pas la quitter) ; en sortant, la vue normale revient
-    if (M.lieu === "tertre" && !M.fpTertre && !M.cine && M.gens.get(M.moiNum)) { M.fpTertre = true; M.fpTertreAuto = !M.premiere; if (!M.premiere) premiere(true); }   // (10.92) en arrivant à Montmartre : d'emblée à la première personne (on peut en sortir)
-    else if (M.lieu !== "tertre" && M.fpTertre) { M.fpTertre = false; if (M.fpTertreAuto && M.premiere && M.lieu !== "jouffroy") premiere(false); M.fpTertreAuto = false; }
+    if (M.fpTertre) { M.fpTertre = false; M.fpTertreAuto = false; }   // (10.95 : à Montmartre, plus de première personne obligatoire)
     if (M.lieu === "jouffroy" && !M.premiere && !M.cine && M.gens.get(M.moiNum)) { premiere(true); M.fpJouffroy = true; }
     else if (M.lieu !== "jouffroy" && M.fpJouffroy) { M.fpJouffroy = false; if (M.premiere) premiere(false); }
     if (M.lieu === "appart" && !M.fpAppart && !M.cine && M.gens.get(M.moiNum)) { M.fpAppart = true; if (!M.premiere) { premiere(true); M.fpAuto = true; } }
@@ -12277,7 +12276,7 @@ function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); i
     if (herosSH(p.info.heros) && !A.eclaire) { A.eclaire = true; A.sc.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.map && m.emissive) { m.emissive.set(0xffffff); m.emissiveMap = m.map; m.emissiveIntensity = .42; m.needsUpdate = true; } }); } }); }
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
   if (p.coupe3D) { A.sc.visible = false; if (p.corps) p.corps.visible = false; return; }   // (coupée en deux par Pyramid Head : ce sont ses deux moitiés qu'on voit)
-  const assis = Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis], use = av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
+  const assis = (Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis]) || p.siegeV, use =   /* (p.siegeV : assis sur une selle, la Vespa de Montmartre) */ av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
   if (p.info.mortT && p.info.heros && av3OK(p)) { mort3D(p, A, dt); return; }
   A.sc.rotation.x = 0; if (A.repM) { for (const n in A.repM) os3D(A, n).quaternion.copy(A.repM[n]); A.repM = null; A.sc.position.set(0, 0, 0); }   // (relevé : assommé, il reprend ses esprits)
   A.sc.visible = use; if (p.corps) p.corps.visible = !use; if (!use) return;
@@ -16121,6 +16120,7 @@ function chercherAction(t) {
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
     else if (M.L.portesRex && M.L.portesRex.some(p => Math.hypot(x - p.x, z - p.z) < 1.1)) { const p = M.L.portesRex.find(p => Math.hypot(x - p.x, z - p.z) < 1.1); a = { type: "rexFilm", cle: p.f.cle, id: p.f.cle, label: `🎬 Entrer dans « ${p.f.titre} »` }; }   // (10.11, le Grand Rex : on entre dans le film par sa porte)
+    else if (M.L.actionLieu && (a = M.L.actionLieu(x, z, moi))) ;   // (10.95 : ce que le lieu propose — à Montmartre, la Vespa)
     else if (metroProche(x, z)) a = { type: "metro", label: "🚇 Prendre le métro" };   // (10.53) les bouches de métro
     else if (M.L.busL && Math.hypot(x - M.L.busL.C.ax, z - M.L.busL.C.az) < 2.4 && !M.L.apo && !M.L.sh) a = M.L.busL.phase === "rien" ? { type: "bus", label: "🚌 Prendre le bus" } : null;   // (10.07, l'arrêt de bus)
     else if (M.hiver && M.lieu === "grande" && M.L.neigeB && !M.L.nuit && (M.bouleMain ? M.L.neigeB.cible(x, z) : M.L.neigeB.proche(x, z))) a = M.bouleMain ? { type: "neigeLancer", label: "❄️ Lancer la boule de neige" } : { type: "neigeRamasser", label: "❄️ Ramasser de la neige" };   // (10.01, l'hiver : la neige des voitures)
@@ -16190,6 +16190,7 @@ export function agir() {
   if (a.type === "rexFilm") { const f = FILMS_VF.find(f => f.cle === a.cle); M.actionCle = null; if (!f) return;
     const p = (M.L.portesRex || []).find(p => p.f.cle === f.cle); if (p) M.retourFilm = { lieu: M.lieu, pos: [p.x + Math.sin(p.ry) * .9, p.z + Math.cos(p.ry) * .9], yaw: p.ry };   // (10.17) à la fin du film, on ressort devant la porte du Rex
     louerFilm(f); return; }
+  if (a.type === "lieu" && a.faire) { M.actionCle = null; a.faire(); return; }
   if (a.type === "metro") { M.actionCle = null; choixMetro(); return; }
   if (a.type === "bus") { const B = M.L.busL; if (!B) return; M.actionCle = null; choixBus(B); return; }
   if (a.type === "neigeRamasser") { M.bouleMain = true; M.actionCle = null; dire(M.moiNum, "❄️ Une belle boule de neige…"); return; }
@@ -18117,6 +18118,7 @@ function connecter() {
     else if (m.t === "z_evac") chargerMonde("residentevil").then(R => R.surEvac(m)).catch(() => {});
     else if (m.t === "z_ramasse") { const o = (M.objets || []).find(q => q.id === m.id); if (o) { o.cache = performance.now() + 45000; o.sp.visible = false; } }
     else if (m.t === "joue") { const p = M.gens.get(m.numero); if (p) p.info.joue = m.jeu || null; }
+    else if (m.t === "vespa") { const p = M.gens.get(m.numero); if (p) p.info.vespa = !!m.on; }   // (10.95 : il roule en Vespa à Montmartre)
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
     else if (m.t === "pnj" && m.p && (m.p.id >= 12 && m.p.id <= 15 || m.p.id === 17)) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = { 12: 0, 13: 1, 14: 2, 17: 3, 15: 4 }[m.p.id]; if (M.zTexB) delete M.zTexB[ty];
       for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 4) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else { z.mesh.material.map = texChien(); z.mesh.material.needsUpdate = true; tailleZ(z); } } }

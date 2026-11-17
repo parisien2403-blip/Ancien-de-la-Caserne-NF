@@ -743,15 +743,69 @@ function construireTertre(A, L, scene) {
     /* les deux murs du passage entre la place et la rue Saint-Rustique : deux dessins en grand sur chacun */
     const pose = (q, x, z, ry, zc) => { const ar = ARTS[q][1], hA = Math.min(3.1, 2.6 / ar), wA = hA * ar, a = add(new THREE.PlaneGeometry(wA, hA), artM[q], x, .12 + hA / 2, zc); a.rotation.y = ry; (L.artPos = L.artPos || []).push([[x, zc], ry]); };
     pose(0, -1.385, 0, Math.PI / 2, 17.6); pose(1, -1.385, 0, Math.PI / 2, 21.3); pose(2, 3.485, 0, -Math.PI / 2, 17.4); pose(3, 3.485, 0, -Math.PI / 2, 21.4); void MAISONS; void kA; }
-  /* (10.93) la Vespa rouge : un garçon sans casque, la chemise ouverte, qui se promène tranquillement dans les rues de Montmartre */
-  const VESPA = GENS ? (() => { const g = new THREE.Group(); g.userData.anime = true; scene.add(g); const rouge = mat({ color: 0xc8141c, roughness: .3, metalness: .3 }), noirV = mat({ color: 0x141414, roughness: .6 }), chromeV = mat({ color: 0xd8dce0, metalness: .9, roughness: .2 }), pneu = mat({ color: 0x1a1a1a, roughness: .9 });
-    const caisse = add(new THREE.SphereGeometry(.32, 14, 10), rouge, 0, .42, -.32, g); caisse.scale.set(.75, .75, 1.25); box(.4, .07, .9, rouge, 0, .22, .05, g); const tab = box(.38, .82, .06, rouge, 0, .62, .44, g); tab.rotation.x = -.18; const tab2 = box(.28, .2, .05, rouge, 0, 1.0, .52, g); tab2.rotation.x = -.18;   // la caisse bombée, le plancher, le tablier
-    box(.3, .1, .5, noirV, 0, .76, -.3, g); const gui = box(.56, .045, .05, chromeV, 0, 1.08, .55, g); void gui; for (const sx of [-1, 1]) box(.08, .05, .06, noirV, sx * .3, 1.08, .55, g); box(.14, .1, .1, rouge, 0, 1.1, .58, g); add(new THREE.SphereGeometry(.065, 10, 8), chromeV, 0, 1.1, .64, g); add(new THREE.CircleGeometry(.05, 10), mat({ color: 0xfff6d0, emissive: 0xfff0b0, emissiveIntensity: 1 }), 0, 1.1, .705, g);   // le guidon et son phare rond, le tablier qui monte jusqu'à lui   // la selle, la colonne, le guidon, le phare
-    const gardeB = add(new THREE.SphereGeometry(.2, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), rouge, 0, .26, .55, g); gardeB.scale.set(.7, .6, 1); const roues = []; for (const z of [.55, -.45]) { const r = add(new THREE.TorusGeometry(.17, .06, 6, 16), pneu, 0, .2, z, g); r.rotation.y = Math.PI / 2; roues.push(r); add(new THREE.CylinderGeometry(.1, .1, .1, 10), chromeV, 0, .2, z, g).rotation.z = Math.PI / 2; }
-    const m = personne3D({ taille: 1.76, peau: "#d8a888", ch: "#2a1a12", haut: "#f2efe6", bas: "#2a3a5a", chaussures: "#5a3a22", coif: "court", pantalon: true }); m.userData.poser("assis", 0); m.position.set(0, .8 - m.userData.hipY, -.28); g.add(m);
+  /* (10.95) la Vespa, bien faite : la caisse bombée, le tablier qui monte jusqu'au guidon, le garde-boue avant, le plancher et ses joncs de caoutchouc,
+     la selle en cuir capitonné, le porte-bagages chromé, le phare rond sur le guidon, le feu arrière ; le soir, le phare et le feu s'allument */
+  const PHARES = [], FEUX = [];
+  const vespaModele = (coul, siegeC = 0x1a1a1a) => { const g = new THREE.Group(); g.userData.anime = true; scene.add(g);
+    const peint = mat({ color: coul, roughness: .22, metalness: .35 }), chromeV = mat({ color: 0xdfe3e6, metalness: .95, roughness: .15 }), caout = mat({ color: 0x141414, roughness: .8 }), pneu = mat({ color: 0x161616, roughness: .9 }), cuir = mat({ color: siegeC, roughness: .5 });
+    const caisse = add(new THREE.SphereGeometry(.3, 18, 12), peint, 0, .42, -.3, g); caisse.scale.set(.74, .72, 1.3);
+    for (const sx of [-1, 1]) { const fl = add(new THREE.SphereGeometry(.2, 14, 10), peint, sx * .13, .36, -.36, g); fl.scale.set(.6, .8, 1.5); }   // les deux flancs
+    box(.38, .055, .62, peint, 0, .21, .1, g); for (let k = 0; k < 5; k++) box(.03, .012, .58, caout, -.12 + k * .06, .243, .1, g);   // le plancher, ses joncs
+    const tb = box(.42, .8, .05, peint, 0, .62, .43, g); tb.rotation.x = -.16; const tb2 = add(new THREE.CylinderGeometry(.21, .21, .8, 16, 1, true, -Math.PI / 2, Math.PI), peint, 0, .62, .42, g); tb2.rotation.x = -.16; tb2.scale.z = .35;   // le tablier, bombé
+    const gb = add(new THREE.SphereGeometry(.2, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), peint, 0, .26, .56, g); gb.scale.set(.62, .55, 1.05);   // le garde-boue avant
+    cyl(.035, .035, .2, peint, 0, 1.0, .52, g, 10); box(.17, .1, .13, peint, 0, 1.08, .55, g); box(.6, .035, .035, chromeV, 0, 1.1, .52, g); for (const sx of [-1, 1]) { const p2 = cyl(.022, .022, .1, caout, sx * .3, 1.1, .52, g, 8); p2.rotation.z = Math.PI / 2; const lv = box(.12, .01, .02, chromeV, sx * .22, 1.09, .58, g); lv.rotation.y = sx * .3; }   // la colonne, le guidon, les poignées, les leviers
+    add(new THREE.TorusGeometry(.068, .012, 6, 18), chromeV, 0, 1.11, .615, g); const phare = add(new THREE.CircleGeometry(.06, 16), mat({ color: 0xfff6d8, emissive: 0xfff0c0, emissiveIntensity: .15, roughness: .1 }), 0, 1.11, .62, g); PHARES.push(phare.material);
+    { const sl = new THREE.Shape(); sl.absarc(0, 0, .11, 0, Math.PI * 2); const se = add(new THREE.CapsuleGeometry(.1, .42, 6, 12), cuir, 0, .79, -.28, g); se.rotation.x = Math.PI / 2; se.scale.set(1.15, 1, .5);   // la selle en cuir
+      for (const dz of [-.12, .02, .14]) { const pl = add(new THREE.TorusGeometry(.105, .006, 4, 16, Math.PI), mat({ color: new THREE.Color(siegeC).multiplyScalar(.7).getHex(), roughness: .6 }), 0, .79, -.28 + dz, g); pl.rotation.y = Math.PI / 2; pl.rotation.z = Math.PI / 2; pl.scale.set(1.15, .5, 1); } void sl; }   // les coutures du capitonnage
+    box(.26, .02, .2, chromeV, 0, .78, -.62, g); for (const sx of [-1, 1]) cyl(.008, .008, .16, chromeV, sx * .12, .7, -.62, g, 5);   // le porte-bagages
+    const feu = add(new THREE.BoxGeometry(.1, .05, .03), mat({ color: 0x7a0a0a, emissive: 0xff1a10, emissiveIntensity: .1, roughness: .2 }), 0, .58, -.7, g); FEUX.push(feu.material); box(.12, .02, .04, chromeV, 0, .61, -.69, g);
+    const roues = []; for (const z of [.55, -.45]) { const r = add(new THREE.TorusGeometry(.165, .055, 8, 20), pneu, 0, .21, z, g); r.rotation.y = Math.PI / 2; roues.push(r); const j2 = add(new THREE.CylinderGeometry(.1, .1, .09, 14), chromeV, 0, .21, z, g); j2.rotation.z = Math.PI / 2; roues.push(j2); }
+    cyl(.04, .03, .3, chromeV, .12, .22, -.55, g, 8).rotation.x = Math.PI / 2;   // le pot d'échappement
+    return { g, roues }; };
+  /* le promeneur à la Vespa (sans casque, chemise blanche) : sa Vespa est noire */
+  const VESPA = GENS ? (() => { const V0 = vespaModele(0x161616, 0x2a2a2a), g = V0.g;
+    const m = personne3D({ taille: 1.76, peau: "#d8a888", ch: "#2a1a12", haut: "#f2efe6", bas: "#2a3a5a", chaussures: "#5a3a22", coif: "court", pantalon: true }); m.userData.poser("assis", 0); m.position.set(0, .82 - m.userData.hipY, -.26); g.add(m);
     const P = m.userData.parts; for (const b2 of P.bras) { b2.e.rotation.set(-1.25, 0, 0); b2.c.rotation.x = -.25; }
     const R2 = [[-23, -12.6], [-60, -12.6], [-82.6, -13.2], [-82.6, 20], [-82, 28.6], [-40, 28.9], [-5, 29], [20, 29], [40, 29.2]]; g.position.set(R2[0][0], .02, R2[0][1]);
-    L.vespa = g; return { g, m, P, roues, R: R2, i: 1, sens: 1, v: 3.2 }; })() : null;
+    L.vespa = g; return { g, m, P, roues: V0.roues, R: R2, i: 1, sens: 1, v: 3.2 }; })() : null;
+  /* (10.95) les Vespa rouges à selle beige, garées le long du trottoir près du métro Abbesses : autant que de monde connecté — chacun peut en prendre une, rouler dans Montmartre, en descendre où il veut */
+  const PARK = []; for (let k = 0; k < 10; k++) { const V = vespaModele(0xb8101a, 0xd2b48a), x = -85.0, z = 33.4 - k * .95; V.g.position.set(x, L.hauteur ? 0 : 0, z); V.g.rotation.y = Math.PI / 2 + .55; const bq = cyl(.012, .012, .26, mat({ color: 0xc8ccd0, metalness: .9 }), .14, .12, -.05, V.g, 5); bq.rotation.z = .5;   // (la béquille)
+    PARK.push({ ...V, x, z, ry: V.g.rotation.y, bq, pris: false }); }
+  const nbVespas = () => { let n = 0; if (M && M.gens) for (const p of M.gens.values()) if (!p.info.pnj && p.info.numero >= 0) n++; return Math.max(2, Math.min(PARK.length, n + 1)); };
+  let RID = null, tVis = 0, tEnv = 0;
+  const monter = (V) => { const moi = M.gens.get(M.moiNum); if (!moi || RID) return; moi.cible = null; moi.chemin = []; V.pris = true; V.bq.visible = false; RID = { V, vit: 0, ry: V.g.rotation.y - Math.PI / 2 * 0, way: [] };
+    RID.ry = Math.atan2(Math.sin(V.ry), Math.cos(V.ry)); moi.g.position.x = V.g.position.x; moi.g.position.z = V.g.position.z; moi.leve = .42; moi.info.vespa = true; envoyerWS({ t: "vespa", on: true }); envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z });
+    dire(M.moiNum, "🛵 En selle ! Touche ou clique où aller · manette : joystick gauche"); };
+  const descendre = () => { const moi = M.gens.get(M.moiNum); if (!moi || !RID) return; const V = RID.V; V.bq.visible = true; V.pris = false; V.ry = V.g.rotation.y; RID = null; moi.leve = 0; moi.siegeV = null; moi.info.vespa = false; moi.cible = null; moi.chemin = [];
+    const p = moi.g.position, c = Math.cos(V.ry), sn = Math.sin(V.ry); for (const d of [.75, -.75, 1.1, -1.1]) { const x = p.x + c * d, z = p.z - sn * d; if (L.limites(x, z)) { p.x = x; p.z = z; break; } }
+    envoyerWS({ t: "vespa", on: false }); envoyerWS({ t: "aller", x: p.x, z: p.z }); };
+  L.actionLieu = (x, z) => { if (RID) return { type: "lieu", id: "vespaD", label: "🛵 Descendre de la Vespa", faire: descendre };
+    let best = null, bd = 1.5; for (const V of PARK) { if (V.pris || !V.g.visible) continue; const d = Math.hypot(V.g.position.x - x, V.g.position.z - z); if (d < bd) { bd = d; best = V; } }
+    return best ? { type: "lieu", id: "vespaM" + PARK.indexOf(best), label: "🛵 Monter sur la Vespa", faire: () => monter(best) } : null; };
+  const libreV = (x, z) => L.limites(x, z);
+  const animRide = (tm, dt) => { const n = !!L.nuit; for (const m of PHARES) m.emissiveIntensity = n ? 2.2 : .15; for (const m of FEUX) m.emissiveIntensity = n ? 1.8 : .1;
+    if (tm - tVis > 1500) { tVis = tm; const nb = nbVespas(); PARK.forEach((V, k) => { if (!V.pris) V.g.visible = k < nb || Math.hypot(V.g.position.x - V.x, V.g.position.z - V.z) > .5; }); }
+    const moi = M && M.moiNum && M.gens.get(M.moiNum);
+    // les autres connectés à Vespa : une Vespa rouge sous eux, qui les suit
+    if (M && M.gens) for (const p of M.gens.values()) { if (p === moi) continue; if (p.info.vespa && M.lieu === "tertre") { if (!p.vespaG) { p.vespaG = vespaModele(0xb8101a, 0xd2b48a); } const g = p.vespaG.g, q = p.g.position, dx = q.x - g.position.x, dz = q.z - g.position.z; if (Math.hypot(dx, dz) > .05) g.rotation.y = Math.atan2(dx, dz); g.position.set(q.x, L.hauteur(q.x, q.z) + .02, q.z); p.leve = .42; p.siegeV = [q.x, q.z, g.rotation.y, .36]; for (const r of p.vespaG.roues) r.rotation.x += Math.hypot(dx, dz) / .22; }
+      else if (p.vespaG) { scene.remove(p.vespaG.g); p.vespaG = null; p.leve = 0; p.siegeV = null; } }
+    if (!RID || !moi) return; const V = RID.V, g = V.g, pos = moi.g.position;
+    if (M.lieu !== "tertre") { RID = null; return; }
+    // la destination : le toucher, le clic, ou le joystick (qui pose une cible juste devant) — on la prend, la marche ne s'en sert plus
+    if (moi.cible) { RID.way = [moi.cible.clone(), ...(moi.chemin || []).map(v => v.clone())]; moi.cible = null; moi.chemin = []; }
+    let but = RID.way[0]; while (but && Math.hypot(but.x - pos.x, but.z - pos.z) < (RID.way.length > 1 ? 1.2 : .6)) { RID.way.shift(); but = RID.way[0]; }
+    const vmax = moi.rapide ? 8 : 5.5; let cibleV = 0;
+    if (but) { const dx = but.x - pos.x, dz = but.z - pos.z, d = Math.hypot(dx, dz), ry = Math.atan2(dx, dz); let dr = Math.atan2(Math.sin(ry - RID.ry), Math.cos(ry - RID.ry));
+      const tourne = Math.sign(dr) * Math.min(Math.abs(dr), dt * (1.6 + 1.4 / (1 + RID.vit))); RID.ry += tourne; RID.pench = (RID.pench || 0) + (-tourne / Math.max(dt, .001) * .18 - (RID.pench || 0)) * Math.min(1, dt * 5);
+      cibleV = RID.way.length > 1 ? vmax : Math.min(vmax, Math.sqrt(2 * 3 * Math.max(0, d - .3))); if (Math.abs(dr) > 1.3) cibleV = Math.min(cibleV, 1.5); }
+    else RID.pench = (RID.pench || 0) * (1 - Math.min(1, dt * 4));
+    RID.vit += Math.max(-6 * dt, Math.min(3.2 * dt, cibleV - RID.vit));
+    if (RID.vit > .01) { const st = RID.vit * dt, nx = pos.x + Math.sin(RID.ry) * st, nz = pos.z + Math.cos(RID.ry) * st, fx = nx + Math.sin(RID.ry) * .75, fz = nz + Math.cos(RID.ry) * .75;
+      if (libreV(nx, nz) && libreV(fx, fz)) { pos.x = nx; pos.z = nz; for (const r of V.roues) r.rotation.x += st / .22; } else { RID.vit = 0; RID.way = []; } }
+    moi.cible = null; moi.chemin = []; moi.leve = .42; moi.siegeV = [pos.x, pos.z, RID.ry, .36];
+    g.position.set(pos.x, L.hauteur(pos.x, pos.z) + .02, pos.z); g.rotation.set(0, RID.ry, Math.max(-.3, Math.min(.3, RID.pench || 0)));
+    if (tm - tEnv > 220) { tEnv = tm; envoyerWS({ t: "aller", x: pos.x, z: pos.z }); } };
+  quitterLieu.add(() => { if (RID) { const moi = M && M.gens.get(M.moiNum); if (moi) { moi.leve = 0; moi.siegeV = null; moi.info.vespa = false; } RID.V.pris = false; RID = null; envoyerWS({ t: "vespa", on: false }); } });
   const animVespa = (tm, dt) => { const V = VESPA; if (!V) return; const g = V.g, [tx, tz] = V.R[V.i], dx = tx - g.position.x, dz = tz - g.position.z, d = Math.hypot(dx, dz);
     if (d < .4) { if (V.i + V.sens < 0 || V.i + V.sens >= V.R.length) V.sens = -V.sens; V.i += V.sens; return; } const v = Math.min(d, V.v * dt); g.position.x += dx / d * v; g.position.z += dz / d * v; g.position.y = L.hauteur(g.position.x, g.position.z) + .02;
     const ry = Math.atan2(dx, dz), dr = Math.atan2(Math.sin(ry - g.rotation.y), Math.cos(ry - g.rotation.y)); g.rotation.y += dr * Math.min(1, dt * 3); g.rotation.z = -dr * .25; for (const r of V.roues) r.rotation.x += v / .23; V.P.tete.rotation.y = Math.sin(tm / 2600) * .35; V.m.userData.poser("assis", 0); for (const b2 of V.P.bras) { b2.e.rotation.set(-1.25, 0, 0); b2.c.rotation.x = -.25; } };
@@ -796,7 +850,7 @@ function construireTertre(A, L, scene) {
       else p0 = { pos, n: nAppels, t: performance.now() }; } catch (e) {} }, 2000); }   /* (10.89) une erreur dans une partie de l'animation n'arrête plus les autres : la marche passe en premier ; l'erreur est signalée, plus jamais avalée */
   const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) { errA(e); } const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; for (const o of JOUR) o.visible = !n; }   // (le soir, les peintres et l'accordéoniste sont rentrés)
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; nAppels++; dtDer = dt; tmDer = tm; const c = M && M.camera && M.camera.position, R2 = ((MOBILE || GPU_MODESTE) ? 30 : 60) ** 2;
-    try { animChat(tm, dt); } catch (e) { errA(e); } try { animVespa(tm, dt); } catch (e) { errA(e); }
+    try { animChat(tm, dt); } catch (e) { errA(e); } try { animVespa(tm, dt); } catch (e) { errA(e); } try { animRide(tm, dt); } catch (e) { errA(e); }
     for (const W of MARCH) try { const m = W.m, [tx, tz] = W.R[W.i], dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
       if (d < .15) { if (W.i + W.sens < 0 || W.i + W.sens >= W.R.length) W.sens = -W.sens; W.i += W.sens; continue; }
       const v = Math.min(d, W.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur(m.position.x, m.position.z); m.rotation.y = Math.atan2(dx, dz); if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * W.v / 1.2); } catch (e) { errA(e); }   // (chacun dans son try : un promeneur en erreur ne fige plus les autres)
