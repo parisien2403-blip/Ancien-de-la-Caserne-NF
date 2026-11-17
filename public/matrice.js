@@ -8991,7 +8991,7 @@ export async function ouvrir(ctx) {
             if (p.bloqueN === 4 && but && !p.recalcule) { p.recalcule = true; viser(p, but.x, but.z); }
             else if (p.bloqueN > 10) { p.bloqueN = 0; p.glisseN = 0; p.recalcule = false; p.cible = null; p.chemin = []; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }   // (vraiment bloqué : on s'arrête)
           else { p.bloqueN = 0; p.recalcule = false; }
-          if (p.moi) M.dbgPas = { pas, pasOk, dt, x: p.g.position.x, n: (M.dbgPas ? M.dbgPas.n : 0) + 1 };
+          if (p.moi) M.dbgPas = { pas, pasOk, dt, x: p.g.position.x, n: (M.dbgPas ? M.dbgPas.n : 0) + 1, meme: p === M.gens.get(M.moiNum), nMoi: [...M.gens.values()].filter(q => q.moi).length };
           M.dansPas = true; p.g.position.addScaledVector(sens, pasOk); M.dansPas = false;
           if (!fin && L < .28) p.cible = p.chemin.shift();      // le coin : on enchaîne sur le bout de chemin suivant
           // le pas : un léger balancement du corps (pas pendant une danse)
@@ -18035,7 +18035,7 @@ function connecter() {
     if (moiR && M.scene && (estApo(M.lieu) || M.cine)) { envoyerWS({ t: "entrer", lieu: M.lieu, x: moiR.g.position.x, z: moiR.g.position.z }); return; }   /* (Resident Evil, ou une cinématique : on rejoint le lieu sans le reconstruire — rien ne saute, la scène continue) */
     changerLieu(M.lieu || ctx.lieuDepart || "grande", M.lieu ? ici : null, M.lieu && moiR ? M.yaw : undefined); };   // (après une coupure : on reprend là où l'on était, pas à l'entrée du lieu)
   ws.onmessage = ev => {
-    if (!M) return; let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (!M || (M.ws && M.ws !== ws)) return; let m;   /* (une ancienne connexion, remplacée mais pas encore fermée : on ne l'écoute plus) */ try { m = JSON.parse(ev.data); } catch (e) { return; }
     if (m.t === "voix_liste") { if (VX.on) for (const n of m.nums || []) voixPair(n, true); return; }   // (on vient d'allumer : on appelle ceux qui l'avaient déjà)
     if (m.t === "voix") { if (!m.on) voixFermer(m.numero); return; }   // (un nouveau : c'est lui qui nous appelle)
     if (m.t === "rtc") { voixRtc(m.de, m.d || {}); return; }
@@ -18048,9 +18048,9 @@ function connecter() {
       ajouterPNJ(); ajouterDJ(); ajouterBarman(); ajouterBarmanSS();
       M.fil = m.dits || []; ctx.surFil && ctx.surFil(M.fil);
       ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info));
-    } else if (m.t === "arrive") { ajouterAncien(m.p); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
-    else if (m.t === "part") { retirerAncien(m.numero); for (const k of [0, 1]) retirerAncien(FANTOME(m.numero, k)); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
-    else if (m.t === "aller") { const p = M.gens.get(m.numero); if (p) viser(p, m.x, m.z); }
+    } else if (m.t === "arrive") { if (m.p && m.p.numero === M.moiNum && M.gens.get(M.moiNum)) { M.dbgSoi = (M.dbgSoi || 0) + 1; return; }   /* (notre propre arrivée, vue par une autre connexion du même compte : on ne se recrée pas — sinon on restait figé) */ ajouterAncien(m.p); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
+    else if (m.t === "part") { if (m.numero === M.moiNum) { M.dbgSoi = (M.dbgSoi || 0) + 1; return; }   /* (une ancienne connexion du même compte s'en va : pas nous) */ retirerAncien(m.numero); for (const k of [0, 1]) retirerAncien(FANTOME(m.numero, k)); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
+    else if (m.t === "aller") { if (m.numero === M.moiNum) { M.dbgSoi = (M.dbgSoi || 0) + 1; return; }   /* (nos propres pas, renvoyés par une autre connexion du même compte : on les ignore) */ const p = M.gens.get(m.numero); if (p) viser(p, m.x, m.z); }
     else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 20) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { const pos = p.g.position.clone(), q = ajouterAncien({ ...p.info, ...m.p }); if (q) q.g.position.copy(pos); } }
