@@ -13048,7 +13048,7 @@ function busLigne(L, scene, C) {
   const camInt = () => { M.cine = { gel: true, fov: [72, 84], maj: () => { if (!B.g) return; debout(true); const c = B.g.localToWorld(new THREE.Vector3(3.5, 2.05, .75)), l = B.g.localToWorld(new THREE.Vector3(PLACE[0], 1.35, PLACE[1])); M.camera.position.copy(c); M.camera.lookAt(l); } }; };   // (la vue de l'intérieur, pendant le trajet)
   const camExt = (cache) => { const cp = new THREE.Vector3(C.ax + C.sens * 5.5, y0 + 2.4, C.az + .6), cl = new THREE.Vector3(C.ax - C.sens * 10, y0 + 1.1, C.voie);   // (sur le trottoir, à côté de l'abribus : on voit le bus arriver, s'arrêter)
     M.cine = { gel: true, fov: [62, 76], maj: () => { M.camera.position.copy(cp); M.camera.lookAt(cl); if (B.cache) cacher(true); const p = moi(); if (p && !B.cache) { p.cible = null; p.chemin = []; } } }; };
-  const passagers = () => { const I = B.g.userData.int, S = I.userData.sieges.filter(([x, z]) => x < PLACE[0] - .4);   // (les passagers derrière nous) const P = [];
+  const passagers = () => { const I = B.g.userData.int, S = I.userData.sieges.filter(([x, z]) => x < PLACE[0] - .4); const P = [];   // (les passagers derrière nous)
     const PEAUX = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc"], HAUTS = ["#3a3028", "#22324f", "#5a3a2a", "#6a5a4a", "#7a2a3a", "#2f5a4a"];
     for (let k = 0; k < (PETIT ? 3 : 7); k++) { const [x, z] = S[(k * 11 + 3) % S.length], f = k % 2 === 1;
       const m = personne3D({ taille: f ? 1.62 : 1.74, peau: PEAUX[k % 5], ch: ["#2a1a12", "#8a8a8a", "#5a3a22", "#141010"][k % 4], haut: HAUTS[k % 6], bas: ["#26324e", "#2a2a30"][k % 2], chaussures: "#1a1a1a", coif: f ? "long" : k % 3 ? "court" : "chauve", pantalon: !f, robe: f, parle: k === 2 });

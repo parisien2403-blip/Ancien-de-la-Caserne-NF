@@ -2,7 +2,8 @@
    Ce fichier est chargé par la matrice (matrice.js) la première fois qu'on y va, et exécuté chez elle (eval direct) : il se sert
    tel quel de tout ce qu'elle a (THREE, M, personne3D, quitterLieu…). Ce qu'il rend (la dernière expression) : ses points d'entrée. */
 function construireTertre(A, L, scene) {
-  const tT = (w, h, f, rx, ry) => { const c = document.createElement("canvas"); c.width = w; c.height = h; f(c.getContext("2d"), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || rx); } return t; };
+  const ECH = PETIT ? .45 : (MOBILE || GPU_MODESTE) ? .55 : 1;   /* (sur téléphone : toutes les images de Montmartre à un peu plus de la moitié de leur taille — 140 Mo en tout, c'était trop, le téléphone se figeait en les chargeant) */
+  const tT = (w, h, f, rx, ry) => { const c = document.createElement("canvas"); c.width = Math.max(8, Math.round(w * ECH)); c.height = Math.max(8, Math.round(h * ECH)); const x = c.getContext("2d"); x.scale(c.width / w, c.height / h); f(x, w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || rx); } return t; };
   const mat = (o) => new THREE.MeshStandardMaterial({ roughness: .85, ...o });
   const add = (geo, m, x, y, z, par = scene, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.receiveShadow = true; par.add(o); return o; };
   const box = (w, h, d, m, x, y, z, par = scene, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, par, ry);
