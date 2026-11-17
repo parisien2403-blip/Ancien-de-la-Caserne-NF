@@ -8941,7 +8941,7 @@ export async function ouvrir(ctx) {
   M.signalerErreur = signalerErreur;
   function image(t) {
     if (!M || !M.scene) return;
-    M.dbgImg = (M.dbgImg || 0) + 1;
+    M.dbgImg = (M.dbgImg || 0) + 1; let tS = performance.now(); const seg = (n) => { const d = performance.now() - tS; if (d > 100 && (!M.dbgSeg || d > M.dbgSeg.d || performance.now() - M.dbgSeg.t > 15000)) M.dbgSeg = { nom: n, d, t: performance.now() }; tS = performance.now(); };
     const brut = t - avant, dt = brut > 0 && brut < 1e4 ? Math.min(.05, brut / 1000) : .016; avant = t; M.dtCam = dt;   /* (un temps faux — l'appli remise au premier plan, une capture d'écran — : jamais de pas négatif ou NaN, qui figeait la marche) */
     // trop lent (moins de 35 images par seconde) : on affine moins l'image ; très à l'aise : on la rend plus fine
     if (brut > 0 && brut < 250) { perf.n++; perf.s += brut; if (perf.n >= 60) { const moy = perf.s / perf.n; perf = { n: 0, s: 0 };
@@ -8951,7 +8951,7 @@ export async function ouvrir(ctx) {
       /* toujours trop lent, alors que l'image est déjà au plus bas : on allège le reste, pas à pas (les effets d'image et les ombres ; puis la pluie, les monstres en trop) — pour que ça reste fluide sur tous les téléphones */
       const lent = moy > (PETIT ? 45 : 34) && (res <= resMin + .01 || moy > 50); M.lentN = lent ? (M.lentN || 0) + 1 : 0;   /* (très lent — moins de 20 images par seconde — : on n'attend pas que l'image soit au plus bas) */
       if (M.lentN >= 2 && (M.allege || 0) < 3 && qualiteChoisie() !== "haut") { M.lentN = 0; alleger((M.allege || 0) + 1); } } }
-    preparerVoisin(); if (!PETIT && !M.jumeauJ && t > (M.prepT || 0)) jumelerPorche();   /* (petit téléphone : pas de rue recopiée dans la cour — deux décors entiers en mémoire, il plantait) */ trierLumieres(t); if (PETIT || (MOBILE && modeRE()) || M.allege >= 2) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
+    seg("début"); preparerVoisin(); if (!PETIT && !M.jumeauJ && t > (M.prepT || 0)) jumelerPorche(); seg("lieu voisin");   /* (petit téléphone : pas de rue recopiée dans la cour — deux décors entiers en mémoire, il plantait) */ trierLumieres(t); if (PETIT || (MOBILE && modeRE()) || M.allege >= 2) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0; if (p.leve) p.g.position.y += p.leve;   /* (tenu en l'air : la main de l'arrivée) */
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
@@ -9151,7 +9151,7 @@ export async function ouvrir(ctx) {
         else if (p.dansait) { p.dansait = false; p.corps.scale.x = tailleBonhomme() * .476 * 1.6 * hauteurDe(p); p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
       }
     }
-    { const t0 = performance.now(); if (M.L.anim) M.L.anim(t); dbgLent("anim du lieu", t0); }
+    seg("les gens"); { const t0 = performance.now(); if (M.L.anim) M.L.anim(t); dbgLent("anim du lieu", t0); } tS = performance.now();
     if (M.L.pigeons) M.L.pigeons(t);
     if (M.feuHV && M.feuHV.length && !M.cine) animerFeu(M.feuHV, performance.now(), 16000);   // (les traînées de feu de la DeLorean finissent de brûler, puis s'éteignent)
     { const h = C3.enHaut() + 2 * C3.enBas(); if (h !== M.hautVu) { M.hautVu = h; if (M.L) M.L.grille = M.L.grilleAdmin = null; } }
@@ -9219,7 +9219,7 @@ export async function ouvrir(ctx) {
     // le bouton ▶ / ⏹ des platines (toujours au premier plan) : seulement quand on est dans la salle, pas dans l'escalier ni au sous-sol
     if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2 && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (l'administrateur seul)
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
-    chercherAction(t); manette();
+    seg("divers"); chercherAction(t); manette(); seg("action");
     { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
     if (M.cine) { if (!(M.gbCombat && !M.gbCombat.fini)) laserFP(true);   /* (pendant une cinématique, l'arme de la première personne disparaît : elle restait collée à la tête) */ if (M.cineVu !== M.cine) { M.cineVu = M.cine; if (M.premiere && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; } }   /* (au début d'une cinématique, on se revoit ; ensuite elle décide : dans la DeLorean, on disparaît) */ M.cine.maj(performance.now());
       if (M.premiere && M.cine && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum), cp = M.camera.position;   /* (à la première personne : si la caméra est restée à la place des yeux, on cache le bonhomme — sinon on verrait l'intérieur de sa tête) */
@@ -9231,12 +9231,12 @@ export async function ouvrir(ctx) {
     if (M.lieu === "hv1955" && !M.L.kingston && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC) && MD.bttf) MD.bttf.ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
-    if (M.trace1) trace("avant 1re image " + M.lieu);
+    seg("cinématique"); const prog0 = rendu.info.programs ? rendu.info.programs.length : 0, tex0 = rendu.info.memory.textures; if (M.trace1) trace("avant 1re image " + M.lieu);
     if (rendu.xr.isPresenting && M.vr && M.vr.cam) { if (M.porteRE) M.porteRE.maj(performance.now()); suivreVR(); try { rendreVR(rendu); } catch (e) { signalerErreurVR(e); if (M.vr.th) finCinemaVR(M.vr); rendu.xr.enabled = true; rendu.setRenderTarget(null); rendu.render(M.scene, M.vr.cam); } }
     else if (M.pauseRendu) {}   /* (une vidéo plein écran passe : on ne dessine pas la scène derrière, la vidéo reste fluide) */
     else if (M.porteRE) { M.porteRE.maj(performance.now()); if (M.porteRE) rendu.render(M.porteRE.sc, M.porteRE.cam); }   /* (la porte qui s'ouvre, à la place du jeu) */
     else if (M.apoIntro && !M.cine && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) { const cc = rendu.getClearColor(new THREE.Color()), ca = rendu.getClearAlpha(); rendu.setClearColor(0x000000, 1); rendu.clear(); rendu.setClearColor(cc, ca); }   /* (Resident Evil, l'arrivée : écran noir jusqu'au début de la cinématique — pas d'image fugace avant) */
-    else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera); M.dbgRendu = (M.dbgRendu || 0) + 1;   /* (à Resident Evil : avec les effets d'image) */
+    else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera); M.dbgRendu = (M.dbgRendu || 0) + 1; { const np = (rendu.info.programs ? rendu.info.programs.length : 0) - prog0, nt = rendu.info.memory.textures - tex0; seg("dessin" + (np ? " +" + np + " matières" : "") + (nt ? " +" + nt + " images" : "")); }   /* (à Resident Evil : avec les effets d'image) */
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
   M.redim();
