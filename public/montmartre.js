@@ -12,8 +12,8 @@ function construireTertre(A, L, scene) {
     if (pg.y + h + PAD > PAGE) { pg = null; return casier(w, h); }
     const r = { pg, x: pg.x, y: pg.y }; pg.x += w + PAD; pg.hl = Math.max(pg.hl, h); return r; };
   const tT = (w, h, f, rx, ry, ech = 1, aPart = false) => { const cw = Math.max(8, Math.round(w * ECH * ech)), ch = Math.max(8, Math.round(h * ECH * ech)), place = rx || aPart ? null : casier(cw, ch);
-    if (!place) { const c = document.createElement("canvas"); c.width = cw; c.height = ch; const x = c.getContext("2d"); x.scale(cw / w, ch / h); f(x, w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || rx); } return t; }
-    const x = place.pg.c.getContext("2d"); x.save(); x.translate(place.x, place.y); x.beginPath(); x.rect(0, 0, cw, ch); x.clip(); x.scale(cw / w, ch / h); f(x, w, h); x.restore();
+    if (!place) { const c = document.createElement("canvas"); c.width = cw; c.height = ch; const x = c.getContext("2d", { willReadFrequently: true }); x.scale(cw / w, ch / h); f(x, w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || rx); } return t; }
+    const x = place.pg.c.getContext("2d", { willReadFrequently: true }); x.save(); x.translate(place.x, place.y); x.beginPath(); x.rect(0, 0, cw, ch); x.clip(); x.scale(cw / w, ch / h); f(x, w, h); x.restore();
     // les bords recopiés tout autour (sinon, de loin, la case voisine déteint sur les bords)
     for (const [sx, sy, sw, sh, dx, dy, dw, dh] of [[place.x, place.y, cw, 1, place.x, place.y - PAD, cw, PAD], [place.x, place.y + ch - 1, cw, 1, place.x, place.y + ch, cw, PAD], [place.x, place.y - PAD, 1, ch + 2 * PAD, place.x - PAD, place.y - PAD, PAD, ch + 2 * PAD], [place.x + cw - 1, place.y - PAD, 1, ch + 2 * PAD, place.x + cw, place.y - PAD, PAD, ch + 2 * PAD]])
       try { x.drawImage(place.pg.c, sx, sy, sw, sh, dx, dy, dw, dh); } catch (e) {}
