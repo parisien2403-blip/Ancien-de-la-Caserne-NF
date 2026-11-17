@@ -35,16 +35,16 @@ function construireTertre(A, L, scene) {
     jour = tT(cw, ch, (c) => { c.fillStyle = o.teinte; c.fillRect(0, 0, cw, ch); for (let i = 0; i < 1400; i++) { c.fillStyle = `rgba(${al() < .5 ? "0,0,0" : "255,255,255"},${al() * .05})`; c.fillRect(al() * cw, al() * ch, 2 + al() * 10, 2 + al() * 8); }
       const nE = o.etages, hE = (H - 3.8) / nE, nF = o.fen || Math.max(2, Math.round(W / 2.6));
       c.fillStyle = "rgba(0,0,0,.12)"; for (let e = 0; e <= nE; e++) c.fillRect(0, ch - (3.8 + e * hE) * k, cw, 4);   // les bandeaux
-      for (let e = 0; e < nE; e++) for (let f = 0; f < nF; f++) { const fx = (W / nF) * (f + .5), fy = 3.8 + e * hE + hE * .22, fw = 1.0, fh = hE * .62, X = (fx - fw / 2) * k, Y = ch - (fy + fh) * k;
+      for (let e = 0; e < nE; e++) for (let f = 0; f < nF; f++) { if (o.sansEtage && o.sansEtage.includes(e)) continue; const fx = (W / nF) * (f + .5), fy = 3.8 + e * hE + hE * .22, fw = 1.0, fh = hE * .62, X = (fx - fw / 2) * k, Y = ch - (fy + fh) * k;
         c.fillStyle = "#1c2228"; c.fillRect(X, Y, fw * k, fh * k); c.fillStyle = "rgba(160,190,220,.25)"; c.fillRect(X + 3, Y + 3, fw * k * .45, fh * k * .4);
         c.fillStyle = "#e8e4da"; c.fillRect(X + fw * k / 2 - 1, Y, 2, fh * k); c.fillRect(X, Y + fh * k * .4, fw * k, 2);   // les petits bois
         if (o.volets !== false) { c.fillStyle = o.volets || "#d8d2c4"; for (const sg of [-1, 1]) { const vx = sg < 0 ? X - fw * k * .5 : X + fw * k; c.fillRect(vx, Y, fw * k * .5, fh * k); c.fillStyle = "rgba(0,0,0,.18)"; for (let l = 0; l < fh * k; l += 5) c.fillRect(vx, Y + l, fw * k * .5, 1); c.fillStyle = o.volets || "#d8d2c4"; } }
         c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(X - 3, Y + fh * k, fw * k + 6, 4);
         if (e === 0 && o.balcon !== false) { c.strokeStyle = "#141414"; c.lineWidth = 2; c.strokeRect(X - 4, Y + fh * k * .62, fw * k + 8, fh * k * .38); for (let b = 0; b < fw * k + 8; b += 6) { c.beginPath(); c.moveTo(X - 4 + b, Y + fh * k * .62); c.lineTo(X - 4 + b, Y + fh * k); c.stroke(); } } }
-      if (o.peint) { const [txt, coul, et] = o.peint, y = ch - (3.8 + et * hE + hE * .5) * k; c.textAlign = "center"; c.textBaseline = "middle"; fit(c, txt, cw * .92, 64, `bold @ ${serif}`); c.fillStyle = "rgba(0,0,0,.35)"; c.fillText(txt, cw / 2 + 2, y + 2); c.fillStyle = coul; c.fillText(txt, cw / 2, y); } });
+      if (o.peint) { const [txt, coul, et, yA, hL] = o.peint, y = ch - (yA ?? (3.8 + (et + 1.03) * hE)) * k; c.textAlign = "center"; c.textBaseline = "middle"; fit(c, txt, cw * .9, Math.round((hL || Math.min(.32 * hE, .62)) * k * 1.35), `bold @ ${serif}`); c.fillStyle = "rgba(0,0,0,.35)"; c.fillText(txt, cw / 2 + 2, y + 2); c.fillStyle = coul; c.fillText(txt, cw / 2, y); } });
     nuit = tT(cw, ch, (c) => { c.fillStyle = "#000"; c.fillRect(0, 0, cw, ch); const nE = o.etages, hE = (H - 3.8) / nE, nF = o.fen || Math.max(2, Math.round(W / 2.6));
-      for (let e = 0; e < nE; e++) for (let f = 0; f < nF; f++) if (al() < .42) { const fx = (W / nF) * (f + .5), fy = 3.8 + e * hE + hE * .22, fw = 1.0, fh = hE * .62; c.fillStyle = al() < .5 ? "#ffcf7a" : "#ffb860"; c.fillRect((fx - fw / 2) * k, ch - (fy + fh) * k, fw * k, fh * k); c.fillStyle = "#3a2a1a"; c.fillRect((fx - .03) * k, ch - (fy + fh) * k, 2, fh * k); }
-      if (o.peint && o.peintNuit) { const [txt, , et] = o.peint, y = ch - (3.8 + et * hE + hE * .5) * k; c.textAlign = "center"; c.textBaseline = "middle"; fit(c, txt, cw * .92, 64, `bold @ ${serif}`); c.fillStyle = "#ffe0a0"; c.fillText(txt, cw / 2, y); } });
+      for (let e = 0; e < nE; e++) for (let f = 0; f < nF; f++) if (al() < .42 && !(o.sansEtage && o.sansEtage.includes(e))) { const fx = (W / nF) * (f + .5), fy = 3.8 + e * hE + hE * .22, fw = 1.0, fh = hE * .62; c.fillStyle = al() < .5 ? "#ffcf7a" : "#ffb860"; c.fillRect((fx - fw / 2) * k, ch - (fy + fh) * k, fw * k, fh * k); c.fillStyle = "#3a2a1a"; c.fillRect((fx - .03) * k, ch - (fy + fh) * k, 2, fh * k); }
+      if (o.peint && o.peintNuit) { const [txt, , et, yA, hL] = o.peint, y = ch - (yA ?? (3.8 + (et + 1.03) * hE)) * k; c.textAlign = "center"; c.textBaseline = "middle"; fit(c, txt, cw * .9, Math.round((hL || Math.min(.32 * hE, .62)) * k * 1.35), `bold @ ${serif}`); c.fillStyle = "#ffe0a0"; c.fillText(txt, cw / 2, y); } });
     return lum(mat({ map: jour, emissive: 0xffffff, emissiveMap: nuit, emissiveIntensity: 0, roughness: .9 }), 0, 1.0); };
   const FCACHE = new Map();
   const zinc = mat({ color: 0x5e656c, roughness: .55, metalness: .5 }), briq = mat({ color: 0x9a5a44 }), cote = mat({ color: 0xd9d0bf });
@@ -77,13 +77,13 @@ function construireTertre(A, L, scene) {
         c.fillStyle = "rgba(0,0,0,.25)"; for (let x = 0; x < w; x += 40) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 20, h - 10); c.lineTo(x + 40, h); c.fill(); } });
       const yB = Hd + .05 - Math.sin(.32) * sd, zB = sd * Math.cos(.32) + .12; box(sw, .42, .03, lumT(lT, .02, .45), 0, yB - .2, zB, g);
       if (o.guirlande) { const bM = lum(mat({ color: 0xfff4d0, emissive: 0xffe0a0, emissiveIntensity: 0 }), 0, 2.4); for (let x = -sw / 2 + .2; x < sw / 2; x += .45) add(new THREE.SphereGeometry(.045, 6, 5), bM, x, yB - .42, zB + .02, g); } }
-    if (o.bandeau) { const [txt, fond, coul] = o.bandeau; panneau(g, W, Hd + .42, .62, txt, fond, coul, { dz: .1 }); }
+    if (o.bandeau) { const [txt, fond, coul] = o.bandeau; panneau(g, W - .1, Hd + .5, .62, txt, fond, coul); }   // (posé sur la poutre, au-dessus de la vitrine)
     if (o.enseigne) o.enseigne(g, W, Hd); };
   const lumT = (t, j, n) => lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: j, roughness: .6 }), j, n);
   // une enseigne-panneau sur la façade (lettres peintes ou néon)
   const panneau = (g, W, y, h, txt, fond, coul, o = {}) => { const t = tT(1024, Math.round(1024 * h / W), (c, w, hh) => { c.fillStyle = fond; c.fillRect(0, 0, w, hh); if (o.cadre) { c.strokeStyle = o.cadre; c.lineWidth = 8; c.strokeRect(6, 6, w - 12, hh - 12); }
       c.textAlign = "center"; c.textBaseline = "middle"; fit(c, txt, w * .9, Math.round(hh * .7), `${o.ital ? "italic " : ""}bold @ ${o.police || serif}`); if (o.neon) { c.shadowColor = coul; c.shadowBlur = 18; } c.fillStyle = coul; c.fillText(txt, w / 2, hh / 2 + 3); });
-    return box(W, h, .08, lumT(t, o.neon ? .25 : .03, o.neon ? 1.8 : .55), o.x || 0, y, .06 + (o.dz || 0), g); };
+    return box(W, h, .08, lumT(t, o.neon ? .25 : .03, o.neon ? 1.8 : .55), o.x || 0, y, (o.z ?? .28) + (o.dz || 0), g); };
 
   // les tables de bistrot et les chaises en rotin tressé (rouge et miel, comme sur la photo)
   const rotinT = tT(64, 64, (c, w, h) => { c.fillStyle = "#c08a4a"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = 0; x < w; x += 8) { c.fillStyle = (x + y) % 16 ? "#a8322a" : "#d8a868"; c.fillRect(x + 1, y + 1, 6, 6); } }, 1, 1);
@@ -103,10 +103,9 @@ function construireTertre(A, L, scene) {
   maison(XO, 10.5, OUEST, 9, 14, { teinte: "#8a8478", etages: 3, volets: "#6a645a", rdc: (g, W) => devanture(g, W, { bois: 0x7a1a1a, travees: 4, porte: 1, porteC: 0x6a1414, fondV: "#d06a30", store: ["#8a1a1c", "LE  SABOT  ROUGE", "#f2e2c0"], storeD: 2.4,
     enseigne: (g2) => { const t = tT(128, 256, (c, w, h) => { c.fillStyle = "#7a1414"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2d890"; c.font = "bold 13px Arial"; c.textAlign = "center"; c.fillText("LE SABOT ROUGE", w / 2, 20); for (let i = 0; i < 18; i++) { c.fillRect(14, 34 + i * 12, 60 + al() * 30, 3); c.fillRect(w - 26, 34 + i * 12, 14, 3); } });
       box(.7, 1.3, .06, lumT(t, .1, .9), -W / 2 + 1.3, 1.6, .3, g2); } }) });
-  maison(XO, 2.2, OUEST, 7.6, 15, { teinte: "#e6d8b8", etages: 4, volets: "#e8e2d2", rdc: (g, W) => devanture(g, W, { bois: 0x1f5a44, travees: 3, porte: 1, porteC: 0x1f5a44, fondV: "#d89a40", store: ["#1f4a3a", "RESTAURANT  LA CRÉMAILLÈRE", "#f2ead8"], storeD: 2.2,
-    enseigne: (g2, W2) => { const ne = panneau(g2, W2 - 1.2, 6.6, 1.5, "LA CRÉMAILLÈRE", "#0e3a2a", "#7ff0ff", { neon: true, police: "Georgia", cadre: "#c8a040" }); ne.rotation.x = -.12;   // l'enseigne au néon bleu, sur fond vert
-      const s = new THREE.Group(); s.position.set(W2 / 2 - 1.2, 5.2, .9); g2.add(s); box(.06, .06, 1.1, fonteM, 0, .5, -.5, s); box(1.6, .45, .05, lumT(tT(512, 128, (c, w, h) => { c.fillStyle = "#123a2a"; c.fillRect(0, 0, w, h); c.strokeStyle = "#c8a040"; c.lineWidth = 6; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = "#f0d890"; c.textAlign = "center"; c.font = `bold 46px ${serif}`; c.fillText("La Crémaillère 1900", w / 2, 82); }), .05, 1), 0, 0, 0, s, Math.PI / 2);
-      box(.08, 1.6, 1.6, lum(mat({ color: 0x2a6a4a, emissive: 0x3aff8a, emissiveIntensity: 0 }), 0, .6), -W2 / 2 + .04, 7.2, .05, g2); } }) });   // (la façade verte, éclairée de vert la nuit)
+  maison(XO, 2.2, OUEST, 7.6, 15, { teinte: "#e6d8b8", etages: 4, volets: "#e8e2d2", sansEtage: [0], rdc: (g, W) => devanture(g, W, { bois: 0x1f5a44, travees: 3, porte: 1, porteC: 0x1f5a44, fondV: "#d89a40", store: ["#1f4a3a", "RESTAURANT  LA CRÉMAILLÈRE", "#f2ead8"], storeD: 2.2,
+    enseigne: (g2, W2) => { panneau(g2, W2 - .8, 3.8 + 2.8 * .52, 1.6, "LA CRÉMAILLÈRE", "#0e3a2a", "#7ff0ff", { neon: true, police: "Georgia", cadre: "#c8a040", z: .12 });   // l'enseigne au néon bleu, sur fond vert
+      const s = new THREE.Group(); s.position.set(W2 / 2 - 1.0, 4.08, .95); g2.add(s); box(.06, .06, 1.1, fonteM, 0, .5, -.5, s); box(1.6, .45, .05, lumT(tT(512, 128, (c, w, h) => { c.fillStyle = "#123a2a"; c.fillRect(0, 0, w, h); c.strokeStyle = "#c8a040"; c.lineWidth = 6; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = "#f0d890"; c.textAlign = "center"; c.font = `bold 46px ${serif}`; c.fillText("La Crémaillère 1900", w / 2, 82); }), .05, 1), 0, 0, 0, s, Math.PI / 2);} }) });   // (la façade verte, éclairée de vert la nuit)
   maison(XO, -5.6, OUEST, 8, 15.5, { teinte: "#efe2c2", etages: 4, volets: "#efe6d2", peint: ["RESTAURANT   CHEZ   EUGÈNE", "#7a4a1a", 0], peintNuit: true, rdc: (g, W) => devanture(g, W, { bois: 0x5a1414, travees: 3, porte: 2, fondV: "#e0a050", store: ["#a01a20", "CAFÉ · PIANO BAR · CHEZ EUGÈNE", "#f2ead8"], storeD: 2.2, guirlande: true }) });
   terrasse(XO + .2, 14.8, 0, -1, 1, 0, 8.4, 2, false); terrasse(XO + .2, 6.2, 0, -1, 1, 0, 7.2, 2, false); terrasse(XO + .2, -1.8, 0, -1, 1, 0, 7.4, 2, true);
 
@@ -121,10 +120,10 @@ function construireTertre(A, L, scene) {
      « Ici est né le mot bistro », les sapins et la verdure sur le store ; Au Cadet de Gascogne, ses grandes lettres rouges, ses stores rouges fleuris ---------- */
   const EST = -Math.PI / 2;
   const verdure = (g, W, y, fleurs) => { const vM = [mat({ color: 0x2a5a2a }), mat({ color: 0x3a6a32 }), mat({ color: 0x1e4a26 })], fl = [mat({ color: 0xe8203a }), mat({ color: 0xf0a0c0 }), mat({ color: 0xf6f0e0 })], gM = lum(mat({ color: 0xfff0c0, emissive: 0xffd890, emissiveIntensity: 0 }), 0, 2.4);
-    for (let x = -W / 2 + .4; x < W / 2 - .2; x += .55) { if (al() < .35) { add(new THREE.ConeGeometry(.32, 1.1 + al() * .6, 7), vM[2], x, y + .6, .45, g); } else add(new THREE.IcosahedronGeometry(.28 + al() * .12, 0), vM[(x * 7 | 0) & 1], x, y + .22, .5, g);
+    for (let x = -W / 2 + .4; x < W / 2 - .2; x += .55) { if (al() < .35) { const hc = .45 + al() * .2; add(new THREE.ConeGeometry(.24, hc, 7), vM[2], x, y + hc / 2, .55, g); } else add(new THREE.IcosahedronGeometry(.28 + al() * .12, 0), vM[(x * 7 | 0) & 1], x, y + .22, .5, g);
       if (fleurs) add(new THREE.IcosahedronGeometry(.13, 0), fl[(x * 5 | 0) % 3 & 3] || fl[0], x + .2, y + .32, .78, g); add(new THREE.SphereGeometry(.04, 5, 4), gM, x + .1, y + .45, .74, g); } };
-  maison(XE, -11.25, EST, 10.5, 7.8, { teinte: "#f2f0ea", etages: 1, volets: "#f2f2ee", balcon: false, pignon: 4.2, rdc: (g, W) => { devanture(g, W, { bois: 0xa8141c, travees: 5, porte: 4, porteC: 0x8a1018, fondV: "#f0a040", store: ["#7a0e14", "ICI EST NÉ LE MOT « BISTRO »  ·  LA MÈRE CATHERINE", "#f2e2c0"], storeD: 2.0 });
-      panneau(g, W * .86, 5.6, .72, "LA MÈRE CATHERINE", "#a8141c", "#f6efe0", { cadre: "#f6efe0" }); verdure(g, W, 3.55, false); } });
+  maison(XE, -11.25, EST, 10.5, 8.6, { teinte: "#f2f0ea", etages: 1, volets: "#f2f2ee", balcon: false, pignon: 4.2, rdc: (g, W) => { devanture(g, W, { bois: 0xa8141c, travees: 5, porte: 4, porteC: 0x8a1018, fondV: "#f0a040", store: ["#7a0e14", "ICI EST NÉ LE MOT « BISTRO »  ·  LA MÈRE CATHERINE", "#f2e2c0"], storeD: 2.0 });
+      panneau(g, W * .82, 4.5, .62, "LA MÈRE CATHERINE", "#a8141c", "#f6efe0", { cadre: "#f6efe0", z: .2 }); verdure(g, W, 3.55, false); } });
   maison(XE, 1.25, EST, 14, 12, { teinte: "#f2efe6", etages: 3, volets: "#f2f2ee", peint: ["AU  CADET  DE  GASCOGNE", "#b8141c", 1], peintNuit: true, rdc: (g, W) => { devanture(g, W, { bois: 0x9a1418, travees: 5, porte: 2, fondV: "#f0a040", store: ["#b01820", "CAFÉ  ·  RESTAURANT  ·  BAR", "#f2ead8"], storeD: 2.0, guirlande: true }); verdure(g, W, 3.55, true); } });
   terrasse(XE - .2, -15.8, 0, 1, -1, 0, 9.2, 1, false); terrasse(XE - .2, -5.2, 0, 1, -1, 0, 12.6, 1, false);
   // la rue Saint-Éleuthère (entre z = 8,5 et 15,5), qui file vers le Sacré-Cœur : les maisons blanches de part et d'autre ; au bout à droite, l'église Saint-Pierre de Montmartre
@@ -141,8 +140,8 @@ function construireTertre(A, L, scene) {
   const SUD = Math.PI;
   maison(-14, ZS, SUD, 12, 13, { teinte: "#ecebe6", etages: 3, volets: "#f4f4f0", rdc: (g, W) => { devanture(g, W, { bois: 0xb07a3a, travees: 6, porte: 3, porteC: 0xa86e30, fondV: "#f0c070" });
       const t = tT(1024, 72, (c, w, h) => { c.fillStyle = "#b07a3a"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(0, 0, w, 4); c.fillRect(0, h - 4, w, 4); c.fillStyle = "#141414"; c.beginPath(); c.ellipse(w * .45, h / 2, 150, 28, 0, 0, 7); c.fill();
-        c.fillStyle = "#e8c070"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `bold 44px ${serif}`; c.fillText("CARETTE", w * .45, h / 2 + 2); c.fillStyle = "#3a2410"; c.font = `italic 24px ${serif}`; c.fillText("Maison fondée en 1927", w * .82, h / 2 + 2); c.fillText("PÂTISSERIES · CRÊPES", w * .12, h / 2 + 2); });
-      box(W, .8, .14, lumT(t, .03, .6), 0, 3.85, .12, g); for (const x of [-1.6, 1.6]) { box(.22, .36, .22, lum(mat({ color: 0x2a2a2a, emissive: 0xffc070, emissiveIntensity: .05 }), .05, 1.6), x, 2.85, .35, g); } } });
+        c.fillStyle = "#e8c070"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `bold 44px ${serif}`; c.fillText("CARETTE", w * .45, h / 2 + 2); c.fillStyle = "#3a2410"; c.font = `italic 24px ${serif}`; c.fillText("Maison fondée en 1927", w * .82, h / 2 + 2); c.fillText("Crêpes", w * .1, h / 2 + 2); });
+      box(W, .8, .14, lumT(t, .03, .6), 0, 4.1, .3, g); for (const x of [-1.6, 1.6]) { box(.22, .36, .22, lum(mat({ color: 0x2a2a2a, emissive: 0xffc070, emissiveIntensity: .05 }), .05, 1.6), x, 2.85, .35, g); } } });
   maison(-4.6, ZS, SUD, 6.4, 12, { teinte: "#efeeea", etages: 3, volets: "#f4f4f0", rdc: (g, W) => devanture(g, W, { bois: 0xc8141c, travees: 2, porte: 0, porteC: 0xb01218, fondV: "#f8e0c0", bandeau: ["GALERIE  MONTMARTRE", "#c8141c", "#f6efe0"] }) });
   maison(11.5, ZS, SUD, 16, 11, { teinte: "#e8dcc4", etages: 3, volets: "#f2f2ee", rdc: (g, W) => devanture(g, W, { bois: 0x1a2a4a, travees: 6, porte: 2, fondV: "#f0c070", store: ["#1a2a5a", "AU  CLAIRON  DES  CHASSEURS", "#f2ead8"], raye: true, storeD: 2.6, guirlande: true }) });
   { const blancN = mat({ color: 0xf6f6f2, roughness: .9 }), bleuT = mat({ map: tT(64, 64, (c, w, h) => { c.fillStyle = "#1a2a5a"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8e4d8"; for (let y = 0; y < h; y += 8) for (let x = (y / 8 % 2) * 4; x < w; x += 8) c.fillRect(x, y, 4, 4); c.fillStyle = "#e8c040"; c.fillRect(0, 28, w, 8); }, 1, 1) });
@@ -166,7 +165,7 @@ function construireTertre(A, L, scene) {
   const lierreT = (rouge) => tT(256, 512, (c, w, h) => { c.clearRect(0, 0, w, h); for (let i = 0; i < 1600; i++) { const y = h - Math.pow(al(), .7) * h, x = w / 2 + (al() - .5) * w * (.35 + .65 * (h - y) / h) ; const v = al();
       c.fillStyle = rouge && v < .55 ? `hsl(${v * 30},${60 + v * 30}%,${28 + v * 18}%)` : `hsl(${95 + v * 30},${40 + v * 20}%,${18 + v * 22}%)`; c.beginPath(); c.ellipse(x, y, 4 + al() * 5, 3 + al() * 4, al() * 3, 0, 7); c.fill(); } });
   const LIERRE = [lierreT(false), lierreT(true)].map(t => mat({ map: t, transparent: true, alphaTest: .35, side: THREE.DoubleSide, roughness: .9 }));
-  const lierre = (g, W, H, rouge, x0) => { const w = Math.min(W * .55, 5), p = pl2(w, H * .85, LIERRE[rouge ? 1 : 0], x0 ?? (-W / 2 + w / 2 + .2), H * .42, .1, g); void p; };
+  const lierre = (g, W, H, rouge, x0, y0 = 0, lw) => { const w = lw || Math.min(W * .55, 5), h = H * .92 - y0; pl2(w, h, LIERRE[rouge ? 1 : 0], x0 ?? (-W / 2 + w / 2 + .2), y0 + h / 2, .1, g); };   // (y0 : au-dessus de la devanture, pour ne rien cacher)
   const pl2 = (w, h, m, x, y, z, g) => add(new THREE.PlaneGeometry(w, h), m, x, y, z, g);
   // les jardinières fleuries aux fenêtres du premier étage
   const fleursM = [0xe8203a, 0xf06090, 0xf2f0f0, 0xc040c0, 0xf0a020].map(c2 => mat({ color: c2, roughness: .9 })), bacM = mat({ color: 0x8a4a2a }), vertJ = mat({ color: 0x3a6a2a });
@@ -180,7 +179,7 @@ function construireTertre(A, L, scene) {
   const ordinaire = (k) => ({ teinte: TEINTES[k % 3], volets: VOLETS[k % 2 ? 0 : 2 + (k % 4 === 0)], etages: 3, cache: true });   // (peu de variantes : les façades pareilles sont partagées)
   // une rangée de maisons le long d'une rue : (ax, az) le début, (dx, dz) le sens, ry : l'orientation des façades ; L : [largeur, hauteur, options]
   const rangee = (ax, az, dx, dz, ry, liste) => { let t = 0; for (const [W, H, o] of liste) { const x = ax + dx * (t + W / 2), z = az + dz * (t + W / 2); const g = maison(x, z, ry, W, H, o);
-      if (o.lierre) lierre(g, W, H, o.lierre === 2); if (o.jard) jardinieres(g, W, H, o.etages, o.fen); if (o.lanterne !== false) { const nx = Math.sin(ry), nz = Math.cos(ry); lanterneMur(x + dx * (W / 2 - .6), 4.6, z + dz * (W / 2 - .6), nx, nz); }
+      if (o.lierre) lierre(g, W, H, o.lierre === 2, undefined, o.rdc ? 4.5 : 0); if (o.jard) jardinieres(g, W, H, o.etages, o.fen); if (o.lanterne !== false) { const nx = Math.sin(ry), nz = Math.cos(ry); lanterneMur(x + dx * (W / 2 - .6), 4.6, z + dz * (W / 2 - .6), nx, nz); }
       t += W; } };
   // l'enseigne ronde en potence (la droguerie, sur la photo)
   const potence = (g, x, y, txt, fond, coul) => { const t = tT(256, 256, (c, w, h) => { c.fillStyle = fond; c.beginPath(); c.arc(128, 128, 120, 0, 7); c.fill(); c.strokeStyle = coul; c.lineWidth = 8; c.beginPath(); c.arc(128, 128, 108, 0, 7); c.stroke(); c.fillStyle = coul; c.textAlign = "center"; c.textBaseline = "middle"; fit(c, txt, 200, 44, `italic bold @ ${serif}`); c.fillText(txt, 128, 132); });
@@ -192,8 +191,8 @@ function construireTertre(A, L, scene) {
   /* ---------- la rue Norvins (de la place vers l'ouest) : la boulangerie, La Galette des Moulins (la devanture verte), les galeries, le tabac ; en face, Le Consulat, le café au grand store crème ---------- */
   rangee(-80, ZNo0, 1, 0, 0, [
     [8, 11, { ...ordinaire(1), rdc: (g, W) => { devanture(g, W, { bois: 0x8a5a2a, travees: 3, porte: 0, fondV: "#f0c070", bandeau: ["BOULANGERIE", "#7a4a1e", "#f0d890"] }); } }],
-    [7, 10.5, { teinte: "#efe9dc", volets: "#7a9a6a", etages: 3, rdc: (g, W) => { devanture(g, W, { bois: 0x7a9a72, travees: 2, porte: 0, porteC: 0x6a8a62, fondV: "#e8b060" }); panneau(g, W - .4, 3.85, .75, "La Galette des Moulins", "#c8d8b8", "#2a3a2a", { cadre: "#5a7a52" });
-      lierre(g, W, 10.5, false, W / 2 - 1.6); } }],
+    [7, 10.5, { teinte: "#efe9dc", volets: "#7a9a6a", etages: 3, rdc: (g, W) => { devanture(g, W, { bois: 0x7a9a72, travees: 2, porte: 0, porteC: 0x6a8a62, fondV: "#e8b060" }); panneau(g, W - .4, 4.12, .8, "La Galette des Moulins", "#c8d8b8", "#2a3a2a", { cadre: "#5a7a52" });
+      lierre(g, W, 10.5, false, W / 2 - 1.2, 4.5, 2); } }],
     [8, 11, { ...ordinaire(2), jard: true, rdc: (g, W) => devanture(g, W, { bois: 0xe8e4dc, travees: 3, porte: 1, fondV: "#f8e8c8", bandeau: ["GALERIE", "#f2efe6", "#3a3a3a"] }) }],
     [8, 12, { ...ordinaire(3), rdc: (g, W) => { devanture(g, W, { bois: 0x5a1a1a, travees: 3, porte: 1, fondV: "#f0b060", store: ["#8a1a1c", "BAR · TABAC", "#f2ead8"], storeD: 1.4 }); tabac(g, W / 2 - .3, 4.4); } }],
     [9, 11, { ...ordinaire(4), lierre: 2, jard: true, rdc: (g, W) => devanture(g, W, { bois: 0x2a3a5a, travees: 3, porte: 2, fondV: "#f0d8a0", bandeau: ["GALERIE  D'ART  ·  MONTMARTRE", "#2a3a5a", "#f2ead8"] }) }],
@@ -201,18 +200,18 @@ function construireTertre(A, L, scene) {
     [11.5, 12, { ...ordinaire(0), jard: true, rdc: (g, W) => devanture(g, W, { bois: 0x6a1a1a, travees: 4, porte: 1, fondV: "#f0a050", store: ["#7a1a1a", "SOUVENIRS DE MONTMARTRE", "#f2ead8"], storeD: 1.3 }) }]]);
   rangee(-30.5, ZNo1, -1, 0, Math.PI, [
     [11.5, 12, { teinte: "#efe9da", volets: "#3a5aa8", etages: 3, jard: true, rdc: (g, W) => { devanture(g, W, { bois: 0x1a2a5a, travees: 3, porte: 2, porteC: 0x1a2a5a, fondV: "#f0b860", bandeau: ["CAFÉ", "#1a2a5a", "#f0c860"] });   // le café bleu aux livres (la photo)
-      for (const x of [-2.8, 2.8]) add(new THREE.IcosahedronGeometry(.35, 0), vertJ, x, .3, .5, g); lierre(g, W, 12, false, W / 2 - 1.4); } }],
+      for (const x of [-2.8, 2.8]) add(new THREE.IcosahedronGeometry(.35, 0), vertJ, x, .3, .5, g); lierre(g, W, 12, false, W / 2 - 1.4, 4.5, 2.4); } }],
     [10, 11, { ...ordinaire(6), lierre: 1, rdc: (g, W) => devanture(g, W, { bois: 0xe8e4dc, travees: 3, porte: 1, fondV: "#f8e8c8", bandeau: ["GALERIE", "#f2efe6", "#3a3a3a"] }) }],
     [8, 11, { ...ordinaire(7), jard: true }],
     [10, 14, { teinte: "#e6d6b6", volets: false, etages: 4, balcon: true, rdc: (g, W) => devanture(g, W, { bois: 0x1a1a1a, travees: 4, porte: 1, fondV: "#f0b060", store: ["#e8dcc0", "CAFÉ", "#2a2a2a"], storeD: 2.2, guirlande: true }) }],   // le café d'angle au grand store crème (la photo)
-    [10, 13, { teinte: "#f2efe6", volets: "#f2f2ee", etages: 3, peint: ["LE  CONSULAT", "#b8141c", 2], peintNuit: true, rdc: (g, W) => devanture(g, W, { bois: 0xa8141c, travees: 4, porte: 0, fondV: "#f0a040", store: ["#1e6a3a", "LE  CONSULAT", "#f2ead8"], raye: true, storeD: 1.8, guirlande: true }) }]]);
+    [10, 13, { teinte: "#f2efe6", volets: "#f2f2ee", etages: 3, peint: ["LE  CONSULAT", "#b8141c", 0], peintNuit: true, rdc: (g, W) => devanture(g, W, { bois: 0xa8141c, travees: 4, porte: 0, fondV: "#f0a040", store: ["#1e6a3a", "LE  CONSULAT", "#f2ead8"], raye: true, storeD: 1.8, guirlande: true }) }]]);
   terrasse(-79.5, ZNo1 - .2, 1, 0, 0, -1, 9, 1, false); terrasse(-69.5, ZNo1 - .2, 1, 0, 0, -1, 9, 1, false); terrasse(-41, ZNo1 - .2, 1, 0, 0, -1, 9, 1, false);
 
   /* ---------- la rue des Saules : au bout de la rue Norvins, La Maison Rose (rose, volets verts, « Restaurant-Café, est. 1908 ») ; la boulangerie aux pains en vitrine ;
      la maison turquoise et son store rayé jaune ; au coin de la rue Saint-Rustique, La Bonne Franquette, ses lettres d'or, « Aimer, Manger, Boire et Chanter !!! » ---------- */
   rangee(XSa0, ZSa0, 0, 1, Math.PI / 2, [
     [14, 12, { ...ordinaire(8), jard: true }], [13.1, 11, { ...ordinaire(9), lierre: 1 }],
-    [8, 7.4, { teinte: "#f2b8c0", volets: "#4a7a4a", etages: 1, balcon: false, pignon: 2.6, peint: ["La Maison Rose", "#3a6a3a", 0], rdc: (g, W) => { devanture(g, W, { bois: 0x4a7a4a, travees: 3, porte: 1, porteC: 0x3a6a3a, fondV: "#f0b070" }); panneau(g, W - 1, 3.7, .45, "RESTAURANT · CAFÉ  —  EST. 1908", "#f2b8c0", "#3a5a3a", { dz: .02 }); } }],
+    [8, 7.4, { teinte: "#f2b8c0", volets: "#4a7a4a", etages: 1, balcon: false, pignon: 2.6, peint: ["La Maison Rose", "#3a6a3a", 0, 4.3, .42], rdc: (g, W) => { devanture(g, W, { bois: 0x4a7a4a, travees: 3, porte: 1, porteC: 0x3a6a3a, fondV: "#f0b070" }); panneau(g, 2.6, 3.86, .24, "RESTAURANT · CAFÉ  —  EST. 1908", "#f2b8c0", "#3a5a3a", { x: 0 }); } }],
     [10.9, 9, { teinte: "#3aa8a0", volets: "#f2f2ee", etages: 2, jard: true, rdc: (g, W) => devanture(g, W, { bois: 0x6a8a5a, travees: 3, porte: 1, fondV: "#f0c070", store: ["#e8c020", "ÉPICERIE · PRIMEUR", "#3a2a1a"], raye: true, storeD: 1.4 }) }],
     [12, 11, { teinte: "#d8c8a8", volets: "#8aa0b0", etages: 3, jard: true, rdc: (g, W) => { devanture(g, W, { bois: 0x8aa0b0, travees: 3, porte: 2, fondV: "#f0c070", store: ["#e8e4d8", "", "#333"], raye: true, storeD: 1.2 });
       panneau(g, 3.6, 4.6, .6, "Boulangerie Maison", "#4a2a1a", "#f2e8d8", { ital: true, dz: .05, x: -2.4 }); const pain = mat({ color: 0xc88a40 }), panier = mat({ color: 0xa8783a });   // l'étal des pains devant la vitrine
@@ -221,15 +220,18 @@ function construireTertre(A, L, scene) {
   rangee(XSa1, ZSa0, 0, 1, -Math.PI / 2, [[14, 11, { ...ordinaire(14), lierre: 1 }], [13.8, 12, { ...ordinaire(15), jard: true }]]);
   rangee(XSa1, ZNo1 + 9, 0, 1, -Math.PI / 2, [[8.4, 11, { ...ordinaire(16), jard: true }], [8.6, 10.5, { ...ordinaire(17), lierre: 2 }],
     [9, 11, { teinte: "#efe8d8", volets: "#f2f2ee", etages: 3, rdc: (g, W) => { devanture(g, W, { bois: 0x1e5a4a, travees: 3, porte: 1, porteC: 0x1e5a4a, fondV: "#f0b050" });   // La Bonne Franquette (la photo)
-      const t = tT(1024, 96, (c, w, h) => { c.fillStyle = "#123a30"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8c060"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `italic bold 40px ${serif}`; c.fillText("Aimer, Manger, Boire et Chanter !!!", w * .5, h / 2 + 2); });
-      box(W, .7, .12, lumT(t, .05, .9), 0, 3.85, .14, g); panneau(g, W - .6, 6.2, .8, "LA  BONNE  FRANQUETTE", "#f2efe6", "#1e5a4a", { dz: .02 });
+      const t = tT(1024, 96, (c, w, h) => { c.fillStyle = "#123a30"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8c060"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `bold 52px ${serif}`; c.fillText("CAFÉ · RESTAURANT", w * .62, h / 2 + 3); c.font = `italic 30px ${serif}`; c.fillText("Aimer, Manger,", w * .15, h * .32); c.fillText("Boire et Chanter !!!", w * .15, h * .72); });
+      box(W, .8, .14, lumT(t, .05, .9), 0, 4.1, .3, g);
       const f = tT(256, 320, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#e8c890"); gr.addColorStop(1, "#8a5a3a"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.strokeStyle = "#c8a040"; c.lineWidth = 10; c.strokeRect(5, 5, w - 10, h - 10);
         c.fillStyle = "#6a3a2a"; c.beginPath(); c.ellipse(128, 120, 40, 50, 0, 0, 7); c.fill(); c.fillStyle = "#f0d0b0"; c.beginPath(); c.arc(128, 90, 20, 0, 7); c.fill(); c.fillStyle = "#8a1a1a"; c.fillRect(90, 180, 76, 100); c.fillStyle = "#f6f0e0"; c.beginPath(); c.arc(70, 60, 16, 0, 7); c.fill(); c.beginPath(); c.arc(190, 60, 16, 0, 7); c.fill(); });   // la fresque peinte : le violoneux, les angelots
       box(1.5, 1.9, .06, lumT(f, .05, .7), -W / 2 + 1.1, 1.8, .14, g); } }]]);
   terrasse(XSa1 - .2, 17.4, 0, 1, -1, 0, 8.6, 1, false);
+  { const vT = tT(1024, 96, (c, w, h) => { c.fillStyle = "#1a2a26"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2ead8"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `bold 54px ${serif}`; c.fillText("LA BONNE FRANQUETTE", w / 2, h / 2 + 3); }), vM = lumT(vT, .03, .5), toile = mat({ color: 0xf2ede0, side: THREE.DoubleSide });   // les parasols carrés, leur lambrequin écrit (la photo)
+    for (const z of [18.6, 22.8]) { const x = XSa1 - 1.1; cyl(.03, .03, 2.4, fonteM, x, 1.2, z, scene, 6); const t = add(new THREE.ConeGeometry(1.45, .45, 4, 1, true), toile, x, 2.55, z); t.rotation.y = Math.PI / 4;
+      for (const [dx, dz, ry] of [[1.02, 0, Math.PI / 2], [-1.02, 0, -Math.PI / 2], [0, 1.02, 0], [0, -1.02, Math.PI]]) pl2(2.04, .26, vM, x + dx, 2.2, z + dz, scene).rotation.y = ry; } }
   { const pq = (txt, x, y, z, ry) => { const t = tT(256, 128, (c, w, h) => { c.fillStyle = "#1a4a3a"; c.fillRect(0, 0, w, h); c.strokeStyle = "#f2f2f2"; c.lineWidth = 5; c.strokeRect(6, 6, w - 12, h - 12); c.fillStyle = "#f2f2f2"; c.textAlign = "center"; c.font = "bold 18px Arial"; c.fillText("18e Arrt", w / 2, 34); c.font = "bold 30px Arial"; const [a, b] = txt.split("|"); c.fillText(a, w / 2, 70); c.fillText(b || "", w / 2, 104); });
       box(.9, .45, .04, mat({ map: t }), x, y, z, scene, ry); };
-    pq("RUE DES|SAULES", XSa1 + .03, 3.6, ZRu0 - .8, Math.PI / 2); pq("RUE SAINT|RUSTIQUE", XSa1 + .9, 3.6, ZRu0 + .03, 0); pq("RUE|NORVINS", -21.6 + .03, 3.6, ZNo1 - .9, -Math.PI / 2); pq("RUE DES|SAULES", XSa0 + .03, 3.6, ZNo0 - .6, Math.PI / 2); }
+    pq("RUE DES|SAULES", XSa1 - .04, 3.4, ZRu0 - .9, -Math.PI / 2); pq("RUE SAINT|RUSTIQUE", XSa1 + .9, 3.4, ZRu0 + .04, 0); pq("RUE|NORVINS", -23, 3.4, ZNo1 - .04, Math.PI); pq("RUE|NORVINS", XO + .04, 3.4, ZNo1 + .6, Math.PI / 2); pq("RUE DES|SAULES", XSa0 + .04, 3.4, ZNo0 - .7, Math.PI / 2); }
   // le chanteur des rues, sa guitare, sur son tabouret devant La Bonne Franquette ; et le monsieur au béret qui chante avec lui
   const MUSI = []; { const m = personne3D({ taille: 1.74, peau: "#e8bd95", ch: "#e8e8e8", haut: "#e8b8b8", bas: "#e8e2d2", chaussures: "#5a3a22", coif: "court", pantalon: true }); m.position.set(XSa1 - 1.6, 0, 22); m.rotation.y = -Math.PI / 2 - .4; m.userData.poser("assis", 0); scene.add(m);
     const P = m.userData.parts, gui = new THREE.Group(); gui.position.set(.05, .05, .18); gui.rotation.set(0, 0, .9); P.buste.add(gui); add(new THREE.SphereGeometry(.17, 12, 8), mat({ color: 0xc8883a, roughness: .4 }), 0, -.05, 0, gui).scale.set(1, 1.25, .35); add(new THREE.BoxGeometry(.05, .5, .03), mat({ color: 0x3a2414 }), 0, .32, 0, gui);
@@ -244,10 +246,10 @@ function construireTertre(A, L, scene) {
     [8, 11, { teinte: "#f2efe6", volets: "#f2f2ee", etages: 3, rdc: (g, W) => { devanture(g, W, { bois: 0x2a5a7a, travees: 3, porte: 2, porteC: 0x2a5a7a, fondV: "#f0b860" });   // le café bleu et sa grande horloge (la photo)
       const t = tT(256, 256, (c, w, h) => { c.fillStyle = "#f2e6c8"; c.beginPath(); c.arc(128, 128, 122, 0, 7); c.fill(); c.strokeStyle = "#3a2a1a"; c.lineWidth = 6; c.beginPath(); c.arc(128, 128, 116, 0, 7); c.stroke(); c.fillStyle = "#2a1a10"; c.font = `bold 26px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle";
         ["XII", "I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "IX", "X", "XI"].forEach((n, i) => { const a = i / 12 * Math.PI * 2 - Math.PI / 2; c.fillText(n, 128 + Math.cos(a) * 92, 128 + Math.sin(a) * 92); }); c.lineWidth = 6; c.beginPath(); c.moveTo(128, 128); c.lineTo(128 + 50, 128 - 30); c.stroke(); c.lineWidth = 4; c.beginPath(); c.moveTo(128, 128); c.lineTo(128 - 10, 128 - 80); c.stroke(); });
-      box(3.4, 1.5, .1, mat({ color: 0x2a5a7a }), 0, 4.2, .1, g); const d = add(new THREE.CylinderGeometry(.7, .7, .06, 28), lumT(t, .05, .8), 0, 4.25, .2, g); d.rotation.x = Math.PI / 2; } }],
+      box(3.4, 1.5, .1, mat({ color: 0x2a5a7a }), 0, 4.45, .3, g); const d = add(new THREE.CylinderGeometry(.66, .66, .06, 28), lumT(t, .05, .8), 0, 4.45, .38, g); d.rotation.x = Math.PI / 2; } }],
     [10, 12, { ...ordinaire(19), lierre: 2 }],
     [7, 10.5, { teinte: "#d8d4ca", volets: "#f2f2ee", etages: 3, rdc: (g, W) => { devanture(g, W, { bois: 0x1e3a5e, travees: 2, porte: 1, porteC: 0x1e3a5e, fondV: "#e8a860", bandeau: ["CAFÉ", "#1e3a5e", "#f0c860"] });   // le café-librairie bleu (la photo)
-      lierre(g, W, 6, false, -W / 2 + .8); const ta = add(new THREE.CylinderGeometry(.3, .3, .03, 14), mat({ color: 0xe8e2d6 }), 0, .74, .9, g); void ta; cyl(.03, .03, .72, fonteM, 0, .37, .9, g, 6); } }],
+      lierre(g, W, 5, false, -W / 2 + .25, 0, .45); lierre(g, W, 5, false, W / 2 - .25, 0, .45);   /* (la vigne qui grimpe de chaque côté de la devanture, comme sur la photo) */ const ta = add(new THREE.CylinderGeometry(.3, .3, .03, 14), mat({ color: 0xe8e2d6 }), 0, .74, .9, g); void ta; cyl(.03, .03, .72, fonteM, 0, .37, .9, g, 6); } }],
     [10, 12, { ...ordinaire(20), jard: true }],
     [10, 11, { ...ordinaire(21), rdc: (g, W) => devanture(g, W, { bois: 0x7a1a1a, travees: 4, porte: 1, fondV: "#f0a050", store: ["#b8202a", "RESTAURANT", "#f2ead8"], storeD: 2.0 }) }],
     [9, 11, { ...ordinaire(22), lierre: 1 }],
