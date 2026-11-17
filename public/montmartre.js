@@ -23,7 +23,7 @@ function construireTertre(A, L, scene) {
   const box = (w, h, d, m, x, y, z, par = scene, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, par, ry);
   const cyl = (rt, rb, h, m, x, y, z, par = scene, seg = 12) => add(new THREE.CylinderGeometry(rt, rb, h, seg), m, x, y, z, par);
   let graine = 23; const al = () => (graine = (graine * 16807) % 2147483647) / 2147483647;
-  const NUIT = [], TERR = [], PEINT = [], MARCH = [], SERV = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
+  const NUIT = [], TERR = [], PEINT = [], MARCH = [], SERV = [], JOUR = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
   const serif = "Georgia, 'Times New Roman', serif";
   const fit = (c, txt, maxW, px, font) => { let p = px; c.font = `${font.replace("@", p + "px")}`; while (c.measureText(txt).width > maxW && p > 8) { p -= 2; c.font = `${font.replace("@", p + "px")}`; } return p; };
   const SQ = { x0: -13, x1: 13, z0: -9, z1: 9 }, YS = .14;   // le carré des peintres (surélevé d'une bordure de pierre)
@@ -128,13 +128,54 @@ function construireTertre(A, L, scene) {
   /* la salle derrière la vitrine : le fond (l'intérieur peint : comptoir, étagères, lampes, tableaux), le plancher, le plafond et ses globes, les murs ; un comptoir, des tables : de la profondeur derrière le verre */
   const parquetM = mat({ color: 0x6a4428, roughness: .7 }), plafondM = mat({ color: 0xe8dcc0, roughness: .9 }), murSalle = mat({ color: 0xd8c8a4, roughness: .9 }), comptoirM = mat({ color: 0x4a2a16, roughness: .45 }), zincM = mat({ color: 0xb8bcc0, metalness: .7, roughness: .3 });
   const globeM = lum(mat({ color: 0xfff0d0, emissive: 0xffd090, emissiveIntensity: .5 }), .5, 1.6);
-  const salleDerriere = (g, W) => { const S = g.userData.salle; if (!S) return; const { HR, PR, D } = S, fond = g.userData.vInt || murSalle;
+  /* (10.86) l'intérieur, selon la boutique : le café (le damier, le comptoir mouluré, le zinc, les tabourets, le percolateur, le miroir et ses étagères de bouteilles, l'ardoise, les tableaux, la plante),
+     la galerie (les murs blancs, les toiles encadrées et leurs spots, la banquette), la boulangerie (la vitrine réfrigérée, les pains, les baguettes), la boutique (les rayonnages pleins) ; tout fondu ensuite */
+  const damierM = mat({ map: tT(128, 128, (c) => { for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { c.fillStyle = (i + j) % 2 ? "#2a2622" : "#e8e0d0"; c.fillRect(i * 16, j * 16, 16, 16); } }, 3, 2), roughness: .35 });
+  const lambrisM = mat({ color: 0x5a3420, roughness: .5 }), moulureM = mat({ color: 0x7a4a28, roughness: .45 }), laitonM = mat({ color: 0xc8a050, metalness: .8, roughness: .3 }), chromeM = mat({ color: 0xd0d4d8, metalness: .9, roughness: .2 }), noirS = mat({ color: 0x1a1a1a, roughness: .5 });
+  const miroirM = mat({ color: 0x8a94a0, metalness: .7, roughness: .12 }), cuirM = mat({ color: 0x7a1a1a, roughness: .55 }), marbreS = mat({ color: 0xe8e4dc, roughness: .25 }), boisS = mat({ color: 0x6a3a1c, roughness: .55 }), verreS2 = mat({ color: 0xdfeeee, roughness: .05, transparent: true, opacity: .35 });
+  const BOUTL = [0x1f4a22, 0x6a3a10, 0xd8d0a8, 0x4a1218, 0x2a6a5a].map(c2 => mat({ color: c2, roughness: .15, metalness: .1 })), OBJ = [0xc83a2a, 0x2a6aa8, 0xe8c040, 0x3a8a4a, 0xf2efe6, 0x8a3a8a].map(c2 => mat({ color: c2, roughness: .6 }));
+  const galMurM = mat({ color: 0xf4f1ea, roughness: .9 }), doreM = mat({ color: 0xb8903a, metalness: .6, roughness: .35 }), painM = mat({ color: 0xc8883a, roughness: .8 }), painC = mat({ color: 0xe0b060, roughness: .85 }), planteM = mat({ color: 0x2a5a24, roughness: .9 }), potS = mat({ color: 0xa85a3a, roughness: .8 });
+  const ardoiseM = mat({ map: tT(96, 128, (c, w, h) => { c.fillStyle = "#1e2422"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2efe6"; c.font = "italic bold 15px Georgia, serif"; c.textAlign = "center"; c.fillText("Menu", w / 2, 20); c.font = "9px Georgia, serif"; ["Soupe à l'oignon", "Croque-monsieur", "Bœuf bourguignon", "Crème brûlée", "Café · 2,50"].forEach((t, i) => c.fillText(t, w / 2, 40 + i * 17)); c.strokeStyle = "#7a4a28"; c.lineWidth = 6; c.strokeRect(0, 0, w, h); }), roughness: .8 });
+  let kSal = 0;
+  const salleDerriere = (g, W) => { const S = g.userData.salle; if (!S) return; const { HR, PR, D } = S, fond = g.userData.vInt || murSalle, ge = g.userData.genre || "cafe", Q = new THREE.Group(), riche = !PETIT, ks = kSal++; g.add(Q);
     box(W, HR, D - PR, [cote, cote, cote, cote, fond, cote], 0, HR / 2, -PR - (D - PR) / 2, g);   // le fond de la salle, et le reste de la maison
-    const pf = add(new THREE.PlaneGeometry(W, PR), parquetM, 0, .02, -PR / 2, g); pf.rotation.x = -Math.PI / 2; const pc = add(new THREE.PlaneGeometry(W, PR), plafondM, 0, HR - .02, -PR / 2, g); pc.rotation.x = Math.PI / 2;
-    for (const sx of [-1, 1]) { const m = add(new THREE.PlaneGeometry(PR, HR), murSalle, sx * (W / 2 - .02), HR / 2, -PR / 2, g); m.rotation.y = -sx * Math.PI / 2; }
-    box(W * .55, 1.05, .5, comptoirM, W * .12, .53, -PR + .45, g); box(W * .55 + .1, .05, .58, zincM, W * .12, 1.08, -PR + .45, g);   // le comptoir et son zinc
-    for (let x = -W / 2 + .9; x < W / 2 - .6; x += 1.6) { add(new THREE.SphereGeometry(.13, 8, 6), globeM, x, HR - .45, -PR / 2, g); cyl(.006, .006, .4, comptoirM, x, HR - .22, -PR / 2, g, 3); }   // les globes
-    if (W > 5) for (const x of [-W / 2 + 1.2, -W / 2 + 2.6]) { cyl(.3, .3, .03, mat({ color: 0xe8e2d6, roughness: .3 }), x, .74, -1.1, g, 14); cyl(.03, .03, .72, comptoirM, x, .37, -1.1, g, 5); } };
+    const pf = add(new THREE.PlaneGeometry(W, PR), ge === "cafe" ? damierM : parquetM, 0, .02, -PR / 2, Q); pf.rotation.x = -Math.PI / 2; const pc = add(new THREE.PlaneGeometry(W, PR), plafondM, 0, HR - .02, -PR / 2, Q); pc.rotation.x = Math.PI / 2;
+    for (const sx of [-1, 1]) { const m = add(new THREE.PlaneGeometry(PR, HR), ge === "galerie" ? galMurM : murSalle, sx * (W / 2 - .02), HR / 2, -PR / 2, Q); m.rotation.y = -sx * Math.PI / 2;
+      if (ge !== "galerie") { box(.04, .95, PR - .05, lambrisM, sx * (W / 2 - .04), .48, -PR / 2, Q); box(.07, .05, PR - .05, moulureM, sx * (W / 2 - .05), .98, -PR / 2, Q); if (riche) for (let z = -.4; z > -PR + .25; z -= .6) box(.02, .6, .45, moulureM, sx * (W / 2 - .065), .48, z, Q); } }   // les lambris
+    box(W, .12, .1, ge === "galerie" ? galMurM : moulureM, 0, HR - .08, -PR + .06, Q);
+    for (let x = -W / 2 + .9; x < W / 2 - .6; x += 1.6) { add(new THREE.SphereGeometry(.13, 8, 6), globeM, x, HR - .45, -PR / 2, Q); cyl(.006, .006, .4, comptoirM, x, HR - .22, -PR / 2, Q, 3); }   // les globes
+    const cX = W * .12, cW = W * .55, zC = -PR + .45, tabl = (w, h, k2, x, y, z, ry) => { const f = box(w + .08, h + .08, .04, doreM, x, y, z, Q); f.rotation.y = ry; const t = add(new THREE.PlaneGeometry(w, h), TABL[k2 % TABL.length], x + Math.sin(ry) * .025, y, z + Math.cos(ry) * .025, Q); t.rotation.y = ry; };
+    if (ge === "cafe") {
+      box(cW, 1.05, .5, comptoirM, cX, .53, zC, Q); box(cW + .1, .05, .58, zincM, cX, 1.08, zC, Q); box(cW, .035, .035, laitonM, cX, .18, zC + .33, Q);   // le comptoir, son zinc, la barre de pied
+      if (riche) for (let x = cX - cW / 2 + .3; x < cX + cW / 2 - .15; x += .5) box(.38, .62, .02, moulureM, x, .55, zC + .26, Q);
+      for (let x = cX - cW / 2 + .4; x < cX + cW / 2 - .2; x += .75) { cyl(.17, .17, .07, cuirM, x, .78, zC + .66, Q, 10); cyl(.025, .025, .76, laitonM, x, .38, zC + .66, Q, 5); cyl(.16, .16, .02, laitonM, x, .02, zC + .66, Q, 10); }   // les tabourets de bar
+      const xm = cX + cW / 2 - .45; box(.46, .42, .32, chromeM, xm, 1.32, zC, Q); box(.48, .05, .34, noirS, xm, 1.56, zC, Q); for (const d of [-.1, .1]) { cyl(.04, .032, .06, marbreS, xm + d, 1.14, zC + .1, Q, 8); cyl(.012, .012, .1, noirS, xm + d, 1.23, zC + .12, Q, 4); }   // le percolateur, les tasses
+      for (const d of [-.15, 0, .15]) cyl(.02, .02, .32, laitonM, cX - cW / 4 + d, 1.27, zC - .1, Q, 5);   // les pompes à bière
+      for (let i = 0; i < 3; i++) cyl(.035, .028, .12, verreS2, cX - cW / 8 + i * .16, 1.17, zC + .12, Q, 8);
+      box(cW, 1.1, .02, miroirM, cX, 2.2, -PR + .03, Q); box(cW + .1, .06, .05, laitonM, cX, 2.78, -PR + .05, Q);   // le miroir du fond
+      for (const y of riche ? [1.42, 1.84] : [1.6]) { box(cW, .03, .2, comptoirM, cX, y, -PR + .12, Q); for (let x = cX - cW / 2 + .1, i = 0; x < cX + cW / 2 - .05; x += .13, i++) { const h = .2 + ((i * 7 + ks) % 3) * .05, b = BOUTL[(i + ks) % 5]; cyl(.034, .034, h, b, x, y + .015 + h / 2, -PR + .12, Q, 6); if (riche) cyl(.012, .012, .08, b, x, y + h + .055, -PR + .12, Q, 4); } }   // les bouteilles
+      for (const x of W > 5 ? [-W / 2 + 1.2, -W / 2 + 2.6] : [-W / 2 + 1]) { cyl(.3, .3, .03, marbreS, x, .74, -1.1, Q, 14); cyl(.03, .03, .72, fonteM, x, .37, -1.1, Q, 5); cyl(.18, .2, .03, fonteM, x, .02, -1.1, Q, 10);
+        for (const sg of [-1, 1]) { cyl(.19, .19, .04, boisS, x + sg * .52, .46, -1.1, Q, 10); for (const [a, b] of [[-.12, -.12], [.12, -.12], [-.12, .12], [.12, .12]]) cyl(.013, .013, .46, boisS, x + sg * .52 + a, .23, -1.1 + b, Q, 4); box(.03, .38, .32, boisS, x + sg * .68, .75, -1.1, Q); }
+        cyl(.035, .03, .12, verreS2, x + .08, .82, -1.05, Q, 8); cyl(.04, .032, .06, marbreS, x - .1, .79, -1.15, Q, 8); }   // les tables de marbre, les chaises de bistrot, un verre, un café
+      const ar = add(new THREE.PlaneGeometry(.6, .8), ardoiseM, -W / 2 + .07, 1.75, -PR * .55, Q); ar.rotation.y = Math.PI / 2;   // l'ardoise du menu
+      if (riche) { tabl(.42, .52, ks * 3, W / 2 - .06, 1.85, -.75, -Math.PI / 2); tabl(.36, .44, ks * 3 + 1, W / 2 - .06, 1.9, -1.6, -Math.PI / 2); }
+      cyl(.16, .12, .32, potS, -W / 2 + .35, .16, -PR + .35, Q, 8); for (let i = 0; i < 4; i++) add(new THREE.IcosahedronGeometry(.17 + i * .03, 0), planteM, -W / 2 + .3 + (i % 2) * .1, .5 + i * .15, -PR + .32 + (i % 3) * .05, Q); }
+    else if (ge === "galerie") {
+      box(1.1, .75, .5, boisS, W * .28, .38, -PR + .6, Q); cyl(.12, .1, .05, laitonM, W * .28 + .35, .78, -PR + .55, Q, 8); cyl(.01, .01, .3, laitonM, W * .28 + .35, .93, -PR + .55, Q, 3);   // le bureau du galeriste, sa lampe
+      box(1.2, .42, .42, cuirM, -W * .1, .21, -1.25, Q);   // la banquette
+      for (const sx of [-1, 1]) for (let i = 0; i < 2; i++) { const z = -.7 - i * 1.1; tabl(.62, .76, ks * 5 + i + (sx > 0 ? 2 : 0), sx * (W / 2 - .06), 1.7, z, -sx * Math.PI / 2); cyl(.05, .07, .14, noirS, sx * (W / 2 - .5), HR - .09, z, Q, 6); }
+      for (const [i, x] of [-W / 3, 0, W / 3].entries()) { tabl(.7, .86, ks * 7 + i + 4, x, 1.8, -PR + .06, 0); cyl(.05, .07, .14, noirS, x, HR - .09, -PR + .5, Q, 6); } }
+    else if (ge === "pain") {
+      box(W * .6, .85, .55, comptoirM, cX, .43, zC, Q); box(W * .6, .3, .5, verreS2, cX, 1.0, zC, Q); box(W * .6 + .04, .03, .54, marbreS, cX, 1.16, zC, Q);   // la vitrine des gâteaux
+      for (let i = 0; i < 8; i++) add(new THREE.SphereGeometry(.07, 8, 5), [painM, painC, OBJ[0], OBJ[2]][i % 4], cX - W * .27 + i * W * .075, .92, zC + (i % 2) * .12 - .06, Q).scale.y = .6;
+      for (const y of [1.3, 1.7, 2.1]) { box(W * .7, .03, .3, boisS, cX, y, -PR + .17, Q); for (let x = cX - W * .33, i = 0; x < cX + W * .33; x += .26, i++) { if ((i + y * 10) % 3 < 1) { const b = cyl(.04, .035, .5, painC, x, y + .06, -PR + .17, Q, 6); b.rotation.z = Math.PI / 2; } else add(new THREE.SphereGeometry(.11, 8, 6), painM, x, y + .08, -PR + .17, Q).scale.y = .6; } }
+      cyl(.2, .16, .45, mat({ color: 0x8a6a3a, roughness: .9 }), -W / 2 + .5, .23, -PR + .4, Q, 10); for (let i = 0; i < 7; i++) { const b = cyl(.03, .03, .7, painC, -W / 2 + .45 + (i % 3) * .05, .7, -PR + .35 + (i % 2) * .08, Q, 5); b.rotation.z = (i - 3) * .06; } }   // le panier de baguettes
+    else {
+      box(1.3, .95, .5, comptoirM, W * .25, .48, -PR + .55, Q); box(.32, .22, .26, noirS, W * .25 + .3, 1.06, -PR + .55, Q);   // le comptoir, la caisse
+      for (const sx of [-1, 1]) { for (const z of [-.25, -PR + .25]) box(.32, 2.4, .03, boisS, sx * (W / 2 - .18), 1.2, z, Q);
+        for (const y of [.45, .95, 1.45, 1.95]) { box(.32, .03, PR - .5, boisS, sx * (W / 2 - .18), y, -PR / 2, Q); if (riche || y < 1.2) for (let z = -.45, j = 0; z > -PR + .4; z -= .2, j++) box(.12, .14 + ((j * 7 + ks) % 3) * .05, .12, OBJ[(j + ks + y * 10 | 0) % 6], sx * (W / 2 - .2), y + .1, z, Q); } }
+      box(1, .75, .6, boisS, -W * .08, .38, -1.25, Q); for (let i = 0; i < 6; i++) box(.16, .1, .2, OBJ[(i + ks) % 6], -W * .08 - .35 + (i % 3) * .35, .8, -1.4 + (i / 3 | 0) * .3, Q); }
+    g.updateMatrixWorld(true); for (const o of [...Q.children]) scene.attach(o); g.remove(Q); };
   const maison = (x, z, ry, W, H, o) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const D = 9;
     o.vitres3D = true; const cle = o.cache && [o.teinte, o.volets, o.etages, W, H, o.pierre, 3].join("|"), fM = cle ? (FCACHE.get(cle) || FCACHE.set(cle, facadeT(W, H, o)).get(cle)) : facadeT(W, H, o); const cleC = ["côté", o.teinte, o.volets, o.etages, H].join("|"), cM = o.pignon ? cote : (FCACHE.get(cleC) || FCACHE.set(cleC, facadeT(D, H, { teinte: o.teinte || "#ece6d8", volets: o.volets === false ? "#f2f2ee" : o.volets, etages: o.etages || 3, fen: 3, balcon: false, cache: true })).get(cleC));   // (les murs de côté, ceux qu'on voit dans les passages : des fenêtres aussi)
     const salle = !!o.rdc && !o.pignon && !o.sansSalle, HR = 3.62, PR = 2.6;
@@ -158,6 +199,41 @@ function construireTertre(A, L, scene) {
   const toile3 = (c, x, y, w, h, k) => { const go = () => { const q = k % NTOILES; c.drawImage(TOILES.img, (q % 8) * 128, (q / 8 | 0) * 160, 128, 160, x, y, w, h); };
     if (TOILES.pret) go(); else { TOILES.att.push(go); TOILES.canv.push(c.canvas); if (!TOILES.img) { TOILES.img = new Image(); TOILES.img.onload = () => { TOILES.pret = true; for (const f of TOILES.att) f(); TOILES.att = [];
       scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const t of [m && m.map, m && m.emissiveMap]) if (t && t.image && TOILES.canv.includes(t.image)) t.needsUpdate = true; }); }; TOILES.img.src = "images/tableaux-montmartre.jpg"; } } };
+  const TABL = Array.from({ length: 14 }, (_, k) => mat({ map: tT(128, 160, (c, w, h) => { c.fillStyle = "#8a8070"; c.fillRect(0, 0, w, h); toile3(c, 0, 0, w, h, k * 2 + 1); c.strokeStyle = "#4a3418"; c.lineWidth = 5; c.strokeRect(0, 0, w, h); }, 0, 0, 1, true), roughness: .8 })),   /* (les toiles des peintres : les vrais tableaux) */ boisC = mat({ color: 0x8a6a42, roughness: .7 });
+  // les panneaux de caricatures et de portraits au fusain
+  /* les caricatures au fusain et à la sanguine des portraitistes du Tertre (d'après le dessin envoyé) : le papier beige, le gros nez, les sourcils broussailleux,
+     la casquette, le béret, le chapeau, le chignon ; l'écharpe rouge ; des hachures, la signature */
+  const caricature = (c, X, Y, W, H, k) => { let gr = 9301 + k * 49297; const r = () => (gr = (gr * 16807) % 2147483647) / 2147483647;
+    c.save(); c.translate(X, Y); c.scale(W / 100, H / 130); c.fillStyle = "#e9d8b8"; c.fillRect(0, 0, 100, 130); for (let i = 0; i < 160; i++) { c.fillStyle = `rgba(${r() < .5 ? "120,90,50" : "255,250,235"},.08)`; c.fillRect(r() * 100, r() * 130, 2, 2); }
+    const femme = k % 4 === 1 || k % 4 === 2 && k % 3 === 0, peau = ["#d8a888", "#c89070", "#e0b498", "#a87458"][k % 4], trait = (col, w2) => { c.strokeStyle = col; c.lineWidth = w2; c.lineCap = "round"; };
+    const hach = (x0, y0, x1, y1, n, col) => { trait(col, .8); for (let i = 0; i < n; i++) { const t = i / n; c.beginPath(); c.moveTo(x0 + (x1 - x0) * t, y0); c.lineTo(x0 + (x1 - x0) * t + 6, y1); c.stroke(); } };
+    // le buste, l'écharpe
+    c.fillStyle = ["#3a3028", "#2a3040", "#4a3a2a", "#2a2a2a"][k % 4]; c.beginPath(); c.moveTo(18, 130); c.quadraticCurveTo(22, 96, 50, 92); c.quadraticCurveTo(80, 96, 86, 130); c.fill(); hach(24, 104, 80, 128, 18, "rgba(0,0,0,.35)");
+    c.fillStyle = ["#a8382a", "#b8502a", "#8a2a3a", "#c8642a"][(k + 1) % 4]; c.beginPath(); c.moveTo(32, 96); c.quadraticCurveTo(50, 106, 70, 95); c.lineTo(66, 116); c.quadraticCurveTo(50, 112, 38, 118); c.fill(); hach(36, 98, 66, 114, 10, "rgba(80,20,10,.4)");
+    // la tête : la joue, le menton en avant
+    const tx = 50 + (r() - .5) * 6, hx = 21 + r() * 5, hy = 30 + r() * 4; c.fillStyle = peau; c.beginPath(); c.ellipse(tx, 58, hx, hy, (r() - .5) * .2, 0, 7); c.fill();
+    trait("rgba(70,40,25,.9)", 1.3); c.stroke(); hach(tx + hx * .3, 44, tx + hx, 80, 9, "rgba(120,60,40,.35)");
+    // le nez, énorme
+    const nl = 14 + r() * 12; c.fillStyle = peau; c.beginPath(); c.moveTo(tx - 3, 50); c.quadraticCurveTo(tx - nl - 4, 62 + r() * 6, tx - nl, 70); c.quadraticCurveTo(tx - nl + 6, 76, tx + 2, 70); c.fill(); trait("rgba(60,35,20,.95)", 1.4); c.stroke();
+    c.fillStyle = "rgba(200,90,70,.35)"; c.beginPath(); c.arc(tx - nl + 4, 68, 4, 0, 7); c.fill();
+    // les yeux, les sourcils
+    for (const sx of [-1, 1]) { const ex = tx + sx * 8 - 2; c.fillStyle = "#f4ece0"; c.beginPath(); c.ellipse(ex, 50, 3.6, 2.6, 0, 0, 7); c.fill(); c.fillStyle = ["#3a5a7a", "#3a2a1a", "#4a6a4a"][k % 3]; c.beginPath(); c.arc(ex - 1, 50, 1.6, 0, 7); c.fill();
+      trait("#1a1210", femme ? 1.4 : 3.2); c.beginPath(); c.moveTo(ex - 5, 45 - (femme ? 0 : r() * 2)); c.quadraticCurveTo(ex, 42 - r() * 2, ex + 5, 45); c.stroke(); }
+    // la bouche, la moustache, les rides
+    if (femme) { c.fillStyle = "#c02a2a"; c.beginPath(); c.ellipse(tx - 3, 79, 7, 3.2, 0, 0, 7); c.fill(); c.fillStyle = "rgba(220,90,90,.35)"; for (const sx of [-1, 1]) { c.beginPath(); c.arc(tx + sx * 11, 66, 5, 0, 7); c.fill(); } trait("#1a1210", 1.2); for (const sx of [-1, 1]) for (let l = 0; l < 3; l++) { c.beginPath(); c.moveTo(tx + sx * 8 - 2 + l * 1.5 - 1.5, 47.5); c.lineTo(tx + sx * 8 - 3 + l * 2 - 2, 44.5); c.stroke(); } }
+    else { if (k % 2 === 0) { c.fillStyle = "#5a4a3a"; c.beginPath(); c.ellipse(tx - 5, 75, 8, 2.6, -.1, 0, 7); c.fill(); } trait("rgba(60,30,20,.9)", 1.6); c.beginPath(); c.moveTo(tx - 10, 80); c.quadraticCurveTo(tx - 3, 83, tx + 4, 79); c.stroke(); }
+    trait("rgba(90,55,35,.5)", .9); for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(tx + 6 + i * 3, 66); c.quadraticCurveTo(tx + 12 + i * 2, 74, tx + 8 + i * 2, 84); c.stroke(); }
+    // l'oreille
+    c.fillStyle = peau; c.beginPath(); c.ellipse(tx + hx - 2, 56, 4, 7, 0, 0, 7); c.fill(); trait("rgba(70,40,25,.8)", 1); c.stroke();
+    // la coiffe
+    const cf = k % 5; trait("rgba(20,15,10,.9)", 1.3);
+    if (femme) { c.fillStyle = ["#5a3a22", "#1a1210", "#a87a3a", "#8a2a1a"][k % 4]; c.beginPath(); c.moveTo(tx - 26, 80); c.quadraticCurveTo(tx - 30, 20, tx + 2, 22); c.quadraticCurveTo(tx + 32, 20, tx + 28, 84); c.quadraticCurveTo(tx + 20, 60, tx + 16, 40); c.quadraticCurveTo(tx, 32, tx - 16, 42); c.quadraticCurveTo(tx - 20, 60, tx - 26, 80); c.fill(); c.beginPath(); c.arc(tx + 4, 18, 10, 0, 7); c.fill();   /* (la chevelure qui tombe, le chignon) */ hach(tx - 18, 22, tx + 26, 36, 14, "rgba(0,0,0,.3)"); c.fillStyle = "#e8d070"; c.beginPath(); c.arc(tx + hx - 2, 66, 2, 0, 7); c.fill(); }
+    else if (cf === 0 || cf === 3) { c.fillStyle = ["#4a3a2a", "#3a3a3a", "#5a4a32"][k % 3]; c.beginPath(); c.moveTo(tx - 28, 36); c.quadraticCurveTo(tx - 4, 8, tx + 24, 26); c.lineTo(tx + 24, 34); c.quadraticCurveTo(tx - 4, 30, tx - 28, 38); c.fill(); c.stroke(); hach(tx - 20, 18, tx + 18, 32, 14, "rgba(0,0,0,.3)"); }   // la casquette
+    else if (cf === 1) { c.fillStyle = "#1a1a24"; c.beginPath(); c.ellipse(tx + 2, 28, 24, 10, -.15, 0, 7); c.fill(); c.fillRect(tx + 1, 16, 2, 4); }   // le béret
+    else if (cf === 2) { c.fillStyle = "#2a2420"; c.fillRect(tx - 14, 8, 30, 22); c.beginPath(); c.ellipse(tx + 1, 30, 26, 5, 0, 0, 7); c.fill(); }   // le chapeau
+    else { c.fillStyle = "#c8c4bc"; for (let i = 0; i < 9; i++) { c.beginPath(); c.arc(tx - 14 + i * 4, 30 + Math.sin(i) * 2, 5, 0, 7); c.fill(); } }   // les cheveux blancs en bataille
+    // la signature
+    trait("rgba(40,30,20,.7)", .8); c.beginPath(); c.moveTo(66, 124); for (let i = 0; i < 6; i++) c.quadraticCurveTo(68 + i * 4, 118 + (i % 2) * 6, 70 + i * 4, 124); c.stroke(); c.restore(); };
   const VCACHE = new Map();
   const vitreT = (fond, motif, genre = "cafe") => { const cle = fond + genre; if (!motif && VCACHE.has(cle)) return VCACHE.get(cle); const t = tT(256, 160, (c, w, h) => {
     const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, fond); gr.addColorStop(1, "#5a2a10"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
@@ -179,7 +255,7 @@ function construireTertre(A, L, scene) {
   const devanture = (g, W, o) => { const bois = mat({ color: o.bois, roughness: .5 }), moulM = mat({ color: new THREE.Color(o.bois).multiplyScalar(1.25).getHex(), roughness: .45 }), Hd = 3.5;
     box(W, .5, .25, bois, 0, Hd - .1, .12, g); for (let i = 0; i <= o.travees; i++) box(.18, Hd - .3, .22, bois, -W / 2 + .1 + i * (W - .2) / o.travees, (Hd - .3) / 2, .12, g);
     const vt = vitreT(o.fondV || "#c87830", o.motif, o.genre), vM = lum(mat({ map: vt, emissive: 0xffffff, emissiveMap: vt, emissiveIntensity: .35, roughness: .15 }), .35, 1.25);
-    const salle = !!g.userData.salle; g.userData.vInt = vM; const vitre = salle ? verreVitrine : vM;
+    const salle = !!g.userData.salle; g.userData.vInt = vM; { const tx = ((o.store && o.store[1]) || "") + " " + ((o.bandeau && o.bandeau[0]) || ""); g.userData.genre = o.genre || (/GALERIE/.test(tx) ? "galerie" : /BOULANG/.test(tx) ? "pain" : /FLEUR|TABAC|PRESSE|SOUVENIR|PICERIE|PRIMEUR/.test(tx) ? "boutique" : "cafe"); } const vitre = salle ? verreVitrine : vM;
     for (let i = 0; i < o.travees; i++) { const tw = (W - .2) / o.travees - .2, tx = -W / 2 + .1 + (i + .5) * (W - .2) / o.travees; if (i === o.porte) { box(tw, 2.5, .08, mat({ color: o.porteC || o.bois, roughness: .5 }), tx, 1.25, .05, g); box(tw * .7, 1.2, .02, vitre, tx, 1.7, .1, g); } else if (o.rideau) { box(tw, 2.9, .06, mat({ map: rideauT, roughness: .6, metalness: .4 }), tx, 1.45, .06, g); } else { box(tw, .7, .1, bois, tx, .35, .1, g); box(tw - .2, .48, .03, mat({ color: o.bois, roughness: .45, emissive: 0x000000 }), tx, .35, .17, g); box(tw - .28, .4, .02, moulM, tx, .35, .19, g);   // le soubassement et sa moulure
       box(tw, 2.3, .02, vitre, tx, 1.85, .04, g); box(tw, .04, .05, bois, tx, 2.55, .08, g); if (tw > 1.2) box(.04, 2.3, .05, bois, tx, 1.85, .08, g); } }   // les petits bois
     if (o.lanternes !== false && W > 4.5) for (const x of [-W / 2 + .45, W / 2 - .45]) lanterneD(g, x, 2.85);
@@ -210,7 +286,7 @@ function construireTertre(A, L, scene) {
   const rotinT = tT(64, 64, (c, w, h) => { c.fillStyle = "#c08a4a"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = 0; x < w; x += 8) { c.fillStyle = (x + y) % 16 ? "#a8322a" : "#d8a868"; c.fillRect(x + 1, y + 1, 6, 6); } }, 1, 1);
   const rotinM = mat({ map: rotinT, roughness: .8 }), rotinCadre = mat({ color: 0x8a5a2a, roughness: .6 }), plateau = mat({ color: 0xe8e2d6, roughness: .3 }), fonteM = mat({ color: 0x1a1a1a, metalness: .5, roughness: .5 }), nappe = mat({ color: 0xb8202a, roughness: .9 });
   const chaise = (x, z, ry) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); box(.42, .05, .4, rotinM, 0, .46, 0, g); box(.42, .5, .05, rotinM, 0, .74, -.19, g); for (const [a, b] of [[-.19, -.18], [.19, -.18], [-.19, .18], [.19, .18]]) cyl(.016, .016, .46, rotinCadre, a, .23, b, g, 5); return g; };
-  const table = (x, z, rouge) => { cyl(.32, .32, .03, rouge ? nappe : plateau, x, .74, z); cyl(.025, .025, .72, fonteM, x, .37, z, scene, 6); cyl(.2, .22, .03, fonteM, x, .02, z); };
+  const TABLES = []; const table = (x, z, rouge) => { TABLES.push([x, z]); cyl(.32, .32, .03, rouge ? nappe : plateau, x, .74, z); cyl(.025, .025, .72, fonteM, x, .37, z, scene, 6); cyl(.2, .22, .03, fonteM, x, .02, z); };
   const PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
   const gens = (k, o = {}) => { const f = k % 2 === 1; return personne3D({ taille: f ? 1.64 : 1.76, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a", "#a5532a"][k % 6], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#1a1a1c"][k % 4], chaussures: ["#1a1a1a", "#3a2418"][k % 2], coif: f ? (k % 3 ? "long" : "carre") : k % 5 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 3 === 0, ...o }); };
   const GENS = true;
@@ -218,7 +294,7 @@ function construireTertre(A, L, scene) {
   // une terrasse : des rangées de tables le long d'une façade ; ax/az : le sens de la façade ; nx/nz : vers la rue
   const terrasse = (x0, z0, ax, az, nx, nz, L2, rangs, rouge) => { for (let r = 0; r < rangs; r++) for (let t = .6; t < L2 - .4; t += 1.25) { const x = x0 + ax * t + nx * (.55 + r * 1.0), z = z0 + az * t + nz * (.55 + r * 1.0); table(x, z, rouge);
       const ry = Math.atan2(nx, nz); for (const sg of [-1, 1]) { const cx = x + ax * sg * .45, cz = z + az * sg * .45, rc = Math.atan2(-ax * sg, -az * sg); chaise(cx, cz, rc);
-        if (kT < nTerr && al() < .55) { const m = gens(kT + 3); m.position.set(cx, .02, cz); m.rotation.y = rc; m.userData.poser("assis", 0); scene.add(m); TERR.push(m); kT++; } } void ry; } };
+        if (kT < nTerr && al() < .55) { const m = gens(kT + 3); m.position.set(cx, .5 - m.userData.hipY, cz); m.rotation.y = rc; m.userData.poser("assis", 0); scene.add(m); TERR.push(m); kT++; } } void ry; } };
 
   /* ---------- côté ouest : Le Sabot Rouge, La Crémaillère 1900, le Restaurant Chez Eugène (du sud au nord) ---------- */
   const OUEST = Math.PI / 2;   // (façades tournées vers l'est, vers le carré)
@@ -390,7 +466,7 @@ function construireTertre(A, L, scene) {
     for (let r = 0; r < 9; r++) { const z = ZM - 1.5 - r * 2.6, y = 4 + r * .7; box(16, r * .7 + .01, 2.6, terre, -83, 4 + r * .35, z); for (let x = -90; x < -76; x += .9) add(new THREE.IcosahedronGeometry(.42, 0), vigne, x + al() * .3, y + .55, z); }
     for (const [x, z] of [[-88, -52], [-78, -56], [-85, -62], [-80, -66]]) { cyl(.18, .24, 4, mat({ color: 0x5a4a3a }), x, 6 + (ZM - z) * .25, z, scene, 6); for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(1.4 + al() * .6, 0), [vertJ, mat({ color: 0x5a7a2a }), mat({ color: 0xc8782a })][k % 3], x + (al() - .5) * 1.6, 9 + (ZM - z) * .25 + al() * 1.4, z + (al() - .5) * 1.6); } }
   // le chanteur des rues, sa guitare, sur son tabouret devant La Bonne Franquette ; et le monsieur au béret qui chante avec lui
-  const MUSI = []; if (GENS) { const m = personne3D({ taille: 1.74, peau: "#e8bd95", ch: "#e8e8e8", haut: "#e8b8b8", bas: "#e8e2d2", chaussures: "#5a3a22", coif: "court", pantalon: true }); m.position.set(XSa1 - 1.6, 0, 22); m.rotation.y = -Math.PI / 2 - .4; m.userData.poser("assis", 0); scene.add(m);
+  const MUSI = []; if (GENS) { const m = personne3D({ taille: 1.74, peau: "#e8bd95", ch: "#e8e8e8", haut: "#e8b8b8", bas: "#e8e2d2", chaussures: "#5a3a22", coif: "court", pantalon: true }); m.position.set(XSa1 - 1.6, .48 - m.userData.hipY, 22); m.rotation.y = -Math.PI / 2 - .4; m.userData.poser("assis", 0); scene.add(m);
     const P = m.userData.parts, gui = new THREE.Group(); gui.position.set(.05, .05, .18); gui.rotation.set(0, 0, .9); P.buste.add(gui); add(new THREE.SphereGeometry(.17, 12, 8), mat({ color: 0xc8883a, roughness: .4 }), 0, -.05, 0, gui).scale.set(1, 1.25, .35); add(new THREE.BoxGeometry(.05, .5, .03), mat({ color: 0x3a2414 }), 0, .32, 0, gui);
     add(new THREE.CylinderGeometry(.11, .11, .02, 12), mat({ color: 0xf2f2ee }), 0, .08, .21, P.tete).rotation.x = .1; cyl(.06, .07, .08, mat({ color: 0xf2f2ee }), 0, .13, 0, P.tete, 10);   // le chapeau blanc
     cyl(.18, .16, .46, rotinM, XSa1 - 1.6, .23, 22); MUSI.push({ m, gui, k: 0 });
@@ -486,7 +562,7 @@ function construireTertre(A, L, scene) {
   platane(-17.5, -13);
   // le soir, les guirlandes bleues enroulées dans les branches des platanes (comme sur la photo de nuit)
   { const P2 = []; for (const [x, z] of LEDC) { for (let i = 0; i < 150; i++) { const a = al() * 6.283, h = al(), r = (1 - h * .5) * 2.4 * Math.sqrt(al()); P2.push(x + Math.cos(a) * r, YS + 4 + h * 7.5, z + Math.sin(a) * r); } for (let i = 0; i < 20; i++) { const a = i * 1.1; P2.push(x + Math.cos(a) * .3, YS + 1 + i * .17, z + Math.sin(a) * .3); } }
-    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(P2, 3)); const pM = new THREE.PointsMaterial({ color: 0x4a7aff, size: .2, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(P2, 3)); const rT = tT(32, 32, (c) => { const g2 = c.createRadialGradient(16, 16, 1, 16, 16, 15); g2.addColorStop(0, "rgba(255,240,210,1)"); g2.addColorStop(.35, "rgba(255,170,80,.7)"); g2.addColorStop(1, "rgba(255,130,40,0)"); c.fillStyle = g2; c.fillRect(0, 0, 32, 32); }), pM = new THREE.PointsMaterial({ map: rT, color: 0xffb060, size: .3, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     const leds = new THREE.Points(geo, pM); leds.visible = false; scene.add(leds); L.ledsTertre = leds; NUIT.push([{ set emissiveIntensity(v) { leds.visible = v > 0; } }, 0, 1]); }
   const lanterne = (x, z, y0 = 0) => { cyl(.07, .12, 3.6, fonteM, x, y0 + 1.8, z, scene, 8); cyl(.18, .14, .3, fonteM, x, y0 + .15, z, scene, 8); cyl(.04, .2, .12, fonteM, x, y0 + 3.62, z, scene, 6);
     const v = lum(mat({ color: 0xf8f0d8, emissive: 0xffd890, emissiveIntensity: .08, roughness: .2, transparent: true, opacity: .9 }), .08, 2.2); add(new THREE.CylinderGeometry(.24, .15, .55, 6), v, x, y0 + 3.98, z); add(new THREE.ConeGeometry(.3, .25, 6), fonteM, x, y0 + 4.38, z); cyl(.03, .03, .2, fonteM, x, y0 + 4.58, z, scene, 4); OB.push([x, z, .25]); HALO.push([x, y0 + 3.98, z, 1.6]); flaque(x, z, 3.6, y0 + .03); };
@@ -501,64 +577,32 @@ function construireTertre(A, L, scene) {
     else if (k % 3 === 1) { for (let i = 0; i < 5; i++) { c.fillStyle = ["#d8c8a8", "#c8b090", "#e8d8b8"][i % 3]; const x = i * 26, hh = 50 + al() * 50; c.fillRect(x, h - hh - 30, 26, hh); c.fillStyle = "#5a4a3a"; c.fillRect(x + 6, h - hh - 20, 5, 8); c.fillRect(x + 15, h - hh - 20, 5, 8); } c.fillStyle = "#a83030"; c.fillRect(0, h - 40, w, 8); }   // les maisons de Montmartre
     else { c.fillStyle = "#2a5a2a"; for (let i = 0; i < 12; i++) { c.beginPath(); c.arc(al() * w, 40 + al() * 80, 10 + al() * 12, 0, 7); c.fill(); } c.fillStyle = "#8a2a2a"; c.fillRect(20, 110, 90, 30); }   // un jardin, un moulin
     c.fillStyle = "#3a2a1a"; c.fillRect(0, h - 22, w, 22); for (let i = 0; i < 300; i++) { c.fillStyle = `rgba(${al() * 255 | 0},${al() * 200 | 0},${al() * 160 | 0},.12)`; c.fillRect(al() * w, al() * h, 3, 2); } c.strokeStyle = "#5a3a1a"; c.lineWidth = 6; c.strokeRect(0, 0, w, h); });
-  const TABL = Array.from({ length: 14 }, (_, k) => mat({ map: tT(128, 160, (c, w, h) => { c.fillStyle = "#8a8070"; c.fillRect(0, 0, w, h); toile3(c, 0, 0, w, h, k * 2 + 1); c.strokeStyle = "#4a3418"; c.lineWidth = 5; c.strokeRect(0, 0, w, h); }, 0, 0, 1, true), roughness: .8 })),   /* (les toiles des peintres : les vrais tableaux) */ boisC = mat({ color: 0x8a6a42, roughness: .7 });
   const parasolC = [0xf4f2ec, 0xf4f2ec, 0xb8202a, 0xf4f2ec, 0x2a5aa8, 0xf4f2ec];
   const parasol = (x, z, k, y0 = YS, R = 1.3) => { cyl(.03, .03, 2.4, mat({ color: 0xd8d8d8, metalness: .5 }), x, y0 + 1.2, z, scene, 6); const c = add(new THREE.ConeGeometry(R, .55, 10, 1, true), mat({ color: parasolC[k % parasolC.length], side: THREE.DoubleSide, roughness: .9 }), x, y0 + 2.5, z); c.castShadow = true; };
-  const chevalet = (x, z, ry, k, y0 = YS) => { const g = new THREE.Group(); g.position.set(x, y0, z); g.rotation.y = ry; scene.add(g); for (const sg of [-1, 1]) { const l = box(.035, 1.7, .035, boisC, sg * .28, .82, .05, g); l.rotation.z = -sg * .1; } const ar = box(.035, 1.7, .035, boisC, 0, .8, -.32, g); ar.rotation.x = .35;
-    box(.62, .04, .06, boisC, 0, .82, .1, g); const t = box(.56, .7, .03, TABL[k % TABL.length], 0, 1.2, .1, g); t.rotation.x = -.08; return g; };
+  /* la toile : le tableau du côté du peintre ; de l'autre, le dos de lin tendu sur son châssis (le modèle ne voit rien) */
+  const linM = mat({ map: tT(64, 80, (c, w, h) => { c.fillStyle = "#d8ccb0"; c.fillRect(0, 0, w, h); for (let i = 0; i < 300; i++) { c.fillStyle = `rgba(${i % 2 ? "120,100,70" : "255,250,235"},.12)`; c.fillRect((i * 37) % w, (i * 53) % h, 2, 1); } c.strokeStyle = "#8a6a42"; c.lineWidth = 6; c.strokeRect(3, 3, w - 6, h - 6); c.beginPath(); c.moveTo(w / 2, 3); c.lineTo(w / 2, h - 3); c.moveTo(3, h / 2); c.lineTo(w - 3, h / 2); c.lineWidth = 4; c.stroke(); }), roughness: .95 });
+  const PORTM = [0, 1, 2].map(i => mat({ map: tT(100, 130, (c, w, h) => { caricature(c, 0, 0, w, h, 40 + i * 3); c.strokeStyle = "#4a3418"; c.lineWidth = 4; c.strokeRect(0, 0, w, h); }, 0, 0, 1, true), roughness: .85 }));
+  const chevalet = (x, z, ry, k, y0 = YS, portr = null) => { const g = new THREE.Group(); g.position.set(x, y0, z); g.rotation.y = ry; scene.add(g); for (const sg of [-1, 1]) { const l = box(.035, 1.7, .035, boisC, sg * .28, .82, .05, g); l.rotation.z = -sg * .1; } const ar = box(.035, 1.7, .035, boisC, 0, .8, -.32, g); ar.rotation.x = .35;
+    box(.62, .04, .06, boisC, 0, .82, .1, g); const t = box(.56, .7, .03, [linM, linM, linM, linM, linM, portr || TABL[k % TABL.length]], 0, 1.2, .1, g); t.rotation.x = -.08; return g; };
   let kP = 0; const nPeint = !GENS ? 0 : PETIT ? 3 : (MOBILE || GPU_MODESTE) ? 4 : 8, MODELES = [];
-  const coin = (x, z, ry, k) => { chevalet(x, z, ry, k); parasol(x - Math.sin(ry) * .6, z - Math.cos(ry) * .6, k);
+  const coin = (x, z, ry, k) => { chevalet(x, z, ry, k, YS, kP < nPeint && kP < 3 ? PORTM[kP] : null); { const ps = k % 2 ? -1 : 1; parasol(x + Math.cos(ry) * ps * .85 - Math.sin(ry) * 1.15, z - Math.sin(ry) * ps * .85 - Math.cos(ry) * 1.15, k); }   // (le mât à côté, derrière l'épaule du peintre : jamais devant son visage)
     { const sg = k % 2 ? 1 : -1, B = new THREE.Group(); B.position.set(x + Math.cos(ry) * 1.25 * sg, YS, z - Math.sin(ry) * 1.25 * sg); B.rotation.y = ry; scene.add(B);   // le bac à toiles : un casier de bois sur pieds ; les toiles debout dedans, un peu penchées, qu'on feuillette
       for (const [dx, dz] of [[-.36, -.2], [.36, -.2], [-.36, .2], [.36, .2]]) box(.04, .62, .04, boisC, dx, .31, dz, B);
       box(.78, .03, .44, boisC, 0, .3, 0, B); for (const dz of [-.21, .21]) box(.78, .3, .025, boisC, 0, .45, dz, B); for (const dx of [-.38, .38]) box(.025, .3, .44, boisC, dx, .45, 0, B);
       for (let i = 0; i < 4; i++) { const tb = box(.66, .5, .02, TABL[(k * 3 + i + 7) % TABL.length], 0, .55 + (i % 2) * .02, -.15 + i * .09, B); tb.rotation.x = -.18 - i * .05; } OB.push([B.position.x, B.position.z, .5]); }
     const pl = new THREE.Group(); pl.position.set(x - Math.sin(ry) * .75, YS, z - Math.cos(ry) * .75); pl.rotation.y = ry; scene.add(pl); box(.4, .04, .34, mat({ color: 0x3a3a3a }), 0, .44, 0, pl); for (const sg of [-1, 1]) { const p = box(.02, .5, .02, fonteM, sg * .16, .22, 0, pl); p.rotation.x = sg * .4; }
-    if (kP < nPeint) { const m = gens(kP * 5 + 1, { haut: ["#e8e2d6", "#3a5a8a", "#e8e2d6", "#5a4636"][kP % 4], pantalon: true, robe: false, coif: "court" }); m.position.copy(pl.position); m.position.y = YS; m.rotation.y = ry; m.userData.poser("assis", 0); scene.add(m);
+    if (kP < nPeint) { const m = gens(kP * 5 + 1, { haut: ["#e8e2d6", "#3a5a8a", "#e8e2d6", "#5a4636"][kP % 4], pantalon: true, robe: false, coif: "court" }); m.position.copy(pl.position); m.position.y = YS + .48 - m.userData.hipY; m.rotation.y = ry; m.userData.poser("assis", 0); scene.add(m);
       const P = m.userData.parts, beret = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .045, 16), mat({ color: kP % 2 ? 0x1a1a24 : 0x8a1a1a, roughness: .9 })); beret.position.set(.02, .1, -.01); beret.rotation.z = .25; P.tete.add(beret);   // le béret
       const blouse = new THREE.Mesh(new THREE.CylinderGeometry(.16, .24, .5, 10, 1, true), mat({ color: kP % 2 ? 0x3a5a8a : 0xece6da, side: THREE.DoubleSide, roughness: .9 })); blouse.position.y = .12; P.buste.add(blouse);   // la blouse de peintre
       const pal = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .015, 14), mat({ color: 0xb08a5a, roughness: .6 })); pal.position.set(0, -.3, .08); pal.rotation.x = Math.PI / 2; P.bras[0].c.add(pal);   // la palette
       for (let t = 0; t < 4; t++) { const d = new THREE.Mesh(new THREE.SphereGeometry(.018, 5, 4), mat({ color: [0xc83030, 0x3060c0, 0xe8c030, 0x30a050][t] })); d.position.set(Math.cos(t * 1.4) * .07, -.3 + Math.sin(t * 1.4) * .07, .095); P.bras[0].c.add(d); }
       const pin = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .22, 5), mat({ color: 0x6a4020 })); pin.position.set(0, -.32, .05); pin.rotation.x = 1.2; P.bras[1].c.add(pin);   // le pinceau
-      PEINT.push({ m, k: kP });
+      PEINT.push({ m, k: kP }); JOUR.push(m);
       if (kP < 3) { const mx = x + Math.sin(ry) * 1.7, mz = z + Math.cos(ry) * 1.7, f = kP !== 1, mo = gens(kP * 7 + 4, { robe: f, pantalon: !f, coif: f ? "long" : "court", haut: ["#c83a5a", "#2a4a3a", "#e8c040"][kP], parle: false });   // le modèle, assis sur un tabouret, qui pose
-        chaise(mx, mz, ry + Math.PI).position.y = YS; mo.position.set(mx, YS, mz); mo.rotation.y = ry + Math.PI; mo.userData.poser("assis", 0); scene.add(mo); MODELES.push({ m: mo, k: kP }); OB.push([mx, mz, .45]); }
+        chaise(mx, mz, ry + Math.PI).position.y = YS; mo.position.set(mx, YS + .5 - mo.userData.hipY, mz); mo.rotation.y = ry + Math.PI; mo.userData.poser("assis", 0); scene.add(mo); MODELES.push({ m: mo, k: kP }); JOUR.push(mo); OB.push([mx, mz, .45]); }
       kP++; }
     OB.push([x, z, .55], [pl.position.x, pl.position.z, .45]); };
   for (const [x, z, ry, k] of [[-11, -7.4, Math.PI * .25, 0], [-7.2, -7.8, 0, 1], [-1.6, -7.6, -.2, 2], [2.4, -7.9, .3, 3], [-6, -2.6, Math.PI, 7], [0.6, -2.4, Math.PI * .8, 8], [-5.6, 3.2, .4, 9], [-1, 7.4, Math.PI, 10], [-8.6, 7.4, Math.PI, 11], [-11.8, 7.0, Math.PI / 2, 5], [11.6, -1.2, -Math.PI / 2, 12], [5.5, -1.5, -.4, 6]]) coin(x, z, ry, k);
-  // les panneaux de caricatures et de portraits au fusain
-  /* les caricatures au fusain et à la sanguine des portraitistes du Tertre (d'après le dessin envoyé) : le papier beige, le gros nez, les sourcils broussailleux,
-     la casquette, le béret, le chapeau, le chignon ; l'écharpe rouge ; des hachures, la signature */
-  const caricature = (c, X, Y, W, H, k) => { let gr = 9301 + k * 49297; const r = () => (gr = (gr * 16807) % 2147483647) / 2147483647;
-    c.save(); c.translate(X, Y); c.scale(W / 100, H / 130); c.fillStyle = "#e9d8b8"; c.fillRect(0, 0, 100, 130); for (let i = 0; i < 160; i++) { c.fillStyle = `rgba(${r() < .5 ? "120,90,50" : "255,250,235"},.08)`; c.fillRect(r() * 100, r() * 130, 2, 2); }
-    const femme = k % 4 === 1 || k % 4 === 2 && k % 3 === 0, peau = ["#d8a888", "#c89070", "#e0b498", "#a87458"][k % 4], trait = (col, w2) => { c.strokeStyle = col; c.lineWidth = w2; c.lineCap = "round"; };
-    const hach = (x0, y0, x1, y1, n, col) => { trait(col, .8); for (let i = 0; i < n; i++) { const t = i / n; c.beginPath(); c.moveTo(x0 + (x1 - x0) * t, y0); c.lineTo(x0 + (x1 - x0) * t + 6, y1); c.stroke(); } };
-    // le buste, l'écharpe
-    c.fillStyle = ["#3a3028", "#2a3040", "#4a3a2a", "#2a2a2a"][k % 4]; c.beginPath(); c.moveTo(18, 130); c.quadraticCurveTo(22, 96, 50, 92); c.quadraticCurveTo(80, 96, 86, 130); c.fill(); hach(24, 104, 80, 128, 18, "rgba(0,0,0,.35)");
-    c.fillStyle = ["#a8382a", "#b8502a", "#8a2a3a", "#c8642a"][(k + 1) % 4]; c.beginPath(); c.moveTo(32, 96); c.quadraticCurveTo(50, 106, 70, 95); c.lineTo(66, 116); c.quadraticCurveTo(50, 112, 38, 118); c.fill(); hach(36, 98, 66, 114, 10, "rgba(80,20,10,.4)");
-    // la tête : la joue, le menton en avant
-    const tx = 50 + (r() - .5) * 6, hx = 21 + r() * 5, hy = 30 + r() * 4; c.fillStyle = peau; c.beginPath(); c.ellipse(tx, 58, hx, hy, (r() - .5) * .2, 0, 7); c.fill();
-    trait("rgba(70,40,25,.9)", 1.3); c.stroke(); hach(tx + hx * .3, 44, tx + hx, 80, 9, "rgba(120,60,40,.35)");
-    // le nez, énorme
-    const nl = 14 + r() * 12; c.fillStyle = peau; c.beginPath(); c.moveTo(tx - 3, 50); c.quadraticCurveTo(tx - nl - 4, 62 + r() * 6, tx - nl, 70); c.quadraticCurveTo(tx - nl + 6, 76, tx + 2, 70); c.fill(); trait("rgba(60,35,20,.95)", 1.4); c.stroke();
-    c.fillStyle = "rgba(200,90,70,.35)"; c.beginPath(); c.arc(tx - nl + 4, 68, 4, 0, 7); c.fill();
-    // les yeux, les sourcils
-    for (const sx of [-1, 1]) { const ex = tx + sx * 8 - 2; c.fillStyle = "#f4ece0"; c.beginPath(); c.ellipse(ex, 50, 3.6, 2.6, 0, 0, 7); c.fill(); c.fillStyle = ["#3a5a7a", "#3a2a1a", "#4a6a4a"][k % 3]; c.beginPath(); c.arc(ex - 1, 50, 1.6, 0, 7); c.fill();
-      trait("#1a1210", femme ? 1.4 : 3.2); c.beginPath(); c.moveTo(ex - 5, 45 - (femme ? 0 : r() * 2)); c.quadraticCurveTo(ex, 42 - r() * 2, ex + 5, 45); c.stroke(); }
-    // la bouche, la moustache, les rides
-    if (femme) { c.fillStyle = "#c02a2a"; c.beginPath(); c.ellipse(tx - 3, 79, 7, 3.2, 0, 0, 7); c.fill(); c.fillStyle = "rgba(220,90,90,.35)"; for (const sx of [-1, 1]) { c.beginPath(); c.arc(tx + sx * 11, 66, 5, 0, 7); c.fill(); } trait("#1a1210", 1.2); for (const sx of [-1, 1]) for (let l = 0; l < 3; l++) { c.beginPath(); c.moveTo(tx + sx * 8 - 2 + l * 1.5 - 1.5, 47.5); c.lineTo(tx + sx * 8 - 3 + l * 2 - 2, 44.5); c.stroke(); } }
-    else { if (k % 2 === 0) { c.fillStyle = "#5a4a3a"; c.beginPath(); c.ellipse(tx - 5, 75, 8, 2.6, -.1, 0, 7); c.fill(); } trait("rgba(60,30,20,.9)", 1.6); c.beginPath(); c.moveTo(tx - 10, 80); c.quadraticCurveTo(tx - 3, 83, tx + 4, 79); c.stroke(); }
-    trait("rgba(90,55,35,.5)", .9); for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(tx + 6 + i * 3, 66); c.quadraticCurveTo(tx + 12 + i * 2, 74, tx + 8 + i * 2, 84); c.stroke(); }
-    // l'oreille
-    c.fillStyle = peau; c.beginPath(); c.ellipse(tx + hx - 2, 56, 4, 7, 0, 0, 7); c.fill(); trait("rgba(70,40,25,.8)", 1); c.stroke();
-    // la coiffe
-    const cf = k % 5; trait("rgba(20,15,10,.9)", 1.3);
-    if (femme) { c.fillStyle = ["#5a3a22", "#1a1210", "#a87a3a", "#8a2a1a"][k % 4]; c.beginPath(); c.moveTo(tx - 26, 80); c.quadraticCurveTo(tx - 30, 20, tx + 2, 22); c.quadraticCurveTo(tx + 32, 20, tx + 28, 84); c.quadraticCurveTo(tx + 20, 60, tx + 16, 40); c.quadraticCurveTo(tx, 32, tx - 16, 42); c.quadraticCurveTo(tx - 20, 60, tx - 26, 80); c.fill(); c.beginPath(); c.arc(tx + 4, 18, 10, 0, 7); c.fill();   /* (la chevelure qui tombe, le chignon) */ hach(tx - 18, 22, tx + 26, 36, 14, "rgba(0,0,0,.3)"); c.fillStyle = "#e8d070"; c.beginPath(); c.arc(tx + hx - 2, 66, 2, 0, 7); c.fill(); }
-    else if (cf === 0 || cf === 3) { c.fillStyle = ["#4a3a2a", "#3a3a3a", "#5a4a32"][k % 3]; c.beginPath(); c.moveTo(tx - 28, 36); c.quadraticCurveTo(tx - 4, 8, tx + 24, 26); c.lineTo(tx + 24, 34); c.quadraticCurveTo(tx - 4, 30, tx - 28, 38); c.fill(); c.stroke(); hach(tx - 20, 18, tx + 18, 32, 14, "rgba(0,0,0,.3)"); }   // la casquette
-    else if (cf === 1) { c.fillStyle = "#1a1a24"; c.beginPath(); c.ellipse(tx + 2, 28, 24, 10, -.15, 0, 7); c.fill(); c.fillRect(tx + 1, 16, 2, 4); }   // le béret
-    else if (cf === 2) { c.fillStyle = "#2a2420"; c.fillRect(tx - 14, 8, 30, 22); c.beginPath(); c.ellipse(tx + 1, 30, 26, 5, 0, 0, 7); c.fill(); }   // le chapeau
-    else { c.fillStyle = "#c8c4bc"; for (let i = 0; i < 9; i++) { c.beginPath(); c.arc(tx - 14 + i * 4, 30 + Math.sin(i) * 2, 5, 0, 7); c.fill(); } }   // les cheveux blancs en bataille
-    // la signature
-    trait("rgba(40,30,20,.7)", .8); c.beginPath(); c.moveTo(66, 124); for (let i = 0; i < 6; i++) c.quadraticCurveTo(68 + i * 4, 118 + (i % 2) * 6, 70 + i * 4, 124); c.stroke(); c.restore(); };
   const PORTR = [0, 1, 2, 3].map(q => tT(512, 384, (c, w, h) => { c.fillStyle = "#3a2a1a"; c.fillRect(0, 0, w, h); for (let i = 0; i < 4; i++) { const x = 14 + (i % 2) * 250, y = 10 + (i / 2 | 0) * 188; c.fillStyle = "#f4ead8"; c.fillRect(x, y, 234, 178); caricature(c, x + 52, y + 6, 130, 166, q * 4 + i); } })); let kPortr = 0;
   for (const [x, z, ry] of [[12.4, 1.5, -Math.PI / 2], [-12.4, -5.2, Math.PI / 2], [-3.4, -8.4, 0], [2.4, 2.4, Math.PI * .75]]) { const g = new THREE.Group(); g.position.set(x, YS, z); g.rotation.y = ry; scene.add(g); box(1.4, 1.05, .04, mat({ map: PORTR[kPortr++ % 4] }), 0, 1.15, 0, g); for (const sg of [-1, 1]) box(.04, 1.7, .04, boisC, sg * .66, .85, -.05, g); OB.push([x, z, .7]); }
   /* les terrasses couvertes du carré (d'après les photos) : celle de La Mère Catherine (toile blanche, lambrequin rouge « Restaurant La Mère Catherine »),
@@ -572,7 +616,7 @@ function construireTertre(A, L, scene) {
     for (const [w, d, x, z] of [[tw, .04, (x0 + x1) / 2, z0 - .2], [tw, .04, (x0 + x1) / 2, z1 + .2], [.04, td, x0 - .2, (z0 + z1) / 2], [.04, td, x1 + .2, (z0 + z1) / 2]]) box(w, .5, d, lM, x, y + H - .05, z);
     // les tables, les clients
     for (let x = x0 + .9; x < x1 - .5; x += 1.6) for (let z = z0 + .8; z < z1 - .4; z += 1.5) { table(x, z, o.nappe); chaise(x - .45, z, Math.PI / 2); chaise(x + .45, z, -Math.PI / 2);
-      if (GENS && kT < nTerr + 10 && al() < .55) { const sx = al() < .5 ? -.45 : .45, m = gens(kT + 11); m.position.set(x + sx, YS, z); m.rotation.y = sx < 0 ? Math.PI / 2 : -Math.PI / 2; m.userData.poser("assis", 0); scene.add(m); TERR.push(m); kT++; } }
+      if (GENS && kT < nTerr + 10 && al() < .55) { const sx = al() < .5 ? -.45 : .45, m = gens(kT + 11); m.position.set(x + sx, YS + .5 - m.userData.hipY, z); m.rotation.y = sx < 0 ? Math.PI / 2 : -Math.PI / 2; m.userData.poser("assis", 0); scene.add(m); TERR.push(m); kT++; } }
     if (o.rampe) { const fer = mat({ color: 0x141414, metalness: .6, roughness: .5 }); for (const [ax, az, bx, bz] of [[x0, z0, x1, z0], [x0, z1, x1, z1], [x1, z0, x1, z1]]) { const l = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bz - az, bx - ax), r = box(l, .05, .05, fer, (ax + bx) / 2, y + 1.05, (az + bz) / 2); r.rotation.y = -ang;
         for (let t = 0; t < l; t += .14) box(.02, 1, .02, fer, ax + (bx - ax) * t / l, y + .5, az + (bz - az) * t / l); } }
     if (o.lampes) { const lp = lum(mat({ color: 0xffd8a0, emissive: 0xffb860, emissiveIntensity: .1 }), .1, 2.6); for (let x = x0 + .8; x < x1; x += 1.6) for (let z = z0 + .7; z < z1; z += 1.5) { cyl(.006, .006, .5, fonteM, x, y + H - .25, z, scene, 3); add(new THREE.SphereGeometry(.12, 10, 8), lp, x, y + H - .55, z); } }
@@ -587,7 +631,7 @@ function construireTertre(A, L, scene) {
   /* ---------- le Sacré-Cœur, au-dessus des toits : le grand dôme ovoïde sur son tambour à colonnes, sa lanterne, les quatre petits dômes,
      le porche aux trois arcs, et le campanile ; la pierre blanche de Château-Landon, qui reste blanche ---------- */
   { const g = new THREE.Group(); g.position.set(215, 4, 20); g.rotation.y = -Math.PI / 2; g.scale.setScalar(1.3); scene.add(g);
-    const blanc = lum(mat({ color: 0xf6f3ea, roughness: .75, emissive: 0xfff2d8, emissiveIntensity: 0, fog: false }), 0, .55), ombre = mat({ color: 0xd8d2c4, roughness: .8, fog: false }), noirA = mat({ color: 0x2a2a30, fog: false });   /* (net, malgré la brume du lointain) */
+    const blanc = lum(mat({ color: 0xf6f3ea, roughness: .75, emissive: 0xffe4b8, emissiveIntensity: 0, fog: false }), 0, .62), ombre = mat({ color: 0xd8d2c4, roughness: .8, fog: false }), noirA = mat({ color: 0x2a2a30, fog: false });   /* (net, malgré la brume du lointain) */
     const dome = (r, h, y, x = 0, z = 0) => { const pts = []; for (let i = 0; i <= 16; i++) { const t = i / 16, a = t * Math.PI / 2; pts.push(new THREE.Vector2(Math.cos(a) * r * (1 - .12 * t * t), Math.sin(a) * h)); } return add(new THREE.LatheGeometry(pts, 28), blanc, x, y, z, g); };
     const tambour = (r, h, y, x = 0, z = 0, n = 16) => { cyl(r * .92, r * .92, h, ombre, x, y + h / 2, z, g, 24); for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; cyl(r * .06, r * .06, h * .86, blanc, x + Math.cos(a) * r, y + h / 2, z + Math.sin(a) * r, g, 6); } cyl(r * 1.04, r * 1.04, h * .1, blanc, x, y + h - h * .05, z, g, 24); cyl(r * 1.04, r * 1.04, h * .08, blanc, x, y + h * .04, z, g, 24);
       for (let i = 0; i < n; i += 2) { const a = (i + .5) / n * Math.PI * 2; const f = box(r * .16, h * .5, .1, noirA, x + Math.cos(a) * r * .93, y + h * .5, z + Math.sin(a) * r * .93, g); f.rotation.y = -a + Math.PI / 2; } };
@@ -605,8 +649,20 @@ function construireTertre(A, L, scene) {
     // le campanile, derrière
     box(11, 50, 11, blanc, 0, 25, -40, g); for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) for (let e = 0; e < 3; e++) box(dx ? .2 : 2.2, 6, dz ? .2 : 2.2, noirA, dx * 5.6, 34 + e * 5, -40 + dz * 5.6, g);
     tambour(4.8, 10, 50, 0, -40, 12); dome(5, 9, 60, 0, -40); cyl(.4, .6, 6, blanc, 0, 71, -40, g, 8); box(.3, 2.4, .3, blanc, 0, 75, -40, g); box(1.4, .3, .3, blanc, 0, 75.5, -40, g);
+    /* (10.86) les détails, d'après les photos : les côtes des dômes, la galerie à balustres au pied du grand dôme, les fenêtres en plein cintre de la nef, les clochetons,
+       la grande baie au-dessus du porche, la terrasse aux arcades et sa balustrade, les arbres de la butte */
+    const cotes = (r, h, y, x, z, n, e) => { for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, P = []; for (let j = 0; j <= 10; j++) { const t = j / 10, b = t * Math.PI / 2, rr = Math.cos(b) * r * (1 - .12 * t * t) + e * .5; P.push(new THREE.Vector3(x + Math.cos(a) * rr, y + Math.sin(b) * h + e * .3, z + Math.sin(a) * rr)); } add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P), 12, e, 4), blanc, 0, 0, 0, g); } };
+    cotes(9.4, 17, 45, 0, -6, 16, .24); cotes(5, 9, 60, 0, -40, 10, .14); for (const [x, z] of [[-11, 3], [11, 3], [-11, -15], [11, -15]]) cotes(3.2, 5.6, 36, x, z, 8, .1);
+    { const tb = add(new THREE.TorusGeometry(10.1, .16, 4, 48), blanc, 0, 45.9, -6, g); tb.rotation.x = Math.PI / 2; for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2; cyl(.08, .08, .8, blanc, Math.cos(a) * 10.1, 45.45, -6 + Math.sin(a) * 10.1, g, 4); } }
+    for (const sx of [-15.05, 15.05]) for (let z = -22; z <= 10; z += 4) { box(.3, 5, 1.8, noirA, sx, 11.5, z, g); const ar = cyl(.9, .9, .3, noirA, sx, 14, z, g, 10); ar.rotation.z = Math.PI / 2; box(.5, .3, 2.3, blanc, sx, 8.8, z, g); }
+    box(4, 4, .3, noirA, 0, 18, 14.05, g); { const ar = cyl(2, 2, .3, noirA, 0, 20, 14.05, g, 14); ar.rotation.x = Math.PI / 2; } box(5, .4, .6, blanc, 0, 15.9, 14.2, g);
+    for (const [x, z] of [[-13, 5], [13, 5], [-13, -17], [13, -17], [-12, 19], [12, 19]]) { cyl(.5, .5, 2, blanc, x, z > 15 ? 16.2 : 27, z, g, 8); add(new THREE.ConeGeometry(.6, 2.6, 8), blanc, x, z > 15 ? 18.5 : 29.3, z, g); }
+    box(46, 6, 6, blanc, 0, -3, 25, g); for (let x = -19.8; x <= 20; x += 4.4) { box(2.6, 3.2, .3, noirA, x, -4, 28.05, g); const ar = cyl(1.3, 1.3, .3, noirA, x, -2.4, 28.05, g, 10); ar.rotation.x = Math.PI / 2; }
+    box(46, .18, .4, blanc, 0, .9, 27.8, g); for (let x = -22.6; x <= 23; x += .9) cyl(.09, .09, .9, blanc, x, .45, 27.8, g, 4);
+    for (const [x, z, r] of [[-26, 22, 3], [-29, 10, 3.6], [27, 21, 3.2], [29, 8, 3.8], [-25, -8, 3.4], [26, -10, 3.2]]) add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x6a7a2a][(x * 7 & 3) % 3], roughness: .9, fog: false }), x, r * .6 - 1, z, g);
     // le soir, le Sacré-Cœur est éclairé : sa pierre blanche brille sur le ciel noir
-    if (!(MOBILE || GPU_MODESTE)) { const sp = new THREE.SpotLight(0xfff0d8, 0, 220, .5, .5, 1); sp.position.set(0, 10, 120); sp.target.position.set(0, 40, -6); g.add(sp); g.add(sp.target); NUIT.push([{ set emissiveIntensity(v) { sp.intensity = v; } }, 0, 1800]); } }
+    if (!(MOBILE || GPU_MODESTE)) { const sp = new THREE.SpotLight(0xfff0d8, 0, 220, .5, .5, 1); sp.position.set(0, 10, 120); sp.target.position.set(0, 40, -6); g.add(sp); g.add(sp.target); NUIT.push([{ set emissiveIntensity(v) { sp.intensity = v; } }, 0, 1800]); }
+    g.updateMatrixWorld(true); for (const o of [...g.children]) if (o.isMesh) scene.attach(o); }   // (les pierres fondues avec le reste)
 
   /* ---------- les promeneurs : les touristes qui font le tour du carré, regardent les peintres, remontent la rue Saint-Éleuthère ---------- */
   const ROUTES = [[[-78, -12.9], [-23, -12.9]], [[-83, -40], [-83, 34]], [[-78, 29], [54, 29]], [[1, 12], [1, 29], [-40, 29]], [[-23, -12], [-60, -12], [-82, -13], [-82, 28], [-20, 28.5]], [[-70, 30.5], [40, 30.5]],[[-16, -12], [16, -12], [16, 12], [-16, 12], [-16, -12]], [[-17, 12.5], [-17, -12.5], [15, -12.5], [15, 12.5], [-17, 12.5]], [[16, 12], [42, 12]], [[1, ZS - .5], [1, 11], [-15, 11], [-15, -11.5]], [[-12.6, -8.6], [12.6, -8.6], [12.6, 2], [-12.6, 2]]];
@@ -618,7 +674,7 @@ function construireTertre(A, L, scene) {
     const gD = box(.08, .32, .2, rouge, -.18, 0, 0, ac), gG = box(.08, .32, .2, rouge, .18, 0, 0, ac); for (let t = 0; t < 7; t++) box(.012, .3, .02, nacre, -.21, -.12 + t * .04, .1, ac);   // les deux caisses, le clavier
     const souf = []; for (let i = 0; i < 6; i++) souf.push(box(.045, .3, .19, i % 2 ? noirA : mat({ color: 0xe8e2d6 }), -.12 + i * .048, 0, 0, ac));   // le soufflet
     P.bras[0].e.rotation.set(-1.1, 0, -.5); P.bras[1].e.rotation.set(-1.1, 0, .5);
-    const etui = box(.7, .1, .35, mat({ color: 0x3a2a1e }), ax - .9, .05, az + .6); etui.rotation.y = .3; for (let i = 0; i < 5; i++) add(new THREE.CylinderGeometry(.02, .02, .005, 8), mat({ color: 0xd8b860, metalness: .8, roughness: .3 }), ax - 1.1 + i * .1, .11, az + .55 + (i % 2) * .05);
+    const etui = box(.7, .1, .35, mat({ color: 0x3a2a1e }), ax - .9, .05, az + .6); etui.rotation.y = .3; JOUR.push(m, etui); for (let i = 0; i < 5; i++) JOUR.push(add(new THREE.CylinderGeometry(.02, .02, .005, 8), mat({ color: 0xd8b860, metalness: .8, roughness: .3 }), ax - 1.1 + i * .1, .11, az + .55 + (i % 2) * .05));
     OB.push([ax, az, .5], [ax - .9, az + .6, .45]);
     ACCORD.push((tm) => { m.userData.poser("debout", tm); const o = Math.sin(tm / 330); for (let i = 0; i < 6; i++) souf[i].position.x = (-.12 + i * .048) * (1 + o * .3); gD.position.x = -.18 - o * .05; gG.position.x = .18 + o * .05; P.bras[0].e.rotation.set(-1.1, 0, -.5 - o * .12); P.bras[1].e.rotation.set(-1.1, 0, .5 + o * .12); P.tete.rotation.y = Math.sin(tm / 1500) * .3; P.bassin.rotation.y = Math.sin(tm / 700) * .08; }); }
   /* les bancs de Paris : lattes de bois vert, pieds de fonte ; quelques promeneurs s'y reposent */
@@ -627,12 +683,20 @@ function construireTertre(A, L, scene) {
       for (let l = 0; l < 3; l++) box(1.8, .04, .1, vertB, 0, .45, -.12 + l * .13, g); for (let l = 0; l < 2; l++) { const d = box(1.8, .1, .03, vertB, 0, .66 + l * .14, -.24, g); d.rotation.x = -.15; }
       for (const sx of [-.75, .75]) { box(.06, .45, .5, fonteB, sx, .23, -.05, g); box(.05, .5, .05, fonteB, sx, .72, -.23, g); box(.06, .05, .4, fonteB, sx, .62, .02, g); }
       OB.push([bx, bz, .9]);
-      if (GENS && assis && BANCS.length < ((MOBILE || GPU_MODESTE) ? 2 : 4)) { const k = BANCS.length, mb = gens(k * 11 + 6); mb.position.set(bx + Math.cos(ry) * (k % 2 ? .4 : -.4), .02, bz - Math.sin(ry) * (k % 2 ? .4 : -.4)); mb.rotation.y = ry; mb.userData.poser("assis", 0); scene.add(mb); BANCS.push({ m: mb, k }); } } }
+      if (GENS && assis && BANCS.length < ((MOBILE || GPU_MODESTE) ? 2 : 4)) { const k = BANCS.length, mb = gens(k * 11 + 6); mb.position.set(bx + Math.cos(ry) * (k % 2 ? .4 : -.4), .49 - mb.userData.hipY, bz - Math.sin(ry) * (k % 2 ? .4 : -.4)); mb.rotation.y = ry; mb.userData.poser("assis", 0); scene.add(mb); BANCS.push({ m: mb, k }); } } }
   for (let k = 0, n = !GENS ? 0 : PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 10 : 30; k < n; k++) { const R = ROUTES[k % ROUTES.length], m = gens(k * 3 + 2), i0 = k % (R.length - 1), u = al(), a = R[i0], b = R[i0 + 1];
     m.position.set(a[0] + (b[0] - a[0]) * u, 0, a[1] + (b[1] - a[1]) * u); m.userData.poser("marche", 0); scene.add(m); MARCH.push({ m, R, i: i0 + 1, sens: 1, v: .8 + (k % 5) * .12 }); }
-  // les serveurs, le long des terrasses : tablier blanc, le plateau
-  for (const [x, z, ry] of !GENS ? [] : [[XO + 2.3, 4.5, Math.PI / 2], [XO + 2.3, -3.4, Math.PI / 2], [-2, ZN + 2.3, 0], [8.2, 2.8, Math.PI]]) { const m = personne3D({ taille: 1.78, peau: PE[(x * 3 | 0) & 3], ch: "#141010", haut: "#f2f0ea", bas: "#141414", chaussures: "#0a0a0a", coif: "court", pantalon: true }); m.position.set(x, x > 0 && z > 0 ? YS : hTrot(x, z), z); m.rotation.y = ry; scene.add(m); m.userData.poser("debout", 0);
-    const P = m.userData.parts; box(.36, .5, .02, mat({ color: 0xffffff }), 0, -.05, .1, P.bassin); P.bras[1].e.rotation.set(-1.2, 0, .3); P.bras[1].c.rotation.x = -1.4; cyl(.18, .18, .02, mat({ color: 0xc8c8c8, metalness: .7 }), .05, -.32, .12, P.bras[1].c, 12); SERV.push(m); }
+  /* les garçons de café : le gilet noir, le nœud papillon, le long tablier blanc, le plateau d'argent sur la main ; ils vont de table en table, s'arrêtent servir, repartent */
+  const hPl = (x, z) => (x > SQ.x0 && x < SQ.x1 && z > SQ.z0 && z < SQ.z1) ? YS : hTrot(x, z);
+  { const tabM = mat({ color: 0xffffff, roughness: .8 }), giletM = mat({ color: 0x141414, roughness: .7, side: THREE.DoubleSide }), argM = mat({ color: 0xd0d0d0, metalness: .8, roughness: .25 }), verreS = mat({ color: 0xe8b040, roughness: .2, transparent: true, opacity: .85 }), tasseM = mat({ color: 0xf6f4ee, roughness: .3 });
+    const nS = !GENS || !TABLES.length ? 0 : PETIT ? 2 : (MOBILE || GPU_MODESTE) ? 4 : 7;
+    for (let k = 0; k < nS; k++) { const m = personne3D({ taille: 1.78, peau: PE[(k * 5) % 6], ch: "#141010", haut: "#f2f0ea", bas: "#141414", chaussures: "#0a0a0a", coif: k % 3 ? "court" : "chauve", pantalon: true }), P = m.userData.parts;
+      box(.4, .66, .02, tabM, 0, -.16, .11, P.bassin);   // le tablier
+      const gi = new THREE.Mesh(new THREE.CylinderGeometry(.165, .19, .34, 10, 1, true), giletM); gi.position.y = .12; P.buste.add(gi); const np = new THREE.Mesh(new THREE.BoxGeometry(.09, .035, .02), giletM); np.position.set(0, .3, .13); P.buste.add(np);
+      const pl = new THREE.Group(); pl.position.set(.04, -.34, .1); P.bras[1].c.add(pl); add(new THREE.CylinderGeometry(.18, .18, .015, 14), argM, 0, 0, 0, pl);
+      add(new THREE.CylinderGeometry(.035, .028, .14, 8), verreS, -.07, .08, .02, pl); add(new THREE.CylinderGeometry(.035, .028, .14, 8), verreS, .06, .08, -.05, pl); add(new THREE.CylinderGeometry(.04, .032, .06, 8), tasseM, .02, .04, .09, pl);
+      const t = TABLES[(k * 11 + 3) % TABLES.length]; m.position.set(t[0] + .8, hPl(t[0] + .8, t[1]), t[1]); m.userData.poser("debout", 0); scene.add(m);
+      SERV.push({ m, P, but: null, tab: t, pause: al() * 3, v: .85 + al() * .25, k }); } }
 
   /* ---------- les limites : les rues pavées, le carré, la rue Saint-Éleuthère, le haut des marches de la rue du Calvaire ; ni les arbres ni les chevalets ---------- */
   /* (les obstacles rangés par cases de 2 m : on ne teste que ceux d'à côté — la carte des passages se calculait sur tout Montmartre et bloquait le téléphone) */
@@ -646,15 +710,21 @@ function construireTertre(A, L, scene) {
 
   /* ---------- l'animation : le soir qui s'allume, les peintres au pinceau, les dîneurs, les promeneurs ---------- */
   let nV = null, tp = 0;
-  const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
+  const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; for (const o of JOUR) o.visible = !n; }   // (le soir, les peintres et l'accordéoniste sont rentrés)
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const c = M && M.camera && M.camera.position, R2 = ((MOBILE || GPU_MODESTE) ? 30 : 60) ** 2;
-    for (const { m, k } of MODELES) { m.userData.poser("assis", 0); const P = m.userData.parts; P.bras[1].e.rotation.set(-1.9, 0, .4); P.bras[1].c.rotation.x = -1.9; P.tete.rotation.y = Math.sin(tm / 3000 + k) * .08; }
-    for (const A of ACCORD) A(tm);
+    for (const { m, k } of MODELES) { if (!m.visible) continue; m.userData.poser("assis", 0); const P = m.userData.parts; P.bras[1].e.rotation.set(-1.9, 0, .4); P.bras[1].c.rotation.x = -1.9; P.tete.rotation.y = Math.sin(tm / 3000 + k) * .08; }
+    if (!n) for (const A of ACCORD) A(tm);
     for (const { m, k } of BANCS) { m.userData.poser("assis", tm); const P = m.userData.parts; P.tete.rotation.y = Math.sin(tm / 2400 + k * 2) * .5; }
-    for (const { m, k } of PEINT) { if (c && (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 > R2) continue; m.userData.poser("assis", tm); const P = m.userData.parts, s = Math.sin(tm / 260 + k * 1.7); P.bras[1].e.rotation.set(-1.15 + s * .12, 0, .25); P.bras[1].c.rotation.x = -.5 + Math.cos(tm / 300 + k) * .15; P.tete.rotation.x = Math.sin(tm / 2400 + k) * .12; }   // (le pinceau qui va et vient)
+    for (const { m, k } of PEINT) { if (!m.visible) continue; if (c && (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 > R2) continue; m.userData.poser("assis", tm); const P = m.userData.parts, s = Math.sin(tm / 260 + k * 1.7); P.bras[1].e.rotation.set(-1.15 + s * .12, 0, .25); P.bras[1].c.rotation.x = -.5 + Math.cos(tm / 300 + k) * .15; P.tete.rotation.x = Math.sin(tm / 2400 + k) * .12; }   // (le pinceau qui va et vient)
     for (const [k, m] of TERR.entries()) { if (c && (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 > R2) continue; const P = m.userData.parts, b = (tm / 1000 + k * 1.7) % 7; m.userData.poser("assis", tm); if (b < 1.3) { P.bras[1].e.rotation.x = -1.3; P.bras[1].c.rotation.x = -1.9; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.9; } }
     for (const { m, gui, k } of MUSI) { m.userData.poser(k ? "debout" : "assis", tm); const P = m.userData.parts; if (!k) { P.bras[1].e.rotation.set(-.9, 0, .3); P.bras[1].c.rotation.x = -1.2 + Math.sin(tm / 90) * .25; P.bras[0].e.rotation.set(-1.3, 0, -.6); P.bras[0].c.rotation.x = -1.1; P.tete.rotation.y = Math.sin(tm / 1400) * .3; void gui; }
       else { P.bras[1].e.rotation.set(-2.2 + Math.sin(tm / 500) * .3, 0, .3); P.buste.rotation.z = Math.sin(tm / 600) * .08; P.tete.rotation.x = -.15; } }
+    for (const S2 of SERV) { const { m, P } = S2; if (S2.pause > 0) { S2.pause -= dt; m.userData.poser("debout", tm); const s2 = Math.min(1, S2.pause); P.bras[0].e.rotation.set(-.9 * s2, 0, -.15); P.bras[0].c.rotation.x = -.6 * s2; }   // (il pose le verre sur la table)
+      else { if (!S2.but) { const pr = TABLES.filter(t => t !== S2.tab && (t[0] - m.position.x) ** 2 + (t[1] - m.position.z) ** 2 < 150); const t = pr.length ? pr[(al() * pr.length) | 0] : TABLES[(al() * TABLES.length) | 0], dx = m.position.x - t[0], dz = m.position.z - t[1], d0 = Math.hypot(dx, dz) || 1; S2.tab = t; S2.but = [t[0] + dx / d0 * .72, t[1] + dz / d0 * .72]; }
+        const dx = S2.but[0] - m.position.x, dz = S2.but[1] - m.position.z, d = Math.hypot(dx, dz);
+        if (d < .1) { S2.but = null; S2.pause = 2.5 + al() * 2.5; m.rotation.y = Math.atan2(S2.tab[0] - m.position.x, S2.tab[1] - m.position.z); }
+        else { const v = Math.min(d, S2.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = hPl(m.position.x, m.position.z); m.rotation.y = Math.atan2(dx, dz); if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * S2.v / 1.2); } }
+      P.bras[1].e.rotation.set(-1.15, 0, .3); P.bras[1].c.rotation.set(-1.45, 0, 0); }   // (le plateau toujours bien à plat sur la main)
     for (const W of MARCH) { const m = W.m, [tx, tz] = W.R[W.i], dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
       if (d < .15) { if (W.i + W.sens < 0 || W.i + W.sens >= W.R.length) W.sens = -W.sens; W.i += W.sens; continue; }
       const v = Math.min(d, W.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur(m.position.x, m.position.z); m.rotation.y = Math.atan2(dx, dz); if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * W.v / 1.2); } };
@@ -667,13 +737,22 @@ function construireTertre(A, L, scene) {
     for (let z = -38; z < ZSa1 - 4; z += 13) lampadaire(XSa1 - .55, z);   // rue des Saules
     for (let x = -72, k = 0; x < XBUT - 4; x += 12, k++) lampadaire(x, k % 2 ? ZRu0 + .55 : ZRu1 - .55);   // rue Saint-Rustique
     for (let x = XE + 6; x < XBUT - 4; x += 12) lampadaire(x, 9.55); }   // rue Saint-Éleuthère
+  /* le soir, au-dessus de la place : les guirlandes d'ampoules tendues d'une façade à l'autre, qui pendent un peu ; une lumière douce, orangée */
+  { const fils = [], amp = [], brin = (ax, az, bx, bz, y, fl) => { const l = Math.hypot(bx - ax, bz - az), n = Math.max(6, Math.round(l / 1.05)); let px = 0, py = 0, pz = 0; for (let i = 0; i <= n; i++) { const t = i / n, x = ax + (bx - ax) * t, z = az + (bz - az) * t, yy = y - fl * 4 * t * (1 - t); if (i) fils.push(px, py, pz, x, yy, z); if (i && i < n) amp.push(x, yy - .07, z); px = x; py = yy; pz = z; } };
+    for (let z = ZN + 3.5, i = 0; z < ZS - 2; z += 4.2, i++) brin(XO + .3, z + (i % 2 ? 1.2 : -1.2), XE - .3, z + (i % 2 ? -1.2 : 1.2), 6.2, 1.2);
+    brin(XO + .3, ZN + .5, XE - .3, ZS - .5, 6.8, 1.8); brin(XO + .3, ZS - .5, XE - .3, ZN + .5, 6.8, 1.8); for (const x of [-12, 0, 12]) brin(x, ZN + .3, x + 1.5, ZS - .3, 6.5, 1.3);
+    const gF = new THREE.BufferGeometry(); gF.setAttribute("position", new THREE.Float32BufferAttribute(fils, 3)); scene.add(new THREE.LineSegments(gF, new THREE.LineBasicMaterial({ color: 0x1a1612 })));
+    const aT = tT(32, 32, (c) => { const g2 = c.createRadialGradient(16, 16, 1, 16, 16, 15); g2.addColorStop(0, "rgba(255,240,200,1)"); g2.addColorStop(.3, "rgba(255,170,80,.75)"); g2.addColorStop(1, "rgba(255,130,40,0)"); c.fillStyle = g2; c.fillRect(0, 0, 32, 32); });
+    const gA = new THREE.BufferGeometry(); gA.setAttribute("position", new THREE.Float32BufferAttribute(amp, 3)); const aM = new THREE.PointsMaterial({ map: aT, size: .16, color: 0xd8c8a8, sizeAttenuation: true, transparent: true, depthWrite: false, fog: false }), aP = new THREE.Points(gA, aM); aP.frustumCulled = false; scene.add(aP);
+    NUIT.push([{ set emissiveIntensity(v) { aM.size = v ? .75 : .16; aM.color.setHex(v ? 0xffb860 : 0xd8c8a8); aM.blending = v ? THREE.AdditiveBlending : THREE.NormalBlending; aM.needsUpdate = true; } }, 0, 1]);
+    L.guirlandes = aP; }
   { const hT = tT(64, 64, (c, w, h) => { const g = c.createRadialGradient(32, 32, 1, 32, 32, 31); g.addColorStop(0, "rgba(255,236,190,1)"); g.addColorStop(.25, "rgba(255,190,110,.55)"); g.addColorStop(1, "rgba(255,150,70,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
     const pos = new Float32Array(HALO.length * 3); HALO.forEach(([x, y, z], i) => pos.set([x, y, z], i * 3)); const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     if (MOBILE || GPU_MODESTE) HALO.length = 0;
     const hM = new THREE.PointsMaterial({ map: hT, size: 2.8, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0, fog: false }), pts = new THREE.Points(geo, hM); pts.frustumCulled = false; pts.visible = false; scene.add(pts);
     const amb = new THREE.AmbientLight(0xff9a50, 0); scene.add(amb);   // (le soir, une lumière ambiante orangée, chaleureuse, sur toutes les façades)
     NUIT.push([{ set emissiveIntensity(v) { pts.visible = v > 0; hM.opacity = v; flaqueM.opacity = v * .85; amb.intensity = v * .45; } }, 0, 1]); }
-  L.sansMusique = true;
+  L.jour = JOUR; L.sansMusique = true;
   /* la musique : l'accordéon, en boucle, tant qu'on est à Montmartre ; elle monte doucement, s'arrête quand on repart */
   L.sansMusique = true;
   { const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (!M || M.L !== L) return; const A2 = (window.__accordeon = window.__accordeon || Object.assign(new Audio("sons/montmartre-accordeon.mp3"), { loop: true, preload: "auto" }));
