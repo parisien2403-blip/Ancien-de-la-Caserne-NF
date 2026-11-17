@@ -602,6 +602,6 @@ function construireTertre(A, L, scene) {
      le téléphone envoyait alors son image à la carte graphique et préparait sa matière. On fait tout cela dès l'arrivée, une fois pour toutes, pendant le chargement) */
   { let fait = false; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (fait || !M || M.L !== L || !M.rendu || !M.camera) return; fait = true;
       try { const R = M.rendu, vus = new Set(); scene.traverse(o => { for (const m of [].concat(o.material || [])) if (m) for (const k of ["map", "emissiveMap", "normalMap", "alphaMap"]) { const t = m[k]; if (t && t.isTexture && !vus.has(t)) { vus.add(t); try { R.initTexture(t); } catch (e) {} } } });
-        R.compile(scene, M.camera); M.dbgPrep = vus.size; } catch (e) { console.warn("préparation", e); } }; }   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
+        R.compile(scene, M.camera); M.dbgPrep = vus.size; for (const P of PAGES) { P.c.width = P.c.height = 1; }   /* (les planches sont dans la carte graphique : on libère leur copie dans la mémoire du téléphone — 100 Mo) */ } catch (e) { console.warn("préparation", e); } }; }   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
 }
 ({ construireTertre })
