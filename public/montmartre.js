@@ -18,7 +18,7 @@ function construireTertre(A, L, scene) {
   /* le soir : sous chaque lampadaire, la flaque de lumière dorée sur les pavés (un seul matériau, fondu avec le reste) ; autour de chaque lanterne, le halo (tous en un seul nuage de points) */
   const flaqueT = tT(128, 128, (c, w, h) => { const g = c.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,190,110,1)"); g.addColorStop(.45, "rgba(255,160,80,.45)"); g.addColorStop(1, "rgba(255,140,60,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
   const flaqueM = new THREE.MeshBasicMaterial({ map: flaqueT, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
-  const flaque = (x, z, r, y = .03) => { const p = add(new THREE.PlaneGeometry(r * 2, r * 2), flaqueM, x, y, z); p.rotation.x = -Math.PI / 2; };   /* (toutes fondues en une seule) */   // (les obstacles : arbres, chevalets, poteaux)   // les façades : ouest (les restaurants), est, nord, sud
+  const flaque = (MOBILE || GPU_MODESTE) ? () => {} : (x, z, r, y = .03) => { const p = add(new THREE.PlaneGeometry(r * 2, r * 2), flaqueM, x, y, z); p.rotation.x = -Math.PI / 2; };   /* (toutes fondues en une seule) */   // (les obstacles : arbres, chevalets, poteaux)   // les façades : ouest (les restaurants), est, nord, sud
 
   /* ---------- le sol : les pavés de granit, gris-bleu, arrondis par les années ; la bordure de pierre du carré ---------- */
   /* les pavés de grès et de granit (d'après les photos) : de petits pavés rectangulaires posés en rangs, aux couleurs mêlées — gris, beige, ocre, brun, un peu de rouille —,
@@ -548,16 +548,12 @@ function construireTertre(A, L, scene) {
     for (let x = XE + 6; x < XBUT - 4; x += 12) lampadaire(x, 9.55); }   // rue Saint-Éleuthère
   { const hT = tT(64, 64, (c, w, h) => { const g = c.createRadialGradient(32, 32, 1, 32, 32, 31); g.addColorStop(0, "rgba(255,236,190,1)"); g.addColorStop(.25, "rgba(255,190,110,.55)"); g.addColorStop(1, "rgba(255,150,70,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
     const pos = new Float32Array(HALO.length * 3); HALO.forEach(([x, y, z], i) => pos.set([x, y, z], i * 3)); const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    if (MOBILE || GPU_MODESTE) HALO.length = 0;
     const hM = new THREE.PointsMaterial({ map: hT, size: 2.8, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0, fog: false }), pts = new THREE.Points(geo, hM); pts.frustumCulled = false; pts.visible = false; scene.add(pts);
     const amb = new THREE.AmbientLight(0xff9a50, 0); scene.add(amb);   // (le soir, une lumière ambiante orangée, chaleureuse, sur toutes les façades)
     NUIT.push([{ set emissiveIntensity(v) { pts.visible = v > 0; hM.opacity = v; flaqueM.opacity = v * .85; amb.intensity = v * .45; } }, 0, 1]); }
-  /* la musique : l'accordéon, en boucle, tant qu'on est à Montmartre ; elle monte doucement, s'arrête quand on repart */
-  L.sansMusique = true;
-  { const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (!M || M.L !== L) return; const A2 = (window.__accordeon = window.__accordeon || Object.assign(new Audio("sons/montmartre-accordeon.mp3"), { loop: true, preload: "auto" }));
-      if (A2.paused && !A2._essai && !A2._attente) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
-      if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
-      if (!A2.paused) try { A2.volume = Math.min(.5, A2.volume + .006); } catch (e) {} };
-    quitterLieu.add(() => { const A2 = window.__accordeon; if (A2) { A2.pause(); try { A2.currentTime = 0; } catch (e) {} } }); }
+  L.sansMusique = true;   /* (la musique d'accordéon : retirée) */
+  if (MOBILE || GPU_MODESTE) { const a0 = L.anim; let fait = false; L.anim = (tm) => { a0 && a0(tm); if (fait || !M || M.L !== L) return; fait = true; M.capRes = 1; M.redim && M.redim(); quitterLieu.add(() => { if (M && M.capRes === 1) { M.capRes = null; M.redim && M.redim(); } }); }; }   /* (sur téléphone, à Montmartre : une image un peu moins fine — moins de travail pour la carte graphique) */
   /* les pigeons : des petites bandes qui picorent entre les pavés ; on s'approche, ils s'envolent sur les toits, et reviennent un peu plus tard */
   { const G = geoPigeon(), pm = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .75 }), pi = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .35, metalness: .25 }), PG = [];
     const BANDES = [[-4, 4.5, 6], [6, -2, 5], [-16, -4, 4], [-50, -13, 4], [-83, 6, 4], [-20, 29, 5], [30, 12, 3]];
