@@ -18,6 +18,7 @@ export const LIEUX = {
   etage: { nom: "Les étages", icone: "🚪" },
   rex: { nom: "Bonne-Nouvelle (le Grand Rex)", icone: "🎬" },
   jouffroy: { nom: "Le passage Jouffroy", icone: "🛍️" },
+  tertre: { nom: "Montmartre, la place du Tertre", icone: "🎨" },
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
@@ -7572,6 +7573,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "rue") construireRue(A, T, L, scene);
   if (id === "rex") construireRex(A, L, scene);
   if (id === "jouffroy") construireJouffroy(A, L, scene);
+  if (id === "tertre") MD.montmartre.construireTertre(A, L, scene);   // (Montmartre : son propre fichier, chargé la première fois qu'on y va)
 
   if (id === "grande") {
     /* La cour d'honneur (d'après les photos) :
@@ -14822,6 +14824,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     const globe = add(new THREE.SphereGeometry(.24, 16, 12), lum(new THREE.MeshStandardMaterial({ color: 0xf2c830, emissive: 0xffc020, emissiveIntensity: .4, roughness: .3 }), .4, 2), 0, 4.15, 0, mt); add(new THREE.CylinderGeometry(.1, .13, .15, 10), vertF, 0, 3.88, 0, mt);
     const pl = new THREE.PointLight(0xffd060, 0, 10, 1.8); pl.position.set(0, 4.1, 0); mt.add(pl); NUIT.push([{ set emissiveIntensity(v) { pl.intensity = v; } }, 0, 6]); };
   boucheMetro(-70.5, 9.8, 0);   // (devant le Starbucks)
+  L.portails.push({ dans: (x, z) => x > -68.7 && x < -67.9 && Math.abs(z - 9.8) < .85, vers: "tertre", arrivee: [1.05, 14.2], yaw: Math.PI, indice: [-68.3, 9.8] });   // (on descend dans le métro : on ressort à Montmartre, en haut de la rue du Calvaire)
   boucheMetro(-43.6, -10.4, 0);   // (devant le McDonald's, près du kiosque)
   // (10.18) les grilles d'aération du métro, au ras du trottoir : le cadre de fonte, les barreaux serrés, le noir dessous
   { const tG = tT(256, 128, (c, w, h) => { c.fillStyle = "#08090a"; c.fillRect(0, 0, w, h); c.fillStyle = "#5a5c60"; c.fillRect(0, 0, w, 10); c.fillRect(0, h - 10, w, 10); c.fillRect(0, 0, 10, h); c.fillRect(w - 10, 0, 10, h);
@@ -17582,7 +17585,7 @@ function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ct
 /* Les mondes des films ont chacun leur fichier (kingston.js pour Gremlins, santacarla.js pour Génération perdue…) : on le charge la première fois
    qu'on va dans l'un de ses lieux (pas avant : l'appli s'ouvre plus vite), et on l'exécute ici même (eval direct), pour qu'il se serve de tout
    ce que la matrice a (M, THREE, voile, sonBruit…) sans rien changer à son code. MD[monde] : ce que le fichier rend (ses points d'entrée). */
-const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id) };
+const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id), montmartre: id => id === "tertre" };
 function chargerMonde(nom) { if (MD[nom]) return Promise.resolve(MD[nom]);
   return MD_P[nom] = MD_P[nom] || fetch(nom + ".js?v=" + (new URL(import.meta.url).searchParams.get("v") || DIAG_V))   /* (la version du site : chaque mise à jour recharge les mondes) */.then(r => { if (!r.ok) throw new Error(nom + ".js : " + r.status); return r.text(); })
     .then(src => (MD[nom] = eval(src + "\n//# sourceURL=" + nom + ".js"))).catch(e => { MD_P[nom] = null; throw e; }); }

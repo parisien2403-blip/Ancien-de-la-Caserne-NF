@@ -44,7 +44,7 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["rue", "rex", "jouffroy", "grande", "fetes", "cave", "etage", "mess", "z-rue", "z-grande", "z-fetes", "z-etage", "z-mess", "sh-rue", "sh-grande", "sh-fetes", "sh-etage", "sh-mess", "bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart", "santacarla", "kingston"];
+const LIEUX_MATRICE = ["rue", "rex", "jouffroy", "grande", "fetes", "cave", "etage", "mess", "z-rue", "z-grande", "z-fetes", "z-etage", "z-mess", "sh-rue", "sh-grande", "sh-fetes", "sh-etage", "sh-mess", "bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart", "santacarla", "kingston", "tertre"];
 // l'Almanach des sports : les endroits où il peut traîner (jamais deux fois de suite au même)
 const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 7.4, -11], ["grande", 1.4, -35], ["grande", 7.4, 7], ["grande", 4.4, -2], ["grande", -1.6, 13], ["grande", -7.6, 1], ["grande", 7.4, -32], ["grande", 10.4, 10]];   // (dans les cours de la caserne seulement : ni dans les bâtiments, ni dans la rue — tout le monde peut les trouver)
 const APPART_INVITES = [2, 3, 4, 11];   // (les badges invités dans l'appartement de l'escalier Z, en plus de l'administrateur ; la même liste dans index.html)
