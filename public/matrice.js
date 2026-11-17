@@ -9047,7 +9047,7 @@ export async function ouvrir(ctx) {
           const pose = Math.floor(t / 420) % 2 ? "balai1" : "balai2";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = Math.sin(t / 420 * Math.PI) * .03; p.dansait = true; }
-        else if (p.info.auto) {   // assis dans le cabriolet
+        else if (p.info.auto || p.siegeV) {   // assis dans le cabriolet (ou sur la selle de la Vespa, à Montmartre)
           if (p.corps.material.map !== p.poses.assis) { p.corps.material.map = p.poses.assis; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; p.dansait = true; }
         else if (Number.isInteger(p.info.assis)) {
