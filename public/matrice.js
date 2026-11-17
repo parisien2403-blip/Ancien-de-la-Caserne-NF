@@ -8935,7 +8935,7 @@ export async function ouvrir(ctx) {
   let dernImg = 0;
   activerVR(rendu);
   rendu.setAnimationLoop(t => { if (PETIT && !rendu.xr.isPresenting && t - dernImg < 30) return; dernImg = t;   // (petit téléphone : 30 images par seconde, pas plus — il chauffe moins, ne ralentit plus, et la batterie tient)
-    try { image(t); } catch (e) { signalerErreur(e); } });
+    { const t0 = performance.now(); try { image(t); } catch (e) { signalerErreur(e); } dbgLent("image entière", t0); } });
   /* une erreur : envoyée à l'administrateur (une fois toutes les 8 secondes au plus) */
   function signalerErreur(e) { if (M) M.dbgErr = { t: performance.now(), m: String(e && e.message || e).slice(0, 80), l: String(e && e.stack || "").split("\n").slice(1, 3).map(l => l.trim().replace(/https?:\/\/[^/]+\//, "").slice(0, 60)).join(" < "), n: ((M.dbgErr && M.dbgErr.n) || 0) + 1 }; if (performance.now() - erreurVue > 8000) { erreurVue = performance.now(); console.error(e); try { fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Erreur dans la Matrice (" + (M && M.lieu) + ") : " + String(e && e.stack || e).slice(0, 1500), appareil: navigator.userAgent }) }).catch(() => {}); } catch (x) {} } }
   M.signalerErreur = signalerErreur;
@@ -9151,7 +9151,7 @@ export async function ouvrir(ctx) {
         else if (p.dansait) { p.dansait = false; p.corps.scale.x = tailleBonhomme() * .476 * 1.6 * hauteurDe(p); p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
       }
     }
-    if (M.L.anim) M.L.anim(t);
+    { const t0 = performance.now(); if (M.L.anim) M.L.anim(t); dbgLent("anim du lieu", t0); }
     if (M.L.pigeons) M.L.pigeons(t);
     if (M.feuHV && M.feuHV.length && !M.cine) animerFeu(M.feuHV, performance.now(), 16000);   // (les traînées de feu de la DeLorean finissent de brûler, puis s'éteignent)
     { const h = C3.enHaut() + 2 * C3.enBas(); if (h !== M.hautVu) { M.hautVu = h; if (M.L) M.L.grille = M.L.grilleAdmin = null; } }
@@ -11746,7 +11746,7 @@ function construireScene(id) {
       if (hv && n) { scene.fog.color.setHex(0x1a2235); }
       clair.intensity = n ? .32 : 0; lune.visible = n && !L.sansLune && !hv; nuages.forEach(o => o.visible = !n && !hv); if (dome) dome.visible = !n && !hv;
       if (L.messVitres) L.messVitres.opacity = (M && M.lumiereMess != null ? M.lumiereMess : 1) * (n ? .85 : .28);
-      (L.nuitObjets || []).forEach(o => o.visible = n); (L.jourObjets || []).forEach(o => o.visible = !n); L.grille = L.grilleAdmin = null;   // (le camion-benne : le jour seulement ; ses passages changent)
+      (L.nuitObjets || []).forEach(o => o.visible = n); (L.jourObjets || []).forEach(o => o.visible = !n); if (L.nuitGrille !== n) { L.grille = L.grilleAdmin = null; L.nuitGrille = n; }   /* (la carte des passages : refaite seulement si le jour ou la nuit change — pas toutes les minutes) */   // (le camion-benne : le jour seulement ; ses passages changent)
       if (L.lumiereJour) L.lumiereJour.visible = !n; if (L.vueCour) L.vueCour(n);
       if (L.couvert) { hemi.intensity = 1.2; hemi.color.setHex(0xd8dcdf); hemi.groundColor.setHex(0x55554c); soleil.intensity = .6; soleil.color.setHex(0xe4e6e8); soleil.position.set(-8, 40, 10);
         nuages.forEach(o => o.visible = false); if (dome) dome.visible = false; }   // (le jour, mais couvert — une lumière grise et plate, presque sans ombre)
@@ -16242,7 +16242,10 @@ function ligneLibre(L, x0, z0, x1, z1) {
   return true;
 }
 const largeLibre = (L, x, z) => L.limites(x, z) && L.limites(x + .12, z) && L.limites(x - .12, z) && L.limites(x, z + .12) && L.limites(x, z - .12);   /* (une case de la carte des passages : assez large pour y marcher) */
-function itineraire(L, x0, z0, x1, z1) {
+function itineraire(L, x0, z0, x1, z1) { const t0i = performance.now(); try { return itineraire0(L, x0, z0, x1, z1); } finally { dbgLent("chemin" + (L.grille ? "" : " (carte)"), t0i); } }
+function dbgLent(nom, t0) { if (!M) return; const d = performance.now() - t0; if (d > 120 && (!M.dbgLent || d > M.dbgLent.d || performance.now() - M.dbgLent.t > 15000)) M.dbgLent = { nom, d, t: performance.now() }; }
+if (typeof PerformanceObserver !== "undefined") try { new PerformanceObserver(l => { for (const e of l.getEntries()) if (M && e.duration > 200) M.dbgLong = { d: e.duration, t: performance.now() }; }).observe({ entryTypes: ["longtask"] }); } catch (e) {}
+function itineraire0(L, x0, z0, x1, z1) {
   /* (le point touché est hors d'atteinte — au bout d'une rue, sur une façade, sur le Sacré-Cœur au loin : on vise le dernier endroit libre sur la ligne, en revenant vers soi ; sinon on partait tout droit et l'on se cognait au premier obstacle, sans plus bouger) */
   if (L.zone && L.limites && !L.limites(x1, z1)) { const [za, zb, zc, zd] = L.zone; let tx = Math.max(za, Math.min(zb, x1)), tz = Math.max(zc, Math.min(zd, z1)); const d = Math.hypot(tx - x0, tz - z0), n = Math.ceil(d / .25);
     for (let i = 0; i <= n; i++) { const u = i / Math.max(1, n), x = tx + (x0 - tx) * u, z = tz + (z0 - tz) * u; if (L.limites(x, z)) { x1 = x; z1 = z; break; } } }
