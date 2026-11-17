@@ -18035,7 +18035,8 @@ function connecter() {
   const ws = new WebSocket(url); M.ws = ws; let ouverte = false;
   clearInterval(M.pingT); M.pingT = setInterval(() => { if (M && M.ws === ws && ws.readyState === 1) ws.send('{"t":"ping"}'); }, 25000);   // (la connexion reste éveillée)
   ws.onopen = () => { ouverte = true; M.echecs = 0; if (M.recoInfo) { M.recoInfo = false; ctx.surInfo && ctx.surInfo("✅ Reconnecté !"); } const moiR = M.lieu && M.moiNum && M.gens.get(M.moiNum), ici = moiR && M.L && M.L.limites && M.L.limites(moiR.g.position.x, moiR.g.position.z) ? [moiR.g.position.x, moiR.g.position.z] : M.posEntree;
-    if (moiR && M.scene && (estApo(M.lieu) || M.cine)) { envoyerWS({ t: "entrer", lieu: M.lieu, x: moiR.g.position.x, z: moiR.g.position.z }); return; }   /* (Resident Evil, ou une cinématique : on rejoint le lieu sans le reconstruire — rien ne saute, la scène continue) */
+    M.dbgReco = (M.dbgReco || 0) + 1;
+    if (moiR && M.scene && M.L && M.lieu) { envoyerWS({ t: "entrer", lieu: M.lieu, x: moiR.g.position.x, z: moiR.g.position.z }); return; }   /* (la connexion revient après une coupure — fréquent en 4G/5G : on rejoint le lieu sans le reconstruire. Avant, tout le lieu était refait, et l'image se figeait plusieurs secondes — à Montmartre surtout, le plus long à construire) */   /* (Resident Evil, ou une cinématique : on rejoint le lieu sans le reconstruire — rien ne saute, la scène continue) */
     changerLieu(M.lieu || ctx.lieuDepart || "grande", M.lieu ? ici : null, M.lieu && moiR ? M.yaw : undefined); };   // (après une coupure : on reprend là où l'on était, pas à l'entrée du lieu)
   ws.onmessage = ev => {
     if (!M || (M.ws && M.ws !== ws)) return; let m;   /* (une ancienne connexion, remplacée mais pas encore fermée : on ne l'écoute plus) */ try { m = JSON.parse(ev.data); } catch (e) { return; }
