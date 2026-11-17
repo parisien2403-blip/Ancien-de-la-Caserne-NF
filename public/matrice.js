@@ -8823,6 +8823,7 @@ export async function ouvrir(ctx) {
   const bornerCam = () => { if (!M || M.camE == null) return; M.camE = Math.max(.04, Math.min(1.35, M.camE)); M.camD = Math.max(2.5, Math.min(M.L && M.L.interieur ? 8 : 24, M.camD)); };
   const viseGB = e => { const r = rendu.domElement.getBoundingClientRect(); M.gbVisee = { id: e.pointerId, x: (e.clientX - r.left) / r.width * 2 - 1, y: -(e.clientY - r.top) / r.height * 2 + 1 }; };
   rendu.domElement.addEventListener("pointerdown", e => { if (M && M.gbCombat && !M.gbCombat.fini && M.cine && M.cine.gb) { viseGB(e); return; }   // (S.O.S. Fantômes : le doigt vise, la lance tire tant qu'il appuie)
+    if (e.isPrimary) { doigts.clear(); pince = null; }   /* (le premier doigt posé : aucun autre n'est sur l'écran — un doigt « oublié » (relâché sur un bouton, ou un geste annulé) faisait croire à deux doigts, et toucher le sol ne faisait plus marcher) */
     doigts.set(e.pointerId, [e.clientX, e.clientY]);
     if (doigts.size === 2) { const [a, b] = [...doigts.values()]; pince = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), D: M && M.camD }; if (glisse) glisse.bouge = true; return; }
     glisse = { x: e.clientX, y: e.clientY, id: e.pointerId, bouge: false, yaw: M ? M.yaw || 0 : 0, yd: M ? M.yawDehors || 0 : 0, E: M ? M.camE : null, fy: M ? M.fpYaw || 0 : 0, fp: M ? M.fpPitch || 0 : 0 };
@@ -8849,6 +8850,8 @@ export async function ouvrir(ctx) {
     else if (glisse.bouge && M.L && !M.cine) M.yawDehors = glisse.yd + dx * .006;   // (dehors, caméra fixe : glisser le doigt la fait tourner autour de son bonhomme, jusqu'à le voir de face)
   });
   const leve = e => { doigts.delete(e.pointerId); if (doigts.size < 2) pince = null; };
+  rendu.domElement.addEventListener("lostpointercapture", e => leve(e));
+  rendu.domElement.addEventListener("pointerleave", e => { if (e.pointerType !== "mouse") leve(e); });
   rendu.domElement.addEventListener("pointercancel", e => { if (M) M.gbVisee = null; arreterRafale(); leve(e); });
   rendu.domElement.addEventListener("wheel", e => { if (!M || M.camD == null) return; e.preventDefault(); M.camD *= 1 + Math.sign(e.deltaY) * .12; bornerCam(); }, { passive: false });
   rendu.domElement.addEventListener("pointerup", e => {
