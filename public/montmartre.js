@@ -578,6 +578,13 @@ function construireTertre(A, L, scene) {
      On les sort de leurs groupes, à leur place exacte, pour que tout ce qui se ressemble soit fondu en une seule pièce */
   { const garder = new Set(); scene.updateMatrixWorld(true);
     for (const g of scene.children.slice()) { if (!g.isGroup || garder.has(g) || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
+  /* (diagnostic, le temps de trouver ce qui fige la marche sur téléphone : une petite ligne en bas à droite) */
+  { let el = null, tD = 0; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (!M || M.L !== L) { if (el) { el.remove(); el = null; } return; } if (tm - tD < 250) return; tD = tm;
+      if (!el) { el = document.createElement("div"); el.style.cssText = "position:absolute;right:6px;bottom:6px;z-index:40;pointer-events:none;background:rgba(0,0,0,.6);color:#fff;font:11px monospace;padding:4px 6px;border-radius:6px;max-width:60%;white-space:pre"; (M.ctx.conteneur || document.body).appendChild(el); quitterLieu.add(() => { if (el) { el.remove(); el = null; } }); }
+      const p = M.gens.get(M.moiNum), q = p && p.g.position, T = M.dbgTap, A = M.dbgAller, now = performance.now();
+      el.textContent = (q ? `pos ${q.x.toFixed(1)} ${q.z.toFixed(1)} ${L.limites(q.x, q.z) ? "ok" : "HORS"}` : "pas de bonhomme") + ` cine ${M.cine ? "OUI" : "non"}\n` +
+        `doigt: ${T ? T.r + " il y a " + ((now - T.t) / 1000).toFixed(0) + "s" : "-"}\naller: ${A ? A.x.toFixed(1) + " " + A.z.toFixed(1) + " il y a " + ((now - A.t) / 1000).toFixed(0) + "s" + (A.cine ? " (cine)" : "") : "-"}\n` +
+        `cible ${p && p.cible ? p.cible.x.toFixed(1) + " " + p.cible.z.toFixed(1) : "aucune"} vit ${p ? (p.vit || 0).toFixed(1) : "-"} bloq ${p ? p.bloqueN || 0 : "-"}`; }; }
   fusionStatique(scene, L, 0);   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
 }
 ({ construireTertre })

@@ -8857,7 +8857,7 @@ export async function ouvrir(ctx) {
   rendu.domElement.addEventListener("pointerup", e => {
     if (M && M.gbVisee && M.gbVisee.id === e.pointerId) { M.gbVisee = null; return; }
     if (rafale) { arreterRafale(); leve(e); glisse = null; return; }
-    const multi = doigts.size > 1 || pince; leve(e); if (multi) { glisse = null; return; }
+    const multi = doigts.size > 1 || pince; leve(e); if (M) M.dbgTap = { t: performance.now(), r: multi ? "deux doigts" : !glisse ? "pas de début" : glisse.bouge ? "glissé" : "toucher" }; if (multi) { glisse = null; return; }
     const g = glisse; glisse = null;
     if (!g || g.bouge || !M || !M.L) return;
     const r = rendu.domElement.getBoundingClientRect(); v2.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
@@ -16281,6 +16281,7 @@ function viser(p, x, z) {
   const v = pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); p.cible = v.shift(); p.chemin = v;
 }
 function allerVers(x, z, envoyer, y = null) {
+  if (M) M.dbgAller = { t: performance.now(), x, z, cine: !!M.cine };
   if (M && M.cine) return;
   if (M && M.lieu === "hv1955" && M.pousse) return;
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi || (M.L && M.L.apo && APO.zombieFin)) return; moi.rapide = false; moi.bloqueN = 0; moi.glisseN = 0; moi.recalcule = false; if (!(moi.vit >= 0)) moi.vit = 0;   /* (un nouveau toucher : on repart de zéro) */
