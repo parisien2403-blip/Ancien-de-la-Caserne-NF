@@ -9171,8 +9171,8 @@ export async function ouvrir(ctx) {
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) MD.sosfantomes.cineFinaleGB(); else MD.sosfantomes.cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
     // l'appartement : la vue à la première personne d'elle-même en y entrant (on peut la quitter) ; en sortant, la vue normale revient
     // (10.38) le passage Jouffroy : toujours à la première personne (on ne peut pas la quitter) ; en sortant, la vue normale revient
-    if ((M.lieu === "jouffroy" || M.lieu === "tertre") && !M.premiere && !M.cine && M.gens.get(M.moiNum)) { premiere(true); M.fpJouffroy = true; }
-    else if (M.lieu !== "jouffroy" && M.lieu !== "tertre" && M.fpJouffroy) { M.fpJouffroy = false; if (M.premiere) premiere(false); }
+    if (M.lieu === "jouffroy" && !M.premiere && !M.cine && M.gens.get(M.moiNum)) { premiere(true); M.fpJouffroy = true; }
+    else if (M.lieu !== "jouffroy" && M.fpJouffroy) { M.fpJouffroy = false; if (M.premiere) premiere(false); }
     if (M.lieu === "appart" && !M.fpAppart && !M.cine && M.gens.get(M.moiNum)) { M.fpAppart = true; if (!M.premiere) { premiere(true); M.fpAuto = true; } }
     else if (M.lieu !== "appart" && M.fpAppart) { M.fpAppart = false; if (M.fpAuto && M.premiere) premiere(false); M.fpAuto = false; }
     /* l'arrivée : l'écran « Ouverture des grilles… » reste là jusqu'à ce que la main soit prête — plus d'aperçu de la caserne, ni d'écran noir, avant qu'elle descende */
@@ -15732,7 +15732,7 @@ function laserFP(cacher) { let A = M.armeFP;
 function cibleFP(liste) { const cam = viseurVR() || M.camera, f = cam.getWorldDirection(new THREE.Vector3()); let best = null, ba = .14;
   for (const z of liste) { const y = (z.y || 0) + 1.1, v = new THREE.Vector3(z.x - cam.position.x, y - cam.position.y, z.z - cam.position.z), d = v.length(); if (d > 25) continue; const a = v.normalize().angleTo(f); if (a < ba) { ba = a; best = z; } }
   return best; }
-export function premiere(on) { if (!M) return; if (!on && (M.lieu === "jouffroy" || M.lieu === "tertre")) { bulle(M.lieu === "tertre" ? "👁 À Montmartre, la vue reste à la première personne" : "👁 Dans le passage Jouffroy, la vue reste à la première personne", 1800); return; }   /* (pour tout le monde) */ const moi = M.gens.get(M.moiNum);
+export function premiere(on) { if (!M) return; if (!on && M.lieu === "jouffroy") { bulle(M.lieu === "tertre" ? "👁 À Montmartre, la vue reste à la première personne" : "👁 Dans le passage Jouffroy, la vue reste à la première personne", 1800); return; }   /* (pour tout le monde) */ const moi = M.gens.get(M.moiNum);
   if (on && !M.premiere) { const f = M.camera.getWorldDirection(new THREE.Vector3()); M.fpYaw = Math.atan2(-f.x, -f.z); M.fpPitch = 0; }
   M.premiere = !!on; if (!on && moi) { moi.g.visible = true; placerCamera(true); } M.ctx.surPremiere && M.ctx.surPremiere(M.premiere);
   bulle(on ? "👁 Vue à la première personne <small>(joystick droit ou glisser le doigt : regarder autour de soi)</small>" : "🎥 Vue normale", 2200); }
