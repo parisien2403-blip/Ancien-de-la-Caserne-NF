@@ -8941,7 +8941,7 @@ export async function ouvrir(ctx) {
   M.signalerErreur = signalerErreur;
   function image(t) {
     if (!M || !M.scene) return;
-    const brut = t - avant, dt = Math.min(.05, brut / 1000); avant = t; M.dtCam = dt;
+    const brut = t - avant, dt = brut > 0 && brut < 1e4 ? Math.min(.05, brut / 1000) : .016; avant = t; M.dtCam = dt;   /* (un temps faux — l'appli remise au premier plan, une capture d'écran — : jamais de pas négatif ou NaN, qui figeait la marche) */
     // trop lent (moins de 35 images par seconde) : on affine moins l'image ; très à l'aise : on la rend plus fine
     if (brut > 0 && brut < 250) { perf.n++; perf.s += brut; if (perf.n >= 60) { const moy = perf.s / perf.n; perf = { n: 0, s: 0 };
       const r = moy > (PETIT ? 45 : 34) ? Math.max(resMin, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
@@ -8956,6 +8956,11 @@ export async function ouvrir(ctx) {
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
       else if (p.moi && modeRE() && M.L.limites && !M.cine) { const v = viserLibre(p.g.position.x, p.g.position.z);   /* (coincé « dans » un obstacle — repoussé par une morsure, une flamme : chaque pas était refusé, on ne bougeait plus du tout) : on se remet sur le point libre le plus proche */
         if (M.L.limites(v[0], v[1]) && Math.hypot(v[0] - p.g.position.x, v[1] - p.g.position.z) < 3.2) { p.g.position.x = v[0]; p.g.position.z = v[1]; } else if (p.dernierOk) { p.g.position.x = p.dernierOk[0]; p.g.position.z = p.dernierOk[1]; } }
+      if (p.moi && p.cible) { const q = p.g.position, w = p.veille || (p.veille = { x: q.x, z: q.z, t }); if (Math.hypot(q.x - w.x, q.z - w.z) > .08) { w.x = q.x; w.z = q.z; w.t = t; }
+        else if (t - w.t > 1200) { w.t = t; const c = p.cible, dx = c.x - q.x, dz = c.z - q.z, l = Math.hypot(dx, dz) || 1;   /* (le garde-fou : on veut avancer, mais rien ne bouge depuis plus d'une seconde — on se décale d'un pas vers le but, ou sur le point libre le plus proche, et l'on refait le chemin) */
+          let ok = false; for (const a of [0, .5, -.5, 1, -1]) { const ux = Math.cos(a) * dx / l - Math.sin(a) * dz / l, uz = Math.sin(a) * dx / l + Math.cos(a) * dz / l; if (M.L.limites(q.x + ux * .35, q.z + uz * .35) && M.L.limites(q.x + ux * .18, q.z + uz * .18)) { q.x += ux * .35; q.z += uz * .35; ok = true; break; } }
+          if (!ok && typeof viserLibre === "function") { const v = viserLibre(q.x, q.z); if (Math.hypot(v[0] - q.x, v[1] - q.z) < 2) { q.x = v[0]; q.z = v[1]; } }
+          p.bloqueN = 0; p.glisseN = 0; p.recalcule = false; p.vit = 0; p.dir = null; const but = p.chemin && p.chemin.length ? p.chemin[p.chemin.length - 1] : c; viser(p, but.x, but.z); } } else if (p.moi) p.veille = null;
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
         if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; p.vit = 0; p.dir = null; p.rapide = false; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0;
           if (p.suite) { const s2 = p.suite; p.suite = null; M.L.grille = M.L.grilleAdmin = null; M.hautVu = C3.enHaut() + 2 * C3.enBas(); if (!(p.moi && s2.length > 2 && C3.etage(p, s2[0], s2[2], s2[1]))) viser(p, s2[0], s2[1]);   // (la carte des passages du nouveau niveau, tout de suite : sinon on cherchait le chemin sur l'ancienne, et l'on s'arrêtait au pied des marches)
@@ -16278,7 +16283,7 @@ function viser(p, x, z) {
 function allerVers(x, z, envoyer, y = null) {
   if (M && M.cine) return;
   if (M && M.lieu === "hv1955" && M.pousse) return;
-  const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi || (M.L && M.L.apo && APO.zombieFin)) return; moi.rapide = false;
+  const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi || (M.L && M.L.apo && APO.zombieFin)) return; moi.rapide = false; moi.bloqueN = 0; moi.glisseN = 0; moi.recalcule = false; if (!(moi.vit >= 0)) moi.vit = 0;   /* (un nouveau toucher : on repart de zéro) */
   if (y != null && M.lieu === "grande" && C3.etage(moi, x, y, z)) { M.repere.position.set(x, y + .04, z); M.repere.material.opacity = 1; if (envoyer) envoyerWS({ t: "aller", x, z }); return; }   // (changer de niveau dans le chantier : par l'escalier)
   // on reste dans la cour : si le point est hors limites, on va au bord le plus proche
   /* on a touché ce qu'on voit de l'autre côté d'un passage (la cour par le porche, la rue du Faubourg, l'autre bout de la rue des Messageries) :
