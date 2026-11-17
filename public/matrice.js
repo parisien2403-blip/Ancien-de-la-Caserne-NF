@@ -8937,7 +8937,7 @@ export async function ouvrir(ctx) {
   rendu.setAnimationLoop(t => { if (PETIT && !rendu.xr.isPresenting && t - dernImg < 30) return; dernImg = t;   // (petit téléphone : 30 images par seconde, pas plus — il chauffe moins, ne ralentit plus, et la batterie tient)
     try { image(t); } catch (e) { signalerErreur(e); } });
   /* une erreur : envoyée à l'administrateur (une fois toutes les 8 secondes au plus) */
-  function signalerErreur(e) { if (performance.now() - erreurVue > 8000) { erreurVue = performance.now(); console.error(e); try { fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Erreur dans la Matrice (" + (M && M.lieu) + ") : " + String(e && e.stack || e).slice(0, 1500), appareil: navigator.userAgent }) }).catch(() => {}); } catch (x) {} } }
+  function signalerErreur(e) { if (M) M.dbgErr = { t: performance.now(), m: String(e && e.message || e).slice(0, 80), l: String(e && e.stack || "").split("\n").slice(1, 3).map(l => l.trim().replace(/https?:\/\/[^/]+\//, "").slice(0, 60)).join(" < "), n: ((M.dbgErr && M.dbgErr.n) || 0) + 1 }; if (performance.now() - erreurVue > 8000) { erreurVue = performance.now(); console.error(e); try { fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Erreur dans la Matrice (" + (M && M.lieu) + ") : " + String(e && e.stack || e).slice(0, 1500), appareil: navigator.userAgent }) }).catch(() => {}); } catch (x) {} } }
   M.signalerErreur = signalerErreur;
   function image(t) {
     if (!M || !M.scene) return;
@@ -9236,7 +9236,7 @@ export async function ouvrir(ctx) {
     else if (M.pauseRendu) {}   /* (une vidéo plein écran passe : on ne dessine pas la scène derrière, la vidéo reste fluide) */
     else if (M.porteRE) { M.porteRE.maj(performance.now()); if (M.porteRE) rendu.render(M.porteRE.sc, M.porteRE.cam); }   /* (la porte qui s'ouvre, à la place du jeu) */
     else if (M.apoIntro && !M.cine && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) { const cc = rendu.getClearColor(new THREE.Color()), ca = rendu.getClearAlpha(); rendu.setClearColor(0x000000, 1); rendu.clear(); rendu.setClearColor(cc, ca); }   /* (Resident Evil, l'arrivée : écran noir jusqu'au début de la cinématique — pas d'image fugace avant) */
-    else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera);   /* (à Resident Evil : avec les effets d'image) */
+    else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera); M.dbgRendu = (M.dbgRendu || 0) + 1;   /* (à Resident Evil : avec les effets d'image) */
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
   M.redim();
