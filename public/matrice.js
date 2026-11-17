@@ -11780,7 +11780,7 @@ function placerCamera(net) { if (M && M.rendu && M.rendu.xr.isPresenting) return
   if (!M || !M.L) return;
   const portrait = M.camera.aspect < 1, c = M.L.cam, moi = M.moiNum && M.gens.get(M.moiNum);
   // à la première personne : la caméra à la place des yeux, notre bonhomme caché (on ne voit pas sa propre tête)
-  if (M.premiere && moi) { coupeCage().constant = 1e6; moi.g.visible = false; const p = moi.g.position, yeux = p.y + tailleBonhomme() * hauteurDe(moi) * .9, cy = Math.cos(M.fpPitch || 0);
+  if (M.premiere && moi) { coupeCage().constant = 1e6; moi.g.visible = false; const sv = moi.siegeV, p = sv ? new THREE.Vector3(moi.g.position.x - Math.sin(sv[2]) * .3, moi.g.position.y - (moi.leve || 0), moi.g.position.z - Math.cos(sv[2]) * .3) : moi.g.position, yeux = sv ? p.y + 1.45 : p.y + tailleBonhomme() * hauteurDe(moi) * .9, cy = Math.cos(M.fpPitch || 0);   /* (sur la Vespa : les yeux d'un homme assis sur la selle, derrière le guidon) */
     M.camera.position.set(p.x, yeux, p.z); M.camera.fov = portrait ? 84 : 72; M.camera.updateProjectionMatrix();
     M.camera.lookAt(p.x - Math.sin(M.fpYaw || 0) * cy, yeux + Math.sin(M.fpPitch || 0), p.z - Math.cos(M.fpYaw || 0) * cy); M.camVise = null; laserFP(); return; }
   laserFP(true);

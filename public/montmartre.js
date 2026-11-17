@@ -802,7 +802,7 @@ function construireTertre(A, L, scene) {
     RID.vit += Math.max(-6 * dt, Math.min(3.2 * dt, cibleV - RID.vit));
     if (RID.vit > .01) { const st = RID.vit * dt, nx = pos.x + Math.sin(RID.ry) * st, nz = pos.z + Math.cos(RID.ry) * st, fx = nx + Math.sin(RID.ry) * .75, fz = nz + Math.cos(RID.ry) * .75;
       if (libreV(nx, nz) && libreV(fx, fz)) { pos.x = nx; pos.z = nz; for (const r of V.roues) r.rotation.x += st / .22; } else { RID.vit = 0; RID.way = []; } }
-    moi.cible = null; moi.chemin = []; moi.leve = .42; moi.siegeV = [pos.x, pos.z, RID.ry, .36];
+    moi.cible = null; moi.chemin = []; moi.leve = .42; moi.siegeV = [pos.x, pos.z, RID.ry, .36]; if (M.premiere) { const fy = RID.ry + Math.PI, d2 = Math.atan2(Math.sin(fy - (M.fpYaw || 0)), Math.cos(fy - (M.fpYaw || 0))); M.fpYaw = (M.fpYaw || 0) + d2 * Math.min(1, dt * (RID.vit > .3 ? 4 : 1.5)); M.fpPitch = (M.fpPitch || 0) + (-.12 - (M.fpPitch || 0)) * Math.min(1, dt * 2); }   /* (à la première personne : on regarde la route, dans le sens de la Vespa) */
     g.position.set(pos.x, L.hauteur(pos.x, pos.z) + .02, pos.z); g.rotation.set(0, RID.ry, Math.max(-.3, Math.min(.3, RID.pench || 0)));
     if (tm - tEnv > 220) { tEnv = tm; envoyerWS({ t: "aller", x: pos.x, z: pos.z }); } };
   quitterLieu.add(() => { if (RID) { const moi = M && M.gens.get(M.moiNum); if (moi) { moi.leve = 0; moi.siegeV = null; moi.info.vespa = false; } RID.V.pris = false; RID = null; envoyerWS({ t: "vespa", on: false }); } });
