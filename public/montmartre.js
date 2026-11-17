@@ -17,7 +17,7 @@ function construireTertre(A, L, scene) {
   /* le soir : sous chaque lampadaire, la flaque de lumière dorée sur les pavés (un seul matériau, fondu avec le reste) ; autour de chaque lanterne, le halo (tous en un seul nuage de points) */
   const flaqueT = tT(128, 128, (c, w, h) => { const g = c.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,190,110,1)"); g.addColorStop(.45, "rgba(255,160,80,.45)"); g.addColorStop(1, "rgba(255,140,60,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
   const flaqueM = new THREE.MeshBasicMaterial({ map: flaqueT, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
-  const flaque = (x, z, r, y = .03) => { const p = add(new THREE.PlaneGeometry(r * 2, r * 2), flaqueM, x, y, z); p.rotation.x = -Math.PI / 2; p.renderOrder = 1; };   // (les obstacles : arbres, chevalets, poteaux)   // les façades : ouest (les restaurants), est, nord, sud
+  const flaque = (x, z, r, y = .03) => { const p = add(new THREE.PlaneGeometry(r * 2, r * 2), flaqueM, x, y, z); p.rotation.x = -Math.PI / 2; };   /* (toutes fondues en une seule) */   // (les obstacles : arbres, chevalets, poteaux)   // les façades : ouest (les restaurants), est, nord, sud
 
   /* ---------- le sol : les pavés de granit, gris-bleu, arrondis par les années ; la bordure de pierre du carré ---------- */
   /* les pavés de grès et de granit (d'après les photos) : de petits pavés rectangulaires posés en rangs, aux couleurs mêlées — gris, beige, ocre, brun, un peu de rouille —,
@@ -515,7 +515,7 @@ function construireTertre(A, L, scene) {
   { const G = geoPigeon(), pm = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .75 }), pi = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .35, metalness: .25 }), PG = [];
     const BANDES = [[-4, 4.5, 6], [6, -2, 5], [-16, -4, 4], [-50, -13, 4], [-83, 6, 4], [-20, 29, 5], [30, 12, 3]];
     for (const [bx, bz, n] of BANDES) for (let k = 0; k < (PETIT ? Math.min(n, 3) : n); k++) { const g = new THREE.Group(), c = new THREE.Mesh(G.corps, pm), t = new THREE.Mesh(G.tete, pi), aG = new THREE.Mesh(G.aileG, pm), aD = new THREE.Mesh(G.aileD, pm);
-      t.position.set(0, .2, .1); aG.position.set(-.06, .19, .04); aD.position.set(.06, .19, .04); g.add(c, t, aG, aD); g.scale.setScalar(.9 + al() * .2);
+      t.position.set(0, .2, .1); aG.position.set(-.06, .19, .04); aD.position.set(.06, .19, .04); g.add(c, t, aG, aD); g.scale.setScalar(.9 + al() * .2); g.userData.anime = true;
       const hx = bx + (al() - .5) * 3, hz = bz + (al() - .5) * 3; g.position.set(hx, L.hauteur(hx, hz), hz); g.rotation.y = al() * 6.28; scene.add(g);
       PG.push({ g, t, aG, aD, hx, hz, etat: "sol", fin: 0, ph: al() * 10, cible: null }); }
     let tp = 0; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const moi = M && M.moiNum && M.gens.get(M.moiNum), q = moi && moi.g.position, c = M && M.camera && M.camera.position;
@@ -525,6 +525,13 @@ function construireTertre(A, L, scene) {
         else if (P.etat === "vol" || P.etat === "retour") { P.t += dt / 2.2; const u = Math.min(1, P.t), A = P.P0, B = P.P1; g.position.set(A.x + (B.x - A.x) * u, A.y + (B.y - A.y) * u + Math.sin(u * Math.PI) * 1.5, A.z + (B.z - A.z) * u); g.rotation.y = Math.atan2(B.x - A.x, B.z - A.z);
           const b = Math.sin(tm / 45) * .9; P.aG.rotation.z = b; P.aD.rotation.z = -b; if (u >= 1) { P.etat = P.etat === "vol" ? "toit" : "sol"; P.aG.rotation.z = P.aD.rotation.z = 0; } }
         else if (P.etat === "toit" && tm > P.fin && (!q || Math.hypot(q.x - P.hx, q.z - P.hz) > 6)) { P.etat = "retour"; P.t = 0; P.P0 = g.position.clone(); const x = P.hx + (al() - .5) * 2, z = P.hz + (al() - .5) * 2; P.P1 = new THREE.Vector3(x, L.hauteur(x, z), z); } } }; }
+  /* (fluidité) à Montmartre, pas d'ombres portées : la place et ses rues, avec toutes leurs maisons, coûtaient deux fois plus cher à dessiner */
+  { let coupe = null; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (!M || M.L !== L || coupe) return; coupe = []; scene.traverse(o => { if (o.isLight && o.castShadow) { o.castShadow = false; coupe.push(o); } }); };
+    quitterLieu.add(() => { if (coupe) for (const o of coupe) o.castShadow = true; coupe = null; }); }
+  /* (fluidité) les maisons, les devantures, les lanternes étaient rangées en groupes : chaque pièce se dessinait à part (plus de 2 000 dessins par image).
+     On les sort de leurs groupes, à leur place exacte, pour que tout ce qui se ressemble soit fondu en une seule pièce */
+  { const garder = new Set(); scene.updateMatrixWorld(true);
+    for (const g of scene.children.slice()) { if (!g.isGroup || garder.has(g) || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
   fusionStatique(scene, L, 0);   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
 }
 ({ construireTertre })
