@@ -41,21 +41,45 @@ function construireTertre(A, L, scene) {
   const hTrot = (x, z) => ((x > XO - .1 && x < XO + 2.6 && z > ZN && z < ZS) || (z > ZN - .1 && z < ZN + 2.4 && x > XO && x < XE)) ? .14 : 0;
 
   /* ---------- les maisons du vieux village : enduit clair, volets, balcons de fer, toits de zinc en mansarde, cheminées ---------- */
-  const facadeT = (W, H, o) => { const k = (MOBILE || GPU_MODESTE) ? (o.cache ? 11 : 16) : o.cache ? 16 : 24,   /* (sur téléphone : des façades moins lourdes en mémoire) */ cw = Math.round(W * k), ch = Math.round(H * k); let jour, nuit;
+  const facadeT = (W, H, o) => { const k = (MOBILE || GPU_MODESTE) ? (o.cache ? 17 : 20) : o.cache ? 26 : 30,   /* (sur téléphone : des façades moins lourdes en mémoire) */ cw = Math.round(W * k), ch = Math.round(H * k); let jour, nuit;
     jour = tT(cw, ch, (c) => { c.fillStyle = o.teinte; c.fillRect(0, 0, cw, ch); for (let i = 0; i < 1400; i++) { c.fillStyle = `rgba(${al() < .5 ? "0,0,0" : "255,255,255"},${al() * .05})`; c.fillRect(al() * cw, al() * ch, 2 + al() * 10, 2 + al() * 8); }
       if (o.pierre) { const bh = .42 * k; for (let y = ch; y > 0; y -= bh) { const off = ((ch - y) / bh | 0) % 2 ? .45 * k : 0; c.fillStyle = "rgba(90,70,40,.28)"; c.fillRect(0, y, cw, 2); for (let x = off; x < cw; x += .9 * k) { c.fillRect(x, y - bh, 2, bh); c.fillStyle = `rgba(${al() < .5 ? "120,90,50" : "255,240,210"},${al() * .12})`; c.fillRect(x + 2, y - bh + 2, .9 * k - 4, bh - 4); c.fillStyle = "rgba(90,70,40,.28)"; } } }
       for (let i = 0; i < 6; i++) { const x = al() * cw, gr = c.createLinearGradient(0, ch * .3, 0, ch); gr.addColorStop(0, "rgba(70,60,40,0)"); gr.addColorStop(1, "rgba(70,60,40,.12)"); c.fillStyle = gr; c.fillRect(x, ch * .3, 6 + al() * 20, ch * .7); }   // (les coulures, le bas des murs plus sale)
       const nE = o.etages, hE = (H - 3.8) / nE, nF = o.fen || Math.max(2, Math.round(W / 2.6));
       c.fillStyle = "rgba(0,0,0,.12)"; for (let e = 0; e <= nE; e++) c.fillRect(0, ch - (3.8 + e * hE) * k, cw, 4);   // les bandeaux
-      for (let e = 0; e < nE; e++) for (let f = 0; f < nF; f++) { if (o.sansEtage && o.sansEtage.includes(e)) continue; const fx = (W / nF) * (f + .5), fy = 3.8 + e * hE + hE * .22, fw = 1.0, fh = hE * .62, X = (fx - fw / 2) * k, Y = ch - (fy + fh) * k;
-        c.fillStyle = "#1c2228"; c.fillRect(X, Y, fw * k, fh * k); c.fillStyle = "rgba(160,190,220,.25)"; c.fillRect(X + 3, Y + 3, fw * k * .45, fh * k * .4);
-        c.fillStyle = "#e8e4da"; c.fillRect(X + fw * k / 2 - 1, Y, 2, fh * k); c.fillRect(X, Y + fh * k * .4, fw * k, 2);   // les petits bois
-        if (o.volets !== false) { c.fillStyle = o.volets || "#d8d2c4"; for (const sg of [-1, 1]) { const vx = sg < 0 ? X - fw * k * .5 : X + fw * k; c.fillRect(vx, Y, fw * k * .5, fh * k); c.fillStyle = "rgba(0,0,0,.18)"; for (let l = 0; l < fh * k; l += 5) c.fillRect(vx, Y + l, fw * k * .5, 1); c.fillStyle = o.volets || "#d8d2c4"; } }
-        c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(X - 3, Y + fh * k, fw * k + 6, 4);
-        if (e === 0 && o.balcon !== false) { c.strokeStyle = "#141414"; c.lineWidth = 2; c.strokeRect(X - 4, Y + fh * k * .62, fw * k + 8, fh * k * .38); for (let b = 0; b < fw * k + 8; b += 6) { c.beginPath(); c.moveTo(X - 4 + b, Y + fh * k * .62); c.lineTo(X - 4 + b, Y + fh * k); c.stroke(); } } }
+      /* les fenêtres (d'après les photos) : la haute porte-fenêtre à la française, son encadrement de pierre et son appui, les deux battants blancs à petits carreaux,
+         le voilage, le reflet du ciel ; les persiennes ouvertes à lames ; le garde-corps de fer forgé à volutes ; au premier, parfois, le long balcon filant */
+      const vol = o.volets === false ? null : (o.volets || "#d8d2c4"), clair = "rgba(255,250,240,.38)", ombreP = "rgba(60,45,25,.35)";
+      for (let e = 0; e < nE; e++) { const longB = o.longBalcon === e || (o.longBalcon === undefined && e === 1 && nE >= 3 && (W * 7 | 0) % 3 === 0);
+        if (longB) { const yB = ch - (3.8 + e * hE + hE * .1) * k; c.fillStyle = "rgba(0,0,0,.28)"; c.fillRect(0, yB, cw, .12 * k); c.fillStyle = "#c8c0b0"; c.fillRect(0, yB - .1 * k, cw, .1 * k); }
+        for (let f = 0; f < nF; f++) { if (o.sansEtage && o.sansEtage.includes(e)) continue; const fx = (W / nF) * (f + .5), fy = 3.8 + e * hE + hE * .14, fw = 1.06, fh = Math.min(hE * .7, 2.15), X = (fx - fw / 2) * k, Y = ch - (fy + fh) * k, Wp = fw * k, Hp = fh * k;
+          // l'encadrement de pierre, la clé, l'appui
+          c.fillStyle = clair; c.fillRect(X - .14 * k, Y - .16 * k, Wp + .28 * k, Hp + .16 * k); c.fillStyle = "rgba(255,250,240,.5)"; c.fillRect(X + Wp / 2 - .1 * k, Y - .2 * k, .2 * k, .2 * k);
+          c.fillStyle = "rgba(255,250,240,.55)"; c.fillRect(X - .2 * k, Y + Hp, Wp + .4 * k, .09 * k); c.fillStyle = ombreP; c.fillRect(X - .2 * k, Y + Hp + .09 * k, Wp + .4 * k, .05 * k);
+          // la baie : le fond, le voilage, le reflet du ciel
+          const gv = c.createLinearGradient(0, Y, 0, Y + Hp); gv.addColorStop(0, "#6c7c88"); gv.addColorStop(.35, "#2a323a"); gv.addColorStop(1, "#1a1e22"); c.fillStyle = gv; c.fillRect(X, Y, Wp, Hp);
+          if ((f + e * 3 + (W | 0)) % 3) { c.fillStyle = "rgba(240,236,226,.55)"; c.fillRect(X + .04 * k, Y + .05 * k, Wp * .3, Hp - .1 * k); c.fillRect(X + Wp * .66, Y + .05 * k, Wp * .3, Hp - .1 * k); }   // les voilages
+          c.fillStyle = "rgba(255,255,255,.16)"; c.beginPath(); c.moveTo(X, Y + Hp * .1); c.lineTo(X + Wp * .5, Y); c.lineTo(X + Wp * .7, Y); c.lineTo(X, Y + Hp * .4); c.fill();
+          c.fillStyle = ombreP; c.fillRect(X, Y, Wp, .05 * k); c.fillRect(X, Y, .04 * k, Hp);   // la feuillure
+          // les battants blancs : le dormant, le meneau, quatre rangs de petits carreaux
+          c.strokeStyle = "#f4f1ea"; c.lineWidth = Math.max(1.5, .06 * k); c.strokeRect(X + .03 * k, Y + .03 * k, Wp - .06 * k, Hp - .06 * k); c.lineWidth = Math.max(1.2, .045 * k);
+          c.beginPath(); c.moveTo(X + Wp / 2, Y); c.lineTo(X + Wp / 2, Y + Hp); for (let r = 1; r < 4; r++) { const yy = Y + Hp * r / 4; c.moveTo(X, yy); c.lineTo(X + Wp, yy); } c.stroke();
+          // les persiennes ouvertes, de part et d'autre : le cadre, les lames
+          if (vol) for (const sg of [-1, 1]) { const vw = Wp * .5, vx = sg < 0 ? X - .14 * k - vw : X + Wp + .14 * k; c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(vx + (sg < 0 ? 2 : -2), Y + 2, vw, Hp); c.fillStyle = vol; c.fillRect(vx, Y, vw, Hp);
+            c.fillStyle = "rgba(0,0,0,.2)"; for (let l = Y + .08 * k; l < Y + Hp - .06 * k; l += Math.max(3, .09 * k)) { c.fillRect(vx + .05 * k, l, vw - .1 * k, Math.max(1, .03 * k)); } c.fillStyle = "rgba(255,255,255,.18)"; for (let l = Y + .1 * k; l < Y + Hp - .06 * k; l += Math.max(3, .09 * k)) c.fillRect(vx + .05 * k, l, vw - .1 * k, 1);
+            c.strokeStyle = "rgba(0,0,0,.3)"; c.lineWidth = 1; c.strokeRect(vx + .5, Y + .5, vw - 1, Hp - 1); c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(vx, Y + Hp * .5 - 1, vw, 2); }
+          // le garde-corps de fer forgé : les lisses, les barreaux, les volutes
+          if (!longB || true) { const gy = Y + Hp * .7, gh = Hp * .3, gx0 = longB ? X - .3 * k : X - .02 * k, gx1 = longB ? X + Wp + .3 * k : X + Wp + .02 * k; c.strokeStyle = "#16181a"; c.lineWidth = Math.max(1.5, .04 * k);
+            c.beginPath(); c.moveTo(gx0, gy); c.lineTo(gx1, gy); c.moveTo(gx0, gy + gh); c.lineTo(gx1, gy + gh); c.moveTo(gx0, gy + gh * .82); c.lineTo(gx1, gy + gh * .82); c.stroke(); c.lineWidth = Math.max(1, .025 * k);
+            const pas = Math.max(6, .22 * k); for (let x = gx0 + pas / 2; x < gx1 - 2; x += pas) { c.beginPath(); c.moveTo(x, gy); c.lineTo(x, gy + gh * .82); c.stroke(); c.beginPath(); c.arc(x + pas / 2, gy + gh * .3, pas * .28, 0, Math.PI * 2); c.stroke(); c.beginPath(); c.arc(x + pas / 2, gy + gh * .62, pas * .2, Math.PI, Math.PI * 2); c.stroke(); } } } }
+      if (o.longBalcon !== false) for (let e = 1; e < nE; e++) { const longB = o.longBalcon === e || (o.longBalcon === undefined && e === 1 && nE >= 3 && (W * 7 | 0) % 3 === 0); if (!longB) continue;
+        const gy = ch - (3.8 + e * hE + hE * .14 + Math.min(hE * .7, 2.15) * .3) * k, gh = Math.min(hE * .7, 2.15) * .3 * k; c.strokeStyle = "#16181a"; c.lineWidth = Math.max(1.5, .045 * k); c.beginPath(); c.moveTo(0, gy); c.lineTo(cw, gy); c.moveTo(0, gy + gh); c.lineTo(cw, gy + gh); c.stroke();
+        c.lineWidth = Math.max(1, .025 * k); const pas = Math.max(6, .22 * k); for (let x = 0; x < cw; x += pas) { c.beginPath(); c.moveTo(x, gy); c.lineTo(x, gy + gh); c.stroke(); c.beginPath(); c.arc(x + pas / 2, gy + gh * .5, pas * .3, 0, Math.PI * 2); c.stroke(); } }   // le long balcon filant
+      c.fillStyle = "rgba(255,250,240,.35)"; c.fillRect(0, 0, cw, .18 * k); c.fillStyle = "rgba(0,0,0,.2)"; c.fillRect(0, .18 * k, cw, .06 * k);   // la corniche, en haut
       if (o.peint) { const [txt, coul, et, yA, hL] = o.peint, y = ch - (yA ?? (3.8 + (et + 1.03) * hE)) * k; c.textAlign = "center"; c.textBaseline = "middle"; fit(c, txt, cw * .9, Math.round((hL || Math.min(.32 * hE, .62)) * k * 1.35), `bold @ ${serif}`); c.fillStyle = "rgba(0,0,0,.35)"; c.fillText(txt, cw / 2 + 2, y + 2); c.fillStyle = coul; c.fillText(txt, cw / 2, y); } });
     nuit = tT(cw, ch, (c) => { c.fillStyle = "#000"; c.fillRect(0, 0, cw, ch); const nE = o.etages, hE = (H - 3.8) / nE, nF = o.fen || Math.max(2, Math.round(W / 2.6));
-      for (let e = 0; e < nE; e++) for (let f = 0; f < nF; f++) if (al() < .42 && !(o.sansEtage && o.sansEtage.includes(e))) { const fx = (W / nF) * (f + .5), fy = 3.8 + e * hE + hE * .22, fw = 1.0, fh = hE * .62; c.fillStyle = al() < .5 ? "#ffcf7a" : "#ffb860"; c.fillRect((fx - fw / 2) * k, ch - (fy + fh) * k, fw * k, fh * k); c.fillStyle = "#3a2a1a"; c.fillRect((fx - .03) * k, ch - (fy + fh) * k, 2, fh * k); }
+      for (let e = 0; e < nE; e++) for (let f = 0; f < nF; f++) if (al() < .45 && !(o.sansEtage && o.sansEtage.includes(e))) { const fx = (W / nF) * (f + .5), fy = 3.8 + e * hE + hE * .14, fw = 1.06, fh = Math.min(hE * .7, 2.15), X = (fx - fw / 2) * k, Y = ch - (fy + fh) * k; const g2 = c.createLinearGradient(0, Y, 0, Y + fh * k); g2.addColorStop(0, "#ffd890"); g2.addColorStop(1, "#e89a40"); c.fillStyle = g2; c.fillRect(X, Y, fw * k, fh * k);
+        c.fillStyle = "rgba(255,240,210,.5)"; c.fillRect(X + 2, Y + 2, fw * k * .3, fh * k - 4); c.fillRect(X + fw * k * .68, Y + 2, fw * k * .3, fh * k - 4); c.strokeStyle = "#3a2a1a"; c.lineWidth = Math.max(1.2, .045 * k); c.beginPath(); c.moveTo(X + fw * k / 2, Y); c.lineTo(X + fw * k / 2, Y + fh * k); for (let r = 1; r < 4; r++) { c.moveTo(X, Y + fh * k * r / 4); c.lineTo(X + fw * k, Y + fh * k * r / 4); } c.stroke(); }
       if (o.peint && o.peintNuit) { const [txt, , et, yA, hL] = o.peint, y = ch - (yA ?? (3.8 + (et + 1.03) * hE)) * k; c.textAlign = "center"; c.textBaseline = "middle"; fit(c, txt, cw * .9, Math.round((hL || Math.min(.32 * hE, .62)) * k * 1.35), `bold @ ${serif}`); c.fillStyle = "#ffe0a0"; c.fillText(txt, cw / 2, y); } });
     return lum(mat({ map: jour, emissive: 0xffffff, emissiveMap: nuit, emissiveIntensity: 0, roughness: .9 }), 0, 1.0); };
   const FCACHE = new Map();
@@ -106,7 +130,14 @@ function construireTertre(A, L, scene) {
         c.fillStyle = "rgba(0,0,0,.25)"; for (let x = 0; x < w; x += 40) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 20, h - 10); c.lineTo(x + 40, h); c.fill(); } });
       const yB = Hd + .05 - Math.sin(.32) * sd, zB = sd * Math.cos(.32) + .12; box(sw, .42, .03, lumT(lT, .02, .45), 0, yB - .2, zB, g);
       if (o.guirlande) { const bM = lum(mat({ color: 0xfff4d0, emissive: 0xffe0a0, emissiveIntensity: 0 }), 0, 2.4); for (let x = -sw / 2 + .2; x < sw / 2; x += .45) add(new THREE.SphereGeometry(.045, 6, 5), bM, x, yB - .42, zB + .02, g); } }
-    if (o.bandeau) { const [txt, fond, coul] = o.bandeau; panneau(g, W - .1, Hd + .5, .62, txt, fond, coul); }   // (posé sur la poutre, au-dessus de la vitrine)
+    if (o.bandeau) { const [txt, fond, coul] = o.bandeau; panneau(g, W - .5, Hd + .52, .66, txt, fond, coul, { cadre: coul, z: .3 }); }   // (le panneau encadré, posé sur la poutre)
+    if (!o.store && o.corniche !== false) { box(W + .3, .14, .5, bois, 0, Hd + .97, .16, g); box(W + .2, .06, .44, moulM, 0, Hd + .88, .16, g);   // la corniche de la devanture
+      for (const sg of [-1, 1]) { box(.2, .62, .32, bois, sg * (W / 2 - .02), Hd + .55, .2, g); box(.24, .1, .36, moulM, sg * (W / 2 - .02), Hd + .25, .2, g); } }   // les consoles
+    for (const sg of [-1, 1]) box(.26, .14, .3, moulM, sg * (W / 2 - .02), Hd - .4, .18, g);   // les chapiteaux des pilastres
+    if (o.attable) { const T = new THREE.Group(); T.position.set(o.attable * W * .22, 0, .95); g.add(T); const marbre = mat({ color: 0xe8e4dc, roughness: .3 }), boisC = mat({ color: 0x7a4a24, roughness: .55 });   // la petite table de bistrot et ses deux chaises (photos)
+      add(new THREE.CylinderGeometry(.3, .3, .04, 18), marbre, 0, .74, 0, T); add(new THREE.CylinderGeometry(.03, .04, .72, 8), fonteM, 0, .36, 0, T); add(new THREE.CylinderGeometry(.18, .22, .04, 12), fonteM, 0, .02, 0, T);
+      for (const sx of [-1, 1]) { const C = new THREE.Group(); C.position.set(sx * .55, 0, 0); C.rotation.y = sx * Math.PI / 2; T.add(C); add(new THREE.CylinderGeometry(.21, .21, .04, 14), boisC, 0, .46, 0, C); for (const [a, b] of [[-.14, -.14], [.14, -.14], [-.14, .14], [.14, .14]]) add(new THREE.CylinderGeometry(.015, .015, .46, 5), boisC, a, .23, b, C);
+        const d = add(new THREE.TorusGeometry(.18, .018, 5, 12, Math.PI), boisC, 0, .82, -.2, C); d.rotation.x = -.1; add(new THREE.CylinderGeometry(.015, .015, .4, 5), boisC, -.17, .66, -.2, C); add(new THREE.CylinderGeometry(.015, .015, .4, 5), boisC, .17, .66, -.2, C); } }
     if (o.enseigne) o.enseigne(g, W, Hd); };
   const lumT = (t, j, n) => lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: j, roughness: .6 }), j, n);
   // une enseigne-panneau sur la façade (lettres peintes ou néon)
@@ -157,8 +188,6 @@ function construireTertre(A, L, scene) {
   maison(XE, 1.25, EST, 14, 12, { teinte: "#f2efe6", etages: 3, volets: "#f2f2ee", peint: ["AU  CADET  DE  GASCOGNE", "#b8141c", 1], peintNuit: true, rdc: (g, W) => { devanture(g, W, { bois: 0x9a1418, travees: 5, porte: 2, fondV: "#f0a040", store: ["#b01820", "CAFÉ  ·  RESTAURANT  ·  BAR", "#f2ead8"], storeD: 2.0, guirlande: true }); verdure(g, W, 3.55, true); } });
   terrasse(XE - .2, -15.8, 0, 1, -1, 0, 9.2, 1, false); terrasse(XE - .2, -5.2, 0, 1, -1, 0, 12.6, 1, false);
   // la rue Saint-Éleuthère (entre z = 8,5 et 15,5), qui file vers le Sacré-Cœur : les maisons blanches de part et d'autre ; au bout à droite, l'église Saint-Pierre de Montmartre
-  for (let x = XE + 9; x < 50; x += 11) maison(x + 5.5, 8.5, 0, 11, 9.5 + al() * 2.5, { teinte: ["#f0ece2", "#e8e0cc", "#f2efe6"][(x | 0) % 3], etages: 3, volets: "#f2f2ee" });
-  for (let x = XE; x < 42; x += 11) maison(x + 5.5, ZS, Math.PI, 11, 10 + al() * 2, { teinte: ["#ece6d8", "#f2efe6"][(x | 0) % 2], etages: 3, volets: "#f2f2ee" });
   { const g = new THREE.Group(); g.position.set(44, 0, 20.5); g.rotation.y = EST; g.scale.setScalar(.7); scene.add(g); const ocre = lum(mat({ color: 0xdcb878, roughness: .8, emissive: 0xffc070, emissiveIntensity: 0 }), 0, .35), ocreF = mat({ color: 0xc8a060 }), porteM = mat({ color: 0x3a2a1e });
     box(13, 14, 22, ocre, 0, 7, -11, g); for (const x of [-5.6, -2.2, 2.2, 5.6]) { box(.8, 6.4, .5, ocreF, x, 3.2, .2, g); box(.6, 5, .4, ocreF, x * .8, 9.1, .1, g); } box(13.4, .6, .8, ocreF, 0, 6.6, .2, g);
     box(2.6, 4.2, .2, porteM, 0, 2.1, .3, g); add(new THREE.CylinderGeometry(1.3, 1.3, .2, 14, 1, false, 0, Math.PI), porteM, 0, 4.2, .3, g).rotation.set(Math.PI / 2, 0, 0); for (const x of [-3.9, 3.9]) box(1.4, 2.6, .2, porteM, x, 2.2, .3, g);
@@ -201,7 +230,7 @@ function construireTertre(A, L, scene) {
   const pl2 = (w, h, m, x, y, z, g) => add(new THREE.PlaneGeometry(w, h), m, x, y, z, g);
   // les jardinières fleuries aux fenêtres du premier étage
   const fleursM = [0xe8203a, 0xf06090, 0xf2f0f0, 0xc040c0, 0xf0a020].map(c2 => mat({ color: c2, roughness: .9 })), bacM = mat({ color: 0x8a4a2a }), vertJ = mat({ color: 0x3a6a2a });
-  const jardinieres = (g, W, H, etages, nF) => { const hE = (H - 3.8) / etages; nF = nF || Math.max(2, Math.round(W / 2.6)); for (let f = 0; f < nF; f++) { if (al() < .3) continue; const x = -W / 2 + (W / nF) * (f + .5), y = 3.8 + hE * .22 - .05;
+  const jardinieres = (g, W, H, etages, nF) => { const hE = (H - 3.8) / etages; nF = nF || Math.max(2, Math.round(W / 2.6)); for (let f = 0; f < nF; f++) { if (al() < .3) continue; const x = -W / 2 + (W / nF) * (f + .5), y = 3.8 + hE * .14 + .12 + (al() < .4 && etages > 1 ? hE : 0);
     box(1.0, .2, .22, bacM, x, y, .15, g); add(new THREE.IcosahedronGeometry(.2, 0), vertJ, x - .2, y + .2, .2, g); for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(.1, 0), fleursM[(f + k) % 5], x - .38 + k * .25, y + .25, .26, g); } };
   // le fleuriste : les seaux de fleurs sur les gradins, devant la boutique, qui débordent sur le trottoir
   const fleuriste = (g, W) => { const bois = mat({ color: 0x6a4a2a }), seau = mat({ color: 0x8a8a8a, metalness: .5 }); for (let r = 0; r < 3; r++) { box(W - 1.2, .05, .45, bois, 0, .3 + r * .32, 1.3 - r * .4, g); box(W - 1.2, .3 + r * .32, .04, bois, 0, (.3 + r * .32) / 2, 1.52 - r * .4, g);
@@ -215,11 +244,17 @@ function construireTertre(A, L, scene) {
     ["BISTROT", 0x6a1a1a, "#a01a20", "#f2ead8", 1], ["PHARMACIE", 0x1a6a3a, "#f2f2ee", "#1a6a3a"], ["BOULANGERIE · PÂTISSERIE", 0x8a5a2a, "#7a4a1e", "#f0d890"], ["CAFÉ", 0x1a2a4a, "#1a2a4a", "#f0c860", 1], ["MODES · CHAPEAUX", 0x6a3a5a, "#f2e6ee", "#6a3a5a"], ["BRASSERIE", 0x2a1a10, "#e8dcc0", "#2a1a10", 1]];
   let kB = 0; const boutique = (g, W) => { const [txt, bois, fond, coul, st] = BOUT[kB++ % BOUT.length], tr = Math.max(2, Math.round(W / 2.6));
     const genre = /GALERIE|ATELIER|ANTIQ/.test(txt) ? "galerie" : /BOULANG|CHOCOL|FROMAG/.test(txt) ? "pain" : /CAFÉ|BISTROT|BRASSERIE|CRÊPERIE|VINS/.test(txt) ? "cafe" : "boutique";
-    if (st) devanture(g, W, { genre, bois, travees: tr, porte: kB % tr, fondV: ["#f0b060", "#f0c880", "#e8a050"][kB % 3], store: [fond, txt, coul], raye: st === 2, storeD: 1.4 });
-    else devanture(g, W, { genre, bois, travees: tr, porte: kB % tr, fondV: ["#f0d8a0", "#f0c070", "#f8e8c8"][kB % 3], bandeau: [txt, fond, coul] });
+    const attable = genre === "cafe" || genre === "galerie" ? (kB % 2 ? 1 : -1) : 0;
+    if (st) devanture(g, W, { attable, genre, bois, travees: tr, porte: kB % tr, fondV: ["#f0b060", "#f0c880", "#e8a050"][kB % 3], store: [fond, txt, coul], raye: st === 2, storeD: 1.4 });
+    else devanture(g, W, { attable, genre, bois, travees: tr, porte: kB % tr, fondV: ["#f0d8a0", "#f0c070", "#f8e8c8"][kB % 3], bandeau: [txt, fond, coul] });
     if (txt === "PHARMACIE") { const cx = tT(64, 64, (c) => { c.fillStyle = "#18a048"; c.fillRect(22, 4, 20, 56); c.fillRect(4, 22, 56, 20); }); box(.06, .7, .7, lum(mat({ map: cx, emissive: 0xffffff, emissiveMap: cx, emissiveIntensity: .3, transparent: true, alphaTest: .5 }), .3, 1.6), W / 2 - .3, 4.6, .7, g); } };
   const potM2 = mat({ color: 0xb0603a, roughness: .9 }), buisM = [mat({ color: 0x3a6a2a, roughness: .9 }), mat({ color: 0x2a5a2a, roughness: .9 })];
-  const pots = (g, W) => { for (const x of [-W / 2 + .35, W / 2 - .35]) if (al() < .55) { cyl(.24, .18, .45, potM2, x, .23, .5, g, 10); add(new THREE.IcosahedronGeometry(.32 + al() * .12, 0), buisM[(x > 0) | 0], x, .78, .5, g); } };
+  const potC = mat({ color: 0xe4ddd0, roughness: .8 }), boule = mat({ color: 0x2f5a26, roughness: .9 }), fleurP = [0xe8203a, 0xf0c020, 0xf2f0f0, 0xe060a0].map(c2 => mat({ color: c2, roughness: .9 }));
+  const plante = (g, x, z, t) => { if (t === 0) { cyl(.26, .2, .5, potM2, x, .25, z, g, 10); add(new THREE.IcosahedronGeometry(.36, 1), buisM[0], x, .85, z, g); }   // le buis en pot
+    else if (t === 1) { cyl(.22, .18, .45, potC, x, .23, z, g, 10); cyl(.025, .025, .9, mat({ color: 0x5a4030 }), x, .9, z, g, 5); add(new THREE.IcosahedronGeometry(.32, 1), boule, x, 1.45, z, g); }   // le laurier en boule
+    else if (t === 2) { cyl(.2, .16, .36, potM2, x, .18, z, g, 10); add(new THREE.IcosahedronGeometry(.2, 0), buisM[1], x, .45, z, g); for (let k2 = 0; k2 < 5; k2++) add(new THREE.IcosahedronGeometry(.07, 0), fleurP[(k2 + (x * 3 | 0)) & 3], x + (al() - .5) * .3, .55 + al() * .1, z + (al() - .5) * .3, g); }   // les fleurs
+    else { cyl(.3, .24, .6, potM2, x, .3, z, g, 10); for (let k2 = 0; k2 < 3; k2++) add(new THREE.ConeGeometry(.3 - k2 * .07, .5, 7), buisM[1], x, .8 + k2 * .35, z, g); } };   // le petit sapin, le thuya
+  const pots = (g, W) => { let n = 0; for (const x of [-W / 2 + .4, W / 2 - .4]) if (al() < .8) { plante(g, x, .55, (n++ + (W * 5 | 0)) & 3); if (al() < .4) plante(g, x + (x < 0 ? .5 : -.5), .5, 2); } };
   const rangee = (ax, az, dx, dz, ry, liste) => { let t = 0; for (const [W, H, o] of liste) { if (!o.rdc && W > 3) o.rdc = boutique; if (o.rdc && W > 3) { const r0 = o.rdc; o.rdc = (g, W2) => { r0(g, W2); pots(g, W2); }; } const x = ax + dx * (t + W / 2), z = az + dz * (t + W / 2); const g = maison(x, z, ry, W, H, o);
       if (o.lierre) lierre(g, W, H, o.lierre === 2, undefined, o.rdc ? 4.5 : 0); if (o.jard) jardinieres(g, W, H, o.etages, o.fen); if (o.lanterne !== false) { const nx = Math.sin(ry), nz = Math.cos(ry); lanterneMur(x + dx * (W / 2 - .6), 4.6, z + dz * (W / 2 - .6), nx, nz); }
       t += W; } };
@@ -302,7 +337,7 @@ function construireTertre(A, L, scene) {
     add(new THREE.CylinderGeometry(.14, .13, .06, 14), mat({ color: 0x1a2a4a }), 0, .1, -.01, b.userData.parts.tete); MUSI.push({ m: b, k: 1 }); }
 
   /* ---------- la rue Saint-Rustique : la rue pavée qui file vers la butte et le Sacré-Cœur ; les cafés bleus, la grande horloge, la boulangerie, le fleuriste et ses fleurs sur le trottoir ---------- */
-  rangee(-72, ZRu0, 1, 0, 0, [   /* (La Bonne Franquette fait l'angle) */
+  rangee(-72.3, ZRu0, 1, 0, 0, [   /* (La Bonne Franquette fait l'angle) */
     [8, 11, { teinte: "#f2efe6", volets: "#f2f2ee", etages: 3, rdc: (g, W) => { devanture(g, W, { bois: 0x2a5a7a, travees: 3, porte: 2, porteC: 0x2a5a7a, fondV: "#f0b860" });   // le café bleu et sa grande horloge (la photo)
       const t = tT(256, 256, (c, w, h) => { c.fillStyle = "#f2e6c8"; c.beginPath(); c.arc(128, 128, 122, 0, 7); c.fill(); c.strokeStyle = "#3a2a1a"; c.lineWidth = 6; c.beginPath(); c.arc(128, 128, 116, 0, 7); c.stroke(); c.fillStyle = "#2a1a10"; c.font = `bold 26px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle";
         ["XII", "I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "IX", "X", "XI"].forEach((n, i) => { const a = i / 12 * Math.PI * 2 - Math.PI / 2; c.fillText(n, 128 + Math.cos(a) * 92, 128 + Math.sin(a) * 92); }); c.lineWidth = 6; c.beginPath(); c.moveTo(128, 128); c.lineTo(128 + 50, 128 - 30); c.stroke(); c.lineWidth = 4; c.beginPath(); c.moveTo(128, 128); c.lineTo(128 - 10, 128 - 80); c.stroke(); });
@@ -315,7 +350,7 @@ function construireTertre(A, L, scene) {
     [9, 11, { ...ordinaire(22), lierre: 1 }],
     [8.6, 11, { ...ordinaire(23), rdc: (g, W) => { devanture(g, W, { bois: 0x5a1a1a, travees: 3, porte: 0, fondV: "#f0b060", bandeau: ["TABAC · PRESSE", "#5a1a1a", "#f2ead8"] }); tabac(g, W / 2 - .3, 4.4); } }],
     [8, 10.5, { ...ordinaire(24), jard: true }]]);
-  rangee(3.5, ZRu0, 1, 0, 0, [
+  rangee(3.8, ZRu0, 1, 0, 0, [
     [9, 11, { ...ordinaire(25), lierre: 2, rdc: (g, W) => { devanture(g, W, { bois: 0x2a4a3a, travees: 3, porte: 1, fondV: "#f0d0a0", bandeau: ["FLEURISTE", "#2a4a3a", "#f2ead8"] }); fleuriste(g, W); } }],
     [10, 12, { ...ordinaire(26), lierre: 1 }],
     [12, 11, { teinte: "#efe6d6", volets: "#f2f2ee", etages: 3, rdc: (g, W) => devanture(g, W, { bois: 0xa8141c, travees: 4, porte: 2, fondV: "#f0a050", store: ["#c81c24", "CAFÉ · RESTAURANT", "#f2ead8"], storeD: 2.2 }) }],
@@ -328,6 +363,11 @@ function construireTertre(A, L, scene) {
     [10, 12, { ...ordinaire(35), lierre: 2 }], [10, 11, { ...ordinaire(36) }], [10, 12, { ...ordinaire(37), jard: true }], [10, 11, { ...ordinaire(38), lierre: 1 }],
     [9, 11, { ...ordinaire(39) }], [12, 12, { ...ordinaire(40), jard: true }], [7, 10, { ...ordinaire(41) }]]);
   terrasse(23, ZRu0 + .2, 1, 0, 0, 1, 11, 1, true); terrasse(-36.5, ZRu0 + .2, 1, 0, 0, 1, 9, 1, false);
+  /* la rue Saint-Éleuthère : des restaurants des deux côtés, leurs stores, leurs petites terrasses */
+  const resto = (txt, coul, bois, raye) => (g, W) => devanture(g, W, { bois, travees: 4, porte: 1, fondV: "#f0b060", genre: "cafe", store: [coul, txt, "#f2ead8"], raye, storeD: 1.8, guirlande: true, ardoise: true });
+  rangee(XE + 9, 8.5, 1, 0, 0, [[11, 11, { ...ordinaire(50), jard: true, rdc: resto("LE  RELAIS  DE  LA  BUTTE", "#7a1a1a", 0x5a1414) }], [11, 10.5, { ...ordinaire(51), lierre: 2, rdc: resto("CHEZ  PLUMEAU", "#1e4a3a", 0x163a2c) }]]);
+  rangee(XE, ZS, 1, 0, Math.PI, [[11, 11, { ...ordinaire(52), jard: true, rdc: resto("LA  CABANE  DU  TERTRE", "#1a2a5a", 0x161c30, "rgba(255,255,255,.85)") }], [11, 11.5, { ...ordinaire(53), lierre: 1, rdc: resto("L'ÉTOILE  DE  MONTMARTRE", "#a8141c", 0x7a1418) }]]);
+  terrasse(XE + 9.3, 8.7, 1, 0, 0, 1, 21, 1, true); terrasse(XE + .3, ZS - .2, 1, 0, 0, -1, 21, 1, false);
   // le passage de la place à la rue Saint-Rustique (l'ancienne rue du Calvaire)
   
   // au bout de la rue des Saules, vers le sud : la station Abbesses, sa marquise de Guimard (le verre en éventail, les tiges de fonte verte, les deux lampes orange) ; on y reprend le métro
