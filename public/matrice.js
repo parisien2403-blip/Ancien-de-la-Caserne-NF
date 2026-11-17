@@ -13136,8 +13136,15 @@ function cineMetro(dep, arr) { if (!M || M.cine) return; const scene = M.scene, 
       const t = tT(64, 64, (c) => { c.fillStyle = "#fff"; c.fillRect(0, 0, 64, 64); c.fillStyle = "#c81c24"; c.beginPath(); c.arc(32, 32, 26, 0, 7); c.fill(); c.fillStyle = "#fff"; c.fillRect(10, 28, 44, 8); }); add(new THREE.PlaneGeometry(.14, .14), mat({ map: t }), .12, 1.0, -sz * .03, b).rotation.y = sz > 0 ? Math.PI : 0;
       battants.push({ b, x0: p + s * .33, s }); } }
   for (const x of [-LR / 2, LR / 2]) box(.05, HR, W2 * 2, creme, x, HR / 2, 0, R);
-  for (const bay of [[-3.5, -1.1], [1.1, 3.5], [-6.6, -5.4], [5.4, 6.6]]) for (const sz of [-1, 1]) { const [a, b] = bay, m = (a + b) / 2; for (const x of [a + .3, b - .3]) { const dx = x < m ? -1 : 1; box(.45, .1, .9, bleu, x, .47, sz * .72, R); box(.47, .06, .92, bleuC, x, .4, sz * .72, R); box(.12, .62, .9, bleu, x + dx * .2, .8, sz * .72, R); box(.1, .3, .7, inox, x, .2, sz * .72, R);   // (la banquette bleu marine, son socle bleu clair)
-      add(new THREE.CylinderGeometry(.018, .018, .92, 8), inox, x + dx * .2, 1.16, sz * .72, R).rotation.x = Math.PI / 2; for (const e of [-.44, .44]) add(new THREE.CylinderGeometry(.016, .016, .1, 6), inox, x + dx * .2, 1.11, sz * .72 + e, R); } }
+  /* les sièges (d'après les photos) : chacun le sien, par deux, face à face ; l'assise et le dossier bleu marine capitonnés, l'appui-tête bombé, le liseré bleu ciel dessous,
+     la main courante chromée sur le haut des dossiers, le pied gris côté couloir */
+  const siege = (x, z, dx) => { box(.44, .09, .44, bleu, x, .48, z, R); box(.46, .07, .46, bleuC, x, .405, z, R); box(.04, .1, .44, bleuC, x - dx * .2, .38, z, R);   // l'assise, le liseré
+    const d = box(.09, .5, .42, bleu, x + dx * .22, .79, z, R); d.rotation.z = dx * .1; const t = box(.12, .17, .4, bleu, x + dx * .245, 1.12, z, R); t.rotation.z = dx * .1;   // le dossier, l'appui-tête
+    box(.012, .44, .36, mat({ color: 0x18244e, roughness: .6 }), x + dx * .175, .8, z, R).rotation.z = dx * .1; };   // (la couture du capitonnage)
+  for (const bay of [[-3.5, -1.1], [1.1, 3.5], [-6.6, -5.4], [5.4, 6.6]]) for (const sz of [-1, 1]) { const [a, b] = bay; for (const [x, dx] of [[a + .3, -1], [b - .3, 1]]) { if (b - a < 2 && ((x < 0) === (dx < 0))) continue;
+      for (const z of [.5, .97]) siege(x, sz * z, dx);
+      const xr = x + dx * .3; add(new THREE.CylinderGeometry(.016, .016, .9, 8), inox, xr, 1.25, sz * .74, R).rotation.x = Math.PI / 2; for (const e of [.3, 1.18]) add(new THREE.CylinderGeometry(.016, .016, .14, 6), inox, xr, 1.19, sz * e, R);   // la main courante
+      add(new THREE.CylinderGeometry(.04, .05, .38, 8), mat({ color: 0x8a8e92, metalness: .6, roughness: .4 }), x, .19, sz * .45, R); } }   // le pied
   for (const p of PORTES) { add(new THREE.CylinderGeometry(.022, .022, HR, 8), inox, p, HR / 2, 0, R); } for (const sz of [-.55, .55]) add(new THREE.CylinderGeometry(.018, .018, LR - .4, 8), inox, 0, 1.9, sz, R).rotation.z = Math.PI / 2;
   for (const sz of [-.55, 0, .55]) add(new THREE.BoxGeometry(LR - 1, .04, .16), mat({ color: 0xffffff, emissive: 0xfffaf0, emissiveIntensity: 1.7 }), 0, HR - .05, sz, R);   // les rampes de néons
   for (let x = -5; x <= 5; x += 3.3) { add(new THREE.CylinderGeometry(.22, .22, .03, 20), mat({ color: 0xb8bcc0, metalness: .3 }), x, HR - .05, .28, R); add(new THREE.TorusGeometry(.14, .012, 4, 18), mat({ color: 0x6a6e72 }), x, HR - .07, .28, R).rotation.x = Math.PI / 2; }   // les bouches d'aération
@@ -13149,15 +13156,16 @@ function cineMetro(dep, arr) { if (!M || M.cine) return; const scene = M.scene, 
   const VOY = []; const PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c"];
   const voyageur = (k, x, z, ry, assis) => { const f = k % 2 === 1, m = personne3D({ taille: f ? 1.64 : 1.76, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a"][k % 5], haut: HA[k % 8], bas: ["#26324e", "#2a2a30", "#3a3028"][k % 3], chaussures: "#1a1a1a", coif: f ? (k % 3 ? "long" : "carre") : k % 4 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 3 === 1 });
     m.position.set(x, assis ? .46 - m.userData.hipY + .02 : 0, z); m.rotation.y = ry; m.userData.poser(assis ? "assis" : "debout", 0); R.add(m); VOY.push({ m, assis, k }); return m; };
-  [[-3.2, -.72, Math.PI / 2], [-1.4, .72, -Math.PI / 2], [1.4, -.72, Math.PI / 2], [3.2, .72, -Math.PI / 2], [1.4, .72, -Math.PI / 2], [-3.2, .72, -Math.PI / 2]].slice(0, PETIT ? 3 : 6).forEach(([x, z, r], i) => voyageur(i * 3 + 1, x, z, r, true));
+  [[-3.2, -.97, Math.PI / 2], [-1.4, .5, -Math.PI / 2], [1.4, -.97, Math.PI / 2], [3.2, .97, -Math.PI / 2], [1.4, .5, Math.PI / 2], [-3.2, .5, Math.PI / 2]].slice(0, PETIT ? 3 : 6).forEach(([x, z, r], i) => voyageur(i * 3 + 1, x, z, r, true));
   [[-4.35, .35, -1.2], [2.6, .5, -2.2], [4.45, -.35, 1.6], [2.4, -.5, 2.4], [-1.0, .85, -.5]].slice(0, PETIT ? 2 : 5).forEach(([x, z, r], i) => voyageur(i * 5 + 2, x, z, r, false));
   // nous : debout près de la porte du milieu, la main sur la barre
   const p = moi; p.cible = null; p.chemin = []; const place = () => { const w = R.localToWorld(new THREE.Vector3(.32, 0, .22)); p.g.position.copy(w); p.g.rotation.y = -Math.PI / 2; p.g.visible = true; p.g.updateMatrixWorld(true); const A = p.av3;
     if (A && A.sc && A.sc.parent === p.g) { A.sc.visible = true; if (p.corps) p.corps.visible = false; try { const haut = new THREE.Vector3(0, 1, 0), bas = new THREE.Vector3(0, -1, 0); viser3D(A, "RightArm", "RightForeArm", new THREE.Vector3(-.3, 1, -.2).normalize()); viser3D(A, "RightForeArm", "RightHand", haut); viser3D(A, "LeftArm", "LeftForeArm", bas); viser3D(A, "LeftForeArm", "LeftHand", bas); } catch (e) {} } };
   // ---------- le déroulé : à quai, la sonnerie, les portes ; le départ, le tunnel, l'arrivée ; les portes s'ouvrent, on monte à la surface ----------
+  const fpAvant = !!M.premiere; M.premiere = false; p.g.visible = true;   /* (dans la rame, on se voit : la vue à la première personne revient à l'arrivée) */
   const son = sonMetro(), t0 = performance.now(); let s = 0, v = 0, tp = t0, sonne = 0, fini = false;
   const fin = () => { if (fini) return; fini = true; if (son) son.fin(); scene.remove(G); for (const o of caches) o.visible = true; if (scene.fog && brouillard != null) scene.fog.color.setHex(brouillard); scene.background = fond; finCine(); const n = voile("background:#000;opacity:1");
-    changerLieu(arr.lieu, arr.arrivee, arr.yaw); setTimeout(() => { if (n) { n.style.transition = "opacity .8s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 900); } }, 350); };
+    changerLieu(arr.lieu, arr.arrivee, arr.yaw); if (fpAvant && arr.lieu !== "tertre" && arr.lieu !== "jouffroy") premiere(true); setTimeout(() => { if (n) { n.style.transition = "opacity .8s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 900); } }, 350); };
   dire(M.moiNum, "🚇 Direction " + arr.nom + "…");
   M.cine = { gel: true, fov: [66, 78], maj: (now) => { if (fini) return; const t = (now - t0) / 1000, dt = Math.min(.1, (now - tp) / 1000); tp = now;
     // la vitesse : 4 m/s² au départ, 13 m/s dans le tunnel, on freine pour s'arrêter pile au quai

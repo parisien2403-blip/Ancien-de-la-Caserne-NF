@@ -157,7 +157,7 @@ function construireTertre(A, L, scene) {
   maison(XE, 1.25, EST, 14, 12, { teinte: "#f2efe6", etages: 3, volets: "#f2f2ee", peint: ["AU  CADET  DE  GASCOGNE", "#b8141c", 1], peintNuit: true, rdc: (g, W) => { devanture(g, W, { bois: 0x9a1418, travees: 5, porte: 2, fondV: "#f0a040", store: ["#b01820", "CAFÉ  ·  RESTAURANT  ·  BAR", "#f2ead8"], storeD: 2.0, guirlande: true }); verdure(g, W, 3.55, true); } });
   terrasse(XE - .2, -15.8, 0, 1, -1, 0, 9.2, 1, false); terrasse(XE - .2, -5.2, 0, 1, -1, 0, 12.6, 1, false);
   // la rue Saint-Éleuthère (entre z = 8,5 et 15,5), qui file vers le Sacré-Cœur : les maisons blanches de part et d'autre ; au bout à droite, l'église Saint-Pierre de Montmartre
-  for (let x = XE; x < 50; x += 11) maison(x + 5.5, 8.5, 0, 11, 9.5 + al() * 2.5, { teinte: ["#f0ece2", "#e8e0cc", "#f2efe6"][(x | 0) % 3], etages: 3, volets: "#f2f2ee" });
+  for (let x = XE + 9; x < 50; x += 11) maison(x + 5.5, 8.5, 0, 11, 9.5 + al() * 2.5, { teinte: ["#f0ece2", "#e8e0cc", "#f2efe6"][(x | 0) % 3], etages: 3, volets: "#f2f2ee" });
   for (let x = XE; x < 42; x += 11) maison(x + 5.5, ZS, Math.PI, 11, 10 + al() * 2, { teinte: ["#ece6d8", "#f2efe6"][(x | 0) % 2], etages: 3, volets: "#f2f2ee" });
   { const g = new THREE.Group(); g.position.set(44, 0, 20.5); g.rotation.y = EST; g.scale.setScalar(.7); scene.add(g); const ocre = lum(mat({ color: 0xdcb878, roughness: .8, emissive: 0xffc070, emissiveIntensity: 0 }), 0, .35), ocreF = mat({ color: 0xc8a060 }), porteM = mat({ color: 0x3a2a1e });
     box(13, 14, 22, ocre, 0, 7, -11, g); for (const x of [-5.6, -2.2, 2.2, 5.6]) { box(.8, 6.4, .5, ocreF, x, 3.2, .2, g); box(.6, 5, .4, ocreF, x * .8, 9.1, .1, g); } box(13.4, .6, .8, ocreF, 0, 6.6, .2, g);
@@ -259,7 +259,7 @@ function construireTertre(A, L, scene) {
       panneau(g, 3.6, 4.6, .6, "Boulangerie Maison", "#4a2a1a", "#f2e8d8", { ital: true, dz: .05, x: -2.4 }); const pain = mat({ color: 0xc88a40 }), panier = mat({ color: 0xa8783a });   // l'étal des pains devant la vitrine
       box(3.2, .06, .8, panier, -2.4, .9, .7, g); for (let i = 0; i < 9; i++) { const b = add(new THREE.CapsuleGeometry(.06, .4, 3, 6), pain, -3.8 + i * .35, .98, .6 + (i % 2) * .2, g); b.rotation.z = Math.PI / 2; } for (let i = 0; i < 4; i++) cyl(.16, .13, .22, panier, -3.6 + i * .8, .14, .7, g, 8); } }],
     [10, 12, { ...ordinaire(10), lierre: 2 }], [8, 11, { ...ordinaire(11), jard: true }], [10, 11, { ...ordinaire(12) }]]);
-  rangee(XSa1, ZSa0, 0, 1, -Math.PI / 2, [[14, 11, { ...ordinaire(14), lierre: 1 }], [13.8, 12, { ...ordinaire(15), jard: true }]]);
+  rangee(XSa1, ZSa0, 0, 1, -Math.PI / 2, [[14, 11, { ...ordinaire(14), lierre: 1 }], [4.6, 12, { ...ordinaire(15), jard: true }]]);   /* (s'arrête derrière la boulangerie de la rue Norvins : pas de maisons l'une dans l'autre) */
   rangee(XSa1, ZNo1 + 9, 0, 1, -Math.PI / 2, [[8.4, 11, { ...ordinaire(16), jard: true }], [8.6, 10.5, { ...ordinaire(17), lierre: 2 }],
     [9, 11, { teinte: "#efe8d8", volets: "#f2f2ee", etages: 3, rdc: (g, W) => { devanture(g, W, { bois: 0x1e5a4a, travees: 3, porte: 1, porteC: 0x1e5a4a, fondV: "#f0b050" });   // La Bonne Franquette (la photo)
       const t = tT(1024, 96, (c, w, h) => { c.fillStyle = "#123a30"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8c060"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `bold 52px ${serif}`; c.fillText("CAFÉ · RESTAURANT", w * .62, h / 2 + 3); c.font = `italic 30px ${serif}`; c.fillText("Aimer, Manger,", w * .15, h * .32); c.fillText("Boire et Chanter !!!", w * .15, h * .72); });
@@ -302,8 +302,7 @@ function construireTertre(A, L, scene) {
     add(new THREE.CylinderGeometry(.14, .13, .06, 14), mat({ color: 0x1a2a4a }), 0, .1, -.01, b.userData.parts.tete); MUSI.push({ m: b, k: 1 }); }
 
   /* ---------- la rue Saint-Rustique : la rue pavée qui file vers la butte et le Sacré-Cœur ; les cafés bleus, la grande horloge, la boulangerie, le fleuriste et ses fleurs sur le trottoir ---------- */
-  rangee(-80, ZRu0, 1, 0, 0, [
-    [8, 11, { ...ordinaire(18), lierre: 1, jard: true }],
+  rangee(-72, ZRu0, 1, 0, 0, [   /* (La Bonne Franquette fait l'angle) */
     [8, 11, { teinte: "#f2efe6", volets: "#f2f2ee", etages: 3, rdc: (g, W) => { devanture(g, W, { bois: 0x2a5a7a, travees: 3, porte: 2, porteC: 0x2a5a7a, fondV: "#f0b860" });   // le café bleu et sa grande horloge (la photo)
       const t = tT(256, 256, (c, w, h) => { c.fillStyle = "#f2e6c8"; c.beginPath(); c.arc(128, 128, 122, 0, 7); c.fill(); c.strokeStyle = "#3a2a1a"; c.lineWidth = 6; c.beginPath(); c.arc(128, 128, 116, 0, 7); c.stroke(); c.fillStyle = "#2a1a10"; c.font = `bold 26px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle";
         ["XII", "I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "IX", "X", "XI"].forEach((n, i) => { const a = i / 12 * Math.PI * 2 - Math.PI / 2; c.fillText(n, 128 + Math.cos(a) * 92, 128 + Math.sin(a) * 92); }); c.lineWidth = 6; c.beginPath(); c.moveTo(128, 128); c.lineTo(128 + 50, 128 - 30); c.stroke(); c.lineWidth = 4; c.beginPath(); c.moveTo(128, 128); c.lineTo(128 - 10, 128 - 80); c.stroke(); });
@@ -321,13 +320,13 @@ function construireTertre(A, L, scene) {
     [10, 12, { ...ordinaire(26), lierre: 1 }],
     [12, 11, { teinte: "#efe6d6", volets: "#f2f2ee", etages: 3, rdc: (g, W) => devanture(g, W, { bois: 0xa8141c, travees: 4, porte: 2, fondV: "#f0a050", store: ["#c81c24", "CAFÉ · RESTAURANT", "#f2ead8"], storeD: 2.2 }) }],
     [10, 12, { ...ordinaire(27), lierre: 2, jard: true }], [11.5, 11, { ...ordinaire(28) }]]);
-  rangee(-80, ZRu1, 1, 0, Math.PI, [
-    [10, 11, { ...ordinaire(29), jard: true }], [9, 11, { ...ordinaire(30), lierre: 2 }],
+  rangee(-71, ZRu1, 1, 0, Math.PI, [
+    [9, 11, { ...ordinaire(30), lierre: 2 }],
     [9, 9, { teinte: "#3aa8a0", volets: "#f2f2ee", etages: 2, jard: true, rdc: (g, W) => devanture(g, W, { bois: 0x7a9a6a, travees: 3, porte: 1, porteC: 0x7a9a6a, fondV: "#f0c070", store: ["#f0d020", "", "#333"], raye: true, storeD: 1.2 }) }],   // la maison turquoise au store rayé jaune
     [10, 12, { ...ordinaire(31) }], [9, 11, { ...ordinaire(32), lierre: 1, rdc: (g, W) => { devanture(g, W, { bois: 0x2a4a3a, travees: 3, porte: 1, fondV: "#f0d0a0", bandeau: ["FLEURS", "#2a4a3a", "#f2ead8"] }); fleuriste(g, W); } }],
     [12, 12, { ...ordinaire(33), jard: true }], [10, 11, { ...ordinaire(34), rdc: (g, W) => devanture(g, W, { bois: 0x8a1418, travees: 4, porte: 1, fondV: "#f0a050", store: ["#b01820", "CRÊPERIE", "#f2ead8"], storeD: 1.8 }) }],
     [10, 12, { ...ordinaire(35), lierre: 2 }], [10, 11, { ...ordinaire(36) }], [10, 12, { ...ordinaire(37), jard: true }], [10, 11, { ...ordinaire(38), lierre: 1 }],
-    [9, 11, { ...ordinaire(39) }], [12, 12, { ...ordinaire(40), jard: true }], [6, 10, { ...ordinaire(41) }]]);
+    [9, 11, { ...ordinaire(39) }], [12, 12, { ...ordinaire(40), jard: true }], [7, 10, { ...ordinaire(41) }]]);
   terrasse(23, ZRu0 + .2, 1, 0, 0, 1, 11, 1, true); terrasse(-36.5, ZRu0 + .2, 1, 0, 0, 1, 9, 1, false);
   // le passage de la place à la rue Saint-Rustique (l'ancienne rue du Calvaire)
   
@@ -473,8 +472,8 @@ function construireTertre(A, L, scene) {
 
   /* ---------- les limites : les rues pavées, le carré, la rue Saint-Éleuthère, le haut des marches de la rue du Calvaire ; ni les arbres ni les chevalets ---------- */
   const libre = (x, z) => { for (const [a, b, r] of OB) if ((x - a) ** 2 + (z - b) ** 2 < r * r) return false; return true; };
-  L.limites = (x, z) => libre(x, z) && ((x > XO + .4 && x < XE - .4 && z > ZN + .4 && z < ZS - .4) || (x >= XE - .5 && x < XBUT - 5 && z > 9 && z < 15) || (x > -1.1 && x < 3.2 && z >= ZS - .5 && z < ZRu0 + .5)
-    || (x > XSa0 + .4 && x < -21 && z > ZNo0 + .4 && z < ZNo1 - .4) || (x > XSa0 + .4 && x < XSa1 - .4 && z > ZSa0 + .4 && z < ZSa1 - .4) || (x > XSa0 + .4 && x < XBUT - 5 && z > ZRu0 + .4 && z < ZRu1 - .4));
+  L.limites = (x, z) => libre(x, z) && ((x > XO + .4 && x < XE - .4 && z > ZN + .4 && z < ZS - .4) || (x >= XE - 2 && x < XBUT - 5 && z > 9 && z < 15) || (x > -1.1 && x < 3.2 && z >= ZS - 2 && z < ZRu0 + 2)
+    || (x > XSa0 + .4 && x < -19.5 && z > ZNo0 + .4 && z < ZNo1 - .4) || (x > XSa0 + .4 && x < XSa1 - .4 && z > ZSa0 + .4 && z < ZSa1 - .4) || (x > XSa0 + .4 && x < XBUT - 5 && z > ZRu0 + .4 && z < ZRu1 - .4));
   L.hauteur = (x, z) => (x > SQ.x0 && x < SQ.x1 && z > SQ.z0 && z < SQ.z1) ? YS : hTrot(x, z);
   L.depart = [L.metroAbbesses.x, L.metroAbbesses.z - .5]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-130, 260, -100, 100]; L.cam = { pos: [-83, 4, 30], vise: [-83, 3, 10] };
