@@ -13150,7 +13150,7 @@ function cineMetro(dep, arr) { if (!M || M.cine) return; const scene = M.scene, 
   const voyageur = (k, x, z, ry, assis) => { const f = k % 2 === 1, m = personne3D({ taille: f ? 1.64 : 1.76, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a"][k % 5], haut: HA[k % 8], bas: ["#26324e", "#2a2a30", "#3a3028"][k % 3], chaussures: "#1a1a1a", coif: f ? (k % 3 ? "long" : "carre") : k % 4 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 3 === 1 });
     m.position.set(x, assis ? .46 - m.userData.hipY + .02 : 0, z); m.rotation.y = ry; m.userData.poser(assis ? "assis" : "debout", 0); R.add(m); VOY.push({ m, assis, k }); return m; };
   [[-3.2, -.72, Math.PI / 2], [-1.4, .72, -Math.PI / 2], [1.4, -.72, Math.PI / 2], [3.2, .72, -Math.PI / 2], [1.4, .72, -Math.PI / 2], [-3.2, .72, -Math.PI / 2]].slice(0, PETIT ? 3 : 6).forEach(([x, z, r], i) => voyageur(i * 3 + 1, x, z, r, true));
-  [[-4.35, .35, -1.2], [2.6, .5, -2.2], [4.45, -.35, 1.6], [.7, -.5, 2.4], [-.9, .8, -.5]].slice(0, PETIT ? 2 : 5).forEach(([x, z, r], i) => voyageur(i * 5 + 2, x, z, r, false));
+  [[-4.35, .35, -1.2], [2.6, .5, -2.2], [4.45, -.35, 1.6], [2.4, -.5, 2.4], [-1.0, .85, -.5]].slice(0, PETIT ? 2 : 5).forEach(([x, z, r], i) => voyageur(i * 5 + 2, x, z, r, false));
   // nous : debout près de la porte du milieu, la main sur la barre
   const p = moi; p.cible = null; p.chemin = []; const place = () => { const w = R.localToWorld(new THREE.Vector3(.32, 0, .22)); p.g.position.copy(w); p.g.rotation.y = -Math.PI / 2; p.g.visible = true; p.g.updateMatrixWorld(true); const A = p.av3;
     if (A && A.sc && A.sc.parent === p.g) { A.sc.visible = true; if (p.corps) p.corps.visible = false; try { const haut = new THREE.Vector3(0, 1, 0), bas = new THREE.Vector3(0, -1, 0); viser3D(A, "RightArm", "RightForeArm", new THREE.Vector3(-.3, 1, -.2).normalize()); viser3D(A, "RightForeArm", "RightHand", haut); viser3D(A, "LeftArm", "LeftForeArm", bas); viser3D(A, "LeftForeArm", "LeftHand", bas); } catch (e) {} } };
@@ -13169,7 +13169,7 @@ function cineMetro(dep, arr) { if (!M || M.cine) return; const scene = M.scene, 
     lumR.intensity = 6 * (v > 8 && Math.sin(now / 37) > .96 ? .3 : 1);   // (les néons qui clignotent un instant)
     if (son) son.maj(v, now); place();
     for (const V of VOY) { V.m.userData.poser(V.assis ? "assis" : "debout", now); const P = V.m.userData.parts; if (!V.assis) { P.bras[1].e.rotation.set(-2.6, 0, .25); P.bras[1].c.rotation.x = -.2; V.m.rotation.z = Math.sin(now / 230 + V.k) * .02 * Math.min(1, v / 6); } else P.tete.rotation.y = Math.sin(now / 1900 + V.k) * .35; }
-    const c = R.localToWorld(new THREE.Vector3(-2.7, 1.68, -1.0)), l = R.localToWorld(new THREE.Vector3(.7, 1.3, .45)); M.camera.position.copy(c); M.camera.lookAt(l);
+    const c = R.localToWorld(new THREE.Vector3(-1.75, 1.62, -.95)), l = R.localToWorld(new THREE.Vector3(.5, 1.25, .3));   /* (nous, en premier plan, debout à la barre) */ M.camera.position.copy(c); M.camera.lookAt(l);
     if (arrive && now - sonne2 > 1600) fin(); } };
   let sonne2 = 0; M.passerBtn = boutonPasser(fin); }
 /* ===================== (10.25) le passage Jouffroy (10-12 boulevard Montmartre), d'après les photos, de l'entrée à la sortie — sans personne pour commencer =====================
