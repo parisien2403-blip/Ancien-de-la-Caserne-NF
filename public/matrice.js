@@ -53,7 +53,7 @@ export function dessinerBonhomme(o, tete) {
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
     const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" || t === "manteauG" || t === "manteauC" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
-    const peignoirAssis = t === "peignoir" && (o.pose === "assis" || o.pose === "boire");
+    const peignoirAssis = t === "peignoir" && (o.pose === "assis" || o.pose === "boire" || o.pose === "vespa");
     const bas = peignoirAssis ? (o.bas || c) : t === "robe" || t === "jupe" || t === "robelongue" || t === "peignoir" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
@@ -72,7 +72,7 @@ export function dessinerBonhomme(o, tete) {
       x.beginPath(); x.moveTo(108, bas ? 262 : 330); x.lineTo(110, 398); x.stroke();                                 // la jambe d'appui
       x.beginPath(); x.moveTo(94, bas ? 262 : 330);
       if (o.pose === "slow") x.lineTo(92, 398); else { x.lineTo(62, 300); x.lineTo(70, 350); } x.stroke();            // le genou levé devant (Thriller)
-    } else if (o.pose === "assis" || o.pose === "boire" || /^batterie/.test(o.pose || "")) {
+    } else if (o.pose === "assis" || o.pose === "boire" || o.pose === "vespa" || /^batterie/.test(o.pose || "")) {
       // assis sur un tabouret : les cuisses vers l'avant (raccourcies), les jambes qui pendent, les pieds sur le repose-pieds
       x.strokeStyle = bas || peau; x.lineWidth = bas ? 27 : 17; x.lineCap = "round"; x.lineJoin = "round";
       for (const [hx, kx, fx] of [[84, 66, 76], [116, 134, 124]]) { x.beginPath(); x.moveTo(hx, 262); x.lineTo(kx, 284); x.lineTo(fx, 348); x.stroke();
@@ -87,7 +87,7 @@ export function dessinerBonhomme(o, tete) {
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(78, 252, 4, 144); x.fillRect(118, 252, 4, 144); }
       if (o.short) { x.clearRect(70, 306, 60, 96); x.fillStyle = peau; x.beginPath(); x.roundRect(78, 300, 16, 98, 7); x.roundRect(106, 300, 16, 98, 7); x.fill(); } }   // (le short de Bart : les jambes nues dessous)
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
-    const profil = o.pose === "profil" || o.pose === "slow", assis = o.pose === "assis" || o.pose === "boire" || /^batterie/.test(o.pose || "");
+    const profil = o.pose === "profil" || o.pose === "slow", assis = o.pose === "assis" || o.pose === "boire" || o.pose === "vespa" || /^batterie/.test(o.pose || "");
     const jambesDroites = !accroupi && !profil && !assis && !/^madison[1345]$/.test(o.pose || "");
     if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "manteauG" && t !== "manteauC" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
     const PD = o.pose === "slow" ? [86, 104] : profil ? [60, 102] : assis ? [74, 126] : [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
@@ -559,6 +559,7 @@ export function dessinerBonhomme(o, tete) {
         : o.pose === "tirFace" && sens < 0 ? [116, 172]   // il tire droit devant (vers le fond, ou vers nous) : le bras tendu en raccourci, la main devant la poitrine
         : o.pose === "slow" ? (sens > 0 ? [36, 168] : [44, 158])   // le slow : les bras sur les épaules de l'autre
         : profil ? (sens > 0 ? [26, 190] : [34, 172])   // de profil : les deux bras tendus devant, griffes en avant
+        : o.pose === "vespa" ? (sens > 0 ? [40, 226] : [160, 226])   // (10.96) sur la Vespa : les deux mains sur les poignées du guidon
         : assis ? (sens > 0 ? [74, 268] : o.pose === "boire" ? [104, 152] : [130, 214])   // une main sur la cuisse, l'autre tient le verre (ou le porte à la bouche)
         // le barman : il pose un verre (servir), il range un verre sur l'étagère (ranger), il essuie un verre avec son torchon (essuyer)
         : o.pose === "servir" ? (sens > 0 ? [46, 252] : [182, 214]) : o.pose === "ranger" ? (sens > 0 ? [46, 252] : [168, 70]) : o.pose === "essuyer" ? (sens > 0 ? [92, 226] : [110, 222])
@@ -790,7 +791,7 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#8a3b22"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(o.initiales || "?", 100, 92); }
     }
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);    // (les verres, le torchon : dans les mains, qui ont suivi la corpulence)
-    if (assis && !o.sansVerre && !/^batterie/.test(o.pose || "")) {
+    if (assis && !o.sansVerre && o.pose !== "vespa" && !/^batterie/.test(o.pose || "")) {
       // le verre (une bière, avec sa mousse), dans la main ; incliné quand on boit
       const [gx, gy, a] = o.pose === "boire" ? [100, 146, -.9] : [130, 206, 0];
       x.save(); x.translate(gx, gy); x.rotate(a);
@@ -9054,7 +9055,7 @@ export async function ouvrir(ctx) {
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = .3; p.dansait = true; }
         else if (p.info.auto || p.siegeV) {   // assis dans le cabriolet (ou sur la selle de la Vespa, vue de face ou de côté)
           if (p.corps.userData.sy0 != null) { p.corps.scale.y = p.corps.userData.sy0; p.corps.userData.sy0 = null; }
-          if (p.corps.material.map !== p.poses.assis) { p.corps.material.map = p.poses.assis; p.corps.material.needsUpdate = true; }
+          { const ps = (p.siegeV && p.poses.vespa) || p.poses.assis; if (p.corps.material.map !== ps) { p.corps.material.map = ps; p.corps.material.needsUpdate = true; } }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; p.dansait = true; }
         else if (Number.isInteger(p.info.assis)) {
           // assis au bar : il boit une gorgée de temps en temps
@@ -9178,9 +9179,8 @@ export async function ouvrir(ctx) {
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) MD.sosfantomes.cineFinaleGB(); else MD.sosfantomes.cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
     // l'appartement : la vue à la première personne d'elle-même en y entrant (on peut la quitter) ; en sortant, la vue normale revient
     // (10.38) le passage Jouffroy : toujours à la première personne (on ne peut pas la quitter) ; en sortant, la vue normale revient
-    if (M.fpTertre) { M.fpTertre = false; M.fpTertreAuto = false; }   // (10.95 : à Montmartre, plus de première personne obligatoire)
-    if (M.lieu === "jouffroy" && !M.premiere && !M.cine && M.gens.get(M.moiNum)) { premiere(true); M.fpJouffroy = true; }
-    else if (M.lieu !== "jouffroy" && M.fpJouffroy) { M.fpJouffroy = false; if (M.premiere) premiere(false); }
+    if ((M.lieu === "jouffroy" || M.lieu === "tertre") && !M.premiere && !M.cine && M.gens.get(M.moiNum)) { premiere(true); M.fpJouffroy = true; }   // (10.96 : à Montmartre aussi, la première personne obligatoire)
+    else if (M.lieu !== "jouffroy" && M.lieu !== "tertre" && M.fpJouffroy) { M.fpJouffroy = false; if (M.premiere) premiere(false); }
     if (M.lieu === "appart" && !M.fpAppart && !M.cine && M.gens.get(M.moiNum)) { M.fpAppart = true; if (!M.premiere) { premiere(true); M.fpAuto = true; } }
     else if (M.lieu !== "appart" && M.fpAppart) { M.fpAppart = false; if (M.fpAuto && M.premiere) premiere(false); M.fpAuto = false; }
     /* l'arrivée : l'écran « Ouverture des grilles… » reste là jusqu'à ce que la main soit prête — plus d'aperçu de la caserne, ni d'écran noir, avant qu'elle descende */
@@ -12156,7 +12156,7 @@ async function dessinerCorps(p) {
   /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), ...(p.info.essuie ? { essuyer: pose("essuyer") } : {}), ...(p.info.salue ? { salut: pose("salut") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme || p.info.couteau ? { tir: pose("tir"), tirG: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "tir" }, tete)), tirFace: pose("tirFace"), tirDos: () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "dos", tirDos: true }, tete)) } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
+    assis: pose("assis"), boire: pose("boire"), vespa: pose("vespa"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), ...(p.info.essuie ? { essuyer: pose("essuyer") } : {}), ...(p.info.salue ? { salut: pose("salut") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme || p.info.couteau ? { tir: pose("tir"), tirG: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "tir" }, tete)), tirFace: pose("tirFace"), tirDos: () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "dos", tirDos: true }, tete)) } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
     ...(p.info.ymca ? { ymcaY: pose("ymcaY"), ymcaM: pose("ymcaM"), ymcaC: pose("ymcaC"), ymcaA: pose("ymcaA") } : {}), ...(p.info.musicien === "chant" ? { chant1: pose("chant1"), chant2: pose("chant2") } : {}), ...(p.info.musicien === "clavier" ? { clavier1: pose("clavier1"), clavier2: pose("clavier2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
@@ -15750,7 +15750,7 @@ function laserFP(cacher) { let A = M.armeFP;
 function cibleFP(liste) { const cam = viseurVR() || M.camera, f = cam.getWorldDirection(new THREE.Vector3()); let best = null, ba = .14;
   for (const z of liste) { const y = (z.y || 0) + 1.1, v = new THREE.Vector3(z.x - cam.position.x, y - cam.position.y, z.z - cam.position.z), d = v.length(); if (d > 25) continue; const a = v.normalize().angleTo(f); if (a < ba) { ba = a; best = z; } }
   return best; }
-export function premiere(on) { if (!M) return; if (!on && M.lieu === "jouffroy") { bulle(M.lieu === "tertre" ? "👁 À Montmartre, la vue reste à la première personne" : "👁 Dans le passage Jouffroy, la vue reste à la première personne", 1800); return; }   /* (pour tout le monde) */ const moi = M.gens.get(M.moiNum);
+export function premiere(on) { if (!M) return; if (!on && (M.lieu === "jouffroy" || M.lieu === "tertre")) { bulle(M.lieu === "tertre" ? "👁 À Montmartre, la vue reste à la première personne" : "👁 Dans le passage Jouffroy, la vue reste à la première personne", 1800); return; }   /* (pour tout le monde) */ const moi = M.gens.get(M.moiNum);
   if (on && !M.premiere) { const f = M.camera.getWorldDirection(new THREE.Vector3()); M.fpYaw = Math.atan2(-f.x, -f.z); M.fpPitch = 0; }
   M.premiere = !!on; if (!on && moi) { moi.g.visible = true; placerCamera(true); } M.ctx.surPremiere && M.ctx.surPremiere(M.premiere);
   bulle(on ? "👁 Vue à la première personne <small>(joystick droit ou glisser le doigt : regarder autour de soi)</small>" : "🎥 Vue normale", 2200); }

@@ -794,7 +794,7 @@ function construireTertre(A, L, scene) {
     // la destination : le toucher, le clic, ou le joystick (qui pose une cible juste devant) — on la prend, la marche ne s'en sert plus
     if (moi.cible) { RID.way = [moi.cible.clone(), ...(moi.chemin || []).map(v => v.clone())]; moi.cible = null; moi.chemin = []; }
     let but = RID.way[0]; while (but && Math.hypot(but.x - pos.x, but.z - pos.z) < (RID.way.length > 1 ? 1.2 : .6)) { RID.way.shift(); but = RID.way[0]; }
-    const vmax = moi.rapide ? 8 : 5.5; let cibleV = 0;
+    const vmax = moi.rapide ? 10 : 5.5;   /* (le bouton pour courir — gâchette haute droite ou joystick enfoncé — : plein gaz) */ let cibleV = 0;
     if (but) { const dx = but.x - pos.x, dz = but.z - pos.z, d = Math.hypot(dx, dz), ry = Math.atan2(dx, dz); let dr = Math.atan2(Math.sin(ry - RID.ry), Math.cos(ry - RID.ry));
       const tourne = Math.sign(dr) * Math.min(Math.abs(dr), dt * (1.6 + 1.4 / (1 + RID.vit))); RID.ry += tourne; RID.pench = (RID.pench || 0) + (-tourne / Math.max(dt, .001) * .18 - (RID.pench || 0)) * Math.min(1, dt * 5);
       cibleV = RID.way.length > 1 ? vmax : Math.min(vmax, Math.sqrt(2 * 3 * Math.max(0, d - .3))); if (Math.abs(dr) > 1.3) cibleV = Math.min(cibleV, 1.5); }
