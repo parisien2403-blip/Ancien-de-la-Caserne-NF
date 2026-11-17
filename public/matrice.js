@@ -16233,6 +16233,9 @@ function ligneLibre(L, x0, z0, x1, z1) {
 }
 const largeLibre = (L, x, z) => L.limites(x, z) && L.limites(x + .12, z) && L.limites(x - .12, z) && L.limites(x, z + .12) && L.limites(x, z - .12);   /* (une case de la carte des passages : assez large pour y marcher) */
 function itineraire(L, x0, z0, x1, z1) {
+  /* (le point touché est hors d'atteinte — au bout d'une rue, sur une façade, sur le Sacré-Cœur au loin : on vise le dernier endroit libre sur la ligne, en revenant vers soi ; sinon on partait tout droit et l'on se cognait au premier obstacle, sans plus bouger) */
+  if (L.zone && L.limites && !L.limites(x1, z1)) { const [za, zb, zc, zd] = L.zone; let tx = Math.max(za, Math.min(zb, x1)), tz = Math.max(zc, Math.min(zd, z1)); const d = Math.hypot(tx - x0, tz - z0), n = Math.ceil(d / .25);
+    for (let i = 0; i <= n; i++) { const u = i / Math.max(1, n), x = tx + (x0 - tx) * u, z = tz + (z0 - tz) * u; if (L.limites(x, z)) { x1 = x; z1 = z; break; } } }
   if (ligneLibre(L, x0, z0, x1, z1) || !L.zone) return [[x1, z1]];
   const P = .35, [ax, bx, az, bz] = L.zone, nx = Math.ceil((bx - ax) / P) + 1, nz = Math.ceil((bz - az) / P) + 1;
   const cle = typeof estAdmin === "function" && estAdmin() ? "grilleAdmin" : "grille";   // (les chantiers : l'administrateur a sa propre carte des passages)
