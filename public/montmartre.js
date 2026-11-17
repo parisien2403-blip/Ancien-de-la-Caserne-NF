@@ -511,12 +511,14 @@ function construireTertre(A, L, scene) {
     const P = m.userData.parts; box(.36, .5, .02, mat({ color: 0xffffff }), 0, -.05, .1, P.bassin); P.bras[1].e.rotation.set(-1.2, 0, .3); P.bras[1].c.rotation.x = -1.4; cyl(.18, .18, .02, mat({ color: 0xc8c8c8, metalness: .7 }), .05, -.32, .12, P.bras[1].c, 12); SERV.push(m); }
 
   /* ---------- les limites : les rues pavées, le carré, la rue Saint-Éleuthère, le haut des marches de la rue du Calvaire ; ni les arbres ni les chevalets ---------- */
-  const libre = (x, z) => { for (const [a, b, r] of OB) if ((x - a) ** 2 + (z - b) ** 2 < r * r) return false; return true; };
+  /* (les obstacles rangés par cases de 2 m : on ne teste que ceux d'à côté — la carte des passages se calculait sur tout Montmartre et bloquait le téléphone) */
+  const CASES = new Map(); for (const o of OB) { const [a, b, r] = o; for (let i = Math.floor((a - r) / 2); i <= Math.floor((a + r) / 2); i++) for (let j = Math.floor((b - r) / 2); j <= Math.floor((b + r) / 2); j++) { const k = i * 4096 + j; (CASES.get(k) || CASES.set(k, []).get(k)).push(o); } }
+  const libre = (x, z) => { const l = CASES.get(Math.floor(x / 2) * 4096 + Math.floor(z / 2)); if (l) for (const [a, b, r] of l) if ((x - a) ** 2 + (z - b) ** 2 < r * r) return false; return true; };
   L.limites = (x, z) => libre(x, z) && ((x > XO + .4 && x < XE - .4 && z > ZN + .4 && z < ZS - .4) || (x >= XE - 2 && x < XBUT - 5 && z > 9 && z < 15) || (x > -1.1 && x < 3.2 && z >= ZS - 2 && z < ZRu0 + 2)
     || (x > XSa0 + .4 && x < -19.5 && z > ZNo0 + .4 && z < ZNo1 - .4) || (x > XSa0 + .4 && x < XSa1 - .4 && z > ZSa0 + .4 && z < ZSa1 - .4) || (x > XSa0 + .4 && x < XBUT - 5 && z > ZRu0 + .4 && z < ZRu1 - .4));
   L.hauteur = (x, z) => (x > SQ.x0 && x < SQ.x1 && z > SQ.z0 && z < SQ.z1) ? YS : hTrot(x, z);
   L.depart = [L.metroAbbesses.x, L.metroAbbesses.z - .5]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
-  L.zone = [-130, 260, -100, 100]; L.cam = { pos: [-83, 4, 30], vise: [-83, 3, 10] };
+  L.zone = [XSa0 - 1, XBUT - 4, ZSa0 - 1, ZSa1 + 1];   /* (seulement là où l'on marche : la carte des passages reste petite) */ L.cam = { pos: [-83, 4, 30], vise: [-83, 3, 10] };
 
   /* ---------- l'animation : le soir qui s'allume, les peintres au pinceau, les dîneurs, les promeneurs ---------- */
   let nV = null, tp = 0;
