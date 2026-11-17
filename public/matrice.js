@@ -8934,6 +8934,15 @@ export async function ouvrir(ctx) {
   let erreurVue = 0;
   let dernImg = 0;
   activerVR(rendu);
+  /* (le guetteur, indépendant de l'image : toutes les demi-secondes, à Montmartre, il regarde si l'écran s'est arrêté, ou si notre bonhomme veut avancer sans bouger ; il le dit dans une bulle) */
+  clearInterval(M.guetteur); M.guetteur = setInterval(() => { if (!M || M.lieu !== "tertre" || document.hidden) return; const now = performance.now(), p = M.gens.get(M.moiNum); const G = M.guet || (M.guet = { t: now, x: 0, z: 0, n: 0, vu: 0 });
+    const gap = now - (M.tPrec || now); let msg = null;
+    if (gap > 1500) msg = `écran arrêté depuis ${(gap / 1000).toFixed(1)} s · cine ${M.cine ? "oui" : "non"} · pause ${M.pauseRendu ? "oui" : "non"} · carte perdue ${M.nPerdu || 0}`;
+    else if (p && p.cible) { const q = p.g.position, n = (M.dbgPas && M.dbgPas.n) || 0; if (Math.hypot(q.x - G.x, q.z - G.z) > .25 || !G.c) { G.x = q.x; G.z = q.z; G.t = now; G.n = n; G.c = true; }
+      else if (now - G.t > 1500) { const w = new THREE.Vector3(); p.g.getWorldPosition(w); const D = M.dbgPas || {};
+        msg = `bonhomme figé ${(now - G.t) / 1000 | 0} s · pas ${(n - G.n)} faits · pas ${(D.pas || 0).toFixed(3)} ok ${(D.pasOk || 0).toFixed(3)} · pos ${q.x.toFixed(2)} ${q.z.toFixed(2)} · monde ${w.x.toFixed(2)} ${w.z.toFixed(2)} · parent ${p.g.parent === M.scene ? "scène" : p.g.parent ? "AUTRE" : "AUCUN"} · cible ${p.cible.x.toFixed(1)} ${p.cible.z.toFixed(1)} · chemin ${(p.chemin || []).length} · cam ${M.camera.position.x.toFixed(1)} ${M.camera.position.z.toFixed(1)}`; G.t = now; } }
+    else G.c = false;
+    if (msg && now - G.vu > 3000) { G.vu = now; ctx.surInfo && ctx.surInfo("⚠️ " + msg); } }, 500);
   rendu.setAnimationLoop(t => { if (PETIT && !rendu.xr.isPresenting && t - dernImg < 30) return; dernImg = t;   // (petit téléphone : 30 images par seconde, pas plus — il chauffe moins, ne ralentit plus, et la batterie tient)
     { const t0 = performance.now(); try { image(t); } catch (e) { signalerErreur(e); } dbgLent("image entière", t0);
     const ecart = t - (M ? M.tPrec || t : t); if (M) M.tPrec = t; const d = Math.max(performance.now() - t0, ecart); if (M && d > 1000 && performance.now() - (M.gelVu || 0) > 4000 && M.lieu === "tertre") {   /* (le gel : une image trop longue, ou plus d'image du tout pendant plus d'une seconde) */ M.gelVu = performance.now(); const D = M.dbgDessin || {}, S = M.dbgSeg || {};   /* (un vrai gel, à Montmartre : une petite bulle dit pourquoi, le temps de régler le problème) */
