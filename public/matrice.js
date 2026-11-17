@@ -9172,6 +9172,8 @@ export async function ouvrir(ctx) {
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) MD.sosfantomes.cineFinaleGB(); else MD.sosfantomes.cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
     // l'appartement : la vue à la première personne d'elle-même en y entrant (on peut la quitter) ; en sortant, la vue normale revient
     // (10.38) le passage Jouffroy : toujours à la première personne (on ne peut pas la quitter) ; en sortant, la vue normale revient
+    if (M.lieu === "tertre" && !M.fpTertre && !M.cine && M.gens.get(M.moiNum)) { M.fpTertre = true; M.fpTertreAuto = !M.premiere; if (!M.premiere) premiere(true); }   // (10.92) en arrivant à Montmartre : d'emblée à la première personne (on peut en sortir)
+    else if (M.lieu !== "tertre" && M.fpTertre) { M.fpTertre = false; if (M.fpTertreAuto && M.premiere && M.lieu !== "jouffroy") premiere(false); M.fpTertreAuto = false; }
     if (M.lieu === "jouffroy" && !M.premiere && !M.cine && M.gens.get(M.moiNum)) { premiere(true); M.fpJouffroy = true; }
     else if (M.lieu !== "jouffroy" && M.fpJouffroy) { M.fpJouffroy = false; if (M.premiere) premiere(false); }
     if (M.lieu === "appart" && !M.fpAppart && !M.cine && M.gens.get(M.moiNum)) { M.fpAppart = true; if (!M.premiere) { premiere(true); M.fpAuto = true; } }
@@ -13243,7 +13245,7 @@ function construireJouffroy(A, L, scene) {
   const GXB = GX0 - GP * NM;   // (le bas de l'escalier)
   { const p = add(new THREE.PlaneGeometry(GXB - XB0, ZC1 - ZC0), mat({ map: (() => { const t = palierT.clone(); t.needsUpdate = true; t.repeat.set(2, 2); return t; })(), roughness: .4 }), (XB0 + GXB) / 2, Y2 + .002, (ZC0 + ZC1) / 2); p.rotation.x = -Math.PI / 2; L.solsPlus.push(p); }
   // la main courante de laiton (en volute en bas) sur ses barreaux de fer
-  { const laiton = mat({ color: 0xc8a050, metalness: .85, roughness: .3 }), fer = mat({ color: 0x1a1a1c, metalness: .5, roughness: .5 }), zr = -70.6;
+  { const laiton = mat({ color: 0xf0c850, metalness: .45, roughness: .22, emissive: 0x4a3200, emissiveIntensity: .5 }), fer = mat({ color: 0x1a1a1c, metalness: .5, roughness: .5 }), zr = -70.6;   /* (10.92) la rampe dorée, qui brille comme du laiton */
     const a = new THREE.Vector3(GX0 + .1, .95, zr), b = new THREE.Vector3(GXB - .2, Y2 + .95, zr), d = b.clone().sub(a), l = d.length();
     const r = add(new THREE.CylinderGeometry(.035, .035, l, 10), laiton, (a.x + b.x) / 2, (a.y + b.y) / 2, zr); r.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize());
     const vo = add(new THREE.TorusGeometry(.12, .03, 8, 20, Math.PI * 1.6), laiton, GXB - .3, Y2 + .85, zr); vo.rotation.y = Math.PI / 2;
