@@ -256,7 +256,8 @@ function construireTertre(A, L, scene) {
     box(W, .5, .25, bois, 0, Hd - .1, .12, g); for (let i = 0; i <= o.travees; i++) box(.18, Hd - .3, .22, bois, -W / 2 + .1 + i * (W - .2) / o.travees, (Hd - .3) / 2, .12, g);
     const vt = vitreT(o.fondV || "#c87830", o.motif, o.genre), vM = lum(mat({ map: vt, emissive: 0xffffff, emissiveMap: vt, emissiveIntensity: .35, roughness: .15 }), .35, 1.25);
     const salle = !!g.userData.salle; g.userData.vInt = vM; { const tx = ((o.store && o.store[1]) || "") + " " + ((o.bandeau && o.bandeau[0]) || ""); g.userData.genre = o.genre || (/GALERIE/.test(tx) ? "galerie" : /BOULANG/.test(tx) ? "pain" : /FLEUR|TABAC|PRESSE|SOUVENIR|PICERIE|PRIMEUR/.test(tx) ? "boutique" : "cafe"); } const vitre = salle ? verreVitrine : vM;
-    for (let i = 0; i < o.travees; i++) { const tw = (W - .2) / o.travees - .2, tx = -W / 2 + .1 + (i + .5) * (W - .2) / o.travees; if (i === o.porte) { box(tw, 2.5, .08, mat({ color: o.porteC || o.bois, roughness: .5 }), tx, 1.25, .05, g); box(tw * .7, 1.2, .02, vitre, tx, 1.7, .1, g); } else if (o.rideau) { box(tw, 2.9, .06, mat({ map: rideauT, roughness: .6, metalness: .4 }), tx, 1.45, .06, g); } else { box(tw, .7, .1, bois, tx, .35, .1, g); box(tw - .2, .48, .03, mat({ color: o.bois, roughness: .45, emissive: 0x000000 }), tx, .35, .17, g); box(tw - .28, .4, .02, moulM, tx, .35, .19, g);   // le soubassement et sa moulure
+    for (let i = 0; i < o.travees; i++) { const tw = (W - .2) / o.travees - .2, tx = -W / 2 + .1 + (i + .5) * (W - .2) / o.travees; if (i === o.porte) { const pM = mat({ color: o.porteC || o.bois, roughness: .5 }), pw = Math.min(tw, 1.3); box(pw, .62, .08, pM, tx, .31, .05, g); box(pw, .22, .08, pM, tx, 2.39, .05, g); for (const e of [-1, 1]) box(.13, 1.66, .08, pM, tx + e * (pw / 2 - .065), 1.45, .05, g); box(pw - .26, 1.66, .02, vitre, tx, 1.45, .05, g); box(.03, .3, .04, mat({ color: 0xc8a050, metalness: .8, roughness: .3 }), tx + pw / 2 - .2, 1.15, .11, g); box(pw - .22, .05, .1, pM, tx, .64, .07, g);   /* (10.87) la porte vitrée : on voit l'intérieur à travers */ box(tw, .62, .02, vitre, tx, 2.82, .05, g);
+      if (tw > pw + .1) { for (const e of [-1, 1]) box((tw - pw) / 2, .7, .1, bois, tx + e * (pw / 2 + (tw - pw) / 4), .35, .1, g); for (const e of [-1, 1]) box((tw - pw) / 2, 1.8, .02, vitre, tx + e * (pw / 2 + (tw - pw) / 4), 1.6, .04, g); box(tw, .2, .08, pM, tx, 2.6, .05, g); } } else if (o.rideau) { box(tw, 2.9, .06, mat({ map: rideauT, roughness: .6, metalness: .4 }), tx, 1.45, .06, g); } else { box(tw, .7, .1, bois, tx, .35, .1, g); box(tw - .2, .48, .03, mat({ color: o.bois, roughness: .45, emissive: 0x000000 }), tx, .35, .17, g); box(tw - .28, .4, .02, moulM, tx, .35, .19, g);   // le soubassement et sa moulure
       box(tw, 2.3, .02, vitre, tx, 1.85, .04, g); box(tw, .04, .05, bois, tx, 2.55, .08, g); if (tw > 1.2) box(.04, 2.3, .05, bois, tx, 1.85, .08, g); } }   // les petits bois
     if (o.lanternes !== false && W > 4.5) for (const x of [-W / 2 + .45, W / 2 - .45]) lanterneD(g, x, 2.85);
     if (o.ardoise) ardoise(g, -W / 2 + 1.2, o.ardoise === true ? null : o.ardoise);
@@ -290,7 +291,7 @@ function construireTertre(A, L, scene) {
   const PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
   const gens = (k, o = {}) => { const f = k % 2 === 1; return personne3D({ taille: f ? 1.64 : 1.76, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a", "#a5532a"][k % 6], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#1a1a1c"][k % 4], chaussures: ["#1a1a1a", "#3a2418"][k % 2], coif: f ? (k % 3 ? "long" : "carre") : k % 5 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 3 === 0, ...o }); };
   const GENS = true;
-  const nTerr = !GENS ? 0 : PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 10 : 26; let kT = 0;
+  const nTerr = !GENS ? 0 : PETIT ? 10 : (MOBILE || GPU_MODESTE) ? 18 : 30; let kT = 0;
   // une terrasse : des rangées de tables le long d'une façade ; ax/az : le sens de la façade ; nx/nz : vers la rue
   const terrasse = (x0, z0, ax, az, nx, nz, L2, rangs, rouge) => { for (let r = 0; r < rangs; r++) for (let t = .6; t < L2 - .4; t += 1.25) { const x = x0 + ax * t + nx * (.55 + r * 1.0), z = z0 + az * t + nz * (.55 + r * 1.0); table(x, z, rouge);
       const ry = Math.atan2(nx, nz); for (const sg of [-1, 1]) { const cx = x + ax * sg * .45, cz = z + az * sg * .45, rc = Math.atan2(-ax * sg, -az * sg); chaise(cx, cz, rc);
@@ -710,7 +711,7 @@ function construireTertre(A, L, scene) {
 
   /* ---------- l'animation : le soir qui s'allume, les peintres au pinceau, les dîneurs, les promeneurs ---------- */
   let nV = null, tp = 0;
-  const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; for (const o of JOUR) o.visible = !n; }   // (le soir, les peintres et l'accordéoniste sont rentrés)
+  const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; for (const o of JOUR) o.visible = !n; }   // (le soir, les peintres et l'accordéoniste sont rentrés)
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const c = M && M.camera && M.camera.position, R2 = ((MOBILE || GPU_MODESTE) ? 30 : 60) ** 2;
     for (const { m, k } of MODELES) { if (!m.visible) continue; m.userData.poser("assis", 0); const P = m.userData.parts; P.bras[1].e.rotation.set(-1.9, 0, .4); P.bras[1].c.rotation.x = -1.9; P.tete.rotation.y = Math.sin(tm / 3000 + k) * .08; }
     if (!n) for (const A of ACCORD) A(tm);
@@ -755,12 +756,12 @@ function construireTertre(A, L, scene) {
   L.jour = JOUR; L.sansMusique = true;
   /* la musique : l'accordéon, en boucle, tant qu'on est à Montmartre ; elle monte doucement, s'arrête quand on repart */
   L.sansMusique = true;
-  { const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (!M || M.L !== L) return; const A2 = (window.__accordeon = window.__accordeon || Object.assign(new Audio("sons/montmartre-accordeon.mp3"), { loop: true, preload: "auto" }));
+  { const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} if (!M || M.L !== L) return; const A2 = (window.__accordeon = window.__accordeon || Object.assign(new Audio("sons/montmartre-accordeon.mp3"), { loop: true, preload: "auto" }));
       if (A2.paused && !A2._essai && !A2._attente) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
       if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
       if (!A2.paused) try { A2.volume = Math.min(.5, A2.volume + .006); } catch (e) {} };
     quitterLieu.add(() => { const A2 = window.__accordeon; if (A2) { A2.pause(); try { A2.currentTime = 0; } catch (e) {} } }); }
-  if (MOBILE || GPU_MODESTE) { const a0 = L.anim; let fait = false; L.anim = (tm) => { a0 && a0(tm); if (fait || !M || M.L !== L) return; fait = true; M.capRes = 1; M.redim && M.redim(); quitterLieu.add(() => { if (M && M.capRes === 1) { M.capRes = null; M.redim && M.redim(); } }); }; }   /* (sur téléphone, à Montmartre : une image un peu moins fine — moins de travail pour la carte graphique) */
+  if (MOBILE || GPU_MODESTE) { const a0 = L.anim; let fait = false; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} if (fait || !M || M.L !== L) return; fait = true; M.capRes = 1; M.redim && M.redim(); quitterLieu.add(() => { if (M && M.capRes === 1) { M.capRes = null; M.redim && M.redim(); } }); }; }   /* (sur téléphone, à Montmartre : une image un peu moins fine — moins de travail pour la carte graphique) */
   /* les pigeons : des petites bandes qui picorent entre les pavés ; on s'approche, ils s'envolent sur les toits, et reviennent un peu plus tard */
   { const G = geoPigeon(), pm = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .75 }), pi = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .35, metalness: .25 }), PG = [];
     const BANDES = [[-4, 4.5, 6], [6, -2, 5], [-16, -4, 4], [-50, -13, 4], [-83, 6, 4], [-20, 29, 5], [30, 12, 3]];
@@ -768,7 +769,7 @@ function construireTertre(A, L, scene) {
       t.position.set(0, .2, .1); aG.position.set(-.06, .19, .04); aD.position.set(.06, .19, .04); g.add(c, t, aG, aD); g.scale.setScalar(.9 + al() * .2); g.userData.anime = true;
       const hx = bx + (al() - .5) * 3, hz = bz + (al() - .5) * 3; g.position.set(hx, L.hauteur(hx, hz), hz); g.rotation.y = al() * 6.28; scene.add(g);
       PG.push({ g, t, aG, aD, hx, hz, etat: "sol", fin: 0, ph: al() * 10, cible: null }); }
-    let tp = 0; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const moi = M && M.moiNum && M.gens.get(M.moiNum), q = moi && moi.g.position, c = M && M.camera && M.camera.position;
+    let tp = 0; const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const moi = M && M.moiNum && M.gens.get(M.moiNum), q = moi && moi.g.position, c = M && M.camera && M.camera.position;
       for (const P of PG) { const g = P.g; const loin = c && (g.position.x - c.x) ** 2 + (g.position.z - c.z) ** 2 > 1600; g.visible = !loin || P.etat !== "sol"; if (loin && P.etat === "sol") continue;   /* (au loin : ni dessinés ni animés) */
         if (P.etat === "sol") { if (q && Math.hypot(q.x - g.position.x, q.z - g.position.z) < 2.6) { const a = Math.atan2(g.position.z - q.z, g.position.x - q.x) + (al() - .5); P.etat = "vol"; P.u = 0; P.P0 = g.position.clone(); P.P1 = new THREE.Vector3(g.position.x + Math.cos(a) * 12, 12 + al() * 3, g.position.z + Math.sin(a) * 12); P.fin = tm + 12000 + al() * 12000; continue; }
           const s = Math.sin(tm / 260 + P.ph); P.t.rotation.x = s > .6 ? .7 : 0; if (al() < dt * .5) g.rotation.y += (al() - .5) * 2; if (s < -.5) { g.position.x += Math.sin(g.rotation.y) * dt * .25; g.position.z += Math.cos(g.rotation.y) * dt * .25; if (Math.hypot(g.position.x - P.hx, g.position.z - P.hz) > 2.5) g.rotation.y += Math.PI; g.position.y = L.hauteur(g.position.x, g.position.z); } P.aG.rotation.z = P.aD.rotation.z = 0; }
@@ -776,7 +777,7 @@ function construireTertre(A, L, scene) {
           const b = Math.sin(tm / 45) * .9; P.aG.rotation.z = b; P.aD.rotation.z = -b; if (u >= 1) { P.etat = P.etat === "vol" ? "toit" : "sol"; P.aG.rotation.z = P.aD.rotation.z = 0; } }
         else if (P.etat === "toit" && tm > P.fin && (!q || Math.hypot(q.x - P.hx, q.z - P.hz) > 6)) { P.etat = "retour"; P.u = 0; P.P0 = g.position.clone(); const x = P.hx + (al() - .5) * 2, z = P.hz + (al() - .5) * 2; P.P1 = new THREE.Vector3(x, L.hauteur(x, z), z); } } }; }
   /* (fluidité) à Montmartre, pas d'ombres portées : la place et ses rues, avec toutes leurs maisons, coûtaient deux fois plus cher à dessiner */
-  { let coupe = null; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (!M || M.L !== L || coupe) return; coupe = []; scene.traverse(o => { if (o.isLight && o.castShadow) { o.castShadow = false; coupe.push(o); } }); };
+  { let coupe = null; const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} if (!M || M.L !== L || coupe) return; coupe = []; scene.traverse(o => { if (o.isLight && o.castShadow) { o.castShadow = false; coupe.push(o); } }); };
     quitterLieu.add(() => { if (coupe) for (const o of coupe) o.castShadow = true; coupe = null; }); }
   /* (fluidité) les maisons, les devantures, les lanternes étaient rangées en groupes : chaque pièce se dessinait à part (plus de 2 000 dessins par image).
      On les sort de leurs groupes, à leur place exacte, pour que tout ce qui se ressemble soit fondu en une seule pièce */
@@ -785,7 +786,7 @@ function construireTertre(A, L, scene) {
   fusionStatique(scene, L, 0);
   /* (le blocage sur téléphone : tout se figeait quelques secondes — l'image, les pigeons, le texte — quand une façade, une enseigne ou une vitrine entrait pour la première fois dans le champ :
      le téléphone envoyait alors son image à la carte graphique et préparait sa matière. On fait tout cela dès l'arrivée, une fois pour toutes, pendant le chargement) */
-  { let fait = false; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (fait || !M || M.L !== L || !M.rendu || !M.camera) return; fait = true;
+  { let fait = false; const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} if (fait || !M || M.L !== L || !M.rendu || !M.camera) return; fait = true;
       try { const R = M.rendu, vus = new Set(); scene.traverse(o => { for (const m of [].concat(o.material || [])) if (m) for (const k of ["map", "emissiveMap", "normalMap", "alphaMap"]) { const t = m[k]; if (t && t.isTexture && !vus.has(t)) { vus.add(t); try { R.initTexture(t); } catch (e) {} } } });
         R.compile(scene, M.camera); M.dbgPrep = vus.size; for (const P of PAGES) { P.c.width = P.c.height = 1; }   /* (les planches sont dans la carte graphique : on libère leur copie dans la mémoire du téléphone — 100 Mo) */ } catch (e) { console.warn("préparation", e); } }; }   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
 }
