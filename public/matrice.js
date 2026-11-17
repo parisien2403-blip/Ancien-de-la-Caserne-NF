@@ -9047,7 +9047,13 @@ export async function ouvrir(ctx) {
           const pose = Math.floor(t / 420) % 2 ? "balai1" : "balai2";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = Math.sin(t / 420 * Math.PI) * .03; p.dansait = true; }
-        else if (p.info.auto || p.siegeV) {   // assis dans le cabriolet (ou sur la selle de la Vespa, à Montmartre)
+        else if (p.siegeV && p.poses.dos && M.camera && (() => { const c = M.camera.position, q = p.g.position; return (c.x - q.x) * Math.sin(p.siegeV[2]) + (c.z - q.z) * Math.cos(p.siegeV[2]) < 0; })()) {   // (10.95) sur la Vespa, vu de derrière : de dos — le haut du corps seulement, posé sur la selle
+          if (!p.dosHaut) { p.dosHaut = p.poses.dos.clone(); p.dosHaut.repeat.set(1, .56); p.dosHaut.offset.set(0, .44); p.dosHaut.needsUpdate = true; }
+          if (p.corps.userData.sy0 == null) p.corps.userData.sy0 = p.corps.scale.y; p.corps.scale.y = p.corps.userData.sy0 * .56;
+          if (p.corps.material.map !== p.dosHaut) { p.corps.material.map = p.dosHaut; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = .3; p.dansait = true; }
+        else if (p.info.auto || p.siegeV) {   // assis dans le cabriolet (ou sur la selle de la Vespa, vue de face ou de côté)
+          if (p.corps.userData.sy0 != null) { p.corps.scale.y = p.corps.userData.sy0; p.corps.userData.sy0 = null; }
           if (p.corps.material.map !== p.poses.assis) { p.corps.material.map = p.poses.assis; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; p.dansait = true; }
         else if (Number.isInteger(p.info.assis)) {
@@ -9149,7 +9155,7 @@ export async function ouvrir(ctx) {
         else if (p.info.danse) { const ph = t / 320 + p.info.numero * .7, pose = ["repos", "mi", "haut", "mi"][Math.floor(ph * 2) % 4];
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = Math.sin(ph * Math.PI) * .13; p.corps.position.x = Math.sin(ph * Math.PI) * .14; if (!p.cible) p.corps.position.y = Math.abs(Math.sin(ph * Math.PI * 2)) * .07; p.dansait = true; }
-        else if (p.dansait) { p.dansait = false; p.corps.scale.x = tailleBonhomme() * .476 * 1.6 * hauteurDe(p); p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
+        else if (p.dansait) { p.dansait = false; if (p.corps.userData.sy0 != null) { p.corps.scale.y = p.corps.userData.sy0; p.corps.userData.sy0 = null; } p.corps.scale.x = tailleBonhomme() * .476 * 1.6 * hauteurDe(p); p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
       }
     }
     seg("les gens"); { const t0 = performance.now(); M.animVu = t; if (M.L.anim) M.L.anim(t); dbgLent("anim du lieu", t0); } tS = performance.now();
