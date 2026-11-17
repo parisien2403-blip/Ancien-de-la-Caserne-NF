@@ -213,8 +213,8 @@ function construireTertre(A, L, scene) {
   const table = (x, z, rouge) => { cyl(.32, .32, .03, rouge ? nappe : plateau, x, .74, z); cyl(.025, .025, .72, fonteM, x, .37, z, scene, 6); cyl(.2, .22, .03, fonteM, x, .02, z); };
   const PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
   const gens = (k, o = {}) => { const f = k % 2 === 1; return personne3D({ taille: f ? 1.64 : 1.76, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a", "#a5532a"][k % 6], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#1a1a1c"][k % 4], chaussures: ["#1a1a1a", "#3a2418"][k % 2], coif: f ? (k % 3 ? "long" : "carre") : k % 5 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 3 === 0, ...o }); };
-  const GENS = false;   // (pour le moment, personne : la place doit rester fluide)
-  const nTerr = !GENS ? 0 : PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 12 : 26; let kT = 0;
+  const GENS = true;
+  const nTerr = !GENS ? 0 : PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 10 : 26; let kT = 0;
   // une terrasse : des rangées de tables le long d'une façade ; ax/az : le sens de la façade ; nx/nz : vers la rue
   const terrasse = (x0, z0, ax, az, nx, nz, L2, rangs, rouge) => { for (let r = 0; r < rangs; r++) for (let t = .6; t < L2 - .4; t += 1.25) { const x = x0 + ax * t + nx * (.55 + r * 1.0), z = z0 + az * t + nz * (.55 + r * 1.0); table(x, z, rouge);
       const ry = Math.atan2(nx, nz); for (const sg of [-1, 1]) { const cx = x + ax * sg * .45, cz = z + az * sg * .45, rc = Math.atan2(-ax * sg, -az * sg); chaise(cx, cz, rc);
@@ -506,14 +506,23 @@ function construireTertre(A, L, scene) {
   const parasol = (x, z, k, y0 = YS, R = 1.3) => { cyl(.03, .03, 2.4, mat({ color: 0xd8d8d8, metalness: .5 }), x, y0 + 1.2, z, scene, 6); const c = add(new THREE.ConeGeometry(R, .55, 10, 1, true), mat({ color: parasolC[k % parasolC.length], side: THREE.DoubleSide, roughness: .9 }), x, y0 + 2.5, z); c.castShadow = true; };
   const chevalet = (x, z, ry, k, y0 = YS) => { const g = new THREE.Group(); g.position.set(x, y0, z); g.rotation.y = ry; scene.add(g); for (const sg of [-1, 1]) { const l = box(.035, 1.7, .035, boisC, sg * .28, .82, .05, g); l.rotation.z = -sg * .1; } const ar = box(.035, 1.7, .035, boisC, 0, .8, -.32, g); ar.rotation.x = .35;
     box(.62, .04, .06, boisC, 0, .82, .1, g); const t = box(.56, .7, .03, TABL[k % TABL.length], 0, 1.2, .1, g); t.rotation.x = -.08; return g; };
-  let kP = 0; const nPeint = !GENS ? 0 : PETIT ? 3 : (MOBILE || GPU_MODESTE) ? 6 : 10;
+  let kP = 0; const nPeint = !GENS ? 0 : PETIT ? 3 : (MOBILE || GPU_MODESTE) ? 4 : 8, MODELES = [];
   const coin = (x, z, ry, k) => { chevalet(x, z, ry, k); parasol(x - Math.sin(ry) * .6, z - Math.cos(ry) * .6, k);
     { const sg = k % 2 ? 1 : -1, B = new THREE.Group(); B.position.set(x + Math.cos(ry) * 1.25 * sg, YS, z - Math.sin(ry) * 1.25 * sg); B.rotation.y = ry; scene.add(B);   // le bac à toiles : un casier de bois sur pieds ; les toiles debout dedans, un peu penchées, qu'on feuillette
       for (const [dx, dz] of [[-.36, -.2], [.36, -.2], [-.36, .2], [.36, .2]]) box(.04, .62, .04, boisC, dx, .31, dz, B);
       box(.78, .03, .44, boisC, 0, .3, 0, B); for (const dz of [-.21, .21]) box(.78, .3, .025, boisC, 0, .45, dz, B); for (const dx of [-.38, .38]) box(.025, .3, .44, boisC, dx, .45, 0, B);
       for (let i = 0; i < 4; i++) { const tb = box(.66, .5, .02, TABL[(k * 3 + i + 7) % TABL.length], 0, .55 + (i % 2) * .02, -.15 + i * .09, B); tb.rotation.x = -.18 - i * .05; } OB.push([B.position.x, B.position.z, .5]); }
     const pl = new THREE.Group(); pl.position.set(x - Math.sin(ry) * .75, YS, z - Math.cos(ry) * .75); pl.rotation.y = ry; scene.add(pl); box(.4, .04, .34, mat({ color: 0x3a3a3a }), 0, .44, 0, pl); for (const sg of [-1, 1]) { const p = box(.02, .5, .02, fonteM, sg * .16, .22, 0, pl); p.rotation.x = sg * .4; }
-    if (kP < nPeint) { const m = gens(kP * 5 + 1, { haut: ["#c8282a", "#2a3a5a", "#5a4636", "#1a1a1c", "#e8e2d6"][kP % 5] }); m.position.copy(pl.position); m.position.y = YS; m.rotation.y = ry; m.userData.poser("assis", 0); scene.add(m); PEINT.push({ m, k: kP }); kP++; }
+    if (kP < nPeint) { const m = gens(kP * 5 + 1, { haut: ["#e8e2d6", "#3a5a8a", "#e8e2d6", "#5a4636"][kP % 4], pantalon: true, robe: false, coif: "court" }); m.position.copy(pl.position); m.position.y = YS; m.rotation.y = ry; m.userData.poser("assis", 0); scene.add(m);
+      const P = m.userData.parts, beret = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .045, 16), mat({ color: kP % 2 ? 0x1a1a24 : 0x8a1a1a, roughness: .9 })); beret.position.set(.02, .1, -.01); beret.rotation.z = .25; P.tete.add(beret);   // le béret
+      const blouse = new THREE.Mesh(new THREE.CylinderGeometry(.16, .24, .5, 10, 1, true), mat({ color: kP % 2 ? 0x3a5a8a : 0xece6da, side: THREE.DoubleSide, roughness: .9 })); blouse.position.y = .12; P.buste.add(blouse);   // la blouse de peintre
+      const pal = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .015, 14), mat({ color: 0xb08a5a, roughness: .6 })); pal.position.set(0, -.3, .08); pal.rotation.x = Math.PI / 2; P.bras[0].c.add(pal);   // la palette
+      for (let t = 0; t < 4; t++) { const d = new THREE.Mesh(new THREE.SphereGeometry(.018, 5, 4), mat({ color: [0xc83030, 0x3060c0, 0xe8c030, 0x30a050][t] })); d.position.set(Math.cos(t * 1.4) * .07, -.3 + Math.sin(t * 1.4) * .07, .095); P.bras[0].c.add(d); }
+      const pin = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .22, 5), mat({ color: 0x6a4020 })); pin.position.set(0, -.32, .05); pin.rotation.x = 1.2; P.bras[1].c.add(pin);   // le pinceau
+      PEINT.push({ m, k: kP });
+      if (kP < 3) { const mx = x + Math.sin(ry) * 1.7, mz = z + Math.cos(ry) * 1.7, f = kP !== 1, mo = gens(kP * 7 + 4, { robe: f, pantalon: !f, coif: f ? "long" : "court", haut: ["#c83a5a", "#2a4a3a", "#e8c040"][kP], parle: false });   // le modèle, assis sur un tabouret, qui pose
+        chaise(mx, mz, ry + Math.PI).position.y = YS; mo.position.set(mx, YS, mz); mo.rotation.y = ry + Math.PI; mo.userData.poser("assis", 0); scene.add(mo); MODELES.push({ m: mo, k: kP }); OB.push([mx, mz, .45]); }
+      kP++; }
     OB.push([x, z, .55], [pl.position.x, pl.position.z, .45]); };
   for (const [x, z, ry, k] of [[-11, -7.4, Math.PI * .25, 0], [-7.2, -7.8, 0, 1], [-1.6, -7.6, -.2, 2], [2.4, -7.9, .3, 3], [-6, -2.6, Math.PI, 7], [0.6, -2.4, Math.PI * .8, 8], [-5.6, 3.2, .4, 9], [-1, 7.4, Math.PI, 10], [-8.6, 7.4, Math.PI, 11], [-11.8, 7.0, Math.PI / 2, 5], [11.6, -1.2, -Math.PI / 2, 12], [5.5, -1.5, -.4, 6]]) coin(x, z, ry, k);
   // les panneaux de caricatures et de portraits au fusain
@@ -601,7 +610,25 @@ function construireTertre(A, L, scene) {
 
   /* ---------- les promeneurs : les touristes qui font le tour du carré, regardent les peintres, remontent la rue Saint-Éleuthère ---------- */
   const ROUTES = [[[-78, -12.9], [-23, -12.9]], [[-83, -40], [-83, 34]], [[-78, 29], [54, 29]], [[1, 12], [1, 29], [-40, 29]], [[-23, -12], [-60, -12], [-82, -13], [-82, 28], [-20, 28.5]], [[-70, 30.5], [40, 30.5]],[[-16, -12], [16, -12], [16, 12], [-16, 12], [-16, -12]], [[-17, 12.5], [-17, -12.5], [15, -12.5], [15, 12.5], [-17, 12.5]], [[16, 12], [42, 12]], [[1, ZS - .5], [1, 11], [-15, 11], [-15, -11.5]], [[-12.6, -8.6], [12.6, -8.6], [12.6, 2], [-12.6, 2]]];
-  for (let k = 0, n = !GENS ? 0 : PETIT ? 8 : (MOBILE || GPU_MODESTE) ? 14 : 36; k < n; k++) { const R = ROUTES[k % ROUTES.length], m = gens(k * 3 + 2), i0 = k % (R.length - 1), u = al(), a = R[i0], b = R[i0 + 1];
+  /* le joueur d'accordéon, dans un coin de la place : la casquette, le gilet, l'accordéon dont le soufflet s'ouvre et se ferme ; son étui ouvert par terre, quelques pièces */
+  const ACCORD = [], BANCS = [];
+  if (GENS) { const ax = -14.6, az = 13, m = personne3D({ taille: 1.74, peau: "#d8a888", ch: "#8a8a8a", haut: "#3a3028", bas: "#2a2a30", chaussures: "#2a1a14", coif: "court", pantalon: true }); m.position.set(ax, 0, az); m.rotation.y = Math.PI * .85; m.userData.poser("debout", 0); scene.add(m);
+    const P = m.userData.parts, cas = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .06, 14), mat({ color: 0x2a2a30 })); cas.position.set(0, .1, 0); P.tete.add(cas); const vis = new THREE.Mesh(new THREE.BoxGeometry(.24, .02, .1), mat({ color: 0x2a2a30 })); vis.position.set(0, .07, .12); P.tete.add(vis);   // la casquette
+    const ac = new THREE.Group(); ac.position.set(0, .2, .2); P.buste.add(ac); const rouge = mat({ color: 0xa8141c, roughness: .35, metalness: .2 }), nacre = mat({ color: 0xf2efe6, roughness: .3 }), noirA = mat({ color: 0x141414 });
+    const gD = box(.08, .32, .2, rouge, -.18, 0, 0, ac), gG = box(.08, .32, .2, rouge, .18, 0, 0, ac); for (let t = 0; t < 7; t++) box(.012, .3, .02, nacre, -.21, -.12 + t * .04, .1, ac);   // les deux caisses, le clavier
+    const souf = []; for (let i = 0; i < 6; i++) souf.push(box(.045, .3, .19, i % 2 ? noirA : mat({ color: 0xe8e2d6 }), -.12 + i * .048, 0, 0, ac));   // le soufflet
+    P.bras[0].e.rotation.set(-1.1, 0, -.5); P.bras[1].e.rotation.set(-1.1, 0, .5);
+    const etui = box(.7, .1, .35, mat({ color: 0x3a2a1e }), ax - .9, .05, az + .6); etui.rotation.y = .3; for (let i = 0; i < 5; i++) add(new THREE.CylinderGeometry(.02, .02, .005, 8), mat({ color: 0xd8b860, metalness: .8, roughness: .3 }), ax - 1.1 + i * .1, .11, az + .55 + (i % 2) * .05);
+    OB.push([ax, az, .5], [ax - .9, az + .6, .45]);
+    ACCORD.push((tm) => { m.userData.poser("debout", tm); const o = Math.sin(tm / 330); for (let i = 0; i < 6; i++) souf[i].position.x = (-.12 + i * .048) * (1 + o * .3); gD.position.x = -.18 - o * .05; gG.position.x = .18 + o * .05; P.bras[0].e.rotation.set(-1.1, 0, -.5 - o * .12); P.bras[1].e.rotation.set(-1.1, 0, .5 + o * .12); P.tete.rotation.y = Math.sin(tm / 1500) * .3; P.bassin.rotation.y = Math.sin(tm / 700) * .08; }); }
+  /* les bancs de Paris : lattes de bois vert, pieds de fonte ; quelques promeneurs s'y reposent */
+  { const vertB = mat({ color: 0x2e5a3a, roughness: .55 }), fonteB = mat({ color: 0x1a1c1a, metalness: .5, roughness: .5 });
+    for (const [bx, bz, ry, assis] of [[-5.5, -9.7, 0, 1], [3.2, -9.7, 0, 0], [-6.5, 9.7, Math.PI, 1], [13.7, -3, -Math.PI / 2, 0], [-13.7, -6.6, Math.PI / 2, 1]]) { const g = new THREE.Group(); g.position.set(bx, 0, bz); g.rotation.y = ry; scene.add(g);
+      for (let l = 0; l < 3; l++) box(1.8, .04, .1, vertB, 0, .45, -.12 + l * .13, g); for (let l = 0; l < 2; l++) { const d = box(1.8, .1, .03, vertB, 0, .66 + l * .14, -.24, g); d.rotation.x = -.15; }
+      for (const sx of [-.75, .75]) { box(.06, .45, .5, fonteB, sx, .23, -.05, g); box(.05, .5, .05, fonteB, sx, .72, -.23, g); box(.06, .05, .4, fonteB, sx, .62, .02, g); }
+      OB.push([bx, bz, .9]);
+      if (GENS && assis && BANCS.length < ((MOBILE || GPU_MODESTE) ? 2 : 4)) { const k = BANCS.length, mb = gens(k * 11 + 6); mb.position.set(bx + Math.cos(ry) * (k % 2 ? .4 : -.4), .02, bz - Math.sin(ry) * (k % 2 ? .4 : -.4)); mb.rotation.y = ry; mb.userData.poser("assis", 0); scene.add(mb); BANCS.push({ m: mb, k }); } } }
+  for (let k = 0, n = !GENS ? 0 : PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 10 : 30; k < n; k++) { const R = ROUTES[k % ROUTES.length], m = gens(k * 3 + 2), i0 = k % (R.length - 1), u = al(), a = R[i0], b = R[i0 + 1];
     m.position.set(a[0] + (b[0] - a[0]) * u, 0, a[1] + (b[1] - a[1]) * u); m.userData.poser("marche", 0); scene.add(m); MARCH.push({ m, R, i: i0 + 1, sens: 1, v: .8 + (k % 5) * .12 }); }
   // les serveurs, le long des terrasses : tablier blanc, le plateau
   for (const [x, z, ry] of !GENS ? [] : [[XO + 2.3, 4.5, Math.PI / 2], [XO + 2.3, -3.4, Math.PI / 2], [-2, ZN + 2.3, 0], [8.2, 2.8, Math.PI]]) { const m = personne3D({ taille: 1.78, peau: PE[(x * 3 | 0) & 3], ch: "#141010", haut: "#f2f0ea", bas: "#141414", chaussures: "#0a0a0a", coif: "court", pantalon: true }); m.position.set(x, x > 0 && z > 0 ? YS : hTrot(x, z), z); m.rotation.y = ry; scene.add(m); m.userData.poser("debout", 0);
@@ -621,6 +648,9 @@ function construireTertre(A, L, scene) {
   let nV = null, tp = 0;
   const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const c = M && M.camera && M.camera.position, R2 = ((MOBILE || GPU_MODESTE) ? 30 : 60) ** 2;
+    for (const { m, k } of MODELES) { m.userData.poser("assis", 0); const P = m.userData.parts; P.bras[1].e.rotation.set(-1.9, 0, .4); P.bras[1].c.rotation.x = -1.9; P.tete.rotation.y = Math.sin(tm / 3000 + k) * .08; }
+    for (const A of ACCORD) A(tm);
+    for (const { m, k } of BANCS) { m.userData.poser("assis", tm); const P = m.userData.parts; P.tete.rotation.y = Math.sin(tm / 2400 + k * 2) * .5; }
     for (const { m, k } of PEINT) { if (c && (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 > R2) continue; m.userData.poser("assis", tm); const P = m.userData.parts, s = Math.sin(tm / 260 + k * 1.7); P.bras[1].e.rotation.set(-1.15 + s * .12, 0, .25); P.bras[1].c.rotation.x = -.5 + Math.cos(tm / 300 + k) * .15; P.tete.rotation.x = Math.sin(tm / 2400 + k) * .12; }   // (le pinceau qui va et vient)
     for (const [k, m] of TERR.entries()) { if (c && (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 > R2) continue; const P = m.userData.parts, b = (tm / 1000 + k * 1.7) % 7; m.userData.poser("assis", tm); if (b < 1.3) { P.bras[1].e.rotation.x = -1.3; P.bras[1].c.rotation.x = -1.9; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.9; } }
     for (const { m, gui, k } of MUSI) { m.userData.poser(k ? "debout" : "assis", tm); const P = m.userData.parts; if (!k) { P.bras[1].e.rotation.set(-.9, 0, .3); P.bras[1].c.rotation.x = -1.2 + Math.sin(tm / 90) * .25; P.bras[0].e.rotation.set(-1.3, 0, -.6); P.bras[0].c.rotation.x = -1.1; P.tete.rotation.y = Math.sin(tm / 1400) * .3; void gui; }
