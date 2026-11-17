@@ -584,7 +584,7 @@ function construireTertre(A, L, scene) {
       const p = M.gens.get(M.moiNum), q = p && p.g.position, T = M.dbgTap, A = M.dbgAller, now = performance.now();
       el.textContent = (q ? `pos ${q.x.toFixed(1)} ${q.z.toFixed(1)} ${L.limites(q.x, q.z) ? "ok" : "HORS"}` : "pas de bonhomme") + ` cine ${M.cine ? "OUI" : "non"}\n` +
         `doigt: ${T ? T.r + " il y a " + ((now - T.t) / 1000).toFixed(0) + "s" : "-"}\naller: ${A ? A.x.toFixed(1) + " " + A.z.toFixed(1) + " il y a " + ((now - A.t) / 1000).toFixed(0) + "s" + (A.cine ? " (cine)" : "") : "-"}\n` +
-        `cible ${p && p.cible ? p.cible.x.toFixed(1) + " " + p.cible.z.toFixed(1) : "aucune"} vit ${p ? (p.vit || 0).toFixed(1) : "-"} bloq ${p ? p.bloqueN || 0 : "-"}`; }; }
+        `cible ${p && p.cible ? p.cible.x.toFixed(1) + " " + p.cible.z.toFixed(1) : "aucune"} vit ${p ? (p.vit || 0).toFixed(1) : "-"} bloq ${p ? p.bloqueN || 0 : "-"}` + (M.dbgPas ? `\npas ${M.dbgPas.pas.toFixed(3)} ok ${M.dbgPas.pasOk.toFixed(3)} dt ${M.dbgPas.dt.toFixed(3)} n ${M.dbgPas.n}` : "") + `\nimages ${((M.dbgImg || 0) - (el.img0 || 0)) * 4}/s`; el.img0 = M.dbgImg || 0; }; }
   fusionStatique(scene, L, 0);   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
 }
 ({ construireTertre })

@@ -8941,6 +8941,7 @@ export async function ouvrir(ctx) {
   M.signalerErreur = signalerErreur;
   function image(t) {
     if (!M || !M.scene) return;
+    M.dbgImg = (M.dbgImg || 0) + 1;
     const brut = t - avant, dt = brut > 0 && brut < 1e4 ? Math.min(.05, brut / 1000) : .016; avant = t; M.dtCam = dt;   /* (un temps faux — l'appli remise au premier plan, une capture d'écran — : jamais de pas négatif ou NaN, qui figeait la marche) */
     // trop lent (moins de 35 images par seconde) : on affine moins l'image ; très à l'aise : on la rend plus fine
     if (brut > 0 && brut < 250) { perf.n++; perf.s += brut; if (perf.n >= 60) { const moy = perf.s / perf.n; perf = { n: 0, s: 0 };
@@ -8990,6 +8991,7 @@ export async function ouvrir(ctx) {
             if (p.bloqueN === 4 && but && !p.recalcule) { p.recalcule = true; viser(p, but.x, but.z); }
             else if (p.bloqueN > 10) { p.bloqueN = 0; p.glisseN = 0; p.recalcule = false; p.cible = null; p.chemin = []; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }   // (vraiment bloqué : on s'arrête)
           else { p.bloqueN = 0; p.recalcule = false; }
+          if (p.moi) M.dbgPas = { pas, pasOk, dt, x: p.g.position.x, n: (M.dbgPas ? M.dbgPas.n : 0) + 1 };
           p.g.position.addScaledVector(sens, pasOk);
           if (!fin && L < .28) p.cible = p.chemin.shift();      // le coin : on enchaîne sur le bout de chemin suivant
           // le pas : un léger balancement du corps (pas pendant une danse)
