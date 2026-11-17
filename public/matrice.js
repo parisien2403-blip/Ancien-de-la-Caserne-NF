@@ -13179,6 +13179,7 @@ function cineMetro(dep, arr) { if (!M || M.cine) return; const scene = M.scene, 
   const fin = () => { if (fini) return; fini = true; if (son) son.fin(); scene.remove(G); for (const o of caches) o.visible = true; if (scene.fog && brouillard != null) scene.fog.color.setHex(brouillard); scene.background = fond; finCine(); const n = voile("background:#000;opacity:1");
     changerLieu(arr.lieu, arr.arrivee, arr.yaw); if (fpAvant && arr.lieu !== "tertre" && arr.lieu !== "jouffroy") premiere(true); setTimeout(() => { if (n) { n.style.transition = "opacity .8s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 900); } }, 350); };
   dire(M.moiNum, "🚇 Direction " + arr.nom + "…");
+  setTimeout(() => { if (!fini && M && M.cine) try { preparerLieu(arr.lieu); } catch (e) {} }, 2500);   /* (pendant le trajet, la station d'arrivée se construit en coulisse : à l'arrivée, on y est tout de suite) */
   M.cine = { gel: true, fov: [66, 78], maj: (now) => { if (fini) return; const t = (now - t0) / 1000, dt = Math.min(.1, (now - tp) / 1000); tp = now;
     // la vitesse : 4 m/s² au départ, 13 m/s dans le tunnel, on freine pour s'arrêter pile au quai
     if (t > 3) { const reste = D - s; const vMax = Math.sqrt(Math.max(0, 2 * 3.6 * reste)); v = Math.min(v + 4 * dt, 13, vMax); s = Math.min(D, s + v * dt); if (reste < .02) { s = D; v = 0; } }
