@@ -13,7 +13,11 @@ function construireTertre(A, L, scene) {
   const fit = (c, txt, maxW, px, font) => { let p = px; c.font = `${font.replace("@", p + "px")}`; while (c.measureText(txt).width > maxW && p > 8) { p -= 2; c.font = `${font.replace("@", p + "px")}`; } return p; };
   const SQ = { x0: -13, x1: 13, z0: -9, z1: 9 }, YS = .14;   // le carré des peintres (surélevé d'une bordure de pierre)
   const XO = -21.5, XE = 19.5, ZN = -16.5, ZS = 15.5;
-  const OB = [], LEDC = [];   // (les obstacles : arbres, chevalets, poteaux)   // les façades : ouest (les restaurants), est, nord, sud
+  const OB = [], LEDC = [], HALO = [];
+  /* le soir : sous chaque lampadaire, la flaque de lumière dorée sur les pavés (un seul matériau, fondu avec le reste) ; autour de chaque lanterne, le halo (tous en un seul nuage de points) */
+  const flaqueT = tT(128, 128, (c, w, h) => { const g = c.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,190,110,1)"); g.addColorStop(.45, "rgba(255,160,80,.45)"); g.addColorStop(1, "rgba(255,140,60,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
+  const flaqueM = new THREE.MeshBasicMaterial({ map: flaqueT, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+  const flaque = (x, z, r, y = .03) => { const p = add(new THREE.PlaneGeometry(r * 2, r * 2), flaqueM, x, y, z); p.rotation.x = -Math.PI / 2; p.renderOrder = 1; };   // (les obstacles : arbres, chevalets, poteaux)   // les façades : ouest (les restaurants), est, nord, sud
 
   /* ---------- le sol : les pavés de granit, gris-bleu, arrondis par les années ; la bordure de pierre du carré ---------- */
   /* les pavés de grès et de granit (d'après les photos) : de petits pavés rectangulaires posés en rangs, aux couleurs mêlées — gris, beige, ocre, brun, un peu de rouille —,
@@ -188,7 +192,7 @@ function construireTertre(A, L, scene) {
   { const n = Math.floor(132 / 1.7); for (let i = 0; i <= n; i++) { const x = -78 + i * 1.7; if (x > -2 && x < 4) continue; cyl(.07, .08, .85, potM, x, .45, ZRu0 + .95, scene, 7); } }
   // une lanterne sur potence, accrochée au mur (o : la direction de la rue, depuis le mur)
   const lanterneMur = (x, y, z, nx, nz) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = Math.atan2(nx, nz); scene.add(g); box(.04, .04, .7, fonteM, 0, .3, .35, g); const s = box(.03, .5, .03, fonteM, 0, .05, .08, g); s.rotation.x = .7;
-    add(new THREE.CylinderGeometry(.17, .11, .4, 6), lum(mat({ color: 0xfff0c8, emissive: 0xffc870, emissiveIntensity: .05, transparent: true, opacity: .92 }), .05, 2.4), 0, .05, .7, g); add(new THREE.ConeGeometry(.22, .18, 6), fonteM, 0, .32, .7, g); };
+    add(new THREE.CylinderGeometry(.17, .11, .4, 6), lum(mat({ color: 0xfff0c8, emissive: 0xffc870, emissiveIntensity: .05, transparent: true, opacity: .92 }), .05, 2.4), 0, .05, .7, g); add(new THREE.ConeGeometry(.22, .18, 6), fonteM, 0, .32, .7, g); const l = Math.hypot(nx, nz) || 1; HALO.push([x + nx / l * .7, y + .05, z + nz / l * .7, 1.1]); flaque(x + nx / l * 1.3, z + nz / l * 1.3, 2.4, .12); };
   // le lierre et la vigne vierge sur les façades (rouge en automne, comme sur la photo)
   const lierreT = (rouge) => tT(256, 512, (c, w, h) => { c.clearRect(0, 0, w, h); for (let i = 0; i < 1600; i++) { const y = h - Math.pow(al(), .7) * h, x = w / 2 + (al() - .5) * w * (.35 + .65 * (h - y) / h) ; const v = al();
       c.fillStyle = rouge && v < .55 ? `hsl(${v * 30},${60 + v * 30}%,${28 + v * 18}%)` : `hsl(${95 + v * 30},${40 + v * 20}%,${18 + v * 22}%)`; c.beginPath(); c.ellipse(x, y, 4 + al() * 5, 3 + al() * 4, al() * 3, 0, 7); c.fill(); } });
@@ -385,7 +389,7 @@ function construireTertre(A, L, scene) {
     const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(P2, 3)); const pM = new THREE.PointsMaterial({ color: 0x4a7aff, size: .2, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     const leds = new THREE.Points(geo, pM); leds.visible = false; scene.add(leds); L.ledsTertre = leds; NUIT.push([{ set emissiveIntensity(v) { leds.visible = v > 0; } }, 0, 1]); }
   const lanterne = (x, z, y0 = 0) => { cyl(.07, .12, 3.6, fonteM, x, y0 + 1.8, z, scene, 8); cyl(.18, .14, .3, fonteM, x, y0 + .15, z, scene, 8); cyl(.04, .2, .12, fonteM, x, y0 + 3.62, z, scene, 6);
-    const v = lum(mat({ color: 0xf8f0d8, emissive: 0xffd890, emissiveIntensity: .08, roughness: .2, transparent: true, opacity: .9 }), .08, 2.2); add(new THREE.CylinderGeometry(.24, .15, .55, 6), v, x, y0 + 3.98, z); add(new THREE.ConeGeometry(.3, .25, 6), fonteM, x, y0 + 4.38, z); cyl(.03, .03, .2, fonteM, x, y0 + 4.58, z, scene, 4); OB.push([x, z, .25]); };
+    const v = lum(mat({ color: 0xf8f0d8, emissive: 0xffd890, emissiveIntensity: .08, roughness: .2, transparent: true, opacity: .9 }), .08, 2.2); add(new THREE.CylinderGeometry(.24, .15, .55, 6), v, x, y0 + 3.98, z); add(new THREE.ConeGeometry(.3, .25, 6), fonteM, x, y0 + 4.38, z); cyl(.03, .03, .2, fonteM, x, y0 + 4.58, z, scene, 4); OB.push([x, z, .25]); HALO.push([x, y0 + 3.98, z, 1.6]); flaque(x, z, 3.6, y0 + .03); };
   for (const [x, z] of [[-12.3, -8.3], [12.3, -8.3], [-12.3, 8.3], [12.3, 8.3], [0, -8.4], [-12.4, 0]]) lanterne(x, z, YS);
   for (const [x, z] of [[XO + 2.9, -8.5], [XO + 2.9, 7.5], [XE - .4, 0], [-8, ZS - .4], [6, ZN + 2.7]]) lanterne(x, z, 0);
   { const lp = []; if (!(MOBILE || GPU_MODESTE)) for (const [x, z] of [[-12.3, -8.3], [12.3, 8.3], [-12.4, 0], [XO + 2.9, 7.5], [XO + 2.9, -8.5], [6, ZN + 2.7]]) { const p = new THREE.PointLight(0xffc878, 0, 16, 1.6); p.position.set(x, 4.2, z); scene.add(p); lp.push(p); }
@@ -486,6 +490,41 @@ function construireTertre(A, L, scene) {
     for (const W of MARCH) { const m = W.m, [tx, tz] = W.R[W.i], dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
       if (d < .15) { if (W.i + W.sens < 0 || W.i + W.sens >= W.R.length) W.sens = -W.sens; W.i += W.sens; continue; }
       const v = Math.min(d, W.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur(m.position.x, m.position.z); m.rotation.y = Math.atan2(dx, dz); if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * W.v / 1.2); } };
+  /* les lampadaires des rues (d'après les photos) : le socle de fonte, le fût cannelé et ses bagues, la lanterne à quatre pans, son chapeau ; de loin en loin, sur le bord des trottoirs */
+  { const fonteL = mat({ color: 0x1e2220, roughness: .45, metalness: .55 }), verreL = lum(mat({ color: 0xfff0d0, emissive: 0xffc870, emissiveIntensity: .06, roughness: .2 }), .06, 2.6);
+    const lampadaire = (x, z) => { cyl(.17, .22, .55, fonteL, x, .3, z, scene, 8); cyl(.1, .12, .12, fonteL, x, .62, z, scene, 8); cyl(.06, .085, 3.0, fonteL, x, 2.1, z, scene, 8); for (const y of [1.2, 3.1]) cyl(.1, .1, .07, fonteL, x, y, z, scene, 8);
+      cyl(.13, .06, .25, fonteL, x, 3.7, z, scene, 8); const v = add(new THREE.CylinderGeometry(.24, .15, .5, 4), verreL, x, 4.08, z); v.rotation.y = Math.PI / 4; const t = add(new THREE.ConeGeometry(.3, .28, 4), fonteL, x, 4.47, z); t.rotation.y = Math.PI / 4; cyl(.025, .025, .18, fonteL, x, 4.68, z, scene, 4);
+      OB.push([x, z, .25]); HALO.push([x, 4.08, z, 1.7]); flaque(x, z, 3.8, .13); };
+    for (let x = -76; x < -24; x += 13) lampadaire(x, ZNo1 - .55);   // rue Norvins
+    for (let z = -38; z < ZSa1 - 4; z += 13) lampadaire(XSa1 - .55, z);   // rue des Saules
+    for (let x = -72, k = 0; x < XBUT - 4; x += 12, k++) lampadaire(x, k % 2 ? ZRu0 + .55 : ZRu1 - .55);   // rue Saint-Rustique
+    for (let x = XE + 6; x < XBUT - 4; x += 12) lampadaire(x, 9.55); }   // rue Saint-Éleuthère
+  { const hT = tT(64, 64, (c, w, h) => { const g = c.createRadialGradient(32, 32, 1, 32, 32, 31); g.addColorStop(0, "rgba(255,236,190,1)"); g.addColorStop(.25, "rgba(255,190,110,.55)"); g.addColorStop(1, "rgba(255,150,70,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
+    const pos = new Float32Array(HALO.length * 3); HALO.forEach(([x, y, z], i) => pos.set([x, y, z], i * 3)); const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const hM = new THREE.PointsMaterial({ map: hT, size: 2.8, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0, fog: false }), pts = new THREE.Points(geo, hM); pts.frustumCulled = false; pts.visible = false; scene.add(pts);
+    const amb = new THREE.AmbientLight(0xff9a50, 0); scene.add(amb);   // (le soir, une lumière ambiante orangée, chaleureuse, sur toutes les façades)
+    NUIT.push([{ set emissiveIntensity(v) { pts.visible = v > 0; hM.opacity = v; flaqueM.opacity = v * .85; amb.intensity = v * .45; } }, 0, 1]); }
+  /* la musique : l'accordéon, en boucle, tant qu'on est à Montmartre ; elle monte doucement, s'arrête quand on repart */
+  L.sansMusique = true;
+  { const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (!M || M.L !== L) return; const A2 = (window.__accordeon = window.__accordeon || Object.assign(new Audio("sons/montmartre-accordeon.mp3"), { loop: true, preload: "auto" }));
+      if (A2.paused && !A2._essai && !A2._attente) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
+      if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
+      if (!A2.paused) try { A2.volume = Math.min(.5, A2.volume + .006); } catch (e) {} };
+    quitterLieu.add(() => { const A2 = window.__accordeon; if (A2) { A2.pause(); try { A2.currentTime = 0; } catch (e) {} } }); }
+  /* les pigeons : des petites bandes qui picorent entre les pavés ; on s'approche, ils s'envolent sur les toits, et reviennent un peu plus tard */
+  { const G = geoPigeon(), pm = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .75 }), pi = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .35, metalness: .25 }), PG = [];
+    const BANDES = [[-4, 4.5, 6], [6, -2, 5], [-16, -4, 4], [-50, -13, 4], [-83, 6, 4], [-20, 29, 5], [30, 12, 3]];
+    for (const [bx, bz, n] of BANDES) for (let k = 0; k < (PETIT ? Math.min(n, 3) : n); k++) { const g = new THREE.Group(), c = new THREE.Mesh(G.corps, pm), t = new THREE.Mesh(G.tete, pi), aG = new THREE.Mesh(G.aileG, pm), aD = new THREE.Mesh(G.aileD, pm);
+      t.position.set(0, .2, .1); aG.position.set(-.06, .19, .04); aD.position.set(.06, .19, .04); g.add(c, t, aG, aD); g.scale.setScalar(.9 + al() * .2);
+      const hx = bx + (al() - .5) * 3, hz = bz + (al() - .5) * 3; g.position.set(hx, L.hauteur(hx, hz), hz); g.rotation.y = al() * 6.28; scene.add(g);
+      PG.push({ g, t, aG, aD, hx, hz, etat: "sol", fin: 0, ph: al() * 10, cible: null }); }
+    let tp = 0; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const moi = M && M.moiNum && M.gens.get(M.moiNum), q = moi && moi.g.position, c = M && M.camera && M.camera.position;
+      for (const P of PG) { const g = P.g; if (c && (g.position.x - c.x) ** 2 + (g.position.z - c.z) ** 2 > 3600 && P.etat === "sol") continue;
+        if (P.etat === "sol") { if (q && Math.hypot(q.x - g.position.x, q.z - g.position.z) < 2.6) { const a = Math.atan2(g.position.z - q.z, g.position.x - q.x) + (al() - .5); P.etat = "vol"; P.t = 0; P.P0 = g.position.clone(); P.P1 = new THREE.Vector3(g.position.x + Math.cos(a) * 12, 12 + al() * 3, g.position.z + Math.sin(a) * 12); P.fin = tm + 12000 + al() * 12000; continue; }
+          const s = Math.sin(tm / 260 + P.ph); P.t.rotation.x = s > .6 ? .7 : 0; if (al() < dt * .5) g.rotation.y += (al() - .5) * 2; if (s < -.5) { g.position.x += Math.sin(g.rotation.y) * dt * .25; g.position.z += Math.cos(g.rotation.y) * dt * .25; if (Math.hypot(g.position.x - P.hx, g.position.z - P.hz) > 2.5) g.rotation.y += Math.PI; g.position.y = L.hauteur(g.position.x, g.position.z); } P.aG.rotation.z = P.aD.rotation.z = 0; }
+        else if (P.etat === "vol" || P.etat === "retour") { P.t += dt / 2.2; const u = Math.min(1, P.t), A = P.P0, B = P.P1; g.position.set(A.x + (B.x - A.x) * u, A.y + (B.y - A.y) * u + Math.sin(u * Math.PI) * 1.5, A.z + (B.z - A.z) * u); g.rotation.y = Math.atan2(B.x - A.x, B.z - A.z);
+          const b = Math.sin(tm / 45) * .9; P.aG.rotation.z = b; P.aD.rotation.z = -b; if (u >= 1) { P.etat = P.etat === "vol" ? "toit" : "sol"; P.aG.rotation.z = P.aD.rotation.z = 0; } }
+        else if (P.etat === "toit" && tm > P.fin && (!q || Math.hypot(q.x - P.hx, q.z - P.hz) > 6)) { P.etat = "retour"; P.t = 0; P.P0 = g.position.clone(); const x = P.hx + (al() - .5) * 2, z = P.hz + (al() - .5) * 2; P.P1 = new THREE.Vector3(x, L.hauteur(x, z), z); } } }; }
   fusionStatique(scene, L, 0);   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
 }
 ({ construireTertre })
