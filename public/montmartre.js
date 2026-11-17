@@ -587,6 +587,11 @@ function construireTertre(A, L, scene) {
       el.textContent = (q ? `pos ${q.x.toFixed(1)} ${q.z.toFixed(1)} ${L.limites(q.x, q.z) ? "ok" : "HORS"}` : "pas de bonhomme") + ` cine ${M.cine ? "OUI" : "non"}\n` +
         `doigt: ${T ? T.r + " il y a " + ((now - T.t) / 1000).toFixed(0) + "s" : "-"}\naller: ${A ? A.x.toFixed(1) + " " + A.z.toFixed(1) + " il y a " + ((now - A.t) / 1000).toFixed(0) + "s" + (A.cine ? " (cine)" : "") : "-"}\n` +
         `cible ${p && p.cible ? p.cible.x.toFixed(1) + " " + p.cible.z.toFixed(1) : "aucune"} vit ${p ? (p.vit || 0).toFixed(1) : "-"} bloq ${p ? p.bloqueN || 0 : "-"}` + (M.dbgPas ? `\npas ${M.dbgPas.pas.toFixed(3)} ok ${M.dbgPas.pasOk.toFixed(3)} dt ${M.dbgPas.dt.toFixed(3)} n ${M.dbgPas.n} ${M.dbgPas.meme ? "même" : "AUTRE"} moi×${M.dbgPas.nMoi} soi ${M.dbgSoi || 0}` : "") + `\nimages ${((M.dbgImg || 0) - (el.img0 || 0)) * 4}/s dessins ${((M.dbgRendu || 0) - (el.r0 || 0)) * 4}/s${M.ctxPerdu ? " CARTE PERDUE" : ""}` + (M.dbgErr ? `\nerreur ×${M.dbgErr.n} il y a ${((now - M.dbgErr.t) / 1000).toFixed(0)}s: ${M.dbgErr.m} @ ${M.dbgErr.l}` : "") + (Q ? `\nbougé par (${Q.k} ${Q.d.toFixed(2)}, il y a ${((now - Q.t) / 1000).toFixed(0)}s): ${Q.st}` : ""); el.img0 = M.dbgImg || 0; el.r0 = M.dbgRendu || 0; }; }
-  fusionStatique(scene, L, 0);   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
+  fusionStatique(scene, L, 0);
+  /* (le blocage sur téléphone : tout se figeait quelques secondes — l'image, les pigeons, le texte — quand une façade, une enseigne ou une vitrine entrait pour la première fois dans le champ :
+     le téléphone envoyait alors son image à la carte graphique et préparait sa matière. On fait tout cela dès l'arrivée, une fois pour toutes, pendant le chargement) */
+  { let fait = false; const a0 = L.anim; L.anim = (tm) => { a0 && a0(tm); if (fait || !M || M.L !== L || !M.rendu || !M.camera) return; fait = true;
+      try { const R = M.rendu, vus = new Set(); scene.traverse(o => { for (const m of [].concat(o.material || [])) if (m) for (const k of ["map", "emissiveMap", "normalMap", "alphaMap"]) { const t = m[k]; if (t && t.isTexture && !vus.has(t)) { vus.add(t); try { R.initTexture(t); } catch (e) {} } } });
+        R.compile(scene, M.camera); M.dbgPrep = vus.size; } catch (e) { console.warn("préparation", e); } }; }   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
 }
 ({ construireTertre })
