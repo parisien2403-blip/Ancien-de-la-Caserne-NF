@@ -28,7 +28,7 @@ function construireTertre(A, L, scene) {
   const fit = (c, txt, maxW, px, font) => { let p = px; c.font = `${font.replace("@", p + "px")}`; while (c.measureText(txt).width > maxW && p > 8) { p -= 2; c.font = `${font.replace("@", p + "px")}`; } return p; };
   const SQ = { x0: -13, x1: 13, z0: -9, z1: 9 }, YS = .14;   // le carré des peintres (surélevé d'une bordure de pierre)
   const XO = -21.5, XE = 19.5, ZN = -16.5, ZS = 15.5;
-  const OB = [], LEDC = [], HALO = [];
+  const OB = [], LEDC = [], HALO = [], ARD = [];
   /* le soir : sous chaque lampadaire, la flaque de lumière dorée sur les pavés (un seul matériau, fondu avec le reste) ; autour de chaque lanterne, le halo (tous en un seul nuage de points) */
   const flaqueT = tT(128, 128, (c, w, h) => { const g = c.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,190,110,1)"); g.addColorStop(.45, "rgba(255,160,80,.45)"); g.addColorStop(1, "rgba(255,140,60,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
   const flaqueM = new THREE.MeshBasicMaterial({ map: flaqueT, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
@@ -136,11 +136,11 @@ function construireTertre(A, L, scene) {
   const BOUTL = [0x1f4a22, 0x6a3a10, 0xd8d0a8, 0x4a1218, 0x2a6a5a].map(c2 => mat({ color: c2, roughness: .15, metalness: .1 })), OBJ = [0xc83a2a, 0x2a6aa8, 0xe8c040, 0x3a8a4a, 0xf2efe6, 0x8a3a8a].map(c2 => mat({ color: c2, roughness: .6 }));
   const galMurM = mat({ color: 0xf4f1ea, roughness: .9 }), doreM = mat({ color: 0xb8903a, metalness: .6, roughness: .35 }), painM = mat({ color: 0xc8883a, roughness: .8 }), painC = mat({ color: 0xe0b060, roughness: .85 }), planteM = mat({ color: 0x2a5a24, roughness: .9 }), potS = mat({ color: 0xa85a3a, roughness: .8 });
   const ardoiseM = mat({ map: tT(96, 128, (c, w, h) => { c.fillStyle = "#1e2422"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2efe6"; c.font = "italic bold 15px Georgia, serif"; c.textAlign = "center"; c.fillText("Menu", w / 2, 20); c.font = "9px Georgia, serif"; ["Soupe à l'oignon", "Croque-monsieur", "Bœuf bourguignon", "Crème brûlée", "Café · 2,50"].forEach((t, i) => c.fillText(t, w / 2, 40 + i * 17)); c.strokeStyle = "#7a4a28"; c.lineWidth = 6; c.strokeRect(0, 0, w, h); }), roughness: .8 });
-  let kSal = 0;
+  let kSal = 0; const TBS = (W) => { const r = []; for (let x = -W / 2 + 1.05; x < W / 2 - .9; x += 1.5) r.push(x); return r; };   /* (10.88) les tables de la salle, sur toute la largeur */
   const salleDerriere = (g, W) => { const S = g.userData.salle; if (!S) return; const { HR, PR, D } = S, fond = g.userData.vInt || murSalle, ge = g.userData.genre || "cafe", Q = new THREE.Group(), riche = !PETIT, ks = kSal++; g.add(Q);
     box(W, HR, D - PR, [cote, cote, cote, cote, fond, cote], 0, HR / 2, -PR - (D - PR) / 2, g);   // le fond de la salle, et le reste de la maison
     const pf = add(new THREE.PlaneGeometry(W, PR), ge === "cafe" ? damierM : parquetM, 0, .02, -PR / 2, Q); pf.rotation.x = -Math.PI / 2; const pc = add(new THREE.PlaneGeometry(W, PR), plafondM, 0, HR - .02, -PR / 2, Q); pc.rotation.x = Math.PI / 2;
-    for (const sx of [-1, 1]) { const m = add(new THREE.PlaneGeometry(PR, HR), ge === "galerie" ? galMurM : murSalle, sx * (W / 2 - .02), HR / 2, -PR / 2, Q); m.rotation.y = -sx * Math.PI / 2;
+    for (const sx of [-1, 1]) { const m = add(new THREE.PlaneGeometry(PR, HR), ge === "galerie" ? galMurM : murSalle, sx * (W / 2 - .02), HR / 2, -PR / 2, Q); m.rotation.y = -sx * Math.PI / 2; const mo = add(new THREE.PlaneGeometry(PR, HR), cote, sx * (W / 2 + .005), HR / 2, -PR / 2, Q); mo.rotation.y = sx * Math.PI / 2;   /* (10.88) le mur vu du dehors, au coin d'une rue : plus de trou */
       if (ge !== "galerie") { box(.04, .95, PR - .05, lambrisM, sx * (W / 2 - .04), .48, -PR / 2, Q); box(.07, .05, PR - .05, moulureM, sx * (W / 2 - .05), .98, -PR / 2, Q); if (riche) for (let z = -.4; z > -PR + .25; z -= .6) box(.02, .6, .45, moulureM, sx * (W / 2 - .065), .48, z, Q); } }   // les lambris
     box(W, .12, .1, ge === "galerie" ? galMurM : moulureM, 0, HR - .08, -PR + .06, Q);
     for (let x = -W / 2 + .9; x < W / 2 - .6; x += 1.6) { add(new THREE.SphereGeometry(.13, 8, 6), globeM, x, HR - .45, -PR / 2, Q); cyl(.006, .006, .4, comptoirM, x, HR - .22, -PR / 2, Q, 3); }   // les globes
@@ -154,7 +154,7 @@ function construireTertre(A, L, scene) {
       for (let i = 0; i < 3; i++) cyl(.035, .028, .12, verreS2, cX - cW / 8 + i * .16, 1.17, zC + .12, Q, 8);
       box(cW, 1.1, .02, miroirM, cX, 2.2, -PR + .03, Q); box(cW + .1, .06, .05, laitonM, cX, 2.78, -PR + .05, Q);   // le miroir du fond
       for (const y of riche ? [1.42, 1.84] : [1.6]) { box(cW, .03, .2, comptoirM, cX, y, -PR + .12, Q); for (let x = cX - cW / 2 + .1, i = 0; x < cX + cW / 2 - .05; x += .13, i++) { const h = .2 + ((i * 7 + ks) % 3) * .05, b = BOUTL[(i + ks) % 5]; cyl(.034, .034, h, b, x, y + .015 + h / 2, -PR + .12, Q, 6); if (riche) cyl(.012, .012, .08, b, x, y + h + .055, -PR + .12, Q, 4); } }   // les bouteilles
-      for (const x of W > 5 ? [-W / 2 + 1.2, -W / 2 + 2.6] : [-W / 2 + 1]) { cyl(.3, .3, .03, marbreS, x, .74, -1.1, Q, 14); cyl(.03, .03, .72, fonteM, x, .37, -1.1, Q, 5); cyl(.18, .2, .03, fonteM, x, .02, -1.1, Q, 10);
+      for (const x of TBS(W)) { cyl(.3, .3, .03, marbreS, x, .74, -1.1, Q, 14); cyl(.03, .03, .72, fonteM, x, .37, -1.1, Q, 5); cyl(.18, .2, .03, fonteM, x, .02, -1.1, Q, 10);
         for (const sg of [-1, 1]) { cyl(.19, .19, .04, boisS, x + sg * .52, .46, -1.1, Q, 10); for (const [a, b] of [[-.12, -.12], [.12, -.12], [-.12, .12], [.12, .12]]) cyl(.013, .013, .46, boisS, x + sg * .52 + a, .23, -1.1 + b, Q, 4); box(.03, .38, .32, boisS, x + sg * .68, .75, -1.1, Q); }
         cyl(.035, .03, .12, verreS2, x + .08, .82, -1.05, Q, 8); cyl(.04, .032, .06, marbreS, x - .1, .79, -1.15, Q, 8); }   // les tables de marbre, les chaises de bistrot, un verre, un café
       const ar = add(new THREE.PlaneGeometry(.6, .8), ardoiseM, -W / 2 + .07, 1.75, -PR * .55, Q); ar.rotation.y = Math.PI / 2;   // l'ardoise du menu
@@ -175,8 +175,11 @@ function construireTertre(A, L, scene) {
       for (const sx of [-1, 1]) { for (const z of [-.25, -PR + .25]) box(.32, 2.4, .03, boisS, sx * (W / 2 - .18), 1.2, z, Q);
         for (const y of [.45, .95, 1.45, 1.95]) { box(.32, .03, PR - .5, boisS, sx * (W / 2 - .18), y, -PR / 2, Q); if (riche || y < 1.2) for (let z = -.45, j = 0; z > -PR + .4; z -= .2, j++) box(.12, .14 + ((j * 7 + ks) % 3) * .05, .12, OBJ[(j + ks + y * 10 | 0) % 6], sx * (W / 2 - .2), y + .1, z, Q); } }
       box(1, .75, .6, boisS, -W * .08, .38, -1.25, Q); for (let i = 0; i < 6; i++) box(.16, .1, .2, OBJ[(i + ks) % 6], -W * .08 - .35 + (i % 3) * .35, .8, -1.4 + (i / 3 | 0) * .3, Q); }
-    g.updateMatrixWorld(true); for (const o of [...Q.children]) scene.attach(o); g.remove(Q); };
-  const maison = (x, z, ry, W, H, o) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const D = 9;
+    g.updateMatrixWorld(true); if (ge === "cafe") { const pt = (x, z) => new THREE.Vector3(x, 0, z).applyMatrix4(g.matrixWorld), r0 = g.rotation.y, S2 = { bar: [pt(cX - cW / 2 - .38, zC), r0], assis: [] };   /* (les places des gens, dans la salle : le barman au bout du comptoir, les clients aux tables et au bar) */
+      for (const x of TBS(W)) for (const sg of [-1, 1]) S2.assis.push([pt(x + sg * .52, -1.1), .5, r0 - sg * Math.PI / 2]);
+      for (let x = cX - cW / 2 + .4; x < cX + cW / 2 - .2; x += 1.5) S2.assis.push([pt(x, zC + .66), .83, r0 + Math.PI]); SALLES.push(S2); }
+    for (const o of [...Q.children]) scene.attach(o); g.remove(Q); };
+  const maison = (x, z, ry, W, H, o) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); g.userData.W = W; const D = 9;
     o.vitres3D = true; const cle = o.cache && [o.teinte, o.volets, o.etages, W, H, o.pierre, 3].join("|"), fM = cle ? (FCACHE.get(cle) || FCACHE.set(cle, facadeT(W, H, o)).get(cle)) : facadeT(W, H, o); const cleC = ["côté", o.teinte, o.volets, o.etages, H].join("|"), cM = o.pignon ? cote : (FCACHE.get(cleC) || FCACHE.set(cleC, facadeT(D, H, { teinte: o.teinte || "#ece6d8", volets: o.volets === false ? "#f2f2ee" : o.volets, etages: o.etages || 3, fen: 3, balcon: false, cache: true })).get(cleC));   // (les murs de côté, ceux qu'on voit dans les passages : des fenêtres aussi)
     const salle = !!o.rdc && !o.pignon && !o.sansSalle, HR = 3.62, PR = 2.6;
     if (salle) { const haut = new THREE.BoxGeometry(W, H - HR, D), uv = haut.attributes.uv, k = HR / H; for (const gi of [0, 1, 4]) for (let v = gi * 4; v < gi * 4 + 4; v++) uv.setY(v, k + uv.getY(v) * (1 - k));   // (l'étage : l'image de la façade sans son bas)
@@ -249,7 +252,7 @@ function construireTertre(A, L, scene) {
     if (!motif) VCACHE.set(cle, t); return t; };
   const lanterneD = (g, x, y) => { box(.04, .04, .22, fonteM, x, y + .3, .2, g); add(new THREE.BoxGeometry(.22, .3, .22), lum(mat({ color: 0xf8e8c0, emissive: 0xffd080, emissiveIntensity: .15, roughness: .3 }), .15, 2.2), x, y, .36, g); add(new THREE.ConeGeometry(.18, .14, 4), fonteM, x, y + .22, .36, g).rotation.y = Math.PI / 4; };
   const ardoise = (g, x, txt) => { const t = tT(128, 192, (c, w, h) => { c.fillStyle = "#1e2420"; c.fillRect(0, 0, w, h); c.strokeStyle = "#8a6a3a"; c.lineWidth = 8; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = "#f2f0e8"; c.font = "italic bold 18px Georgia"; c.textAlign = "center"; c.fillText(txt || "Menu du jour", w / 2, 34); c.font = "13px Georgia"; ["Soupe à l'oignon", "Croque-monsieur", "Bœuf bourguignon", "Crème brûlée", "Café · 6 F"].forEach((l, i) => c.fillText(l, w / 2, 64 + i * 24)); });
-    const a = new THREE.Group(); a.position.set(x, 0, 1.0); g.add(a); for (const s2 of [-1, 1]) { const p = box(.6, .9, .04, mat({ map: t }), 0, .48, s2 * .12, a); p.rotation.x = s2 * .14; } };
+    const a = new THREE.Group(); a.position.set(x, 0, 1.0); g.add(a); for (const s2 of [-1, 1]) { const p = box(.6, .9, .04, mat({ map: t }), 0, .46, s2 * .1, a); p.rotation.x = -s2 * .16; } ARD.push({ a, g, W: g.userData.W || 6 }); };   /* (10.88) le chevalet en A : les deux planches se rejoignent en haut ; posé plus tard, là où il n'y a pas de table */
   const rideauT = tT(64, 128, (c, w, h) => { c.fillStyle = "#a8a49a"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 6) { c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(0, y, w, 2); } }, 1, 1);
   const verreVitrine = new THREE.MeshStandardMaterial({ color: 0xc8d8e0, transparent: true, opacity: .16, roughness: .05, metalness: .6, depthWrite: false });
   const devanture = (g, W, o) => { const bois = mat({ color: o.bois, roughness: .5 }), moulM = mat({ color: new THREE.Color(o.bois).multiplyScalar(1.25).getHex(), roughness: .45 }), Hd = 3.5;
@@ -262,7 +265,7 @@ function construireTertre(A, L, scene) {
     if (o.lanternes !== false && W > 4.5) for (const x of [-W / 2 + .45, W / 2 - .45]) lanterneD(g, x, 2.85);
     if (o.ardoise) ardoise(g, -W / 2 + 1.2, o.ardoise === true ? null : o.ardoise);
     // le store banne
-    if (o.store) { const [coul, txt, txtC] = o.store, sw = W + .2, sd = o.storeD || 2.2, aT = tT(512, 64, (c, w, h) => { c.fillStyle = coul; c.fillRect(0, 0, w, h); if (o.raye) { c.fillStyle = typeof o.raye === "string" ? o.raye : "rgba(255,255,255,.85)"; for (let x = 0; x < w; x += 32) c.fillRect(x, 0, 16, h); } c.fillStyle = "rgba(0,0,0,.15)"; c.fillRect(0, h - 6, w, 6); });
+    if (o.store) { const [coul, txt, txtC] = o.store, sw = o.storeW || W + .2, sd = o.storeD || 2.2, aT = tT(512, 64, (c, w, h) => { c.fillStyle = coul; c.fillRect(0, 0, w, h); if (o.raye) { c.fillStyle = typeof o.raye === "string" ? o.raye : "rgba(255,255,255,.85)"; for (let x = 0; x < w; x += 32) c.fillRect(x, 0, 16, h); } c.fillStyle = "rgba(0,0,0,.15)"; c.fillRect(0, h - 6, w, 6); });
       const st = box(sw, .06, sd, mat({ map: aT, roughness: .9 }), 0, Hd + .05 - Math.sin(.32) * sd / 2, sd / 2 * Math.cos(.32) + .1, g); st.rotation.x = .32;
       const lT = tT(1024, 72, (c, w, h) => { c.fillStyle = coul; c.fillRect(0, 0, w, h); c.fillStyle = txtC || "#f2ead8"; c.textAlign = "center"; c.textBaseline = "middle"; fit(c, txt, w * .9, 46, `bold @ ${serif}`); c.fillText(txt, w / 2, h / 2 + 2);
         c.fillStyle = "rgba(0,0,0,.25)"; for (let x = 0; x < w; x += 40) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 20, h - 10); c.lineTo(x + 40, h); c.fill(); } });
@@ -291,11 +294,11 @@ function construireTertre(A, L, scene) {
   const PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
   const gens = (k, o = {}) => { const f = k % 2 === 1; return personne3D({ taille: f ? 1.64 : 1.76, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a", "#a5532a"][k % 6], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#1a1a1c"][k % 4], chaussures: ["#1a1a1a", "#3a2418"][k % 2], coif: f ? (k % 3 ? "long" : "carre") : k % 5 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0, parle: k % 3 === 0, ...o }); };
   const GENS = true;
-  const nTerr = !GENS ? 0 : PETIT ? 10 : (MOBILE || GPU_MODESTE) ? 18 : 30; let kT = 0;
+  const nTerr = !GENS ? 0 : PETIT ? 16 : (MOBILE || GPU_MODESTE) ? 40 : 110; let kT = 0; const CHS = [], SALLES = [];   /* (10.88) toutes les chaises libres des terrasses ; les salles des cafés : on y met des gens partout, après */
   // une terrasse : des rangées de tables le long d'une façade ; ax/az : le sens de la façade ; nx/nz : vers la rue
   const terrasse = (x0, z0, ax, az, nx, nz, L2, rangs, rouge) => { for (let r = 0; r < rangs; r++) for (let t = .6; t < L2 - .4; t += 1.25) { const x = x0 + ax * t + nx * (.55 + r * 1.0), z = z0 + az * t + nz * (.55 + r * 1.0); table(x, z, rouge);
       const ry = Math.atan2(nx, nz); for (const sg of [-1, 1]) { const cx = x + ax * sg * .45, cz = z + az * sg * .45, rc = Math.atan2(-ax * sg, -az * sg); chaise(cx, cz, rc);
-        if (kT < nTerr && al() < .55) { const m = gens(kT + 3); m.position.set(cx, .5 - m.userData.hipY, cz); m.rotation.y = rc; m.userData.poser("assis", 0); scene.add(m); TERR.push(m); kT++; } } void ry; } };
+        CHS.push([cx, .5, cz, rc]); } void ry; } };
 
   /* ---------- côté ouest : Le Sabot Rouge, La Crémaillère 1900, le Restaurant Chez Eugène (du sud au nord) ---------- */
   const OUEST = Math.PI / 2;   // (façades tournées vers l'est, vers le carré)
@@ -371,8 +374,23 @@ function construireTertre(A, L, scene) {
   const jardinieres = (g, W, H, etages, nF) => { const hE = (H - 3.8) / etages; nF = nF || Math.max(2, Math.round(W / 2.6)); for (let f = 0; f < nF; f++) { if (al() < .3) continue; const x = -W / 2 + (W / nF) * (f + .5), y = 3.8 + hE * .14 + .12 + (al() < .4 && etages > 1 ? hE : 0);
     box(1.0, .2, .22, bacM, x, y, .15, g); add(new THREE.IcosahedronGeometry(.2, 0), vertJ, x - .2, y + .2, .2, g); for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(.1, 0), fleursM[(f + k) % 5], x - .38 + k * .25, y + .25, .26, g); } };
   // le fleuriste : les seaux de fleurs sur les gradins, devant la boutique, qui débordent sur le trottoir
-  const fleuriste = (g, W) => { const bois = mat({ color: 0x6a4a2a }), seau = mat({ color: 0x8a8a8a, metalness: .5 }); for (let r = 0; r < 3; r++) { box(W - 1.2, .05, .45, bois, 0, .3 + r * .32, 1.3 - r * .4, g); box(W - 1.2, .3 + r * .32, .04, bois, 0, (.3 + r * .32) / 2, 1.52 - r * .4, g);
-      for (let x = -W / 2 + 1; x < W / 2 - .7; x += .45) { cyl(.14, .11, .26, seau, x, .45 + r * .32, 1.3 - r * .4, g, 8); for (let k = 0; k < 3; k++) add(new THREE.IcosahedronGeometry(.11 + al() * .06, 0), fleursM[(r * 7 + k + (x * 3 | 0)) % 5 + (al() < .2 ? 0 : 0)] || fleursM[0], x + (al() - .5) * .2, .72 + r * .32 + al() * .15, 1.3 - r * .4 + (al() - .5) * .15, g); } } };
+  /* (10.88) le fleuriste : les gradins, les seaux de zinc ; dans chaque seau un vrai bouquet — les tiges, le feuillage, et des roses, des tulipes, des marguerites, des hortensias ou de la lavande */
+  const tigeM = mat({ color: 0x3a6a26, roughness: .8 }), feuilM = [mat({ color: 0x2e5a22, roughness: .8 }), mat({ color: 0x4a7a30, roughness: .8 })], coeurM = mat({ color: 0xe8b820, roughness: .8 }), coeurN = mat({ color: 0x3a2a14, roughness: .9 });
+  const FLC = { rose: [0xc8102a, 0xe84a6a, 0xf2d0d8, 0xf0a030, 0xa0102a].map(c2 => mat({ color: c2, roughness: .7 })), tul: [0xe82a2a, 0xf0d020, 0xf07ab0, 0xf2f0ea, 0x8a2a8a].map(c2 => mat({ color: c2, roughness: .6 })), marg: [mat({ color: 0xf8f6f0, roughness: .8 }), mat({ color: 0xf0d040, roughness: .8 })], hort: [0x6a8ae0, 0xd890c8, 0xa080d0, 0xf2f0f0].map(c2 => mat({ color: c2, roughness: .9 })), lav: mat({ color: 0x8a6ac8, roughness: .9 }) };
+  const bouquet = (P, x, y, z, k) => { const ty = ["rose", "tul", "marg", "hort", "lav"][k % 5], n = (MOBILE || GPU_MODESTE) ? 5 : 9;
+    for (let f = 0; f < 3; f++) { const fe = add(new THREE.IcosahedronGeometry(.07, 0), feuilM[f % 2], x + Math.cos(f * 2.1) * .07, y + .06, z + Math.sin(f * 2.1) * .07, P); fe.scale.set(1.2, .5, 1.2); }
+    for (let i = 0; i < n; i++) { const a = i * 2.4 + k, r = .03 + (i % 3) * .035, fx = x + Math.cos(a) * r, fz = z + Math.sin(a) * r, h = .22 + ((i * 7 + k) % 5) * .035, fy = y + h;
+      const tg = cyl(.005, .005, h, tigeM, fx * .5 + x * .5, y + h / 2, fz * .5 + z * .5, P, 3); tg.rotation.z = (fx - x) * 1.5; tg.rotation.x = -(fz - z) * 1.5;
+      const cM = FLC[ty], m = Array.isArray(cM) ? cM[(i + k) % cM.length] : cM;
+      if (ty === "rose") { add(new THREE.SphereGeometry(.035, 7, 5), m, fx, fy, fz, P).scale.set(1, .8, 1); add(new THREE.SphereGeometry(.024, 6, 4), m, fx, fy + .02, fz, P); }
+      else if (ty === "tul") { const t2 = add(new THREE.CylinderGeometry(.028, .016, .06, 6), m, fx, fy, fz, P); t2.rotation.z = (fx - x) * 1.2; }
+      else if (ty === "marg") { add(new THREE.CylinderGeometry(.04, .04, .008, 9), FLC.marg[0], fx, fy, fz, P); add(new THREE.SphereGeometry(.013, 6, 4), FLC.marg[1], fx, fy + .006, fz, P); }
+      else if (ty === "hort") { if (i % 2 === 0) for (let q = 0; q < 4; q++) add(new THREE.SphereGeometry(.03, 6, 4), m, fx + Math.cos(q * 1.6) * .025, fy + (q % 2) * .02, fz + Math.sin(q * 1.6) * .025, P); }
+      else { add(new THREE.CylinderGeometry(.012, .008, .09, 5), FLC.lav, fx, fy + .02, fz, P); } } };
+  const fleuriste = (g, W) => { const bois = mat({ color: 0x6a4a2a }), seau = mat({ color: 0x9a9ea2, metalness: .6, roughness: .35 }), P = new THREE.Group(); g.add(P); let k = 0;
+    for (let r = 0; r < 3; r++) { box(W - 1.2, .05, .45, bois, 0, .3 + r * .32, 1.3 - r * .4, P); box(W - 1.2, .3 + r * .32, .04, bois, 0, (.3 + r * .32) / 2, 1.52 - r * .4, P);
+      for (let x = -W / 2 + 1; x < W / 2 - .7; x += .45) { const y = .32 + r * .32, z = 1.3 - r * .4; cyl(.14, .11, .26, seau, x, y + .13, z, P, 10); cyl(.135, .135, .01, mat({ color: 0x2a3a20 }), x, y + .25, z, P, 10); bouquet(P, x, y + .25, z, k++ * 3 + r); } }
+    g.updateMatrixWorld(true); for (const o of [...P.children]) scene.attach(o); g.remove(P); };
   // une maison de rue, ordinaire (les façades sont partagées entre maisons pareilles : moins de mémoire)
   const TEINTES = ["#ece6d8", "#e4d8c0", "#f1ece2", "#d9c8a8", "#e9e2d2", "#dccfb4"], VOLETS = ["#f2f2ee", "#f2f2ee", "#6a8a9a", "#7a9a6a", "#f2f2ee", "#c8c2b4"];
   const ordinaire = (k) => ({ teinte: TEINTES[k % 6], volets: VOLETS[k % 2 ? 0 : 2 + (k % 4 === 0)], etages: 3, cache: true, pierre: k % 6 === 3 || k % 6 === 5, lierre: (MOBILE || GPU_MODESTE) ? 0 : k % 4 === 1 ? 1 : k % 7 === 2 ? 2 : 0 });   // (la pierre de taille, le lierre, par endroits)   // (peu de variantes : les façades pareilles sont partagées)
@@ -393,7 +411,11 @@ function construireTertre(A, L, scene) {
     else if (t === 2) { cyl(.2, .16, .36, potM2, x, .18, z, g, 10); add(new THREE.IcosahedronGeometry(.2, 0), buisM[1], x, .45, z, g); for (let k2 = 0; k2 < 5; k2++) add(new THREE.IcosahedronGeometry(.07, 0), fleurP[(k2 + (x * 3 | 0)) & 3], x + (al() - .5) * .3, .55 + al() * .1, z + (al() - .5) * .3, g); }   // les fleurs
     else { cyl(.3, .24, .6, potM2, x, .3, z, g, 10); for (let k2 = 0; k2 < 3; k2++) add(new THREE.ConeGeometry(.3 - k2 * .07, .5, 7), buisM[1], x, .8 + k2 * .35, z, g); } };   // le petit sapin, le thuya
   const pots = (g, W) => { let n = 0; for (const x of [-W / 2 + .4, W / 2 - .4]) if (al() < .8) { plante(g, x, .55, (n++ + (W * 5 | 0)) & 3); if (al() < .4) plante(g, x + (x < 0 ? .5 : -.5), .5, 2); } };
-  const rangee = (ax, az, dx, dz, ry, liste) => { let t = 0; for (const [W, H, o] of liste) { if (!o.rdc && W > 3) o.rdc = boutique; if (o.rdc && W > 3) { const r0 = o.rdc; o.rdc = (g, W2) => { r0(g, W2); pots(g, W2); }; } const x = ax + dx * (t + W / 2), z = az + dz * (t + W / 2); const g = maison(x, z, ry, W, H, o);
+  /* (10.88) autour de la bouche du métro Abbesses : plus de boutiques ni de terrasses — les immeubles parisiens, leurs plantes, de petits arbres le long des murs */
+  const verdureM = (g, W) => { for (let x = -W / 2 + .7; x < W / 2 - .5; x += 1.6) plante(g, x, .45, (x * 3 | 0) & 1 ? 0 : 2); for (let x = -W / 2 + 1.5; x < W / 2 - 1; x += 3.6) { cyl(.07, .1, 2.6, tronc0, x, 1.3, .7, g, 6); for (let k = 0; k < 3; k++) add(new THREE.IcosahedronGeometry(.75 - k * .12, 1), [vertJ, mat({ color: 0x4a7a30, roughness: .9 }), mat({ color: 0x2e5a22, roughness: .9 })][k], x + (k - 1) * .25, 2.9 + k * .45, .7 + (k % 2) * .15, g); cyl(.4, .4, .05, mat({ color: 0x2a2a2a, metalness: .5 }), x, .03, .7, g, 12); } box(W - .4, .5, .35, mat({ color: 0x9a8a72, roughness: .9 }), 0, .25, .2, g); for (let x = -W / 2 + .5; x < W / 2 - .4; x += .4) add(new THREE.IcosahedronGeometry(.2, 0), [vertJ, mat({ color: 0x4a7a30 })][(x * 5 | 0) & 1], x, .6, .2, g); };
+  const tronc0 = mat({ color: 0x5a4a3a, roughness: .9 });
+  const rangee = (ax, az, dx, dz, ry, liste) => { let t = 0; for (const [W, H, o] of liste) { { const cx = ax + dx * (t + W / 2), cz = az + dz * (t + W / 2); if (cx > -95 && cx < -71 && cz > 30 && cz < 50) { o.rdc = verdureM; o.sansSalle = true; o.jard = true; } }   // (autour du métro)
+      if (!o.rdc && W > 3) o.rdc = boutique; if (o.rdc && W > 3) { const r0 = o.rdc; o.rdc = (g, W2) => { r0(g, W2); pots(g, W2); }; } const x = ax + dx * (t + W / 2), z = az + dz * (t + W / 2); const g = maison(x, z, ry, W, H, o);
       if (o.lierre) lierre(g, W, H, o.lierre === 2, undefined, o.rdc ? 4.5 : 0); if (o.jard && !(MOBILE || GPU_MODESTE)) jardinieres(g, W, H, o.etages, o.fen); if (o.lanterne !== false) { const nx = Math.sin(ry), nz = Math.cos(ry); lanterneMur(x + dx * (W / 2 - .6), 4.6, z + dz * (W / 2 - .6), nx, nz); }
       t += W; } };
   // l'enseigne ronde en potence (la droguerie, sur la photo)
@@ -462,10 +484,8 @@ function construireTertre(A, L, scene) {
     for (let i = 0; i < 14; i++) add(new THREE.IcosahedronGeometry(.22 + al() * .2, 0), [vertJ, mat({ color: 0x2a5a24 }), mat({ color: 0xa83a1e })][i % 3], XSa0 + .3 + al() * 5.4, 4.3 + al() * .4, ZM + (al() - .5) * .8);
     for (const x of [-85.3, -80.7]) { cyl(.28, .22, .45, mat({ color: 0xa85a3a }), x, .23, ZM + .8, scene, 10); for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(.18, 0), fleursM[k], x + (al() - .5) * .3, .55 + al() * .2, ZM + .8 + (al() - .5) * .3); }
     lanterneMur(-80.6, 3.4, ZM + .42, 0, 1);
-    // derrière le mur : les rangs de vigne qui montent sur la butte, les arbres
-    const vigne = mat({ color: 0x4a6a2a, roughness: .9 }), terre = mat({ color: 0x6a5a40, roughness: 1 }); box(16, 4, 26, terre, -83, 2, ZM - 13.5);
-    for (let r = 0; r < 9; r++) { const z = ZM - 1.5 - r * 2.6, y = 4 + r * .7; box(16, r * .7 + .01, 2.6, terre, -83, 4 + r * .35, z); for (let x = -90; x < -76; x += .9) add(new THREE.IcosahedronGeometry(.42, 0), vigne, x + al() * .3, y + .55, z); }
-    for (const [x, z] of [[-88, -52], [-78, -56], [-85, -62], [-80, -66]]) { cyl(.18, .24, 4, mat({ color: 0x5a4a3a }), x, 6 + (ZM - z) * .25, z, scene, 6); for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(1.4 + al() * .6, 0), [vertJ, mat({ color: 0x5a7a2a }), mat({ color: 0xc8782a })][k % 3], x + (al() - .5) * 1.6, 9 + (ZM - z) * .25 + al() * 1.4, z + (al() - .5) * 1.6); } }
+    // (10.88) derrière le mur : un immeuble parisien qui ferme la rue (plus d'arbres ni de vigne qui dépassent)
+    maison(-83, ZM - 1.2, 0, 17, 15, { ...ordinaire(61), sansSalle: true, etages: 4 }); }
   // le chanteur des rues, sa guitare, sur son tabouret devant La Bonne Franquette ; et le monsieur au béret qui chante avec lui
   const MUSI = []; if (GENS) { const m = personne3D({ taille: 1.74, peau: "#e8bd95", ch: "#e8e8e8", haut: "#e8b8b8", bas: "#e8e2d2", chaussures: "#5a3a22", coif: "court", pantalon: true }); m.position.set(XSa1 - 1.6, .48 - m.userData.hipY, 22); m.rotation.y = -Math.PI / 2 - .4; m.userData.poser("assis", 0); scene.add(m);
     const P = m.userData.parts, gui = new THREE.Group(); gui.position.set(.05, .05, .18); gui.rotation.set(0, 0, .9); P.buste.add(gui); add(new THREE.SphereGeometry(.17, 12, 8), mat({ color: 0xc8883a, roughness: .4 }), 0, -.05, 0, gui).scale.set(1, 1.25, .35); add(new THREE.BoxGeometry(.05, .5, .03), mat({ color: 0x3a2414 }), 0, .32, 0, gui);
@@ -515,7 +535,7 @@ function construireTertre(A, L, scene) {
   const GX = (XSa0 + XSa1) / 2, GZ = 39; { const vertG = mat({ color: 0x2e5a44, roughness: .4, metalness: .55 }), verre = mat({ color: 0xe8ece4, transparent: true, opacity: .8, roughness: .3, side: THREE.DoubleSide, emissive: 0xfff4e0, emissiveIntensity: .05 }), pierreG = mat({ color: 0xe4dccc, roughness: .85 }), esc = mat({ color: 0x9a948a });
     const X0 = GX - 1.75, X1 = GX + 1.75, ZA = GZ - 2.4, ZB = GZ + 2.6;   // (l'entrée au nord, ZA ; le fond au sud, ZB)
     // la trémie : les marches qui descendent, les murets de pierre de chaque côté et au fond
-    for (let i = 0; i < 12; i++) box(3.1, .17, .42, esc, GX, -.085 - i * .17, ZA + .2 + i * .42, scene); box(3.4, 3.4, .5, mat({ color: 0x1a1a1a }), GX, -1.9, ZB + .1, scene);
+    for (let i = 0; i < 12; i++) box(3.1, .17, .42, esc, GX, -.085 - i * .17, ZA + .2 + i * .42, scene); box(3.4, 3.4, .5, mat({ color: 0x1a1a1a }), GX, -1.9, ZB + .1, scene); { const carM = mat({ color: 0xe8e4da, roughness: .4 }); for (const x of [GX - 1.62, GX + 1.62]) box(.14, 2.6, ZB - ZA + .3, carM, x, -1.3, (ZA + ZB) / 2, scene); box(3.4, .1, 1.2, esc, GX, -2.09, ZB - .4, scene); }   /* (10.88) sous le pavé : les murs carrelés de la trémie, le palier — plus de ciel entre les marches */
     for (const x of [X0, X1]) box(.35, .55, ZB - ZA, pierreG, x, .27, (ZA + ZB) / 2, scene); box(X1 - X0 + .35, .55, .35, pierreG, GX, .27, ZB, scene);
     // en bas des marches : la rangée de globes, le grand panneau bleu « Abbesses »
     for (let i = 0; i < 5; i++) add(new THREE.SphereGeometry(.13, 12, 10), lum(mat({ color: 0xfff0c0, emissive: 0xffe0a0, emissiveIntensity: .6 }), .6, 2.4), GX - 1.1 + i * .55, -.55, ZB - .18);
@@ -539,7 +559,7 @@ function construireTertre(A, L, scene) {
       box(rx * 2 + .1, .1, .1, vertG, 0, .55, 0, C); add(new THREE.CylinderGeometry(.18, .18, .08, 12), vertG, 0, .65, -rz + .05, C); }   // (l'écusson au sommet)
     // le cartouche jaune « METROPOLITAIN », sous le bord avant
     { const t = tT(1024, 220, (c, w, h) => { c.fillStyle = "#2e5a44"; c.beginPath(); c.ellipse(w / 2, h / 2, w / 2 - 2, h / 2 - 2, 0, 0, 7); c.fill(); c.fillStyle = "#efe2a0"; c.beginPath(); c.ellipse(w / 2, h / 2, w / 2 - 22, h / 2 - 22, 0, 0, 7); c.fill();
-        c.fillStyle = "#1e4a36"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "bold 112px Georgia, serif"; c.save(); c.translate(w / 2, h / 2 + 6); c.scale(1, 1.15); c.fillText("METROPOLITAIN", 0, 0); c.restore(); });
+        c.fillStyle = "#1e4a36"; c.textAlign = "center"; c.textBaseline = "middle"; fit(c, "METROPOLITAIN", w - 190, 104, "bold @ Georgia, serif"); c.save(); c.translate(w / 2, h / 2 + 6); c.scale(1, 1.1); c.fillText("METROPOLITAIN", 0, 0);   /* (10.88) le mot entier, bien au centre du cartouche */ c.restore(); });
       const m = mat({ map: t, transparent: true, alphaTest: .5, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .08 }); const p = pl2(3.2, .7, m, GX, 3.35, ZA + .02, scene); p.rotation.y = Math.PI; lum(m, .08, .9);
       const p2 = pl2(3.2, .7, m, GX, 3.35, ZA - .02, scene); void p2; }
     // au fond, le plan du quartier sous son fronton orange « Abbesses »
@@ -552,7 +572,9 @@ function construireTertre(A, L, scene) {
 
   /* ---------- le bout des rues, vers l'est : fermé par de petites maisons basses (leur boutique, le lierre) ; au-dessus des toits, au loin, les dômes du Sacré-Cœur ---------- */
   rangee(XBUT, 4.5, 0, 1, EST, [[11, 8.6, { teinte: "#f0ece2", volets: "#7a9a6a", etages: 1, lierre: 2, jard: true, rdc: (g, W) => devanture(g, W, { bois: 0x2a4a3a, travees: 4, porte: 1, fondV: "#f0c070", store: ["#2a4a3a", "AU  PIED  DE  LA  BUTTE", "#f2ead8"], storeD: 1.6, guirlande: true }) }],
-    [10.5, 9, { teinte: "#e8e0cc", volets: "#f2f2ee", etages: 2, jard: true }], [7, 8.2, { teinte: "#f2efe6", volets: "#6a8a9a", etages: 1, lierre: 1, rdc: (g, W) => devanture(g, W, { bois: 0x8a1418, travees: 3, porte: 1, fondV: "#f0a050", store: ["#b01820", "LE  PETIT  MONTMARTRE", "#f2ead8"], storeD: 1.6, guirlande: true }) }]]);
+    [10.5, 9, { teinte: "#e8e0cc", volets: "#f2f2ee", etages: 2, jard: true }], [7, 8.2, { teinte: "#f2efe6", volets: "#6a8a9a", etages: 1, lierre: 1, rdc: (g, W) => devanture(g, W, { bois: 0x8a1418, travees: 3, porte: 1, fondV: "#f0a050", store: ["#b01820", "LE  PETIT  MONTMARTRE", "#f2ead8"], storeD: 1.3, storeW: 2.8, guirlande: true }) }]]);   /* (10.88) le store étroit : il ne croise plus celui du coin */
+  /* (10.88) le bout de la rue Saint-Éleuthère, côté nord : la rue ne s'ouvre plus sur le vide — une maison à fenêtres, ses plantes contre le mur */
+  { const g = maison(XE + 31 + 2.75, 8.5, 0, 5.5, 9.5, { teinte: "#ece4d2", volets: "#6a8a9a", etages: 2, sansSalle: true, rdc: (g2, W) => { box(W - .4, .9, .1, mat({ color: 0x9a8a72, roughness: .9 }), 0, .45, .06, g2); for (const x of [-W / 2 + .5, -.9, .9, W / 2 - .5]) plante(g2, x, .45, x > 0 ? 0 : 2); bouquet(g2, -W / 2 + 1.5, .5, .4, 1); bouquet(g2, W / 2 - 1.5, .5, .4, 3); for (const x of [-W / 2 + 1.5, W / 2 - 1.5]) cyl(.2, .16, .45, mat({ color: 0xa85a3a, roughness: .8 }), x, .23, .4, g2, 10); } }); lierre(g, 5.5, 9.5, true, undefined, 0); OB.push([XE + 33.75, 9.2, 2.6]); }
   /* ---------- les platanes du carré, leurs grilles ; les réverbères à lanterne ---------- */
   const ecorceT = tT(64, 128, (c, w, h) => { c.fillStyle = "#8a8a7a"; c.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { c.fillStyle = ["#a8a890", "#6a6a5a", "#c8c4a8", "#5a5a4a"][i % 4]; c.beginPath(); c.ellipse(al() * w, al() * h, 4 + al() * 8, 6 + al() * 12, 0, 0, 7); c.fill(); } }, 1, 2);
   const tronc = mat({ map: ecorceT }), feuilles = [mat({ color: 0x4a6a2a, roughness: .9 }), mat({ color: 0x5a7a32, roughness: .9 }), mat({ color: 0x3a5a24, roughness: .9 })], grille = mat({ color: 0x2a2a2a, metalness: .6 });
@@ -617,7 +639,7 @@ function construireTertre(A, L, scene) {
     for (const [w, d, x, z] of [[tw, .04, (x0 + x1) / 2, z0 - .2], [tw, .04, (x0 + x1) / 2, z1 + .2], [.04, td, x0 - .2, (z0 + z1) / 2], [.04, td, x1 + .2, (z0 + z1) / 2]]) box(w, .5, d, lM, x, y + H - .05, z);
     // les tables, les clients
     for (let x = x0 + .9; x < x1 - .5; x += 1.6) for (let z = z0 + .8; z < z1 - .4; z += 1.5) { table(x, z, o.nappe); chaise(x - .45, z, Math.PI / 2); chaise(x + .45, z, -Math.PI / 2);
-      if (GENS && kT < nTerr + 10 && al() < .55) { const sx = al() < .5 ? -.45 : .45, m = gens(kT + 11); m.position.set(x + sx, YS + .5 - m.userData.hipY, z); m.rotation.y = sx < 0 ? Math.PI / 2 : -Math.PI / 2; m.userData.poser("assis", 0); scene.add(m); TERR.push(m); kT++; } }
+      for (const sx of [-.45, .45]) CHS.push([x + sx, YS + .5, z, sx < 0 ? Math.PI / 2 : -Math.PI / 2]); }
     if (o.rampe) { const fer = mat({ color: 0x141414, metalness: .6, roughness: .5 }); for (const [ax, az, bx, bz] of [[x0, z0, x1, z0], [x0, z1, x1, z1], [x1, z0, x1, z1]]) { const l = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bz - az, bx - ax), r = box(l, .05, .05, fer, (ax + bx) / 2, y + 1.05, (az + bz) / 2); r.rotation.y = -ang;
         for (let t = 0; t < l; t += .14) box(.02, 1, .02, fer, ax + (bx - ax) * t / l, y + .5, az + (bz - az) * t / l); } }
     if (o.lampes) { const lp = lum(mat({ color: 0xffd8a0, emissive: 0xffb860, emissiveIntensity: .1 }), .1, 2.6); for (let x = x0 + .8; x < x1; x += 1.6) for (let z = z0 + .7; z < z1; z += 1.5) { cyl(.006, .006, .5, fonteM, x, y + H - .25, z, scene, 3); add(new THREE.SphereGeometry(.12, 10, 8), lp, x, y + H - .55, z); } }
@@ -698,6 +720,16 @@ function construireTertre(A, L, scene) {
       add(new THREE.CylinderGeometry(.035, .028, .14, 8), verreS, -.07, .08, .02, pl); add(new THREE.CylinderGeometry(.035, .028, .14, 8), verreS, .06, .08, -.05, pl); add(new THREE.CylinderGeometry(.04, .032, .06, 8), tasseM, .02, .04, .09, pl);
       const t = TABLES[(k * 11 + 3) % TABLES.length]; m.position.set(t[0] + .8, hPl(t[0] + .8, t[1]), t[1]); m.userData.poser("debout", 0); scene.add(m);
       SERV.push({ m, P, but: null, tab: t, pause: al() * 3, v: .85 + al() * .25, k }); } }
+  /* (10.88) les terrasses pleines, partout : on tire des chaises dans toute la liste (pas seulement les premières terrasses) ; et dans chaque café, le barman, les clients */
+  for (const { a, g, W } of ARD) { g.updateMatrixWorld(true); let best = null; for (const z of [1.0, .45]) for (const dx of [0, .6, -.6, 1.2, -1.2, 1.8, -1.8, 2.4, -2.4, 3, -3]) { const x = a.position.x + dx; if (Math.abs(x) > W / 2 - .35) continue; const p = g.localToWorld(a.position.clone().set(x, 0, z));
+      if (TABLES.every(([tx, tz]) => (tx - p.x) ** 2 + (tz - p.z) ** 2 > .8) && CHS.every(([cx, , cz]) => (cx - p.x) ** 2 + (cz - p.z) ** 2 > .3)) { best = [x, z]; break; } if (best) break; }
+    if (best) a.position.set(best[0], 0, best[1]); else a.position.z = .3; }   // (le chevalet du menu : jamais au milieu d'une table)
+  const BARM = []; if (GENS) { const ordre = CHS.map((c2, i) => [((i * 7919) % 104729) / 104729, c2]).sort((a, b) => a[0] - b[0]);
+    for (const [, [x, y, z, ry]] of ordre.slice(0, Math.min(nTerr, Math.round(CHS.length * .6)))) { const m = gens(kT + 3); m.position.set(x, y - m.userData.hipY, z); m.rotation.y = ry; m.userData.poser("assis", 0); scene.add(m); TERR.push(m); kT++; }
+    const nA = PETIT ? 0 : (MOBILE || GPU_MODESTE) ? 1 : 3;
+    for (const [i, S2] of SALLES.entries()) { if (PETIT && i % 2) continue; const [pb, rb] = S2.bar, b = personne3D({ taille: 1.78, peau: PE[(i * 5 + 1) % 6], ch: "#141010", haut: "#f2f0ea", bas: "#141414", chaussures: "#0a0a0a", coif: i % 3 ? "court" : "chauve", pantalon: true });
+      box(.38, .62, .02, mat({ color: 0xffffff, roughness: .8 }), 0, -.14, .11, b.userData.parts.bassin); b.position.copy(pb); b.rotation.y = rb; b.userData.poser("debout", 0); scene.add(b); BARM.push({ m: b, k: i });
+      for (const [j, [pa, ya, ra]] of S2.assis.entries()) { if (j >= nA || (j + i) % 4 === 3) continue; const m = gens(i * 7 + j * 3 + 5); m.position.set(pa.x, ya - m.userData.hipY, pa.z); m.rotation.y = ra; m.userData.poser("assis", 0); scene.add(m); TERR.push(m); } } }
 
   /* ---------- les limites : les rues pavées, le carré, la rue Saint-Éleuthère, le haut des marches de la rue du Calvaire ; ni les arbres ni les chevalets ---------- */
   /* (les obstacles rangés par cases de 2 m : on ne teste que ceux d'à côté — la carte des passages se calculait sur tout Montmartre et bloquait le téléphone) */
@@ -720,6 +752,8 @@ function construireTertre(A, L, scene) {
     for (const [k, m] of TERR.entries()) { if (c && (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 > R2) continue; const P = m.userData.parts, b = (tm / 1000 + k * 1.7) % 7; m.userData.poser("assis", tm); if (b < 1.3) { P.bras[1].e.rotation.x = -1.3; P.bras[1].c.rotation.x = -1.9; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.9; } }
     for (const { m, gui, k } of MUSI) { m.userData.poser(k ? "debout" : "assis", tm); const P = m.userData.parts; if (!k) { P.bras[1].e.rotation.set(-.9, 0, .3); P.bras[1].c.rotation.x = -1.2 + Math.sin(tm / 90) * .25; P.bras[0].e.rotation.set(-1.3, 0, -.6); P.bras[0].c.rotation.x = -1.1; P.tete.rotation.y = Math.sin(tm / 1400) * .3; void gui; }
       else { P.bras[1].e.rotation.set(-2.2 + Math.sin(tm / 500) * .3, 0, .3); P.buste.rotation.z = Math.sin(tm / 600) * .08; P.tete.rotation.x = -.15; } }
+    for (const { m, k } of BARM) { if (c && (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 > R2) continue; m.userData.poser("debout", tm); const P = m.userData.parts, s2 = Math.sin(tm / 400 + k); P.bras[1].e.rotation.set(-.9 + s2 * .15, 0, .3 + s2 * .2); P.bras[1].c.rotation.x = -.8; P.tete.rotation.y = Math.sin(tm / 2100 + k) * .5; }   // (le barman essuie son comptoir, regarde la salle)
+    if (c && tm - (L.tVis || 0) > 400) { L.tVis = tm; const V2 = ((MOBILE || GPU_MODESTE) ? 38 : 60) ** 2, vis = (m) => { m.visible = (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < V2; }; for (const m of TERR) vis(m); for (const B of BARM) vis(B.m); for (const W of MARCH) vis(W.m); for (const S3 of SERV) vis(S3.m); }   // (les gens trop loin : on ne les dessine pas)
     for (const S2 of SERV) { const { m, P } = S2; if (S2.pause > 0) { S2.pause -= dt; m.userData.poser("debout", tm); const s2 = Math.min(1, S2.pause); P.bras[0].e.rotation.set(-.9 * s2, 0, -.15); P.bras[0].c.rotation.x = -.6 * s2; }   // (il pose le verre sur la table)
       else { if (!S2.but) { const pr = TABLES.filter(t => t !== S2.tab && (t[0] - m.position.x) ** 2 + (t[1] - m.position.z) ** 2 < 150); const t = pr.length ? pr[(al() * pr.length) | 0] : TABLES[(al() * TABLES.length) | 0], dx = m.position.x - t[0], dz = m.position.z - t[1], d0 = Math.hypot(dx, dz) || 1; S2.tab = t; S2.but = [t[0] + dx / d0 * .72, t[1] + dz / d0 * .72]; }
         const dx = S2.but[0] - m.position.x, dz = S2.but[1] - m.position.z, d = Math.hypot(dx, dz);
