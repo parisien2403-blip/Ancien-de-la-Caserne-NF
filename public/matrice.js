@@ -8991,7 +8991,7 @@ export async function ouvrir(ctx) {
             if (p.bloqueN === 4 && but && !p.recalcule) { p.recalcule = true; viser(p, but.x, but.z); }
             else if (p.bloqueN > 10) { p.bloqueN = 0; p.glisseN = 0; p.recalcule = false; p.cible = null; p.chemin = []; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }   // (vraiment bloqué : on s'arrête)
           else { p.bloqueN = 0; p.recalcule = false; }
-          if (p.moi) M.dbgPas = { pas, pasOk, dt, x: p.g.position.x, n: (M.dbgPas ? M.dbgPas.n : 0) + 1, meme: p === M.gens.get(M.moiNum), nMoi: [...M.gens.values()].filter(q => q.moi).length };
+          if (p.moi) M.dbgPas = { pas, pasOk, dt, x: p.g.position.x, n: (M.dbgPas ? M.dbgPas.n : 0) + 1 };
           M.dansPas = true; p.g.position.addScaledVector(sens, pasOk); M.dansPas = false;
           if (!fin && L < .28) p.cible = p.chemin.shift();      // le coin : on enchaîne sur le bout de chemin suivant
           // le pas : un léger balancement du corps (pas pendant une danse)
