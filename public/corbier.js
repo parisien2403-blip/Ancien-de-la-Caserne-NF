@@ -62,7 +62,7 @@ function construireCorbier(A, L, scene) {
   const sol = (x0, x1, z0, z1, m, y = 0) => { const s = add(new THREE.PlaneGeometry(x1 - x0, z1 - z0), m, (x0 + x1) / 2, y, (z0 + z1) / 2); s.rotation.x = -Math.PI / 2; return s; };
   /* (10.104) la rue qui descend : depuis le petit restaurant jusqu'au bas de la piscine, au fond, la pente — trois mètres de moins au bout ; l'herbe à côté suit */
   const DESC = (x, z) => { const u = Math.min(1, Math.max(0, (-50 - x) / 33)), f = z < 21 ? 1 : z > 34 ? 0 : 1 - (z - 21) / 13; return z < 10.5 && x > -84.5 ? 0 : -3.45 * u * u * (3 - 2 * u) * f * f * (3 - 2 * f); };   /* (en bas, la rue arrive au niveau des plages de la piscine) */   // (au bout, derrière la piscine, le terrain est descendu lui aussi)
-  { const hm = mat({ map: herbeT, roughness: 1 }); L.sol = sol(-400, 400, 34, 400, hm, -.02); L.solsPlus = [sol(-400, -90, 14, 34, hm, -.02), sol(-50, 400, 14, 34, hm, -.02), sol(-400, 400, -300, -22, hm, -.02), sol(-400, -90, -22, -10, hm, -.02), sol(-84.6, 84, -22, -10, hm, -.02), sol(96, 400, -22, -10, hm, -.02), sol(84, 96, -22, -20, hm, -.02), sol(-400, -84, -10, 14, hm, -.02), sol(-50, 84, -10, 14, hm, -.02), sol(96, 400, -10, 14, hm, -.02), sol(84, 96, 5.6, 14, hm, -.02), sol(84, 87.6, -1, 5.6, hm, -.02), sol(92.4, 96, -1, 5.6, hm, -.02), sol(-60.5, -50, -10, 10.4, hm, -.02)]; }   /* (le trou : la piscine en contrebas) */
+  { const hm = mat({ map: herbeT, roughness: 1 }); L.sol = sol(-400, 400, 34, 400, hm, -.02); L.solsPlus = [sol(-400, -90, 14, 34, hm, -.02), sol(-50, 400, 14, 34, hm, -.02), sol(-400, 400, -300, -22, hm, -.02), sol(-400, -90, -22, -10, hm, -.02), sol(-84.6, 84, -22, -10, hm, -.02), sol(96, 400, -22, -10, hm, -.02), sol(84, 96, -22, -20, hm, -.02), sol(-400, -84, -10, 14, hm, -.02), sol(-50, -36.6, -10, 14, hm, -.02), sol(-35.2, 84, -10, 14, hm, -.02), sol(-36.6, -35.2, -10, -6.2, hm, -.02), sol(-36.6, -35.2, -3.6, 14, hm, -.02), sol(96, 400, -10, 14, hm, -.02), sol(84, 96, 5.6, 14, hm, -.02), sol(84, 87.6, -1, 5.6, hm, -.02), sol(92.4, 96, -1, 5.6, hm, -.02), sol(-60.5, -50, -10, 10.4, hm, -.02)]; }   /* (le trou : la piscine en contrebas) */
   L.solsPlus.push(sol(-48, 66, -3.6, 7, mat({ map: deckT, roughness: .8 }), .03),   /* (10.123 : le platelage clair va jusqu'au pied des façades, dans les renfoncements aussi) */ sol(-48, -36, 7, 10.4, mat({ map: deckT, roughness: .8 }), .034),   /* (10.120 : le platelage va jusqu'au bâtiment, et avance en L jusqu'à son bout) */ sol(-50, 100, 7, 16, mat({ map: gravT, roughness: 1 }), .01), sol(66, 84, 0, 8, mat({ map: dalleT, roughness: .8 }), .03));
   for (const [x0, x1] of [[-36, 66]]) box(x1 - x0, .08, .2, boisC, (x0 + x1) / 2, .04, 7); box(12, .08, .2, boisC, -42, .04, 10.4); box(.2, .08, 3.4, boisC, -36, .04, 8.7);   // (le rebord du platelage)
 
@@ -390,8 +390,8 @@ function construireCorbier(A, L, scene) {
       bx(-39, -36.25, -15.2, -3.2); bx(-23.35, -14.05, -15.2, -3.2); bx(-11.75, -1, -15.2, -3.2); bx(-14.05, -11.75, -15.2, -7.6); bx(-14.05, -11.75, -7.6, -3.2, 2.7); bx(-36.25, -23.35, -15.2, -13.25); bx(-36.25, -27.6, -3.95, -3.2); bx(-36.25, -23.35, -13.25, -3.2, 3.25); bx(-27.6, -23.35, -3.95, -3.2, 2.6); void zc; }   /* (10.108 : collé à la longue résidence — plus d'espace entre les deux) */
     const esf = tT(512, 96, (c, w, h) => { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8202a"; c.beginPath(); c.arc(40, 48, 30, 0, 7); c.fill(); c.fillStyle = "#1a3a8a"; c.font = `italic bold 40px ${sans}`; c.fillText("ÉCOLE DU SKI FRANÇAIS", 82, 60); });
     const s = add(new THREE.PlaneGeometry(9, 1.7), lum(mat({ map: esf, emissive: 0xffffff, emissiveMap: esf, emissiveIntensity: .1 }), .1, .8), -26, 4.9, -1.9); void s;
-    const ours = tT(512, 96, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 30px ${serif}`; c.fillText("Bar - Restaurant", 14, 60); c.font = `italic bold 38px ${serif}`; c.fillText("La Fontaine de l'Ours", 232, 60); });
-    add(new THREE.PlaneGeometry(10, 1.4), lum(mat({ map: ours, emissive: 0xffffff, emissiveMap: ours, emissiveIntensity: .12 }), .12, .9), -25, 2.6, -2.15);
+    const ours = tT(768, 96, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 30px ${serif}`; c.fillText("Bar - Restaurant", 18, 60); c.font = `italic bold 40px ${serif}`; c.fillText("La Fontaine de l'Ours", 290, 62); });
+    add(new THREE.PlaneGeometry(10, 1.1), lum(mat({ map: ours, emissive: 0xffffff, emissiveMap: ours, emissiveIntensity: .12 }), .12, .9), -25, 3.05, -2.15);   /* (10.142 : remontée au-dessus de la porte) */
     const bas = tT(512, 160, (c, w, h) => { c.fillStyle = "#4a2a18"; c.fillRect(0, 0, w, h); for (let k = 0; k < 5; k++) { c.fillStyle = "#e8d8b0"; c.fillRect(10 + k * 100, 20, 88, h - 34); c.fillStyle = "rgba(90,50,30,.5)"; c.fillRect(30 + k * 100, h - 60, 50, 6); } });
     { const b1 = bas.clone(), b2 = bas.clone(); b1.repeat.set(12.7 / 38, 1); b2.repeat.set(22.7 / 38, 1); b2.offset.set(15.3 / 38, 0); b1.needsUpdate = b2.needsUpdate = true;   /* (la façade crème, coupée par la porte battante) */
       add(new THREE.PlaneGeometry(12.7, 1.9), lum(mat({ map: b1, emissive: 0xffffff, emissiveMap: b1, emissiveIntensity: .1 }), .1, .7), -32.65, .95, -3.18);
@@ -649,7 +649,7 @@ function construireCorbier(A, L, scene) {
       { const tH = tT(512, 512, (c, w, h) => { c.fillStyle = "#8a7254"; c.fillRect(0, 0, w, h); for (let i = 0; i < 70; i++) { c.fillStyle = `rgba(${al() < .5 ? "70,110,40" : "95,130,50"},${.5 + al() * .4})`; c.beginPath(); c.ellipse(al() * w, al() * h, 20 + al() * 70, 12 + al() * 40, al() * 3, 0, 7); c.fill(); }
           for (let i = 0; i < 4000; i++) { c.fillStyle = ["#6a5640", "#a08a6a", "#5a7a30", "#7a9a40", "#4a3a28"][i % 5]; c.fillRect(al() * w, al() * h, 2, 2 + (i % 5 > 1 && i % 5 < 4 ? 3 : 0)); } }, 3, 2);
         L.solsPlus.push(sol(95, 108, -1, 7.6, mat({ map: tH, roughness: 1 }), .03));
-        epicea(101.5, 0, 3.2, 26, 1.15); OB.push([101.5, 3.2, 1.2]);
+        epicea(102, 0, 5.2, 24, .8); OB.push([102, 5.2, 1.2]);
         const tb = mat({ color: 0x8a6440, roughness: .8 }), tx = 98, tz = 5.2; box(2.0, .07, .8, tb, tx, .76, tz); for (const sz of [-.75, .75]) box(2.0, .05, .3, tb, tx, .45, tz + sz);
         for (const sx of [-.8, .8]) for (const sg of [-1, 1]) { const p2 = box(.08, .9, .08, tb, tx + sx, .42, tz + sg * .45); p2.rotation.x = sg * .5; } OB.push([tx, tz, 1.1]); }
       L.solsPlus.push(sol(100, 124, 7.6, 16.5, mat({ map: gravT, roughness: 1 }), .01));
@@ -685,13 +685,13 @@ function construireCorbier(A, L, scene) {
       { const xa = 82.4, xb = 108, cx = (xa + xb) / 2, W = xb - xa, zc = -2.8, yP = 0, bardT2 = tT(256, 64, (c, w, h) => { c.fillStyle = "#8a6a52"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8 % 2) * 6; x < w; x += 12) { c.fillStyle = ["#9a7a60", "#7a5a44", "#a88a6e"][(x + y) % 3]; c.fillRect(x, y, 11, 7); } }, 6, 2);
         const murT = tT(512, 64, (c, w, h) => { c.fillStyle = "#7a3e24"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 6) { c.fillStyle = "rgba(0,0,0,.15)"; c.fillRect(x, 0, 1, h); } for (let x = 20; x < w; x += 64) { c.fillStyle = "#5a2a18"; c.fillRect(x - 3, 10, 46, 34); c.fillStyle = "#8a9aa4"; c.fillRect(x, 13, 40, 28); c.fillStyle = "rgba(255,255,255,.3)"; c.fillRect(x + 2, 15, 10, 24); } }, 1, 1);
         box(W, .5, 3.2, betonM, cx, yP + .25, zc);   // (le tablier, mince : dessous, le vide au-dessus de l'escalier)
-        for (const sz of [-1.6, 1.6]) add(new THREE.PlaneGeometry(W, 1.6), mat({ map: murT, side: THREE.DoubleSide }), cx, yP + 1.3, zc + sz);
-        for (const sg of [-1, 1]) { const t = box(W + .6, .14, 2.4, mat({ map: bardT2, roughness: .9 }), cx - .3, yP + 2.35, zc + sg * 1.0); t.rotation.x = sg * .5; }
-        box(W, .3, .3, mat({ color: 0x5a3a26 }), cx, yP + 2.8, zc);
+        for (const sz of [-1.6, 1.6]) add(new THREE.PlaneGeometry(W, 2.3), mat({ map: murT, side: THREE.DoubleSide }), cx, yP + 1.65, zc + sz);
+        for (const sg of [-1, 1]) { const t = box(W + .6, .14, 2.4, mat({ map: bardT2, roughness: .9 }), cx - .3, yP + 3.0, zc + sg * 1.0); t.rotation.x = sg * .5; }
+        box(W, .3, .3, mat({ color: 0x5a3a26 }), cx, yP + 3.45, zc);
         for (const x of [85, 95]) for (const sz of [-1.3, 1.3]) { const yT = yL(zc + sz); box(.5, yP - yT, .5, betonM, x, (yP + yT) / 2, zc + sz); }
         // le bout, côté tour : le pignon de bois et ses portes battantes, sous le porche
         const pigM = mat({ color: 0x7a3e24 }), cadreM = mat({ color: 0x5a3018, roughness: .7 }), porteM = mat({ map: tT(64, 128, (c, w, h) => { c.fillStyle = "#6a3a1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#9ab8c4"; c.fillRect(8, 10, w - 16, 66); c.fillStyle = "rgba(255,255,255,.35)"; c.fillRect(12, 14, 10, 58); c.fillStyle = "#4a2612"; c.fillRect(8, 86, w - 16, 30); }), roughness: .6 });
-        for (const sz of [-1, 1]) box(.14, 2.3, .5, pigM, xb, yP + 1.65, zc + sz * 1.35); box(.14, .4, 3.2, pigM, xb, yP + 2.8, zc);   // (le pignon, ouvert au milieu)
+        for (const sz of [-1, 1]) box(.14, 2.3, .5, pigM, xb, yP + 1.65, zc + sz * 1.35); box(.14, 1.0, 3.2, pigM, xb, yP + 3.1, zc);   // (le pignon, ouvert au milieu)
         for (const sz of [-1, 1]) box(.12, 2.2, .1, cadreM, xb + .05, yP + 1.6, zc + sz * 1.08); box(.12, .12, 2.3, cadreM, xb + .05, yP + 2.66, zc);
         porteBat(xb + .02, yP + 1.55, zc - 1.05, 0, 1, 1, 1.05, 2.1, porteM, xb, zc); porteBat(xb + .02, yP + 1.55, zc + 1.05, 0, -1, -1, 1.05, 2.1, porteM, xb, zc);
         OB.push([xb, zc - 1.3, .25], [xb, zc + 1.3, .25]); } } }
@@ -732,11 +732,11 @@ function construireCorbier(A, L, scene) {
     { const xa = 82.4, xb = 108, cx = (xa + xb) / 2, W = xb - xa, zc = -2.8;
       const pinT = tex(1024, 112, (c, w, h) => { c.fillStyle = "#c8915a"; c.fillRect(0, 0, w, h); for (let y = 54; y < h; y += 7) { c.fillStyle = `rgba(${y % 14 ? "120,70,30" : "255,220,170"},.18)`; c.fillRect(0, y, w, 6); c.fillStyle = "rgba(90,50,20,.35)"; c.fillRect(0, y + 6, w, 1); }
         for (let x = 6; x < w; x += 64) { c.fillStyle = "#a8743e"; c.fillRect(x - 4, 4, 60, 48); const g = c.createLinearGradient(0, 8, 0, 48); g.addColorStop(0, "#eef6fa"); g.addColorStop(1, "#b0c6d0"); c.fillStyle = g; c.fillRect(x, 8, 52, 40); c.fillStyle = "rgba(255,255,255,.45)"; c.fillRect(x + 3, 10, 12, 36); c.fillStyle = "#a8743e"; c.fillRect(x + 24, 8, 4, 40); } }, W / 16, 1);
-      for (const [z, ry] of [[zc - 1.5, 0], [zc + 1.5, Math.PI]]) add(new THREE.PlaneGeometry(W, 1.75), lu(mat({ map: pinT, roughness: .8, emissive: 0xffffff, emissiveMap: pinT, emissiveIntensity: .16 }), .16), cx, .5 + .875, z, ry);
+      for (const [z, ry] of [[zc - 1.5, 0], [zc + 1.5, Math.PI]]) add(new THREE.PlaneGeometry(W, 2.25), lu(mat({ map: pinT, roughness: .8, emissive: 0xffffff, emissiveMap: pinT, emissiveIntensity: .16 }), .16), cx, .5 + 1.125, z, ry);
       const plT = rep(T.pinV, 1, W / 2.5);
-      for (const sg of [-1, 1]) { const pl = add(new THREE.PlaneGeometry(W, 1.9), lu(mat({ map: plT, roughness: .85, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: plT, emissiveIntensity: .38 }), .38), cx, 2.55, zc + sg * .78); pl.rotation.x = Math.PI / 2 + sg * .52; }
-      const chev = mat({ color: 0x9a6a3a, roughness: .7 }); for (let x = xa + .7; x < xb; x += 1.6) { for (const sg of [-1, 1]) { const r = box(.1, .14, 1.85, chev, x, 2.5, zc + sg * .78); r.rotation.x = sg * .52; } }   // (les chevrons de pin)
-      box(W, .16, .16, noirP, cx, 3.0, zc);   // (la poutre faîtière, sombre)
+      for (const sg of [-1, 1]) { const pl = add(new THREE.PlaneGeometry(W, 1.9), lu(mat({ map: plT, roughness: .85, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: plT, emissiveIntensity: .38 }), .38), cx, 3.15, zc + sg * .78); pl.rotation.x = Math.PI / 2 + sg * .52; }
+      const chev = mat({ color: 0x9a6a3a, roughness: .7 }); for (let x = xa + .7; x < xb; x += 1.6) { for (const sg of [-1, 1]) { const r = box(.1, .14, 1.85, chev, x, 3.1, zc + sg * .78); r.rotation.x = sg * .52; } }   // (les chevrons de pin)
+      box(W, .16, .16, noirP, cx, 3.6, zc);   // (la poutre faîtière, sombre)
       const solG = tex(1024, 128, (c, w, h) => { c.fillStyle = "#3a2216"; c.fillRect(0, 0, w, h); bruit(c, w, h, 6000, .18, ["#2a180e", "#4a2e1e"]);   /* (le balatum marron foncé, ses pastilles rondes antidérapantes) */
         for (let y = 5; y < h; y += 10) for (let x = (y / 10 % 2) * 5 + 3; x < w; x += 10) { c.fillStyle = "#24140a"; c.beginPath(); c.arc(x + .6, y + .6, 2.6, 0, 7); c.fill(); c.fillStyle = "#5a3826"; c.beginPath(); c.arc(x, y, 2.4, 0, 7); c.fill(); c.fillStyle = "rgba(255,220,180,.18)"; c.beginPath(); c.arc(x - .7, y - .7, 1, 0, 7); c.fill(); }
       }, W / 7, 1);
@@ -748,8 +748,8 @@ function construireCorbier(A, L, scene) {
         const so = add(new THREE.PlaneGeometry(W, 1.4), sm, cx, .515, zc + .25); so.rotation.x = -Math.PI / 2; so.renderOrder = 2; L.solPasserelle = so;
         const a4 = L.anim; L.anim = (tm) => { try { a4 && a4(tm); } catch (e) {} const v = !L.nuit && !(M && M.hiver && false); if (so.visible !== v) so.visible = v; }; }
       // le pignon de bois sombre, au bout côté Yéti, et son ouverture ; la boîte jaune, à droite ; le panneau rouge suspendu
-      const sb = mat({ map: rep(T.sombre, 2, 1), roughness: .8 }); for (const sz of [-1.25, 1.25]) box(.12, 2.4, .7, sb, xa + .06, .5 + 1.2, zc + sz); box(.12, .5, 3.2, sb, xa + .06, .5 + 2.15, zc);
-      { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute([-(xa + .13), 2.9, zc - 1.6, -(xa + .13), 2.9, zc + 1.6, -(xa + .13), 3.75, zc], 3)); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat({ map: T.sombre, side: THREE.DoubleSide })); scene.add(m); }
+      const sb = mat({ map: rep(T.sombre, 2, 1), roughness: .8 }); for (const sz of [-1.25, 1.25]) box(.12, 2.9, .7, sb, xa + .06, .5 + 1.45, zc + sz); box(.12, 1.0, 3.2, sb, xa + .06, .5 + 2.4, zc);
+      { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute([-(xa + .13), 3.4, zc - 1.6, -(xa + .13), 3.4, zc + 1.6, -(xa + .13), 4.3, zc], 3)); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat({ map: T.sombre, side: THREE.DoubleSide })); scene.add(m); }
       box(.35, .45, .25, mat({ color: 0xf0d020, roughness: .5 }), xa + 2.2, 1.4, zc + 1.35); box(.36, .06, .27, mat({ color: 0xd0b010 }), xa + 2.2, 1.65, zc + 1.35);
       const rs = panneau("SORTIE / EXIT", "#c8202a", "#ffffff", 256, 64, `bold 30px ${sans}`); add(new THREE.PlaneGeometry(.8, .2), lumi(rs, .5), xb - 3, 2.7, zc + 1.0, Math.PI / 2); }
 
@@ -952,14 +952,15 @@ function construireCorbier(A, L, scene) {
       sortie(-23.9, 2.4, -9.2, Math.PI / 2); }
     // le sas de l'École du Ski : à droite l'escalier qui descend (fermé par sa rampe), en face deux paires de portes battantes vers la galerie
     { const M_ = Pn("M"), R = repere(M_, "xmin"); reserve("M", "xmin", -6.2, -3.25); const gr = mat({ color: 0x5a5e64, roughness: .7 }), rp = mat({ color: 0xb8bcc0, metalness: .6, roughness: .3 });
-      for (let k = 0; k < 9; k++) box(1.3, .18, .32, gr, -35.85, -.09 - k * .2, -3.5 - k * .3);   // (les marches qui descendent)
-      box(.12, 2.6, 3, matMur("blanc", 3, 2.6), -36.55, -.1, -4.7); box(1.4, .1, 3, gr, -35.85, -1.9, -4.7);
+      for (let k = 0; k < 12; k++) box(1.3, .18, .2, gr, -35.85, -.09 - k * .2, -3.75 - k * .2);   // (les marches qui descendent, dans la cage)
+      { const mw = matMur("blanc", 3, 5.4), noirC = mat({ color: 0x0a0a0c, roughness: 1 }); box(.12, 5.4, 3.0, mw, -36.56, 0, -4.75); box(1.45, 5.4, .12, mw, -35.85, 0, -3.6); box(1.45, 5.4, .12, mw, -35.85, 0, -6.22);
+        box(1.4, .05, 3, noirC, -35.85, -2.7, -4.75); box(1.3, 2.4, .05, noirC, -35.85, -1.5, -6.12); box(1.4, .08, 3.0, mat({ map: T.dalles }), -35.85, 2.62, -4.75); }
       box(.05, .05, 2.9, rp, -35.25, 1.0, -4.7); for (let z = -3.4; z > -6.2; z -= .5) box(.04, 1.0, .04, rp, -35.25, .5, z); for (let z = -3.5; z > -6.2; z -= .3) OBS.push([-35.05, z, .2]);
-      const sg = panneau("Accès interdit", "#c8202a", "#ffffff", 256, 64, `bold 30px ${sans}`); box(.04, .2, .7, lumi(sg, .4), -35.22, 1.25, -4.4); void R;
+      void R;
       const pB = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#8a5a32"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(x, 0, 1, h); } c.fillStyle = "#b8ccd4"; c.fillRect(12, 14, w - 24, 50); }), roughness: .7 });
       reserve("M", "zmin", -35.2, -32.8);
       porteBat(-35.15, 1.07, -6.2, Math.PI / 2, -1, 1, 1.15, 2.1, pB, -34, -6.2); porteBat(-32.85, 1.07, -6.2, Math.PI / 2, 1, -1, 1.15, 2.1, pB, -34, -6.2);
-      porteBat(-35.15, 1.07, -7.5, Math.PI / 2, -1, 1, 1.05, 2.1, pB, -34.1, -7.5); porteBat(-33.05, 1.07, -7.5, Math.PI / 2, 1, -1, 1.05, 2.1, pB, -34.1, -7.5); }
+    }
     // le couloir derrière la porte du mur en retour (x = 23), ses deux portes battantes
     { const pB = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#8a5a32"; c.fillRect(0, 0, w, h); c.fillStyle = "#b8ccd4"; c.fillRect(12, 14, w - 24, 50); }), roughness: .7 });
       porteBat(23.05, 1.07, -1.7, 0, -1, 1, .65, 2.1, pB, 23, -1.05); porteBat(23.05, 1.07, -.4, 0, 1, -1, .65, 2.1, pB, 23, -1.05); }
