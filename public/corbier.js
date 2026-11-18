@@ -30,6 +30,11 @@ function construireCorbier(A, L, scene) {
     return { geos: V, mat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, metalness: 0 }) }; })();
   const epicea = (x, y, z, h, w = 1) => { const m = new THREE.Mesh(EPI.geos[(Math.abs(x * 7 + z * 13) | 0) % 4], EPI.mat); m.position.set(x, y, z); m.scale.set(h * w * (.9 + al() * .2), h, h * w * (.9 + al() * .2)); m.rotation.y = al() * 6.28; m.receiveShadow = true; scene.add(m); return m; };
   const NUIT = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
+  /* (10.128) les portes battantes : chaque vantail tourne sur ses gonds et s'ouvre quand on approche (base, sens : avant le passage du miroir) */
+  const PORTES = [], porteBat = (hx, y, hz, base, sens, dir, larg, haut, m, cx, cz) => { const g = new THREE.Group(); g.position.set(hx, y, hz); g.rotation.y = base; g.userData.anime = true;
+    const f = new THREE.Mesh(new THREE.BoxGeometry(.06, haut, larg - .04), m); f.position.z = dir * larg / 2; g.add(f);
+    for (const sx of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(.05, .05, larg * .55), mat({ color: 0xb8bcc0, metalness: .6, roughness: .4 })); b.position.set(sx * .07, -.05, dir * larg * .55); g.add(b); }
+    scene.add(g); PORTES.push({ g, base, sens, cx, cz, a: 0 }); return g; };
   const serif = "Georgia, 'Times New Roman', serif", sans = "Arial, Helvetica, sans-serif";
   const fit = (c, txt, maxW, px, font) => { let p = px; c.font = font.replace("@", p + "px"); while (c.measureText(txt).width > maxW && p > 8) { p -= 2; c.font = font.replace("@", p + "px"); } };
   const OB = [];   // (les obstacles ronds : [x, z, rayon])
@@ -378,13 +383,20 @@ function construireCorbier(A, L, scene) {
     for (const [x, z, h, w] of [[-104, -14, 50, 18], [-110, 10, 46, 16], [-100, 34, 42, 15]]) { box(w, h, 15, mat({ map: tourO, fog: false }), x, h / 2, z); box(w + 1, 1.2, 16, mat({ color: 0x5a2a12 }), x, h + .6, z); } }   // (les tours orangées, au bout de la piscine)
 
   /* ---------- le bâtiment de l'École du Ski Français, la Fontaine de l'Ours ---------- */
-  { const n0E = scene.children.length; residence(-39, -1, -3.2, 3, facG);   /* (10.108 : collé à la longue résidence — plus d'espace entre les deux) */
+  { const n0E = scene.children.length; residence(-39, -1, -3.2, 3, facG);
+    { const corps = scene.children[n0E]; scene.remove(corps); const H = 3.4 + 3 * 2.8, zc = -3.2 - 6.6;   /* (10.128 : le corps de l'École du Ski, ouvert au rez-de-chaussée : le passage de la galerie) */
+      box(12.7, H, 12, facS, -32.65, H / 2, zc); box(22.7, H, 12, facS, -12.35, H / 2, zc); box(2.6, H - 3.1, 12, facS, -25, 3.1 + (H - 3.1) / 2, zc); }   /* (10.108 : collé à la longue résidence — plus d'espace entre les deux) */
     const esf = tT(512, 96, (c, w, h) => { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8202a"; c.beginPath(); c.arc(40, 48, 30, 0, 7); c.fill(); c.fillStyle = "#1a3a8a"; c.font = `italic bold 40px ${sans}`; c.fillText("ÉCOLE DU SKI FRANÇAIS", 82, 60); });
     const s = add(new THREE.PlaneGeometry(9, 1.7), lum(mat({ map: esf, emissive: 0xffffff, emissiveMap: esf, emissiveIntensity: .1 }), .1, .8), -26, 4.9, -1.9); void s;
     const ours = tT(512, 96, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 30px ${serif}`; c.fillText("Bar - Restaurant", 14, 60); c.font = `italic bold 38px ${serif}`; c.fillText("La Fontaine de l'Ours", 232, 60); });
     add(new THREE.PlaneGeometry(10, 1.4), lum(mat({ map: ours, emissive: 0xffffff, emissiveMap: ours, emissiveIntensity: .12 }), .12, .9), -25, 2.6, -2.15);
     const bas = tT(512, 160, (c, w, h) => { c.fillStyle = "#4a2a18"; c.fillRect(0, 0, w, h); for (let k = 0; k < 5; k++) { c.fillStyle = "#e8d8b0"; c.fillRect(10 + k * 100, 20, 88, h - 34); c.fillStyle = "rgba(90,50,30,.5)"; c.fillRect(30 + k * 100, h - 60, 50, 6); } });
-    add(new THREE.PlaneGeometry(38, 1.9), lum(mat({ map: bas, emissive: 0xffffff, emissiveMap: bas, emissiveIntensity: .1 }), .1, .7), -20, .95, -3.18);
+    { const b1 = bas.clone(), b2 = bas.clone(); b1.repeat.set(12.7 / 38, 1); b2.repeat.set(22.7 / 38, 1); b2.offset.set(15.3 / 38, 0); b1.needsUpdate = b2.needsUpdate = true;   /* (la façade crème, coupée par la porte battante) */
+      add(new THREE.PlaneGeometry(12.7, 1.9), lum(mat({ map: b1, emissive: 0xffffff, emissiveMap: b1, emissiveIntensity: .1 }), .1, .7), -32.65, .95, -3.18);
+      add(new THREE.PlaneGeometry(22.7, 1.9), lum(mat({ map: b2, emissive: 0xffffff, emissiveMap: b2, emissiveIntensity: .1 }), .1, .7), -12.35, .95, -3.18);
+      const cadre = mat({ color: 0x5a3018, roughness: .7 }), boisP = mat({ map: tT(64, 128, (c, w, h) => { c.fillStyle = "#8a5a32"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(x, 0, 1, h); } c.strokeStyle = "#5a3418"; c.lineWidth = 4; c.strokeRect(8, 10, w - 16, 50); c.strokeRect(8, 70, w - 16, 48); c.fillStyle = "#b8ccd4"; c.fillRect(14, 16, w - 28, 38); }), roughness: .7 });
+      for (const sx of [-1.35, 1.35]) box(.15, 2.3, .22, cadre, -25 + sx, 1.15, -3.1); box(2.85, .18, .22, cadre, -25, 2.35, -3.1);
+      porteBat(-26.25, 1.08, -3.12, Math.PI / 2, -1, 1, 1.25, 2.15, boisP, -25, -3.1); porteBat(-23.75, 1.08, -3.12, Math.PI / 2, 1, -1, 1.25, 2.15, boisP, -25, -3.1); }
     // la terrasse de bois de la Fontaine de l'Ours, sa barrière de rondins
     // (10.123 : le parquet sombre et sa barrière retirés : le platelage clair va jusqu'au bâtiment)
     for (const o of scene.children.slice(n0E)) o.position.x -= 9; }   // (10.105, d'après la photo : juste derrière la longueur de bâtiment de la piscine)
@@ -432,7 +444,7 @@ function construireCorbier(A, L, scene) {
 
   /* ---------- le Yéti, au bout : la salle basse, l'enseigne entre les deux Amstel, la pergola blanche, les tables de pique-nique sur les dalles ---------- */
   { const yT = tT(1024, 128, (c, w, h) => { c.fillStyle = "#5a2a18"; c.fillRect(0, 0, w, h); for (const x of [40, 640, 860]) { c.fillStyle = "#c8202a"; c.fillRect(x, 22, 130, 64); c.fillStyle = "#f0c020"; c.beginPath(); c.ellipse(x + 65, 54, 26, 22, 0, 0, 7); c.fill(); c.fillStyle = "#c8202a"; c.beginPath(); c.ellipse(x + 65, 54, 14, 11, 0, 0, 7); c.fill(); } c.fillStyle = "#c8202a"; c.fillRect(300, 18, 260, 72); c.strokeStyle = "#fff"; c.lineWidth = 4; c.strokeRect(306, 24, 248, 60); c.fillStyle = "#fff"; c.font = `bold 46px ${serif}`; c.textAlign = "center"; c.fillText("LE YETI", 430, 70); });
-    box(16, 3.6, 10, facS, 74.5, 1.8, -6); add(new THREE.PlaneGeometry(16, 1.2), lum(mat({ map: yT, emissive: 0xffffff, emissiveMap: yT, emissiveIntensity: .12 }), .12, .9), 74.5, 3.0, -.98);
+    box(12.8, 3.6, 10, facS, 72.9, 1.8, -6); add(new THREE.PlaneGeometry(16, 1.2), lum(mat({ map: yT, emissive: 0xffffff, emissiveMap: yT, emissiveIntensity: .12 }), .12, .9), 74.5, 3.0, -.98);
     const yB = devantureT("Crêpes · Pizzas · Spécialités savoyardes", "#c8202a", "#ffffff", { motif: tables, serif: true }); add(new THREE.PlaneGeometry(16, 2.4), lum(mat({ map: yB, emissive: 0xffffff, emissiveMap: yB, emissiveIntensity: .12 }), .12, .75), 74.5, 1.2, -.98);
     box(16.4, .3, 11, mat({ color: 0x8a5a3a }), 74.5, 3.75, -5.8); }
   // les pergolas blanches (la pizzeria, le Yéti) : les poteaux, les chevrons, la toile
@@ -512,7 +524,7 @@ function construireCorbier(A, L, scene) {
   const sapin = (x, z, h = 12, m = sapinM) => { const y0 = L.hautPiste ? L.hautPiste(x, z) : 0; epicea(x, y0, z, h, m === melezeM ? .85 : 1); void sapinM2; void troncM; OB.push([x, z, .6]); };
   const buisson = (x, z, r = 1) => { const y0 = L.hautPiste ? L.hautPiste(x, z) : 0; for (let k = 0; k < 4; k++) { const b = add(new THREE.IcosahedronGeometry(r * (.6 + al() * .4), 1), [mat({ color: 0x3e6a2a, roughness: 1, flatShading: true }), mat({ color: 0x567a30, roughness: 1, flatShading: true }), mat({ color: 0x2e5222, roughness: 1, flatShading: true })][k % 3], x + (al() - .5) * r, y0 + r * .5 + al() * r * .3, z + (al() - .5) * r); b.scale.y = .75; } };
   // (10.124 : les quatre bouleaux du bout retirés : à leur place, l'escalier et la passerelle)
-  for (const [x, z, h] of [[-90, -16, 11], [-92, 20, 13], [-40, -14, 12], [24, -18, 15]]) sapin(x, z, h, al() < .4 ? melezeM : sapinM);
+  for (const [x, z, h] of [[-90, -16, 11], [-92, 20, 13], [-40, -14, 12]]) sapin(x, z, h, al() < .4 ? melezeM : sapinM);
   for (let k = 0; k < 14; k++) sapin(-130 + k * 18 + al() * 6, -78 - al() * 30, 14 + al() * 8);   // la forêt, derrière les tours
   /* (10.111, d'après les photos de la promenade) les arbres et la végétation : les épicéas et mélèzes du talus, au bout côté Yéti et au bout côté piscine, les buissons le long des chemins */
   for (const [x, z, h] of [[-48, 24, 13], [-44, 27, 11], [-62, 20, 14], [72, 22, 12], [78, 26, 14], [86, 20, 11], [-20, 52, 12], [10, 56, 10]]) sapin(x, z, h, al() < .35 ? melezeM : sapinM);
@@ -654,7 +666,7 @@ function construireCorbier(A, L, scene) {
       box(.7, 2.9, .2, mat({ map: toT }), 93.6, 1.45, 4.2); OB.push([93.6, 4.2, .5]);
       cyl(.07, .07, 2.8, mat({ color: 0x7a5a3a }), 86.4, 1.4, 3.6, 6); for (const [y, c2, d] of [[2.5, 0x3a6ab8, 1], [2.15, 0xd8b850, -1], [1.8, 0xf2f2ee, 1], [1.45, 0xd8b850, -1]]) box(.9, .2, .05, mat({ color: c2 }), 86.4 + d * .4, y, 3.6); OB.push([86.4, 3.6, .3]);
       // les arbres
-      bouleau(82.9, -3.2, 11); sapin(97, -15.5, 14, melezeM); { const rx = mat({ color: 0xd8862a, roughness: .9 }), vx = mat({ color: 0x6a8a2a, roughness: .9 }); cyl(.15, .22, 6, mat({ color: 0x6a5a4a }), 82.8, 3, -13, 7); for (let k = 0; k < 7; k++) add(new THREE.IcosahedronGeometry(1.3 + al(), 1), k % 2 ? rx : vx, 82.8 + (al() - .5) * 2.4, 5 + al() * 3, -13 + (al() - .5) * 2.4); }
+      bouleau(83.3, -7.5, 11); sapin(97, -15.5, 14, melezeM); { const rx = mat({ color: 0xd8862a, roughness: .9 }), vx = mat({ color: 0x6a8a2a, roughness: .9 }); cyl(.15, .22, 6, mat({ color: 0x6a5a4a }), 83.4, 3, -11.5, 7); for (let k = 0; k < 7; k++) add(new THREE.IcosahedronGeometry(1.3 + al(), 1), k % 2 ? rx : vx, 83.6 + al() * 1.6, 5 + al() * 3, -11.5 + (al() - .5) * 2.4); }
       barriere(83.8, -1.2, 83.8, -14); barriere(96.2, -1.2, 96.2, -12); jardiniere(84.8, -.7);   // (la barrière de bois au bord du creux, ses géraniums)
       /* (10.126, d'après le dessin) la passerelle couverte, droite : elle part du flanc du Yéti, passe devant le haut de l'escalier et entre dans le bout du porche
          des balcons de la tour (reculée), qu'elle ferme : on y entre par des portes battantes, depuis le porche */
@@ -666,13 +678,107 @@ function construireCorbier(A, L, scene) {
         box(W, .3, .3, mat({ color: 0x5a3a26 }), cx, yP + 2.8, zc);
         for (const x of [85, 95]) for (const sz of [-1.3, 1.3]) { const yT = yL(zc + sz); box(.5, yP - yT, .5, betonM, x, (yP + yT) / 2, zc + sz); }
         // le bout, côté tour : le pignon de bois et ses portes battantes, sous le porche
-        box(.14, 2.3, 3.2, mat({ color: 0x7a3e24 }), xb, yP + 1.65, zc);
-        const porteM = mat({ color: 0x7a9aa8, roughness: .1, metalness: .2 }), cadreM = mat({ color: 0x5a3018, roughness: .7 });
-        for (const dz of [-.55, .55]) { box(.06, 2.1, 1.05, porteM, xb + .1, yP + 1.55, zc + dz); box(.1, 2.2, .08, cadreM, xb + .12, yP + 1.55, zc + dz * 1.95); box(.1, .06, .8, galvaM, xb + .18, yP + 1.5, zc + dz); }
-        box(.12, .12, 2.3, cadreM, xb + .12, yP + 2.65, zc); } } }
+        const pigM = mat({ color: 0x7a3e24 }), cadreM = mat({ color: 0x5a3018, roughness: .7 }), porteM = mat({ map: tT(64, 128, (c, w, h) => { c.fillStyle = "#6a3a1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#9ab8c4"; c.fillRect(8, 10, w - 16, 66); c.fillStyle = "rgba(255,255,255,.35)"; c.fillRect(12, 14, 10, 58); c.fillStyle = "#4a2612"; c.fillRect(8, 86, w - 16, 30); }), roughness: .6 });
+        for (const sz of [-1, 1]) box(.14, 2.3, .5, pigM, xb, yP + 1.65, zc + sz * 1.35); box(.14, .4, 3.2, pigM, xb, yP + 2.8, zc);   // (le pignon, ouvert au milieu)
+        for (const sz of [-1, 1]) box(.12, 2.2, .1, cadreM, xb + .05, yP + 1.6, zc + sz * 1.08); box(.12, .12, 2.3, cadreM, xb + .05, yP + 2.66, zc);
+        porteBat(xb + .02, yP + 1.55, zc - 1.05, 0, 1, 1, 1.05, 2.1, porteM, xb, zc); porteBat(xb + .02, yP + 1.55, zc + 1.05, 0, -1, -1, 1.05, 2.1, porteM, xb, zc);
+        OB.push([xb, zc - 1.3, .25], [xb, zc + 1.3, .25]); } } }
 
-  L.limites = (x, z) => libre(x, z) && ((x > 82.6 && x < 98 && z > .3 && z < 16.2 && !(x > 87.2 && x < 92.8 && z < 6)) || (x > 98.2 && x < 169.8 && z > -4.1 && z < 16.2) || (x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
-  L.hauteur = (x, z) => { const ox = -x; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
+  /* (10.128, d'après la vidéo) l'intérieur : la passerelle (lambris de pin, fenêtres, plafond en pente, chevrons, sol gris et taches de soleil), le couloir de bois sombre
+     dans le flanc du Yéti, puis la longue galerie marchande derrière les bâtiments (carrelage brun, murs blancs, plafonniers ; la boulangerie et ses ardoises,
+     l'opticien, la pâtisserie, la fresque des montagnes, l'affiche Intersport et les lambris, la pharmacie, le banc et l'armoire à incendie, les cadeaux-souvenirs,
+     Skiset, le 1550, la presse, la fromagerie ; en face, les portes, les vitrines et les grandes fenêtres à balustrade de bois), jusqu'au couloir qui ressort
+     par la porte battante de bois, sous l'École du Ski. À l'intérieur, la vue est à la première personne. */
+  const GAL = (() => {
+    const lu = (m, j = .14) => lum(m, j, j * 1.6);
+    const tex = (w, h, f, rx = 1, ry = 1) => tT(w, h, f, rx, ry);
+    const blancM = lu(mat({ color: 0xf2eee6, roughness: .9, emissive: 0xfff2dc, emissiveIntensity: .14 }));
+    const murB = (x0, x1, z, faceSud, mFace, h = 3.05) => { const M6 = [blancM, blancM, blancM, blancM, faceSud ? mFace : blancM, faceSud ? blancM : mFace]; const b = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, h, .12), M6); b.position.set((x0 + x1) / 2, h / 2, z); scene.add(b); return b; };
+    const murX = (x, z0, z1, m, h = 3.05, y0 = 0) => { const b = new THREE.Mesh(new THREE.BoxGeometry(.12, h, z1 - z0), m); b.position.set(x, y0 + h / 2, (z0 + z1) / 2); scene.add(b); return b; };
+    const solTuiles = (x0, x1, z0, z1, y = .02) => { const t = tex(256, 256, (c, w, h) => { c.fillStyle = "#2a1e1a"; c.fillRect(0, 0, w, h); for (let y2 = 0; y2 < h; y2 += 32) for (let x2 = 0; x2 < w; x2 += 32) { c.fillStyle = ["#4e362c", "#45302a", "#563c30", "#3e2c26"][((x2 / 32) * 3 + (y2 / 32) * 5) % 4]; c.fillRect(x2 + 1, y2 + 1, 30, 30); c.fillStyle = "rgba(255,255,255,.05)"; c.fillRect(x2 + 2, y2 + 2, 26, 3); } }, (x1 - x0) / 2.4, (z1 - z0) / 2.4); const m = add(new THREE.PlaneGeometry(x1 - x0, z1 - z0), lu(mat({ map: t, roughness: .5, emissive: 0x3a2a20, emissiveIntensity: .2 }), .2), (x0 + x1) / 2, y, (z0 + z1) / 2); m.rotation.x = -Math.PI / 2; return m; };
+    const plafond = (x0, x1, z0, z1, y = 3.05, m = blancM) => { const b = box(x1 - x0, .1, z1 - z0, m, (x0 + x1) / 2, y + .05, (z0 + z1) / 2); return b; };
+    const neon = lu(mat({ color: 0xffffff, emissive: 0xfff8e8, emissiveIntensity: .9 }), .9);
+
+    /* --- la passerelle, dedans : x 82.4 → 98, z -4.4 → -1.2, plancher à 0,5 --- */
+    { const xa = 82.4, xb = 98, cx = (xa + xb) / 2, W = xb - xa, zc = -2.8;
+      const pinT = tex(1024, 112, (c, w, h) => { c.fillStyle = "#c8915a"; c.fillRect(0, 0, w, h); for (let y = 54; y < h; y += 7) { c.fillStyle = `rgba(${y % 14 ? "120,70,30" : "255,220,170"},.18)`; c.fillRect(0, y, w, 6); c.fillStyle = "rgba(90,50,20,.35)"; c.fillRect(0, y + 6, w, 1); }
+        for (let x = 6; x < w; x += 64) { c.fillStyle = "#a8743e"; c.fillRect(x - 4, 4, 60, 48); c.fillStyle = "#cfe4ee"; c.fillRect(x, 8, 52, 40); c.fillStyle = "rgba(255,255,255,.45)"; c.fillRect(x + 3, 10, 12, 36); c.fillStyle = "#a8743e"; c.fillRect(x + 24, 8, 4, 40); } });
+      for (const [z, ry] of [[zc - 1.5, 0], [zc + 1.5, Math.PI]]) add(new THREE.PlaneGeometry(W, 1.75), lu(mat({ map: pinT, roughness: .8, emissive: 0xffffff, emissiveMap: pinT, emissiveIntensity: .12 }), .12), cx, .5 + .875, z, ry);
+      const plT = tex(512, 64, (c, w, h) => { c.fillStyle = "#c08850"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { c.fillStyle = "rgba(90,50,20,.3)"; c.fillRect(0, y + 7, w, 1); } }, 3, 1);
+      for (const sg of [-1, 1]) { const pl = add(new THREE.PlaneGeometry(W, 1.9), lu(mat({ map: plT, roughness: .85, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: plT, emissiveIntensity: .1 }), .1), cx, 2.55, zc + sg * .78); pl.rotation.x = Math.PI / 2 - sg * .52; }
+      for (let x = xa + .6; x < xb; x += 1.4) for (const sg of [-1, 1]) { const r = box(.1, .12, 1.8, mat({ color: 0x6a3e1c }), x, 2.5, zc + sg * .78); r.rotation.x = -sg * .52; }
+      const solG = tex(512, 64, (c, w, h) => { c.fillStyle = "#5a5e64"; c.fillRect(0, 0, w, h); for (let x = 10; x < w; x += 42) { c.fillStyle = "rgba(255,250,235,.85)"; c.fillRect(x, 26, 26, 14); } }, W / 8, 1);
+      const sg2 = add(new THREE.PlaneGeometry(W, 2.9), mat({ map: solG, roughness: .8 }), cx, .51, zc); sg2.rotation.x = -Math.PI / 2; }
+
+    /* --- le couloir de bois sombre, dans le flanc du Yéti : x 79.4 → 82.4, z -16.4 → -1.2 --- */
+    const sombreT = (rx) => tex(128, 128, (c, w, h) => { c.fillStyle = "#4a2a18"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 12) { c.fillStyle = `rgba(${x % 24 ? "30,15,8" : "140,90,50"},.25)`; c.fillRect(x, 0, 11, h); c.fillStyle = "rgba(0,0,0,.4)"; c.fillRect(x + 11, 0, 1, h); } }, rx, 1);
+    { const bm = lu(mat({ map: sombreT(5), roughness: .8, emissive: 0x8a5a3a, emissiveIntensity: .25 }), .25);
+      murX(79.35, -16.4, -1.15, bm, 3.2); murX(82.45, -16.4, -4.45, bm, 3.2); murX(82.45, -1.15, -1.0, bm, 3.2); box(.12, .4, 3.4, bm, 82.45, 3.0, -2.8);
+      box(3.2, 3.2, .12, bm, 80.9, 1.6, -1.1); plafond(79.35, 82.45, -16.4, -1.1, 3.2, bm);
+      for (let z = -15.5; z < -1.5; z += 1.6) box(3, .14, .14, mat({ color: 0x2a160c }), 80.9, 3.1, z);
+      const s2 = add(new THREE.PlaneGeometry(3, 15.3), mat({ color: 0x3a3a3c, roughness: .9 }), 80.9, .03, -8.75); s2.rotation.x = -Math.PI / 2;
+      // la rampe : du plancher de la passerelle au sol de la galerie
+      const rp = add(new THREE.PlaneGeometry(3, 3.75), mat({ color: 0x3a3a3c, roughness: .9 }), 80.9, .25, -6.12); rp.rotation.x = -Math.PI / 2 - Math.atan2(.5, 3.7);
+      const ph = add(new THREE.PlaneGeometry(3, 3.2), mat({ color: 0x3a3a3c, roughness: .9 }), 80.9, .51, -2.75); ph.rotation.x = -Math.PI / 2;
+      for (let z = -14; z < -2; z += 4) box(.5, .05, .25, neon, 80.9, 3.08, z); }
+
+    /* --- la galerie marchande : x -35.45 → 82.55, z -21.2 → -16.35 --- */
+    const GX0 = -35.45, GX1 = 82.55, ZN = -16.35, ZS = -21.2;
+    const devanture = (type, nom, fond, coul, motif) => tex(512, 192, (c, w, h) => {
+      c.fillStyle = "#f2eee6"; c.fillRect(0, 0, w, h); c.fillStyle = "#7a2a1a"; c.fillRect(0, h - 6, w, 6);
+      const porte = (x, l = 70) => { c.fillStyle = "#6a3e20"; c.fillRect(x, 50, l, h - 56); c.fillStyle = "#8a5a32"; c.fillRect(x + 5, 55, l - 10, h - 66); c.fillStyle = "#d8c8a0"; c.fillRect(x + l - 16, 110, 6, 14); };
+      const vitre = (x0, x1) => { c.fillStyle = "#4a2a18"; c.fillRect(x0, 40, x1 - x0, h - 46); c.fillStyle = "#c8d8de"; c.fillRect(x0 + 5, 46, x1 - x0 - 10, h - 58); for (let x = x0 + 5; x < x1 - 5; x += 70) { c.fillStyle = "#4a2a18"; c.fillRect(x, 46, 4, h - 58); }
+        const G = { pain: ["#c08040", "#a86a30", "#d8a060"], gateau: ["#f0d0e0", "#e8b040", "#c84a6a", "#fff"], souv: ["#c8202a", "#2a5ab8", "#f0c020", "#2a9a4a", "#fff"], ski: ["#c8202a", "#2a5ab8", "#f0c020", "#1a1a1a"], pharma: ["#fff", "#2a9a4a", "#2a5ab8"], optique: ["#1a1a1a", "#7a4a2a"], vin: ["#5a1a2a", "#2a4a1a", "#e8d8a0"], fromage: ["#f0d880", "#e8c050", "#fff4c0"], presse: ["#c8202a", "#fff", "#2a5ab8", "#1a1a1a"], resto: ["#f2f2ee", "#c8202a"] }[motif] || ["#ccc"];
+        for (let i = 0; i < 70; i++) { const x = x0 + 12 + ((i * 53) % (x1 - x0 - 24)), y = 70 + ((i * 37) % (h - 90)); c.fillStyle = G[i % G.length];
+          if (motif === "ski") c.fillRect(x, 60, 5, h - 80); else if (motif === "optique") { c.fillRect(x, y, 14, 3); c.beginPath(); c.arc(x + 3, y + 5, 4, 0, 7); c.arc(x + 11, y + 5, 4, 0, 7); c.fill(); } else { c.beginPath(); c.ellipse(x, y, motif === "pain" ? 10 : 6, motif === "pain" ? 5 : 6, 0, 0, 7); c.fill(); } }
+        c.fillStyle = "rgba(255,255,255,.3)"; c.fillRect(x0 + 10, 50, 14, h - 70); };
+      if (type === "portes") { porte(60); porte(330); if (nom) { c.fillStyle = "#2a2a2a"; c.font = `bold 20px ${sans}`; c.textAlign = "center"; c.fillText(nom, w / 2, 30); } return; }
+      if (type === "fresque") { const g = c.createLinearGradient(0, 30, 0, 150); g.addColorStop(0, "#d8e4ec"); g.addColorStop(1, "#8a9098"); c.fillStyle = g; c.fillRect(30, 30, 380, 120); c.fillStyle = "#f4f6f8"; c.beginPath(); c.moveTo(30, 150); for (let x = 30; x <= 410; x += 20) c.lineTo(x, 60 + Math.abs(Math.sin(x * .03)) * 60 + (x % 40)); c.lineTo(410, 150); c.fill(); c.fillStyle = "#6a6e74"; for (let i = 0; i < 40; i++) c.fillRect(40 + (i * 37) % 360, 100 + (i * 17) % 40, 2, 10); porte(430, 64); return; }
+      if (type === "affiche") { c.fillStyle = "#c08850"; c.fillRect(0, 120, w, h - 126); for (let x = 0; x < w; x += 16) { c.fillStyle = "rgba(90,50,20,.3)"; c.fillRect(x, 120, 1, h - 126); } c.fillStyle = "#f4f4f2"; c.fillRect(60, 18, 390, 96); c.strokeStyle = "#1a1a1a"; c.lineWidth = 6; c.strokeRect(60, 18, 390, 96); c.fillStyle = "#c8202a"; c.font = `bold 22px ${sans}`; c.textAlign = "center"; c.fillText("PLUS TÔT VOUS RÉSERVEZ", 255, 46); c.fillStyle = "#1a3a8a"; c.font = `italic bold 36px ${sans}`; c.fillText("intersport.fr", 255, 82); c.fillStyle = "#c8202a"; c.font = `bold 20px ${sans}`; c.fillText("MOINS VOUS PAYEZ !", 255, 106); return; }
+      if (type === "bois") { c.fillStyle = "#c08850"; c.fillRect(0, 70, w, h - 76); for (let x = 0; x < w; x += 16) { c.fillStyle = "rgba(90,50,20,.3)"; c.fillRect(x, 70, 1, h - 76); } c.fillStyle = "#c8202a"; c.fillRect(300, 46, 70, 54); c.fillStyle = "#fff"; c.font = `bold 11px ${sans}`; c.fillText("R.I.A.", 318, 78); return; }
+      c.fillStyle = fond; c.fillRect(20, 6, w - 40, 32); c.fillStyle = coul; c.font = `bold 22px ${sans}`; c.textAlign = "center"; c.fillText(nom, w / 2, 30); vitre(20, w - 20); });
+    const NORD = [["portes"], ["portes", "GALERIE MARCHANDE"], ["vitrine", "TROMPE L'ŒIL · OPTICIEN", "#2a3a4a", "#fff", "optique"], ["vitrine", "PAINS SPÉCIAUX · VIENNOISERIES", "#6a3a1e", "#f2e8d8", "pain"],
+      ["vitrine", "LA PANETIÈRE · PÂTISSERIE", "#f2e0e8", "#8a2a4a", "gateau"], ["fresque"], ["affiche"], ["vitrine", "PHARMACIE DU CORBIER", "#2a9a4a", "#fff", "pharma"], ["bois"],
+      ["vitrine", "CADEAUX · SOUVENIRS", "#2a3a6a", "#f0c020", "souv"], ["vitrine", "SKISET · LOCATION DE SKIS", "#1a1a1a", "#f0c020", "ski"], ["vitrine", "LE 1550 · BAR RESTAURANT", "#5a2a1a", "#f2e8d8", "resto"], ["vitrine", "PRESSE · TABAC · LOTO", "#c8202a", "#fff", "presse"], ["vitrine", "FROMAGERIE · SPÉCIALITÉS SAVOYARDES", "#f0d880", "#5a3a1a", "fromage"]];
+    { const xs = 79.35, xe = -32.7, n = NORD.length, L2 = (xs - xe) / n;
+      NORD.forEach((d, i) => { const t = devanture(...d), m = lu(mat({ map: t, roughness: .7, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .16 }), .16); murB(xs - (i + 1) * L2, xs - i * L2, ZN, false, m); }); }
+    const SUD = [["portes"], ["fresque"], ["vitrine", "SPORT 2000 · TEXTILE", "#1a3a8a", "#fff", "souv"], ["fenetres"], ["fenetres"], ["affiche"], ["bois"], ["vitrine", "LA CAVE · VINS DE SAVOIE", "#5a1a2a", "#f2e8d8", "vin"], ["portes"], ["fresque"], ["vitrine", "ÉPICERIE · SPAR", "#c8202a", "#fff", "fromage"], ["fenetres"], ["portes"], ["vitrine", "AGENCE DU CORBIER · LOCATIONS", "#f2f2ee", "#2a3a4a", "presse"], ["portes"]];
+    { const xs = GX1, xe = GX0, n = SUD.length, L2 = (xs - xe) / n, verre = mat({ color: 0xdcecf0, roughness: .05, transparent: true, opacity: .18, depthWrite: false }), pin = mat({ color: 0xc08850, roughness: .8 });
+      SUD.forEach((d, i) => { const x1 = xs - i * L2, x0 = x1 - L2, cx = (x0 + x1) / 2;
+        if (d[0] === "fenetres") { box(L2, .9, .14, pin, cx, .45, ZS); box(L2, .45, .14, blancM, cx, 2.83, ZS); add(new THREE.PlaneGeometry(L2, 1.7), verre, cx, 1.75, ZS + .02);
+          for (let x = x0; x <= x1 + .01; x += L2 / 6) box(.08, 1.7, .1, pin, x, 1.75, ZS + .02);
+          box(L2, .08, .1, pin, cx, 1.05, ZS + .35); for (let x = x0 + .2; x < x1; x += .25) box(.05, .55, .05, pin, x, .75, ZS + .35); box(L2, .06, .12, pin, cx, .48, ZS + .35); return; }
+        const t = devanture(...d), m = lu(mat({ map: t, roughness: .7, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .16 }), .16); murB(x0, x1, ZS, true, m); }); }
+    murX(GX0, ZS, ZN, blancM); murX(GX1, ZS, ZN, blancM); murB(79.35, GX1, ZN, false, blancM); murB(GX0, -35.35, ZN, false, blancM);
+    plafond(GX0, GX1, ZS, ZN); solTuiles(GX0, GX1, ZS, ZN);
+    for (let x = GX0 + 3; x < GX1; x += 6) box(1.2, .05, .45, neon, x, 3.03, (ZN + ZS) / 2);
+    // les piliers blancs, le pilier rouge près des fenêtres, les ardoises, le banc, le présentoir de la pharmacie
+    { const pM = lu(mat({ color: 0xf4f2ee, roughness: .8, emissive: 0xfff4e0, emissiveIntensity: .12 }), .12); for (let x = 71; x > -30; x -= 16) { box(.45, 3, .45, pM, x, 1.5, ZN - .3); OB.push([x, ZN - .3, .4]); }
+      box(.5, 3, .5, mat({ color: 0xc8202a, roughness: .6 }), 46.3, 1.5, ZS + .45); OB.push([46.3, ZS + .45, .4]);
+      const ardT = (txt) => tex(64, 96, (c, w, h) => { c.fillStyle = "#6a4a2a"; c.fillRect(0, 0, w, h); c.fillStyle = "#1e2420"; c.fillRect(5, 5, w - 10, h - 10); c.fillStyle = "#f2f2ee"; c.font = `bold 10px ${sans}`; c.textAlign = "center"; c.fillText(txt, w / 2, 22); for (let k = 0; k < 6; k++) c.fillRect(12, 32 + k * 9, 40 - (k * 7) % 20, 2); });
+      const ardoise = (x, z, txt) => { const m = mat({ map: ardT(txt) }); for (const sg of [-1, 1]) { const b = box(.6, .95, .04, m, x, .45, z + sg * .16); b.rotation.x = sg * .3; } OB.push([x, z, .45]); };
+      const L2 = (79.35 + 32.7) / NORD.length; ardoise(79.35 - 3.5 * L2, ZN - .9, "PAINS"); ardoise(79.35 - 3.2 * L2, ZN - 1.2, "MENU"); ardoise(79.35 - 11.5 * L2, ZN - 1.1, "LE 1550");
+      const bc = mat({ color: 0x8a5a32, roughness: .8 }); { const bx = 79.35 - 8.3 * L2; box(1.8, .08, .45, bc, bx, .46, ZN - .45); box(1.8, .5, .06, bc, bx, .78, ZN - .2); for (const sx of [-.8, .8]) box(.08, .46, .4, bc, bx + sx, .23, ZN - .45); OB.push([bx, ZN - .45, 1]); }
+      { const px = 79.35 - 7.6 * L2, ntT = tex(64, 128, (c, w, h) => { c.fillStyle = "#1a5ab8"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 9px ${sans}`; c.fillText("Nutergia", 8, 18); c.fillRect(10, 40, 44, 50); c.fillStyle = "#2a9a4a"; c.fillRect(24, 50, 16, 30); });
+        box(.7, 1.7, .5, mat({ map: ntT }), px, .85, ZN - .55); OB.push([px, ZN - .55, .5]); } }
+
+    /* --- le couloir de sortie, à travers le rez-de-chaussée de l'École du Ski : x -35.35 → -32.65, jusqu'à la porte battante --- */
+    murX(-35.35, ZN, -3.3, blancM); murX(-32.65, ZN, -3.3, blancM); plafond(-35.35, -32.65, ZN, -3.3); solTuiles(-35.35, -32.65, ZN, -3.2);
+    for (let z = -14; z > ZN + 0 && z < -4; z += 4) box(.45, .05, .9, neon, -34, 3.03, z);
+    box(2.7, .4, .12, blancM, -34, 2.85, -3.3);   // (le linteau, au-dessus de la porte)
+
+    // où l'on est dedans (coordonnées d'origine) : pour marcher, pour la hauteur du sol, pour la vue à la première personne
+    const R1 = (x, z) => x > 82 && x < 98.3 && z > -4.1 && z < -1.5, R2 = (x, z) => x > 79.6 && x < 82.2 && z > -16.8 && z < -1.5,
+      R3 = (x, z) => x > -35.2 && x < 82.3 && z > -21 && z < -16.6, R4 = (x, z) => x > -35.1 && x < -32.9 && z > -16.8 && z < -3.0;
+    return { marche: (x, z) => R1(x, z) || R2(x, z) || R3(x, z) || R4(x, z), dedans: (x, z) => (x > 82 && x < 97.9 && z > -4.2 && z < -1.4) || R2(x, z) || R3(x, z) || (R4(x, z) && z < -3.4),
+      y: (x, z) => R1(x, z) && x > 82.3 ? .5 : R2(x, z) ? (z > -4.4 ? .5 : z > -8 ? .5 * (z + 8) / 3.6 : 0) : null };
+  })();
+  { let tP = 0; const a2 = L.anim; L.anim = (tm) => { try { a2 && a2(tm); } catch (e) {} const dt = Math.min(.1, (tm - (tP || tm)) / 1000); tP = tm; const moi = M && M.gens && M.gens.get(M.moiNum), p = moi && moi.g && moi.g.position;
+      for (const d of PORTES) { const prox = p && Math.hypot(p.x - d.g.position.x, p.z - d.g.position.z) < 2.6; d.a += ((prox ? 1.3 : 0) - d.a) * Math.min(1, dt * 4); d.g.rotation.y = -(d.base + d.sens * d.a); } }; }
+  L.premiereIci = (x, z) => GAL.dedans(-x, z);
+
+  L.limites = (x, z) => libre(x, z) && (GAL.marche(x, z) || (x > -48 && x < -10 && z > -3.0 && z < 7.6) || (x > 82.6 && x < 98 && z > .3 && z < 16.2 && !(x > 87.2 && x < 92.8 && z < 6)) || (x > 98.2 && x < 169.8 && z > -4.1 && z < 16.2) || (x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
+  L.hauteur = (x, z) => { const ox = -x; const gy = GAL.y(ox, z); if (gy !== null) return gy; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
 
