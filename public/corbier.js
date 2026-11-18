@@ -13,6 +13,22 @@ function construireCorbier(A, L, scene) {
   const add = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.receiveShadow = true; scene.add(o); return o; };
   const box = (w, h, d, m, x, y, z, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, ry);
   const cyl = (rt, rb, h, m, x, y, z, seg = 10) => add(new THREE.CylinderGeometry(rt, rb, h, seg), m, x, y, z);
+  /* (10.117) l'épicéa, fait pour de vrai : une quinzaine d'étages de branches dentelées qui retombent, chaque pointe un peu plus claire, le dessous sombre,
+     une silhouette jamais tout à fait régulière, le tronc brun qui se voit en bas ; quatre arbres-modèles, chacun planté à sa taille et tourné à sa façon */
+  const EPI = (() => { const V = [], vari = [], fin = !(PETIT || MOBILE || GPU_MODESTE);
+    for (let v = 0; v < 4; v++) { const P = [], C = [], N = fin ? 18 : 12, T = fin ? 16 : 11, col = (r, g, b) => C.push(r, g, b), tri = (a, b, c, ca, cb, cc) => { P.push(...a, ...b, ...c); col(...ca); col(...cb); col(...cc); };
+      const tr = [.30, .2, .12], R0 = (t) => Math.pow(1 - t, 1.05) * .34 + .015;
+      for (let k = 0; k < 8; k++) { const a0 = k / 8 * Math.PI * 2, a1 = (k + 1) / 8 * Math.PI * 2, r0 = .035, r1 = .02; tri([Math.cos(a0) * r0, 0, Math.sin(a0) * r0], [Math.cos(a1) * r0, 0, Math.sin(a1) * r0], [Math.cos(a1) * r1, .3, Math.sin(a1) * r1], tr, tr, tr); tri([Math.cos(a0) * r0, 0, Math.sin(a0) * r0], [Math.cos(a1) * r1, .3, Math.sin(a1) * r1], [Math.cos(a0) * r1, .3, Math.sin(a0) * r1], tr, tr, tr); }
+      for (let t = 0; t < T; t++) { const u = t / T, r = R0(u) * (.88 + al() * .24), yt = .14 + u * .82 + .1, th = .12 + (1 - u) * .08, sh = .7 + al() * .4, ofs = al() * 6;
+        const dark = [.025 * sh, .07 * sh, .045 * sh], mid = [.05 * sh, .13 * sh, .07 * sh], tip = [.1 * sh, .22 * sh, .1 * sh], under = [.015, .035, .02];   /* (le vert sombre et bleuté de l'épicéa) */
+        const top = [], bot = [], inn = []; for (let k = 0; k < N; k++) { const a = k / N * Math.PI * 2 + ofs, sp = k % 2 ? .72 : 1, rr = r * sp * (.82 + al() * .32), dr = th * (k % 2 ? .75 : 1.05) + al() * .03;
+          top.push([Math.cos(a) * r * .1, yt, Math.sin(a) * r * .1]); bot.push([Math.cos(a) * rr, yt - dr, Math.sin(a) * rr]); inn.push([Math.cos(a) * r * .3, yt - th * .45, Math.sin(a) * r * .3]); }
+        for (let k = 0; k < N; k++) { const k2 = (k + 1) % N, cb = k % 2 ? mid : tip, cb2 = k2 % 2 ? mid : tip;
+          tri(top[k], bot[k], bot[k2], dark, cb, cb2); tri(top[k], bot[k2], top[k2], dark, cb2, dark); tri(bot[k], inn[k], inn[k2], cb, under, under); tri(bot[k], inn[k2], bot[k2], cb, under, cb2); } }
+      { const yt = 1.04; for (let k = 0; k < 6; k++) { const a0 = k / 6 * Math.PI * 2, a1 = (k + 1) / 6 * Math.PI * 2, rr = .03; tri([Math.cos(a0) * rr, yt - .1, Math.sin(a0) * rr], [Math.cos(a1) * rr, yt - .1, Math.sin(a1) * rr], [0, yt + .02, 0], [.1, .22, .1], [.1, .22, .1], [.18, .34, .15]); } }
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(C, 3)); g.computeVertexNormals(); V.push(g); vari.push(v); }
+    return { geos: V, mat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, metalness: 0 }) }; })();
+  const epicea = (x, y, z, h, w = 1) => { const m = new THREE.Mesh(EPI.geos[(Math.abs(x * 7 + z * 13) | 0) % 4], EPI.mat); m.position.set(x, y, z); m.scale.set(h * w * (.9 + al() * .2), h, h * w * (.9 + al() * .2)); m.rotation.y = al() * 6.28; m.receiveShadow = true; scene.add(m); return m; };
   const NUIT = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
   const serif = "Georgia, 'Times New Roman', serif", sans = "Arial, Helvetica, sans-serif";
   const fit = (c, txt, maxW, px, font) => { let p = px; c.font = font.replace("@", p + "px"); while (c.measureText(txt).width > maxW && p > 8) { p -= 2; c.font = font.replace("@", p + "px"); } };
@@ -114,7 +130,7 @@ function construireCorbier(A, L, scene) {
     // les petits bancs le long du chemin (ceux de la photo)
     for (const [bx, bz, ry] of [[12, 27.5, 0], [40, 32, -.4], [2, 33, .2]]) { const g = new THREE.Group(); g.position.set(bx, HP(bx, bz), bz); g.rotation.y = ry; scene.add(g); for (let k = 0; k < 3; k++) { const l = new THREE.Mesh(new THREE.BoxGeometry(1.6, .05, .12), boisC); l.position.set(0, .45, -.14 + k * .14); g.add(l); } for (const sx of [-.7, .7]) { const l = new THREE.Mesh(new THREE.BoxGeometry(.08, .45, .45), mat({ color: 0x2a2a2a })); l.position.set(sx, .22, 0); g.add(l); } OB.push([bx, bz, .9]); } }
   // les bosquets de sapins sur les pentes
-  { const sapM = mat({ color: 0x24402a, roughness: .9 }); for (const [cx, cz, n] of [[-60, 150, 40], [-20, 170, 30], [70, 210, 30], [-140, 120, 26], [130, 130, 22], [20, 90, 8]]) for (let k = 0; k < (PETIT ? n / 3 : n); k++) { const x = cx + (al() - .5) * 50, z = cz + (al() - .5) * 40, h = 8 + al() * 7; add(new THREE.ConeGeometry(h * .27, h, 7), sapM, x, HP(x, z) + h / 2 - .5, z); } }
+  { const sapM = mat({ color: 0x24402a, roughness: .9 }); for (const [cx, cz, n] of [[-60, 150, 40], [-20, 170, 30], [70, 210, 30], [-140, 120, 26], [130, 130, 22], [20, 90, 8]]) for (let k = 0; k < (PETIT ? n / 3 : n); k++) { const x = cx + (al() - .5) * 50, z = cz + (al() - .5) * 40, h = 8 + al() * 7; epicea(x, HP(x, z) - .3, z, h); } void sapM; }
   // l'office du tourisme : la rotonde sous sa grande pyramide de poutres rouges et blanches, le chapeau blanc
   /* (10.114, d'après la photo) l'office de tourisme : la rotonde de plain-pied tout en vitrages, ceinte d'un large anneau de planches rouge-brun qui déborde
      (« OFFICE DE TOURISME » en lettres blanches) ; les trois grandes jambes en triangle, rouge-brun dehors et blanches dedans, posées sur leurs socles de béton,
@@ -336,11 +352,18 @@ function construireCorbier(A, L, scene) {
     { const planchM = mat({ map: boisSombre.clone(), roughness: .85 }); planchM.map.repeat.set(8, 2); planchM.map.needsUpdate = true; const bas = HP(-85, -16);
       const pw = add(new THREE.PlaneGeometry(11.6, -bas), planchM, -84.45, bas / 2, -16.3); pw.rotation.y = -Math.PI / 2;
       for (let z = -22; z <= -10.6; z += 1.9) box(.14, 1.1, .14, boisC, -84.35, .55, z); for (const y of [.5, 1.0]) box(.1, .1, 11.4, boisC, -84.35, y, -16.3); }
-    { const fr = tT(1024, 160, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#0a1440"); g.addColorStop(1, "#1a2a6a"); c.fillStyle = g; c.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { c.fillStyle = `rgba(255,255,255,${.3 + (i % 5) * .14})`; c.fillRect((i * 97) % w, (i * 53) % h, 2, 2); }
-        c.fillStyle = "#f0c840"; c.beginPath(); c.arc(320, 80, 52, 0, 7); c.fill(); c.strokeStyle = "#e8a020"; c.lineWidth = 7; c.beginPath(); c.ellipse(320, 80, 92, 18, -.2, 0, 7); c.stroke();
-        c.fillStyle = "#3aa0e0"; c.beginPath(); c.arc(860, 110, 34, 0, 7); c.fill(); c.fillStyle = "#e8e8e8"; c.save(); c.translate(620, 70); c.rotate(-.5); c.fillRect(-12, -40, 24, 70); c.beginPath(); c.moveTo(-12, -40); c.lineTo(0, -66); c.lineTo(12, -40); c.fill(); c.fillStyle = "#e83a3a"; c.fillRect(-22, 14, 10, 18); c.fillRect(12, 14, 10, 18); c.fillStyle = "#f0a020"; c.beginPath(); c.moveTo(-8, 30); c.lineTo(0, 54); c.lineTo(8, 30); c.fill(); c.restore();
-        c.fillStyle = "#c83a8a"; c.beginPath(); c.arc(120, 120, 22, 0, 7); c.fill(); });
-      const fm = add(new THREE.PlaneGeometry(23.4, -YP - .2), mat({ map: fr, roughness: .5 }), -72.3, YP / 2 - .1, -9.99); void fm; }   // la fresque de l'espace
+    /* (10.118, d'après la photo) sous la terrasse des jeux, face à la piscine : pas de mur peint, mais les portes et vitrines des boutiques et des restaurants
+       (Le Wagon, Corbier Fromagerie, Galerie Charvin, Ski Presta Location, Agence immobilière, Location Ski, Igloo) ; devant, leurs terrasses, puis la clôture de verre */
+    { const vT = tT(2048, 192, (c, w, h) => { c.fillStyle = "#6a3a22"; c.fillRect(0, 0, w, h); for (let y = 0; y < 50; y += 8) { c.fillStyle = "rgba(0,0,0,.2)"; c.fillRect(0, y, w, 2); }
+        const E = [["LE WAGON", "#c8202a", "#f2e8d8"], ["Corbier FROMAGERIE", "#7ab83a", "#fff"], ["GALERIE CHARVIN", "#f2f2ee", "#3a3a3a"], ["SKI PRESTA LOCATION", "#f2f2ee", "#c8202a"], ["AGENCE IMMOBILIÈRE", "#f2f2ee", "#3a3a3a"], ["LOCATION SKI · SKI RENTAL", "#1a1a1a", "#fff"], ["igloo", "#f2f2ee", "#1a1a1a"]];
+        E.forEach(([t, f, co], k) => { const x = 20 + k * 290; c.fillStyle = f; c.fillRect(x, 8, 240, 38); c.fillStyle = co; c.font = "bold 22px Arial"; c.textAlign = "center"; c.fillText(t, x + 120, 35); });
+        for (let x = 6; x < w; x += 72) { const g = c.createLinearGradient(0, 56, 0, h); g.addColorStop(0, "#b8ccd4"); g.addColorStop(1, "#4a5a64"); c.fillStyle = g; c.fillRect(x, 56, 64, h - 62); c.fillStyle = "rgba(255,255,255,.25)"; c.fillRect(x + 4, 60, 18, h - 70); c.fillStyle = "rgba(60,40,30,.5)"; c.fillRect(x + 10, h - 50, 44, 6); c.fillStyle = "#5a3420"; c.fillRect(x - 6, 50, 6, h); } });
+      const vf = add(new THREE.PlaneGeometry(23.4, -YP - .2), lum(mat({ map: vT, emissive: 0xffffff, emissiveMap: vT, emissiveIntensity: .1, roughness: .3 }), .1, .6), -72.3, YP / 2 - .1, -9.99); void vf;
+      // les terrasses : tables, chaises, parasols blancs
+      for (let x = -82; x < -62; x += 3.2) { cyl(.4, .4, .04, mat({ color: 0xf2f2f0, roughness: .3 }), x, YP + .76, -8.7, 14); cyl(.04, .04, .72, mat({ color: 0x2a2a2a }), x, YP + .4, -8.7, 6); for (const sg of [-1, 1]) box(.42, .5, .42, mat({ color: 0x2a2a2a }), x + sg * .65, YP + .3, -8.7); }
+      for (const x of [-79, -71, -64]) { cyl(.04, .04, 2.6, mat({ color: 0xd8d8d8 }), x, YP + 1.3, -8.4, 5); add(new THREE.ConeGeometry(1.6, .5, 8, 1, true), mat({ color: 0xf2f2f0, side: THREE.DoubleSide }), x, YP + 2.6, -8.4); }
+      // la clôture de verre entre les terrasses et la plage
+      for (let x = -84; x < -60.5; x += 2) { box(1.95, 1.1, .03, mat({ color: 0xdcecf0, roughness: .05, transparent: true, opacity: .25, depthWrite: false }), x + 1, YP + .55, -7.4); box(.05, 1.2, .05, mat({ color: 0x9a9ea2, metalness: .6 }), x, YP + .6, -7.4); } }
     { const pan = (txt, fond, coul, z, w2) => { const t = tT(256, 64, (c, w, h) => { c.fillStyle = fond; c.fillRect(0, 0, w, h); c.fillStyle = coul; c.font = `bold 34px ${sans}`; c.textAlign = "center"; c.fillText(txt, w / 2, 45); }); const p2 = add(new THREE.PlaneGeometry(w2, .55), lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .12 }), .12, .8), -60.56, YP + 2.75, z); p2.rotation.y = -Math.PI / 2; };
       pan("IGLOO", "#f2f2ee", "#1a1a1a", 7.5, 2); pan("LOCATION SKI · SKI RENTAL", "#f2f2ee", "#c8202a", -6.5, 3.4); }
     // (les gonflables : retirés, comme sur la photo)
@@ -484,9 +507,7 @@ function construireCorbier(A, L, scene) {
   const bouleau = (x, z, h = 9) => { cyl(.12, .2, h, ecorceB, x, h / 2, z, 7); for (let k = 0; k < 6; k++) { const s = add(new THREE.IcosahedronGeometry(1.4 + al(), 0), bouleauM[k % 3], x + (al() - .5) * 2.6, h * .55 + al() * h * .45, z + (al() - .5) * 2.6); s.scale.y = 1.4; } OB.push([x, z, .5]); };
   /* (10.111) l'épicéa : le tronc brun, une dizaine d'étages de branches qui retombent, deux verts, la pointe ; légèrement de travers, chacun le sien */
   const sapinM2 = mat({ color: 0x1e3a22, roughness: .95 }), troncM = mat({ color: 0x4a3424, roughness: .9 });
-  const sapin = (x, z, h = 12, m = sapinM) => { const y0 = L.hautPiste ? L.hautPiste(x, z) : 0, n = 9; cyl(.14, .32, h * .35, troncM, x, y0 + h * .17, z, 7);
-    for (let k = 0; k < n; k++) { const t = k / n, r = h * (.3 - t * .26) * (.9 + al() * .2), y = y0 + h * (.18 + t * .78); const c = add(new THREE.ConeGeometry(r, h * .2, 9), k % 2 ? m : sapinM2, x + (al() - .5) * .12, y, z + (al() - .5) * .12); c.rotation.y = al() * 6; c.rotation.z = (al() - .5) * .08; }
-    add(new THREE.ConeGeometry(h * .03, h * .12, 6), m, x, y0 + h * 1.0, z); OB.push([x, z, .6]); };
+  const sapin = (x, z, h = 12, m = sapinM) => { const y0 = L.hautPiste ? L.hautPiste(x, z) : 0; epicea(x, y0, z, h, m === melezeM ? .85 : 1); void sapinM2; void troncM; OB.push([x, z, .6]); };
   const buisson = (x, z, r = 1) => { const y0 = L.hautPiste ? L.hautPiste(x, z) : 0; for (let k = 0; k < 4; k++) { const b = add(new THREE.IcosahedronGeometry(r * (.6 + al() * .4), 1), [mat({ color: 0x3e6a2a, roughness: 1, flatShading: true }), mat({ color: 0x567a30, roughness: 1, flatShading: true }), mat({ color: 0x2e5222, roughness: 1, flatShading: true })][k % 3], x + (al() - .5) * r, y0 + r * .5 + al() * r * .3, z + (al() - .5) * r); b.scale.y = .75; } };
   for (const [x, z] of [[88, 4], [91, 9], [86, 12], [95, 2]]) bouleau(x, z, 9 + al() * 3);
   for (const [x, z, h] of [[93, -6, 14], [98, 6, 12], [-90, -16, 11], [-92, 20, 13], [-40, -14, 12], [24, -18, 15]]) sapin(x, z, h, al() < .4 ? melezeM : sapinM);
