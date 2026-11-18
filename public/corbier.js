@@ -646,12 +646,12 @@ function construireCorbier(A, L, scene) {
       bouleau(82.9, -3.2, 11); sapin(97, -15.5, 14, melezeM); { const rx = mat({ color: 0xd8862a, roughness: .9 }), vx = mat({ color: 0x6a8a2a, roughness: .9 }); cyl(.15, .22, 6, mat({ color: 0x6a5a4a }), 82.8, 3, -13, 7); for (let k = 0; k < 7; k++) add(new THREE.IcosahedronGeometry(1.3 + al(), 1), k % 2 ? rx : vx, 82.8 + (al() - .5) * 2.4, 5 + al() * 3, -13 + (al() - .5) * 2.4); }
       barriere(83.8, -1.2, 83.8, -14); barriere(96.2, -1.2, 96.2, -12); jardiniere(84.8, -.7);   // (la barrière de bois au bord du creux, ses géraniums)
       // la passerelle couverte : du toit du Yéti jusqu'au porche de la tour
-      { const xa = 78, xb = 97.4, cx = (xa + xb) / 2, W = xb - xa, zc = -8.5, yP = 3.6, bardT2 = tT(256, 64, (c, w, h) => { c.fillStyle = "#8a6a52"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8 % 2) * 6; x < w; x += 12) { c.fillStyle = ["#9a7a60", "#7a5a44", "#a88a6e"][(x + y) % 3]; c.fillRect(x, y, 11, 7); } }, 6, 2);
+      { const xa = 82.4, xb = 97.4, cx = (xa + xb) / 2, W = xb - xa, zc = -8.5, yP = .15, bardT2 = tT(256, 64, (c, w, h) => { c.fillStyle = "#8a6a52"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8 % 2) * 6; x < w; x += 12) { c.fillStyle = ["#9a7a60", "#7a5a44", "#a88a6e"][(x + y) % 3]; c.fillRect(x, y, 11, 7); } }, 6, 2);
         const murT = tT(512, 64, (c, w, h) => { c.fillStyle = "#7a3e24"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 6) { c.fillStyle = "rgba(0,0,0,.15)"; c.fillRect(x, 0, 1, h); } for (let x = 20; x < w; x += 64) { c.fillStyle = "#5a2a18"; c.fillRect(x - 3, 10, 46, 34); c.fillStyle = "#8a9aa4"; c.fillRect(x, 13, 40, 28); c.fillStyle = "rgba(255,255,255,.3)"; c.fillRect(x + 2, 15, 10, 24); } }, 1, 1);
         box(W, .9, 3.4, betonM, cx, yP + .45, zc);   // (le tablier de béton blanc)
-        for (const sz of [-1.6, 1.6]) add(new THREE.PlaneGeometry(W, 1.8), mat({ map: murT, side: THREE.DoubleSide }), cx, yP + 1.8, zc + sz);
-        for (const sg of [-1, 1]) { const t = box(W + .8, .14, 2.6, mat({ map: bardT2, roughness: .9 }), cx, yP + 3.25, zc + sg * 1.05); t.rotation.x = sg * .5; }
-        box(W, .3, .3, mat({ color: 0x5a3a26 }), cx, yP + 3.8, zc);
+        for (const sz of [-1.6, 1.6]) add(new THREE.PlaneGeometry(W, 1.6), mat({ map: murT, side: THREE.DoubleSide }), cx, yP + 1.7, zc + sz);
+        for (const sg of [-1, 1]) { const t = box(W + .8, .14, 2.6, mat({ map: bardT2, roughness: .9 }), cx, yP + 2.75, zc + sg * 1.05); t.rotation.x = sg * .5; }
+        box(W, .3, .3, mat({ color: 0x5a3a26 }), cx, yP + 3.2, zc);
         { const yT = Y0 * (-zc - 1.2) / 13; for (const x of [85.4, 94.6]) for (const sz of [-1.2, 1.2]) box(.6, yP - yT, .6, betonM, x, (yP + yT) / 2, zc + sz); }
         // côté tour : il arrive sous le porche ; le porche fait le tour, le long du flanc de la tour
         box(1.8, .4, 14.5, mat({ color: 0xe8e0d0, roughness: .8 }), 97.2, 3.4, -4.85); } } }
