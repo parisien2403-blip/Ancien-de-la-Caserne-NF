@@ -385,7 +385,7 @@ function construireCorbier(A, L, scene) {
   /* ---------- le bâtiment de l'École du Ski Français, la Fontaine de l'Ours ---------- */
   { const n0E = scene.children.length; residence(-39, -1, -3.2, 3, facG);
     { const corps = scene.children[n0E]; scene.remove(corps); const H = 3.4 + 3 * 2.8, zc = -3.2 - 6.6;   /* (10.128 : le corps de l'École du Ski, ouvert au rez-de-chaussée : le passage de la galerie) */
-      box(12.7, H, 12, facS, -32.65, H / 2, zc); box(22.7, H, 12, facS, -12.35, H / 2, zc); box(2.6, H - 3.1, 12, facS, -25, 3.1 + (H - 3.1) / 2, zc); }   /* (10.108 : collé à la longue résidence — plus d'espace entre les deux) */
+      box(12.5, H, 12, facS, -32.75, H / 2, zc); box(22.5, H, 12, facS, -12.25, H / 2, zc); box(3.0, H - 3.1, 12, facS, -25, 3.1 + (H - 3.1) / 2, zc); }   /* (10.108 : collé à la longue résidence — plus d'espace entre les deux) */
     const esf = tT(512, 96, (c, w, h) => { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8202a"; c.beginPath(); c.arc(40, 48, 30, 0, 7); c.fill(); c.fillStyle = "#1a3a8a"; c.font = `italic bold 40px ${sans}`; c.fillText("ÉCOLE DU SKI FRANÇAIS", 82, 60); });
     const s = add(new THREE.PlaneGeometry(9, 1.7), lum(mat({ map: esf, emissive: 0xffffff, emissiveMap: esf, emissiveIntensity: .1 }), .1, .8), -26, 4.9, -1.9); void s;
     const ours = tT(512, 96, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 30px ${serif}`; c.fillText("Bar - Restaurant", 14, 60); c.font = `italic bold 38px ${serif}`; c.fillText("La Fontaine de l'Ours", 232, 60); });
@@ -444,7 +444,7 @@ function construireCorbier(A, L, scene) {
 
   /* ---------- le Yéti, au bout : la salle basse, l'enseigne entre les deux Amstel, la pergola blanche, les tables de pique-nique sur les dalles ---------- */
   { const yT = tT(1024, 128, (c, w, h) => { c.fillStyle = "#5a2a18"; c.fillRect(0, 0, w, h); for (const x of [40, 640, 860]) { c.fillStyle = "#c8202a"; c.fillRect(x, 22, 130, 64); c.fillStyle = "#f0c020"; c.beginPath(); c.ellipse(x + 65, 54, 26, 22, 0, 0, 7); c.fill(); c.fillStyle = "#c8202a"; c.beginPath(); c.ellipse(x + 65, 54, 14, 11, 0, 0, 7); c.fill(); } c.fillStyle = "#c8202a"; c.fillRect(300, 18, 260, 72); c.strokeStyle = "#fff"; c.lineWidth = 4; c.strokeRect(306, 24, 248, 60); c.fillStyle = "#fff"; c.font = `bold 46px ${serif}`; c.textAlign = "center"; c.fillText("LE YETI", 430, 70); });
-    box(12.8, 3.6, 10, facS, 72.9, 1.8, -6); add(new THREE.PlaneGeometry(16, 1.2), lum(mat({ map: yT, emissive: 0xffffff, emissiveMap: yT, emissiveIntensity: .12 }), .12, .9), 74.5, 3.0, -.98);
+    box(7.8, 3.6, 10, facS, 70.4, 1.8, -6); add(new THREE.PlaneGeometry(16, 1.2), lum(mat({ map: yT, emissive: 0xffffff, emissiveMap: yT, emissiveIntensity: .12 }), .12, .9), 74.5, 3.0, -.98);
     const yB = devantureT("Crêpes · Pizzas · Spécialités savoyardes", "#c8202a", "#ffffff", { motif: tables, serif: true }); add(new THREE.PlaneGeometry(16, 2.4), lum(mat({ map: yB, emissive: 0xffffff, emissiveMap: yB, emissiveIntensity: .12 }), .12, .75), 74.5, 1.2, -.98);
     box(16.4, .3, 11, mat({ color: 0x8a5a3a }), 74.5, 3.75, -5.8); }
   // les pergolas blanches (la pizzeria, le Yéti) : les poteaux, les chevrons, la toile
@@ -643,11 +643,11 @@ function construireCorbier(A, L, scene) {
       L.solsPlus.push(sol(100, 112, 7.6, 16.5, mat({ map: gravT, roughness: 1 }), .01));
       // le creux : les talus d'herbe, le bas goudronné
       const hm2 = mat({ map: herbeT, roughness: 1, side: THREE.DoubleSide });
-      const talus = (xa, xb, za, zb, ya, yb) => { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute([xa, ya, za, xb, ya, za, xa, yb, zb, xb, yb, zb], 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, (xb - xa) / 4, 0, 0, (zb - za) / 4, (xb - xa) / 4, (zb - za) / 4], 2)); g.setIndex([0, 2, 1, 1, 2, 3]); g.computeVertexNormals(); const m = new THREE.Mesh(g, hm2); scene.add(m); return m; };
+      const talus = (xa, xb, za, zb, ya, yb) => { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute([-xa, ya, za, -xb, ya, za, -xa, yb, zb, -xb, yb, zb], 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, (xb - xa) / 4, 0, 0, (zb - za) / 4, (xb - xa) / 4, (zb - za) / 4], 2)); g.setIndex([0, 2, 1, 1, 2, 3]); g.computeVertexNormals(); const m = new THREE.Mesh(g, hm2); scene.add(m); return m; };
       /* (10.127) l'escalier part de la promenade, devant la passerelle, et descend dessous : sous la passerelle, le vide ; derrière, les talus et le bas goudronné */
       const zA = 5.6, zB = -12, yL = (z) => Math.max(Y0, Math.min(0, Y0 * (zA - z) / (zA - zB))), yF = yL(-1.2);
       const bm2 = betonM.clone(); bm2.side = THREE.DoubleSide;
-      const mur = (x, pts) => { const P = []; for (let k = 1; k < pts.length - 1; k++) for (const q of [pts[0], pts[k], pts[k + 1]]) P.push(x, q[1], q[0]); const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.computeVertexNormals(); scene.add(new THREE.Mesh(g, bm2)); };
+      const mur = (x, pts) => { const P = []; for (let k = 1; k < pts.length - 1; k++) for (const q of [pts[0], pts[k], pts[k + 1]]) P.push(-x, q[1], q[0]); const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.computeVertexNormals(); scene.add(new THREE.Mesh(g, bm2)); };
       talus(84, 96, -1.2, zB, yF, Y0); add(new THREE.PlaneGeometry(12, 8), mat({ color: 0x5a5c60, roughness: .9 }), 90, Y0, -16).rotation.x = -Math.PI / 2;
       for (const x of [84, 96]) mur(x, [[-1.2, 0], [-20, 0], [-20, Y0], [zB, Y0], [-1.2, yF]]);
       for (const x of [87.6, 92.4]) mur(x, [[zA, 0], [-1.2, 0], [-1.2, yF - .5], [zA, -.5]]);
@@ -684,100 +684,228 @@ function construireCorbier(A, L, scene) {
         porteBat(xb + .02, yP + 1.55, zc - 1.05, 0, 1, 1, 1.05, 2.1, porteM, xb, zc); porteBat(xb + .02, yP + 1.55, zc + 1.05, 0, -1, -1, 1.05, 2.1, porteM, xb, zc);
         OB.push([xb, zc - 1.3, .25], [xb, zc + 1.3, .25]); } } }
 
-  /* (10.128, d'après la vidéo) l'intérieur : la passerelle (lambris de pin, fenêtres, plafond en pente, chevrons, sol gris et taches de soleil), le couloir de bois sombre
-     dans le flanc du Yéti, puis la longue galerie marchande derrière les bâtiments (carrelage brun, murs blancs, plafonniers ; la boulangerie et ses ardoises,
-     l'opticien, la pâtisserie, la fresque des montagnes, l'affiche Intersport et les lambris, la pharmacie, le banc et l'armoire à incendie, les cadeaux-souvenirs,
-     Skiset, le 1550, la presse, la fromagerie ; en face, les portes, les vitrines et les grandes fenêtres à balustrade de bois), jusqu'au couloir qui ressort
-     par la porte battante de bois, sous l'École du Ski. À l'intérieur, la vue est à la première personne. */
+  /* (10.129, d'après la vidéo, seconde par seconde) l'intérieur, avec ses virages : la passerelle (lambris de pin, fenêtres, plafond en pente, poutres noires, moquette grise
+     et taches de soleil) ; l'entrée de bois sombre ; le petit hall aux planches gris-bleu et sa porte vitrée ; à gauche, le couloir de bois puis le couloir blanc
+     (portes de service, kiosque) ; à droite, le hall de l'opticien et des « Pains spéciaux » (ardoises, grosse poubelle, piliers) ; le couloir de la fresque ;
+     le hall des présentoirs de cartes postales ; le comptoir de la boulangerie au fond ; le décroché ; le couloir des grandes fenêtres (balustrade de pin, pilier rouge)
+     jusqu'à l'affiche Intersport ; à droite, la pharmacie (Nutergia) et la balustrade de pin ; le couloir de l'armoire à incendie (et le chat qui dort) ;
+     le hall final (Cadeaux Souvenirs, Skiset, l'ardoise du « 1550 ») ; et la sortie par la porte battante de bois, sous l'École du Ski. Dedans : la première personne. */
   const GAL = (() => {
     const lu = (m, j = .14) => lum(m, j, j * 1.6);
     const tex = (w, h, f, rx = 1, ry = 1) => tT(w, h, f, rx, ry);
-    const blancM = lu(mat({ color: 0xf2eee6, roughness: .9, emissive: 0xfff2dc, emissiveIntensity: .14 }));
-    const murB = (x0, x1, z, faceSud, mFace, h = 3.05) => { const M6 = [blancM, blancM, blancM, blancM, faceSud ? mFace : blancM, faceSud ? blancM : mFace]; const b = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, h, .12), M6); b.position.set((x0 + x1) / 2, h / 2, z); scene.add(b); return b; };
-    const murX = (x, z0, z1, m, h = 3.05, y0 = 0) => { const b = new THREE.Mesh(new THREE.BoxGeometry(.12, h, z1 - z0), m); b.position.set(x, y0 + h / 2, (z0 + z1) / 2); scene.add(b); return b; };
-    const solTuiles = (x0, x1, z0, z1, y = .02) => { const t = tex(256, 256, (c, w, h) => { c.fillStyle = "#2a1e1a"; c.fillRect(0, 0, w, h); for (let y2 = 0; y2 < h; y2 += 32) for (let x2 = 0; x2 < w; x2 += 32) { c.fillStyle = ["#4e362c", "#45302a", "#563c30", "#3e2c26"][((x2 / 32) * 3 + (y2 / 32) * 5) % 4]; c.fillRect(x2 + 1, y2 + 1, 30, 30); c.fillStyle = "rgba(255,255,255,.05)"; c.fillRect(x2 + 2, y2 + 2, 26, 3); } }, (x1 - x0) / 2.4, (z1 - z0) / 2.4); const m = add(new THREE.PlaneGeometry(x1 - x0, z1 - z0), lu(mat({ map: t, roughness: .5, emissive: 0x3a2a20, emissiveIntensity: .2 }), .2), (x0 + x1) / 2, y, (z0 + z1) / 2); m.rotation.x = -Math.PI / 2; return m; };
-    const plafond = (x0, x1, z0, z1, y = 3.05, m = blancM) => { const b = box(x1 - x0, .1, z1 - z0, m, (x0 + x1) / 2, y + .05, (z0 + z1) / 2); return b; };
-    const neon = lu(mat({ color: 0xffffff, emissive: 0xfff8e8, emissiveIntensity: .9 }), .9);
+    const rep = (t, rx, ry = 1) => { const c = t.clone(); c.wrapS = c.wrapT = THREE.RepeatWrapping; c.repeat.set(rx, ry); c.needsUpdate = true; return c; };
+    const bruit = (c, w, h, n, a, cols) => { for (let i = 0; i < n; i++) { c.fillStyle = cols[i % cols.length]; c.globalAlpha = a; c.fillRect(al() * w, al() * h, 1 + al() * 2, 1 + al() * 2); } c.globalAlpha = 1; };
+    // les matières
+    const T = {
+      blanc: tex(256, 256, (c, w, h) => { c.fillStyle = "#efebe3"; c.fillRect(0, 0, w, h); bruit(c, w, h, 2500, .12, ["#d8d2c6", "#ffffff", "#c8c0b4"]); c.fillStyle = "#7a2e1e"; c.fillRect(0, h - 7, w, 7); c.fillStyle = "#5a2014"; c.fillRect(0, h - 2, w, 2); }),
+      sombre: tex(256, 256, (c, w, h) => { c.fillStyle = "#3e2216"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 16) { c.fillStyle = `rgba(${(x / 16) % 3 ? "70,40,24" : "90,54,32"},1)`; c.fillRect(x, 0, 15, h); for (let i = 0; i < 6; i++) { c.fillStyle = "rgba(20,10,4,.35)"; c.fillRect(x + 2 + al() * 10, 0, 1, h); } c.fillStyle = "#1a0c06"; c.fillRect(x + 15, 0, 1, h); } }),
+      bleu: tex(256, 256, (c, w, h) => { c.fillStyle = "#6a7a84"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) { c.fillStyle = (y / 16) % 2 ? "#71828c" : "#647480"; c.fillRect(0, y, w, 15); c.fillStyle = "#3a464e"; c.fillRect(0, y + 15, w, 1); for (let i = 0; i < 5; i++) { c.fillStyle = "rgba(255,255,255,.06)"; c.fillRect(0, y + 2 + al() * 10, w, 1); } } }),
+      pin: tex(256, 256, (c, w, h) => { c.fillStyle = "#c88e52"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 14) { c.fillStyle = ["#cf975a", "#c08448", "#d6a066"][(y / 14) % 3]; c.fillRect(0, y, w, 13); c.fillStyle = "#8a5426"; c.fillRect(0, y + 13, w, 1); for (let i = 0; i < 4; i++) { c.strokeStyle = "rgba(140,80,30,.35)"; c.beginPath(); const yy = y + 2 + al() * 9; c.moveTo(0, yy); c.bezierCurveTo(w * .3, yy + 3, w * .6, yy - 3, w, yy); c.stroke(); } } }),
+      pinV: tex(256, 256, (c, w, h) => { c.fillStyle = "#c88e52"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 18) { c.fillStyle = ["#cf975a", "#c08448", "#d6a066"][(x / 18) % 3]; c.fillRect(x, 0, 17, h); c.fillStyle = "#8a5426"; c.fillRect(x + 17, 0, 1, h); } }),
+      carrelage: tex(512, 512, (c, w, h) => { c.fillStyle = "#1e1612"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 64) for (let x = 0; x < w; x += 64) { const k = al(); c.fillStyle = k < .3 ? "#4a3229" : k < .55 ? "#3f2b24" : k < .8 ? "#54392d" : "#3a2a26"; c.fillRect(x + 2, y + 2, 60, 60); const g = c.createLinearGradient(x, y, x + 64, y + 64); g.addColorStop(0, "rgba(255,255,255,.07)"); g.addColorStop(1, "rgba(0,0,0,.1)"); c.fillStyle = g; c.fillRect(x + 2, y + 2, 60, 60); } bruit(c, w, h, 3000, .1, ["#000", "#7a5a4a"]); }),
+      carrelageB: tex(512, 512, (c, w, h) => { c.fillStyle = "#14161c"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 64) for (let x = 0; x < w; x += 64) { const k = al(); c.fillStyle = k < .4 ? "#2e3442" : k < .7 ? "#343a4a" : "#282c38"; c.fillRect(x + 2, y + 2, 60, 60); } bruit(c, w, h, 3000, .1, ["#000", "#5a6070"]); }),
+      moquette: tex(256, 256, (c, w, h) => { c.fillStyle = "#4e545c"; c.fillRect(0, 0, w, h); bruit(c, w, h, 9000, .35, ["#3a3e44", "#62686e", "#565c64", "#2e3236"]); }),
+      dalles: tex(256, 256, (c, w, h) => { c.fillStyle = "#e8e6e0"; c.fillRect(0, 0, w, h); bruit(c, w, h, 1500, .15, ["#c8c4bc", "#fff"]); c.fillStyle = "#b8b4ac"; for (let k = 0; k <= 4; k++) { c.fillRect(k * 64 - 1, 0, 2, h); c.fillRect(0, k * 64 - 1, w, 2); } }),
+      creux: tex(64, 64, (c, w, h) => { c.fillStyle = "#cfc8bc"; c.fillRect(0, 0, w, h); bruit(c, w, h, 300, .2, ["#a8a090", "#e8e2d8"]); })
+    };
+    const matMur = (k, L2, H) => { const t = rep(T[k], L2 / (k === "bleu" || k === "pin" ? 2.5 : 2), k === "blanc" ? 1 : H / 2.5); return lu(mat({ map: t, roughness: k === "blanc" ? .95 : .75, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .13 }), .13); };
+    const exterieur = mat({ map: T.creux, roughness: 1 });
+    const neon = lu(mat({ color: 0xffffff, emissive: 0xfff6e6, emissiveIntensity: .95 }), .95);
+    const noirP = mat({ color: 0x1a1a1a, roughness: .7 }), blancP = lu(mat({ color: 0xf2f0ea, roughness: .8, emissive: 0xfff4e0, emissiveIntensity: .1 }), .1);
 
-    /* --- la passerelle, dedans : x 82.4 → 98, z -4.4 → -1.2, plancher à 0,5 --- */
+    /* --- la passerelle, dedans : x 82.4 → 98, z -4.4 → -1.2, moquette à 0,5 --- */
     { const xa = 82.4, xb = 98, cx = (xa + xb) / 2, W = xb - xa, zc = -2.8;
       const pinT = tex(1024, 112, (c, w, h) => { c.fillStyle = "#c8915a"; c.fillRect(0, 0, w, h); for (let y = 54; y < h; y += 7) { c.fillStyle = `rgba(${y % 14 ? "120,70,30" : "255,220,170"},.18)`; c.fillRect(0, y, w, 6); c.fillStyle = "rgba(90,50,20,.35)"; c.fillRect(0, y + 6, w, 1); }
-        for (let x = 6; x < w; x += 64) { c.fillStyle = "#a8743e"; c.fillRect(x - 4, 4, 60, 48); c.fillStyle = "#cfe4ee"; c.fillRect(x, 8, 52, 40); c.fillStyle = "rgba(255,255,255,.45)"; c.fillRect(x + 3, 10, 12, 36); c.fillStyle = "#a8743e"; c.fillRect(x + 24, 8, 4, 40); } });
-      for (const [z, ry] of [[zc - 1.5, 0], [zc + 1.5, Math.PI]]) add(new THREE.PlaneGeometry(W, 1.75), lu(mat({ map: pinT, roughness: .8, emissive: 0xffffff, emissiveMap: pinT, emissiveIntensity: .12 }), .12), cx, .5 + .875, z, ry);
-      const plT = tex(512, 64, (c, w, h) => { c.fillStyle = "#c08850"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { c.fillStyle = "rgba(90,50,20,.3)"; c.fillRect(0, y + 7, w, 1); } }, 3, 1);
-      for (const sg of [-1, 1]) { const pl = add(new THREE.PlaneGeometry(W, 1.9), lu(mat({ map: plT, roughness: .85, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: plT, emissiveIntensity: .1 }), .1), cx, 2.55, zc + sg * .78); pl.rotation.x = Math.PI / 2 - sg * .52; }
-      for (let x = xa + .6; x < xb; x += 1.4) for (const sg of [-1, 1]) { const r = box(.1, .12, 1.8, mat({ color: 0x6a3e1c }), x, 2.5, zc + sg * .78); r.rotation.x = -sg * .52; }
-      const solG = tex(512, 64, (c, w, h) => { c.fillStyle = "#5a5e64"; c.fillRect(0, 0, w, h); for (let x = 10; x < w; x += 42) { c.fillStyle = "rgba(255,250,235,.85)"; c.fillRect(x, 26, 26, 14); } }, W / 8, 1);
-      const sg2 = add(new THREE.PlaneGeometry(W, 2.9), mat({ map: solG, roughness: .8 }), cx, .51, zc); sg2.rotation.x = -Math.PI / 2; }
+        for (let x = 6; x < w; x += 64) { c.fillStyle = "#a8743e"; c.fillRect(x - 4, 4, 60, 48); const g = c.createLinearGradient(0, 8, 0, 48); g.addColorStop(0, "#e8f2f8"); g.addColorStop(1, "#a8c0cc"); c.fillStyle = g; c.fillRect(x, 8, 52, 40); c.fillStyle = "rgba(255,255,255,.45)"; c.fillRect(x + 3, 10, 12, 36); c.fillStyle = "#a8743e"; c.fillRect(x + 24, 8, 4, 40); } });
+      for (const [z, ry] of [[zc - 1.5, 0], [zc + 1.5, Math.PI]]) add(new THREE.PlaneGeometry(W, 1.75), lu(mat({ map: pinT, roughness: .8, emissive: 0xffffff, emissiveMap: pinT, emissiveIntensity: .14 }), .14), cx, .5 + .875, z, ry);
+      const plT = rep(T.pinV, 1, W / 2.5);
+      for (const sg of [-1, 1]) { const pl = add(new THREE.PlaneGeometry(W, 1.9), lu(mat({ map: plT, roughness: .85, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: plT, emissiveIntensity: .38 }), .38), cx, 2.55, zc + sg * .78); pl.rotation.x = Math.PI / 2 + sg * .52; }
+      for (let x = xa + .7; x < xb; x += 1.6) { for (const sg of [-1, 1]) { const r = box(.12, .14, 1.85, noirP, x, 2.5, zc + sg * .78); r.rotation.x = sg * .52; } box(.1, .1, 2.0, noirP, x, 2.45, zc); }   // (les poutres noires, en V, et l'entrait)
+      const solG = tex(1024, 128, (c, w, h) => { c.fillStyle = "#3a2216"; c.fillRect(0, 0, w, h); bruit(c, w, h, 6000, .18, ["#2a180e", "#4a2e1e"]);   /* (le balatum marron foncé, ses pastilles rondes antidérapantes) */
+        for (let y = 5; y < h; y += 10) for (let x = (y / 10 % 2) * 5 + 3; x < w; x += 10) { c.fillStyle = "#24140a"; c.beginPath(); c.arc(x + .6, y + .6, 2.6, 0, 7); c.fill(); c.fillStyle = "#5a3826"; c.beginPath(); c.arc(x, y, 2.4, 0, 7); c.fill(); c.fillStyle = "rgba(255,220,180,.18)"; c.beginPath(); c.arc(x - .7, y - .7, 1, 0, 7); c.fill(); }
+        for (let x = 20; x < w; x += 84) { c.fillStyle = "rgba(255,226,170,.55)"; c.fillRect(x, 50, 54, 26); } }, W / 7, 1);
+      const sg2 = add(new THREE.PlaneGeometry(W, 2.9), mat({ map: solG, roughness: .9 }), cx, .51, zc); sg2.rotation.x = -Math.PI / 2;
+      const pan = tex(256, 48, (c, w, h) => { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#2a5a3a"; c.font = `bold 20px ${sans}`; c.textAlign = "center"; c.fillText("GALERIE COMMERCIALE →", w / 2, 31); });
+      add(new THREE.PlaneGeometry(1.4, .26), lu(mat({ map: pan, emissive: 0xffffff, emissiveMap: pan, emissiveIntensity: .3 }), .3), 82.55, 2.35, zc, Math.PI / 2); }
 
-    /* --- le couloir de bois sombre, dans le flanc du Yéti : x 79.4 → 82.4, z -16.4 → -1.2 --- */
-    const sombreT = (rx) => tex(128, 128, (c, w, h) => { c.fillStyle = "#4a2a18"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 12) { c.fillStyle = `rgba(${x % 24 ? "30,15,8" : "140,90,50"},.25)`; c.fillRect(x, 0, 11, h); c.fillStyle = "rgba(0,0,0,.4)"; c.fillRect(x + 11, 0, 1, h); } }, rx, 1);
-    { const bm = lu(mat({ map: sombreT(5), roughness: .8, emissive: 0x8a5a3a, emissiveIntensity: .25 }), .25);
-      murX(79.35, -16.4, -1.15, bm, 3.2); murX(82.45, -16.4, -4.45, bm, 3.2); murX(82.45, -1.15, -1.0, bm, 3.2); box(.12, .4, 3.4, bm, 82.45, 3.0, -2.8);
-      box(3.2, 3.2, .12, bm, 80.9, 1.6, -1.1); plafond(79.35, 82.45, -16.4, -1.1, 3.2, bm);
-      for (let z = -15.5; z < -1.5; z += 1.6) box(3, .14, .14, mat({ color: 0x2a160c }), 80.9, 3.1, z);
-      const s2 = add(new THREE.PlaneGeometry(3, 15.3), mat({ color: 0x3a3a3c, roughness: .9 }), 80.9, .03, -8.75); s2.rotation.x = -Math.PI / 2;
-      // la rampe : du plancher de la passerelle au sol de la galerie
-      const rp = add(new THREE.PlaneGeometry(3, 3.75), mat({ color: 0x3a3a3c, roughness: .9 }), 80.9, .25, -6.12); rp.rotation.x = -Math.PI / 2 - Math.atan2(.5, 3.7);
-      const ph = add(new THREE.PlaneGeometry(3, 3.2), mat({ color: 0x3a3a3c, roughness: .9 }), 80.9, .51, -2.75); ph.rotation.x = -Math.PI / 2;
-      for (let z = -14; z < -2; z += 4) box(.5, .05, .25, neon, 80.9, 3.08, z); }
+    /* --- les pièces, avec leurs virages (coordonnées d'origine ; on marche vers les x décroissants, puis à travers les bâtiments) --- */
+    const P = [];
+    const piece = (nom, x0, x1, z0, z1, o) => { const p = { nom, x0, x1, z0, z1, h: 3, mur: "blanc", sol: "carrelage", plaf: "dalles", y: 0, ouv: {}, ...o }; P.push(p); return p; };
+    piece("A", 78.4, 82.4, -4.4, -1.2, { h: 2.6, mur: "sombre", sol: "moquette", plaf: "sombre", pente: [78.4, 0, 82.4, .5], ouv: { xmax: [[-4.4, -1.2]] } });
+    piece("B", 74.4, 78.4, -6.4, -1.2, { h: 2.7, mur: "bleu", sol: "moquette", plaf: "dalles" });
+    piece("C", 75.4, 77.6, -14.4, -6.4, { h: 2.6, mur: "sombre", sol: "moquette", plaf: "sombre" });
+    piece("D", 75.4, 77.6, -30.4, -14.4, { h: 2.8 });
+    piece("E", 62, 78.4, -36.4, -30.4, { h: 3.1 });
+    piece("F", 46, 62, -35.4, -31.4, { h: 2.8 });
+    piece("G", 32, 46, -36.4, -30.4, { h: 3.1 });
+    piece("H", 24, 32, -36.4, -22.4, { h: 3.1 });
+    piece("I", 6, 24, -26.6, -22.4, { h: 2.9, sol: "carrelageB" });
+    piece("J", -2, 6, -26.6, -16.4, { h: 3.1 });
+    piece("K", -16, -2, -20.4, -16.4, { h: 2.8 });
+    piece("L", -32.7, -16, -26, -16.2, { h: 3.3 });
+    piece("M", -35.3, -32.7, -19, -3.2, { h: 2.6, ouv: { zmax: [[-35.3, -32.7]] } });
+    // les ouvertures entre pièces voisines
+    const inter = (a0, a1, b0, b1) => [Math.max(a0, b0), Math.min(a1, b1)];
+    for (const p of P) for (const q of P) if (p !== q) {
+      const add2 = (cote, iv) => { if (iv[1] - iv[0] > .3) (p.ouv[cote] = p.ouv[cote] || []).push(iv); };
+      if (Math.abs(p.x0 - q.x1) < .01) add2("xmin", inter(p.z0, p.z1, q.z0, q.z1)); if (Math.abs(p.x1 - q.x0) < .01) add2("xmax", inter(p.z0, p.z1, q.z0, q.z1));
+      if (Math.abs(p.z0 - q.z1) < .01) add2("zmin", inter(p.x0, p.x1, q.x0, q.x1)); if (Math.abs(p.z1 - q.z0) < .01) add2("zmax", inter(p.x0, p.x1, q.x0, q.x1)); }
+    const hVois = (p, cote, a) => { for (const q of P) if (q !== p) { const ok = cote === "xmin" ? Math.abs(p.x0 - q.x1) < .01 && a > q.z0 && a < q.z1 : cote === "xmax" ? Math.abs(p.x1 - q.x0) < .01 && a > q.z0 && a < q.z1 : cote === "zmin" ? Math.abs(p.z0 - q.z1) < .01 && a > q.x0 && a < q.x1 : Math.abs(p.z1 - q.z0) < .01 && a > q.x0 && a < q.x1; if (ok) return q.h; } return 2.5; };
+    const RES = {};   // (les morceaux de mur réservés aux devantures : pas de mur plein là)
+    const reserve = (nom, cote, a0, a1) => ((RES[nom + cote] = RES[nom + cote] || []).push([a0, a1]));
+    const SEGS = [];   // (les murs : pour ne pas marcher dedans)
 
-    /* --- la galerie marchande : x -35.45 → 82.55, z -21.2 → -16.35 --- */
-    const GX0 = -35.45, GX1 = 82.55, ZN = -16.35, ZS = -21.2;
-    const devanture = (type, nom, fond, coul, motif) => tex(512, 192, (c, w, h) => {
-      c.fillStyle = "#f2eee6"; c.fillRect(0, 0, w, h); c.fillStyle = "#7a2a1a"; c.fillRect(0, h - 6, w, 6);
-      const porte = (x, l = 70) => { c.fillStyle = "#6a3e20"; c.fillRect(x, 50, l, h - 56); c.fillStyle = "#8a5a32"; c.fillRect(x + 5, 55, l - 10, h - 66); c.fillStyle = "#d8c8a0"; c.fillRect(x + l - 16, 110, 6, 14); };
-      const vitre = (x0, x1) => { c.fillStyle = "#4a2a18"; c.fillRect(x0, 40, x1 - x0, h - 46); c.fillStyle = "#c8d8de"; c.fillRect(x0 + 5, 46, x1 - x0 - 10, h - 58); for (let x = x0 + 5; x < x1 - 5; x += 70) { c.fillStyle = "#4a2a18"; c.fillRect(x, 46, 4, h - 58); }
-        const G = { pain: ["#c08040", "#a86a30", "#d8a060"], gateau: ["#f0d0e0", "#e8b040", "#c84a6a", "#fff"], souv: ["#c8202a", "#2a5ab8", "#f0c020", "#2a9a4a", "#fff"], ski: ["#c8202a", "#2a5ab8", "#f0c020", "#1a1a1a"], pharma: ["#fff", "#2a9a4a", "#2a5ab8"], optique: ["#1a1a1a", "#7a4a2a"], vin: ["#5a1a2a", "#2a4a1a", "#e8d8a0"], fromage: ["#f0d880", "#e8c050", "#fff4c0"], presse: ["#c8202a", "#fff", "#2a5ab8", "#1a1a1a"], resto: ["#f2f2ee", "#c8202a"] }[motif] || ["#ccc"];
-        for (let i = 0; i < 70; i++) { const x = x0 + 12 + ((i * 53) % (x1 - x0 - 24)), y = 70 + ((i * 37) % (h - 90)); c.fillStyle = G[i % G.length];
-          if (motif === "ski") c.fillRect(x, 60, 5, h - 80); else if (motif === "optique") { c.fillRect(x, y, 14, 3); c.beginPath(); c.arc(x + 3, y + 5, 4, 0, 7); c.arc(x + 11, y + 5, 4, 0, 7); c.fill(); } else { c.beginPath(); c.ellipse(x, y, motif === "pain" ? 10 : 6, motif === "pain" ? 5 : 6, 0, 0, 7); c.fill(); } }
-        c.fillStyle = "rgba(255,255,255,.3)"; c.fillRect(x0 + 10, 50, 14, h - 70); };
-      if (type === "portes") { porte(60); porte(330); if (nom) { c.fillStyle = "#2a2a2a"; c.font = `bold 20px ${sans}`; c.textAlign = "center"; c.fillText(nom, w / 2, 30); } return; }
-      if (type === "fresque") { const g = c.createLinearGradient(0, 30, 0, 150); g.addColorStop(0, "#d8e4ec"); g.addColorStop(1, "#8a9098"); c.fillStyle = g; c.fillRect(30, 30, 380, 120); c.fillStyle = "#f4f6f8"; c.beginPath(); c.moveTo(30, 150); for (let x = 30; x <= 410; x += 20) c.lineTo(x, 60 + Math.abs(Math.sin(x * .03)) * 60 + (x % 40)); c.lineTo(410, 150); c.fill(); c.fillStyle = "#6a6e74"; for (let i = 0; i < 40; i++) c.fillRect(40 + (i * 37) % 360, 100 + (i * 17) % 40, 2, 10); porte(430, 64); return; }
-      if (type === "affiche") { c.fillStyle = "#c08850"; c.fillRect(0, 120, w, h - 126); for (let x = 0; x < w; x += 16) { c.fillStyle = "rgba(90,50,20,.3)"; c.fillRect(x, 120, 1, h - 126); } c.fillStyle = "#f4f4f2"; c.fillRect(60, 18, 390, 96); c.strokeStyle = "#1a1a1a"; c.lineWidth = 6; c.strokeRect(60, 18, 390, 96); c.fillStyle = "#c8202a"; c.font = `bold 22px ${sans}`; c.textAlign = "center"; c.fillText("PLUS TÔT VOUS RÉSERVEZ", 255, 46); c.fillStyle = "#1a3a8a"; c.font = `italic bold 36px ${sans}`; c.fillText("intersport.fr", 255, 82); c.fillStyle = "#c8202a"; c.font = `bold 20px ${sans}`; c.fillText("MOINS VOUS PAYEZ !", 255, 106); return; }
-      if (type === "bois") { c.fillStyle = "#c08850"; c.fillRect(0, 70, w, h - 76); for (let x = 0; x < w; x += 16) { c.fillStyle = "rgba(90,50,20,.3)"; c.fillRect(x, 70, 1, h - 76); } c.fillStyle = "#c8202a"; c.fillRect(300, 46, 70, 54); c.fillStyle = "#fff"; c.font = `bold 11px ${sans}`; c.fillText("R.I.A.", 318, 78); return; }
-      c.fillStyle = fond; c.fillRect(20, 6, w - 40, 32); c.fillStyle = coul; c.font = `bold 22px ${sans}`; c.textAlign = "center"; c.fillText(nom, w / 2, 30); vitre(20, w - 20); });
-    const NORD = [["portes"], ["portes", "GALERIE MARCHANDE"], ["vitrine", "TROMPE L'ŒIL · OPTICIEN", "#2a3a4a", "#fff", "optique"], ["vitrine", "PAINS SPÉCIAUX · VIENNOISERIES", "#6a3a1e", "#f2e8d8", "pain"],
-      ["vitrine", "LA PANETIÈRE · PÂTISSERIE", "#f2e0e8", "#8a2a4a", "gateau"], ["fresque"], ["affiche"], ["vitrine", "PHARMACIE DU CORBIER", "#2a9a4a", "#fff", "pharma"], ["bois"],
-      ["vitrine", "CADEAUX · SOUVENIRS", "#2a3a6a", "#f0c020", "souv"], ["vitrine", "SKISET · LOCATION DE SKIS", "#1a1a1a", "#f0c020", "ski"], ["vitrine", "LE 1550 · BAR RESTAURANT", "#5a2a1a", "#f2e8d8", "resto"], ["vitrine", "PRESSE · TABAC · LOTO", "#c8202a", "#fff", "presse"], ["vitrine", "FROMAGERIE · SPÉCIALITÉS SAVOYARDES", "#f0d880", "#5a3a1a", "fromage"]];
-    { const xs = 79.35, xe = -32.7, n = NORD.length, L2 = (xs - xe) / n;
-      NORD.forEach((d, i) => { const t = devanture(...d), m = lu(mat({ map: t, roughness: .7, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .16 }), .16); murB(xs - (i + 1) * L2, xs - i * L2, ZN, false, m); }); }
-    const SUD = [["portes"], ["fresque"], ["vitrine", "SPORT 2000 · TEXTILE", "#1a3a8a", "#fff", "souv"], ["fenetres"], ["fenetres"], ["affiche"], ["bois"], ["vitrine", "LA CAVE · VINS DE SAVOIE", "#5a1a2a", "#f2e8d8", "vin"], ["portes"], ["fresque"], ["vitrine", "ÉPICERIE · SPAR", "#c8202a", "#fff", "fromage"], ["fenetres"], ["portes"], ["vitrine", "AGENCE DU CORBIER · LOCATIONS", "#f2f2ee", "#2a3a4a", "presse"], ["portes"]];
-    { const xs = GX1, xe = GX0, n = SUD.length, L2 = (xs - xe) / n, verre = mat({ color: 0xdcecf0, roughness: .05, transparent: true, opacity: .18, depthWrite: false }), pin = mat({ color: 0xc08850, roughness: .8 });
-      SUD.forEach((d, i) => { const x1 = xs - i * L2, x0 = x1 - L2, cx = (x0 + x1) / 2;
-        if (d[0] === "fenetres") { box(L2, .9, .14, pin, cx, .45, ZS); box(L2, .45, .14, blancM, cx, 2.83, ZS); add(new THREE.PlaneGeometry(L2, 1.7), verre, cx, 1.75, ZS + .02);
-          for (let x = x0; x <= x1 + .01; x += L2 / 6) box(.08, 1.7, .1, pin, x, 1.75, ZS + .02);
-          box(L2, .08, .1, pin, cx, 1.05, ZS + .35); for (let x = x0 + .2; x < x1; x += .25) box(.05, .55, .05, pin, x, .75, ZS + .35); box(L2, .06, .12, pin, cx, .48, ZS + .35); return; }
-        const t = devanture(...d), m = lu(mat({ map: t, roughness: .7, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .16 }), .16); murB(x0, x1, ZS, true, m); }); }
-    murX(GX0, ZS, ZN, blancM); murX(GX1, ZS, ZN, blancM); murB(79.35, GX1, ZN, false, blancM); murB(GX0, -35.35, ZN, false, blancM);
-    plafond(GX0, GX1, ZS, ZN); solTuiles(GX0, GX1, ZS, ZN);
-    for (let x = GX0 + 3; x < GX1; x += 6) box(1.2, .05, .45, neon, x, 3.03, (ZN + ZS) / 2);
-    // les piliers blancs, le pilier rouge près des fenêtres, les ardoises, le banc, le présentoir de la pharmacie
-    { const pM = lu(mat({ color: 0xf4f2ee, roughness: .8, emissive: 0xfff4e0, emissiveIntensity: .12 }), .12); for (let x = 71; x > -30; x -= 16) { box(.45, 3, .45, pM, x, 1.5, ZN - .3); OB.push([x, ZN - .3, .4]); }
-      box(.5, 3, .5, mat({ color: 0xc8202a, roughness: .6 }), 46.3, 1.5, ZS + .45); OB.push([46.3, ZS + .45, .4]);
-      const ardT = (txt) => tex(64, 96, (c, w, h) => { c.fillStyle = "#6a4a2a"; c.fillRect(0, 0, w, h); c.fillStyle = "#1e2420"; c.fillRect(5, 5, w - 10, h - 10); c.fillStyle = "#f2f2ee"; c.font = `bold 10px ${sans}`; c.textAlign = "center"; c.fillText(txt, w / 2, 22); for (let k = 0; k < 6; k++) c.fillRect(12, 32 + k * 9, 40 - (k * 7) % 20, 2); });
-      const ardoise = (x, z, txt) => { const m = mat({ map: ardT(txt) }); for (const sg of [-1, 1]) { const b = box(.6, .95, .04, m, x, .45, z + sg * .16); b.rotation.x = sg * .3; } OB.push([x, z, .45]); };
-      const L2 = (79.35 + 32.7) / NORD.length; ardoise(79.35 - 3.5 * L2, ZN - .9, "PAINS"); ardoise(79.35 - 3.2 * L2, ZN - 1.2, "MENU"); ardoise(79.35 - 11.5 * L2, ZN - 1.1, "LE 1550");
-      const bc = mat({ color: 0x8a5a32, roughness: .8 }); { const bx = 79.35 - 8.3 * L2; box(1.8, .08, .45, bc, bx, .46, ZN - .45); box(1.8, .5, .06, bc, bx, .78, ZN - .2); for (const sx of [-.8, .8]) box(.08, .46, .4, bc, bx + sx, .23, ZN - .45); OB.push([bx, ZN - .45, 1]); }
-      { const px = 79.35 - 7.6 * L2, ntT = tex(64, 128, (c, w, h) => { c.fillStyle = "#1a5ab8"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 9px ${sans}`; c.fillText("Nutergia", 8, 18); c.fillRect(10, 40, 44, 50); c.fillStyle = "#2a9a4a"; c.fillRect(24, 50, 16, 30); });
-        box(.7, 1.7, .5, mat({ map: ntT }), px, .85, ZN - .55); OB.push([px, ZN - .55, .5]); } }
+    /* --- les repères : une position le long d'un mur (u), en hauteur (v), en avant du mur (w) --- */
+    const repere = (p, cote) => { const c = { zmin: [p.z0, 0], zmax: [p.z1, Math.PI], xmin: [p.x0, Math.PI / 2], xmax: [p.x1, -Math.PI / 2] }[cote];
+      const pos = (u, v, w) => cote === "zmin" ? [u, v, p.z0 + w] : cote === "zmax" ? [u, v, p.z1 - w] : cote === "xmin" ? [p.x0 + w, v, u] : [p.x1 - w, v, u];
+      return { ry: c[1], pos, plan: (W2, H2, m, u, v, w) => { const [x, y, z] = pos(u, v, w); return add(new THREE.PlaneGeometry(W2, H2), m, x, y, z, c[1]); },
+        boite: (L2, H2, E2, m, u, v, w) => { const [x, y, z] = pos(u, v, w); return box(L2, H2, E2, m, x, y, z, c[1]); } }; };
+    const panneau = (txt, fond, coul, w = 512, h = 64, police = `bold 34px ${sans}`) => tex(w, h, (c, W2, H2) => { c.fillStyle = fond; c.fillRect(0, 0, W2, H2); c.fillStyle = coul; c.font = police; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(txt, W2 / 2, H2 / 2 + 2); });
+    const lumi = (t, j = .35) => lu(mat({ map: t, roughness: .6, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: j }), j);
 
-    /* --- le couloir de sortie, à travers le rez-de-chaussée de l'École du Ski : x -35.35 → -32.65, jusqu'à la porte battante --- */
-    murX(-35.35, ZN, -3.3, blancM); murX(-32.65, ZN, -3.3, blancM); plafond(-35.35, -32.65, ZN, -3.3); solTuiles(-35.35, -32.65, ZN, -3.2);
-    for (let z = -14; z > ZN + 0 && z < -4; z += 4) box(.45, .05, .9, neon, -34, 3.03, z);
-    box(2.7, .4, .12, blancM, -34, 2.85, -3.3);   // (le linteau, au-dessus de la porte)
+    /* --- les devantures en relief : la vitrine en retrait, ses montants de bois, le verre, la porte, l'enseigne ; derrière le verre, la boutique éclairée --- */
+    const MARCH = {
+      pain: (c, w, h) => { c.fillStyle = "#e8d8b8"; c.fillRect(0, 0, w, h); for (let s = 0; s < 4; s++) { c.fillStyle = "#8a5a32"; c.fillRect(0, 40 + s * 52, w, 6); for (let x = 8; x < w - 20; x += 22 + al() * 10) { c.fillStyle = ["#b8783a", "#a8682e", "#c8904a", "#9a5a24"][(x | 0) % 4]; c.beginPath(); c.ellipse(x + 8, 34 + s * 52, 10 + al() * 4, 6, 0, 0, 7); c.fill(); c.fillStyle = "rgba(255,230,180,.4)"; c.fillRect(x + 4, 30 + s * 52, 6, 2); } } },
+      gateau: (c, w, h) => { c.fillStyle = "#f6eee8"; c.fillRect(0, 0, w, h); for (let s = 0; s < 4; s++) { c.fillStyle = "#c8b8a8"; c.fillRect(0, 44 + s * 52, w, 4); for (let x = 10; x < w - 16; x += 26) { c.fillStyle = ["#f0c8d8", "#e8a040", "#8a4a2a", "#fff", "#c83a5a"][(x / 26 | 0) % 5]; c.fillRect(x, 28 + s * 52, 18, 14); c.fillStyle = "#fff"; c.fillRect(x, 26 + s * 52, 18, 3); } } },
+      optique: (c, w, h) => { c.fillStyle = "#f2f2f0"; c.fillRect(0, 0, w, h); for (let s = 0; s < 5; s++) { c.fillStyle = "#d0d0d0"; c.fillRect(0, 40 + s * 42, w, 3); for (let x = 12; x < w - 30; x += 40) { c.strokeStyle = ["#1a1a1a", "#7a4a2a", "#2a4a8a", "#8a2a2a"][(x / 40 | 0) % 4]; c.lineWidth = 3; c.beginPath(); c.arc(x + 6, 30 + s * 42, 6, 0, 7); c.arc(x + 22, 30 + s * 42, 6, 0, 7); c.stroke(); } } c.fillStyle = "#c8a878"; c.fillRect(w * .62, 20, w * .3, 150); c.fillStyle = "#2a2a2a"; c.font = `bold 20px ${sans}`; c.fillText("Ray-Ban", w * .66, 90); },
+      souv: (c, w, h) => { c.fillStyle = "#e8e0d0"; c.fillRect(0, 0, w, h); for (let s = 0; s < 5; s++) for (let x = 6; x < w - 10; x += 14) { c.fillStyle = ["#c8202a", "#2a5ab8", "#f0c020", "#2a9a4a", "#fff", "#e86a9a"][(x / 14 + s | 0) % 6]; c.fillRect(x, 14 + s * 46, 11, 34); } },
+      ski: (c, w, h) => { c.fillStyle = "#e8e8e4"; c.fillRect(0, 0, w, h); for (let x = 10; x < w - 10; x += 16) { c.fillStyle = ["#c8202a", "#2a5ab8", "#f0c020", "#1a1a1a", "#fff"][(x / 16 | 0) % 5]; c.fillRect(x, 20, 9, h - 30); c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(x + 7, 20, 2, h - 30); } },
+      pharma: (c, w, h) => { c.fillStyle = "#f4f6f4"; c.fillRect(0, 0, w, h); for (let s = 0; s < 5; s++) { c.fillStyle = "#c8ccc8"; c.fillRect(0, 44 + s * 42, w, 3); for (let x = 8; x < w - 12; x += 16) { c.fillStyle = ["#fff", "#2a9a4a", "#2a5ab8", "#e8e8e0", "#c83a3a"][(x / 16 + s | 0) % 5]; c.fillRect(x, 24 + s * 42, 12, 20); } } },
+      chaussures: (c, w, h) => { c.fillStyle = "#d8ccbc"; c.fillRect(0, 0, w, h); for (let s = 0; s < 6; s++) for (let x = 8; x < w - 20; x += 24) { c.fillStyle = ["#1a1a1a", "#c8202a", "#2a5ab8", "#f0f0f0", "#f0c020", "#e86a9a"][(x / 24 + s | 0) % 6]; c.beginPath(); c.ellipse(x + 10, 24 + s * 38, 10, 5, 0, 0, 7); c.fill(); } },
+      kiosque: (c, w, h) => { c.fillStyle = "#e8e4dc"; c.fillRect(0, 0, w, h); for (let i = 0; i < 12; i++) { const x = (i % 4) * (w / 4) + 8, y = (i / 4 | 0) * 80 + 10; c.fillStyle = ["#c8202a", "#2a5ab8", "#1a1a1a", "#f0c020"][i % 4]; c.fillRect(x, y, w / 4 - 16, 66); c.fillStyle = "#fff"; c.fillRect(x + 6, y + 8, w / 4 - 28, 10); } },
+      resto: (c, w, h) => { c.fillStyle = "#6a4a32"; c.fillRect(0, 0, w, h); for (let k = 0; k < 6; k++) { c.fillStyle = "#3a2618"; c.fillRect(20 + k * 80, 120, 50, 100); c.fillStyle = "#f2f2ee"; c.fillRect(14 + k * 80, 110, 62, 8); } c.fillStyle = "rgba(255,210,140,.35)"; c.fillRect(0, 0, w, 80); },
+      vide: (c, w, h) => { c.fillStyle = "#d8d4cc"; c.fillRect(0, 0, w, h); }
+    };
+    const boutique = (p, cote, a0, a1, d) => { reserve(p.nom, cote, a0, a1); const R = repere(p, cote), L2 = a1 - a0, um = (a0 + a1) / 2, H = p.h, PR = 1.3, cadre = mat({ color: d.cadre || 0x5a3418, roughness: .6 });
+      const sens = cote === "xmin" || cote === "zmax" ? -1 : 1;   // (pour garder la gauche à gauche, d'un côté comme de l'autre)
+      const mt = tex(512, 256, MARCH[d.motif] || MARCH.vide); R.plan(L2 - .1, 2.5, lumi(mt, .45), um, 1.25, -PR + .02);   // (le fond de la boutique, éclairé)
+      for (const s of [-1, 1]) { const [x, y, z] = R.pos(um + s * (L2 / 2 - .03), 1.5, -PR / 2); const b = box(cote[0] === "z" ? .06 : PR, 3, cote[0] === "z" ? PR : .06, blancP, x, y, z); void b; }   // (les côtés)
+      { const [x, , z] = R.pos(um, 0, -PR / 2); const s = add(new THREE.PlaneGeometry(cote[0] === "z" ? L2 : PR, cote[0] === "z" ? PR : L2), mat({ map: rep(T.carrelage, 1, 1), roughness: .5 }), x, .015, z); s.rotation.x = -Math.PI / 2; const pl = add(new THREE.PlaneGeometry(cote[0] === "z" ? L2 : PR, cote[0] === "z" ? PR : L2), neon, x, 2.62, z); pl.rotation.x = Math.PI / 2; }
+      // la façade : le soubassement, les montants, le verre, la porte, le bandeau d'enseigne, le mur au-dessus
+      R.boite(L2, .35, .1, cadre, um, .175, 0); R.boite(L2, .12, .1, cadre, um, 2.4, 0);
+      const nm = Math.max(2, Math.round(L2 / 1.3)); for (let k = 0; k <= nm; k++) R.boite(.09, 2.4, .12, cadre, a0 + .05 + k * (L2 - .1) / nm, 1.2, 0);
+      R.plan(L2, 2.05, mat({ color: 0xdcecf2, roughness: .05, metalness: .3, transparent: true, opacity: .14, depthWrite: false }), um, 1.37, .02);
+      const up = d.porte === "gauche" ? a0 + .9 : d.porte === "droite" ? a1 - .9 : um; R.boite(1.0, 2.05, .05, mat({ color: 0xc8dce4, roughness: .05, transparent: true, opacity: .25, depthWrite: false }), up, 1.37, .03); R.boite(.04, .5, .06, mat({ color: 0xb8bcc0, metalness: .7 }), up + sens * .35, 1.15, .1);
+      const ens = panneau(d.nom, d.fond, d.coul, 1024, 96, d.police || `bold 52px ${sans}`); R.boite(L2, .5, .1, cadre, um, 2.68, .02); R.plan(L2 - .1, .42, lumi(ens, .5), um, 2.68, .08);
+      if (H > 2.95) R.plan(L2, H - 2.93, matMur(p.mur, L2, H - 2.93), um, 2.93 + (H - 2.93) / 2, 0);
+      if (d.saillie) { const s2 = panneau(d.saillie, d.fond, d.coul, 256, 96, `bold 40px ${sans}`); for (const s of [1]) { const [x, y, z] = R.pos(a1 - .2, 2.45, .5); const q = box(cote[0] === "z" ? .06 : .9, .45, cote[0] === "z" ? .9 : .06, lumi(s2, .5), x, y, z); void q, s; } } };
 
-    // où l'on est dedans (coordonnées d'origine) : pour marcher, pour la hauteur du sol, pour la vue à la première personne
-    const R1 = (x, z) => x > 82 && x < 98.3 && z > -4.1 && z < -1.5, R2 = (x, z) => x > 79.6 && x < 82.2 && z > -16.8 && z < -1.5,
-      R3 = (x, z) => x > -35.2 && x < 82.3 && z > -21 && z < -16.6, R4 = (x, z) => x > -35.1 && x < -32.9 && z > -16.8 && z < -3.0;
-    return { marche: (x, z) => R1(x, z) || R2(x, z) || R3(x, z) || R4(x, z), dedans: (x, z) => (x > 82 && x < 97.9 && z > -4.2 && z < -1.4) || R2(x, z) || R3(x, z) || (R4(x, z) && z < -3.4),
-      y: (x, z) => R1(x, z) && x > 82.3 ? .5 : R2(x, z) ? (z > -4.4 ? .5 : z > -8 ? .5 * (z + 8) / 3.6 : 0) : null };
+    /* --- le mobilier --- */
+    const ardoise = (x, z, ry, lignes) => { const t = tex(128, 192, (c, w, h) => { c.fillStyle = "#7a5432"; c.fillRect(0, 0, w, h); c.fillStyle = "#1c211e"; c.fillRect(8, 8, w - 16, h - 16); c.fillStyle = "#f4f4ee"; c.font = `bold 16px ${serif}`; c.textAlign = "center"; c.fillText(lignes[0], w / 2, 32); c.font = `12px ${sans}`; lignes.slice(1).forEach((l, i) => c.fillText(l, w / 2, 56 + i * 18)); });
+      const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const m = mat({ map: t, roughness: .9 });
+      for (const sg of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(.62, 1.0, .03), m); b.position.set(0, .48, sg * .17); b.rotation.x = sg * .32; g.add(b); } OBS.push([x, z, .45]); };
+    const OBS = [];
+    const pilier = (x, z, m = blancP, c = .42) => { box(c, 3.3, c, m, x, 1.65, z); OBS.push([x, z, c * .8]); };
+    const poubelle = (x, z) => { cyl(.36, .32, .95, blancP, x, .48, z, 16); cyl(.38, .38, .08, mat({ color: 0xf0d020, roughness: .5 }), x, 1.0, z, 16); OBS.push([x, z, .5]); };
+    const presentoir = (x, z) => { const t = tex(256, 128, MARCH.souv, 2, 1); cyl(.03, .03, 1.9, mat({ color: 0x9a9ea2, metalness: .6 }), x, .95, z, 6); const r = cyl(.28, .28, 1.4, mat({ map: t, roughness: .7 }), x, 1.05, z, 8); void r; OBS.push([x, z, .4]); };
+    const balustrade = (x0, z0, x1, z1, base = true) => { const L2 = Math.hypot(x1 - x0, z1 - z0), a = Math.atan2(z1 - z0, x1 - x0), pin2 = lu(mat({ map: rep(T.pinV, L2 / 3, 1), roughness: .7, emissive: 0xffffff, emissiveMap: rep(T.pinV, L2 / 3, 1), emissiveIntensity: .1 }), .1), cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      if (base) box(L2, .45, .3, blancP, cx, .22, cz, -a); const yb = base ? .45 : 0; box(L2, .08, .14, pin2, cx, yb + .95, cz, -a); box(L2, .06, .1, pin2, cx, yb + .1, cz, -a);
+      const n = Math.round(L2 / .16); for (let k = 0; k <= n; k++) { const t = k / n; box(.09, .85, .04, pin2, x0 + (x1 - x0) * t, yb + .52, z0 + (z1 - z0) * t, -a); } };
+    const banc = (x, z, ry) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const m = mat({ map: rep(T.pinV, 1, 1), roughness: .7 });
+      for (const [w, h, d, y, zz] of [[1.8, .06, .4, .46, 0], [1.8, .4, .05, .75, -.2], [.08, .46, .38, .23, 0]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(0, y, zz); g.add(b); }
+      for (const sx of [-.8, .8]) { const b = new THREE.Mesh(new THREE.BoxGeometry(.08, .46, .38), m); b.position.set(sx, .23, 0); g.add(b); } OBS.push([x, z, 1]); };
+    const sortie = (x, y, z, ry) => { const t = panneau("🏃 SORTIE", "#1a8a3a", "#ffffff", 256, 80, `bold 36px ${sans}`); add(new THREE.PlaneGeometry(.6, .19), lumi(t, .9), x, y, z, ry); };
+    const plafonniers = (p) => { const W2 = p.x1 - p.x0, D2 = p.z1 - p.z0, along = W2 >= D2; const n = Math.max(1, Math.round((along ? W2 : D2) / 4.5));
+      for (let k = 0; k < n; k++) { const t = (k + .5) / n, x = along ? p.x0 + W2 * t : (p.x0 + p.x1) / 2, z = along ? (p.z0 + p.z1) / 2 : p.z0 + D2 * t; box(along ? 1.2 : .5, .05, along ? .5 : 1.2, neon, x, p.h - .03, z); } };
+    const chat = (x, z) => { const m = mat({ color: 0x8a6a4a, roughness: .9 }), g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+      const c1 = new THREE.Mesh(new THREE.SphereGeometry(.22, 10, 8), m); c1.scale.set(1.6, .55, .8); c1.position.y = .12; g.add(c1); const t1 = new THREE.Mesh(new THREE.SphereGeometry(.11, 10, 8), m); t1.position.set(.36, .12, .05); g.add(t1);
+      for (const s of [-1, 1]) { const o = new THREE.Mesh(new THREE.ConeGeometry(.04, .08, 4), m); o.position.set(.38, .22, .05 + s * .05); g.add(o); } const q = new THREE.Mesh(new THREE.CylinderGeometry(.025, .02, .45, 5), m); q.rotation.z = Math.PI / 2; q.position.set(-.5, .05, .1); g.add(q); OBS.push([x, z, .5]); };
+
+    /* --- l'habillage de chaque pièce, d'après la vidéo --- */
+    const E_ = P.find(q => q.nom === "E"), F_ = P.find(q => q.nom === "F"), G_ = P.find(q => q.nom === "G"), H_ = P.find(q => q.nom === "H"), I_ = P.find(q => q.nom === "I"), J_ = P.find(q => q.nom === "J"), K_ = P.find(q => q.nom === "K"), L_ = P.find(q => q.nom === "L"), D_ = P.find(q => q.nom === "D"), B_ = P.find(q => q.nom === "B");
+    // le petit hall gris-bleu : la porte vitrée, toute claire, et l'affichette
+    { const R = repere(B_, "zmax"); reserve("B", "zmax", 75.2, 77.6); R.boite(2.4, .1, .12, noirP, 76.4, 2.2, 0); for (const u of [75.25, 76.4, 77.55]) R.boite(.08, 2.2, .12, noirP, u, 1.1, 0); R.plan(2.3, 2.1, lumi(tex(64, 64, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#ffffff"); g.addColorStop(1, "#e8eef0"); c.fillStyle = g; c.fillRect(0, 0, w, h); }), .9), 76.4, 1.1, -.02);
+      R.plan(2.4, .5, matMur("bleu", 2.4, .5), 76.4, 2.45, 0); const af = panneau("Accès galerie", "#f8f8f4", "#2a2a2a", 256, 128, `bold 26px ${sans}`); repere(B_, "xmax").plan(.5, .3, lumi(af, .3), -5.4, 1.6, .02); }
+    // le couloir blanc : les portes de service, le kiosque
+    { const R = repere(D_, "xmax"), Rg = repere(D_, "xmin"); const porteS = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#f4f2ee"; c.fillRect(0, 0, w, h); c.strokeStyle = "#6a3a20"; c.lineWidth = 6; c.strokeRect(3, 3, w - 6, h - 3); c.fillStyle = "#8a8e92"; c.fillRect(w - 16, 60, 8, 3); c.fillRect(w - 18, 56, 4, 12); }), roughness: .7 });
+      for (const u of [-17.6, -21.4]) R.plan(1.0, 2.1, porteS, u, 1.05, .02); Rg.plan(1.0, 2.1, porteS, -18.2, 1.05, .02);
+      boutique(D_, "xmin", -29.6, -25.4, { nom: "PRESSE · JOURNAUX", fond: "#c8202a", coul: "#fff", motif: "kiosque", porte: "droite" }); sortie(76.5, 2.6, -30.3, 0); }
+    // le hall de l'opticien et des « Pains spéciaux » : en face, à gauche ; les ardoises, la poubelle, les piliers
+    boutique(E_, "zmin", 70.2, 75.4, { nom: "TROMPE L'ŒIL · OPTICIEN", fond: "#1e2a36", coul: "#f2f2ee", motif: "optique", porte: "gauche", cadre: 0x4a5058 });
+    boutique(E_, "zmin", 63.4, 70, { nom: "Pains spéciaux · Viennoiseries · Pâtisserie", fond: "#3a2418", coul: "#f2e2c0", motif: "pain", porte: "droite", police: `italic bold 46px ${serif}` });
+    { const pa = panneau("APOLLO", "#2a2a2a", "#f2f2ee", 256, 64, `bold 34px ${sans}`); repere(E_, "zmin").plan(1.2, .3, lumi(pa, .4), 72.8, 2.95 > E_.h ? 2.9 : 3.0, .2); }
+    ardoise(66.2, -34.6, .3, ["PAINS", "Baguette 1,10", "Tradition 1,30", "Croissant 1,20", "Pain au choc. 1,40"]); ardoise(64.2, -34.4, -.2, ["Menu du jour", "Croque", "Sandwich", "Quiche"]); poubelle(71.6, -31.6);
+    for (const x of [74.8, 66.6]) pilier(x, -30.85); { const Rz = repere(E_, "zmax"); const pS = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#f4f2ee"; c.fillRect(0, 0, w, h); c.strokeStyle = "#6a3a20"; c.lineWidth = 6; c.strokeRect(3, 3, w - 6, h - 3); }), roughness: .7 }); for (const u of [64.5, 69, 72.6]) Rz.plan(1.0, 2.1, pS, u, 1.05, .02); }
+    // le couloir de la fresque : à gauche la grande photo des montagnes, à droite les portes de bois et le chevalet d'affichage
+    { const R = repere(F_, "zmin"), fr = tex(1024, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#b8ccdc"); g.addColorStop(1, "#e8eef2"); c.fillStyle = g; c.fillRect(0, 0, w, h);
+        for (const [x0, hh, col] of [[0, 120, "#8a949e"], [180, 160, "#9aa4ae"], [420, 190, "#7a848e"], [700, 150, "#8a949e"]]) { c.fillStyle = col; c.beginPath(); c.moveTo(x0 - 80, h); c.lineTo(x0 + 120, h - hh); c.lineTo(x0 + 360, h); c.fill(); c.fillStyle = "#f6f8fa"; c.beginPath(); c.moveTo(x0 + 70, h - hh + 40); c.lineTo(x0 + 120, h - hh); c.lineTo(x0 + 175, h - hh + 45); c.fill(); }
+        c.fillStyle = "#3a4a3a"; for (let i = 0; i < 90; i++) { const x = al() * w, y = h - 20 - al() * 40; c.beginPath(); c.moveTo(x, y - 18); c.lineTo(x - 6, y); c.lineTo(x + 6, y); c.fill(); } });
+      R.plan(7.5, 2.0, lumi(fr, .3), 56, 1.55, .03); R.boite(7.7, 2.2, .04, mat({ color: 0xf8f8f6 }), 56, 1.55, .01);
+      const cadreT = tex(128, 96, (c, w, h) => { c.fillStyle = "#5a3a1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8d4dc"; c.fillRect(10, 10, w - 20, h - 20); c.fillStyle = "#6a7a5a"; c.fillRect(10, 50, w - 20, 36); }); R.plan(1.1, .8, lumi(cadreT, .2), 50.5, 1.7, .03);
+      const Rz = repere(F_, "zmax"), pB = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#a8743e"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = "rgba(90,50,20,.25)"; c.fillRect(x, 0, 1, h); } c.fillStyle = "#c8ccd0"; c.fillRect(w - 14, 62, 8, 4); }), roughness: .7 });
+      for (const u of [59.8, 52.4]) { Rz.plan(1.0, 2.15, pB, u, 1.075, .02); Rz.boite(1.2, .08, .1, mat({ color: 0x5a3418 }), u, 2.2, .02); }
+      ardoise(57.6, -32.0, 2.6, ["INFOS", "Programme", "de la semaine", "Animations", "Navettes"]); balustrade(47, -31.6, 49, -31.6, false); }
+    // le hall des cartes postales : les présentoirs, les piliers blancs, la boutique de souvenirs et l'enseigne rouge
+    boutique(G_, "zmin", 37, 45, { nom: "CADEAUX · SOUVENIRS · CARTES POSTALES", fond: "#2a3a6a", coul: "#f0c020", motif: "souv", porte: "gauche" });
+    boutique(G_, "zmax", 35, 41, { nom: "SPORT 2000 · TEXTILE", fond: "#c8202a", coul: "#fff", motif: "chaussures", porte: "droite" });
+    for (const [x, z] of [[44, -34.6], [42.6, -34.9], [40.9, -34.6]]) presentoir(x, z); for (const x of [45.4, 33]) pilier(x, -30.9);
+    // le comptoir de la boulangerie, au fond : la grande vitrine réfrigérée, les gâteaux, le pain sur les étagères ; la barrière de bois blanc
+    { const R = repere(H_, "xmin"); reserve("H", "xmin", -36.4, -30.6); R.plan(5.7, 2.6, lumi(tex(512, 256, MARCH.pain), .45), -33.5, 1.3, .02);
+      const vit = mat({ color: 0xdcecf2, roughness: .05, transparent: true, opacity: .2, depthWrite: false });
+      R.boite(5.2, .9, .7, mat({ color: 0x6a4a2e, roughness: .6 }), -33.5, .45, 1.3); R.boite(5.2, .5, .62, lumi(tex(512, 64, MARCH.gateau), .5), -33.5, 1.12, 1.3); R.boite(5.2, .55, .04, vit, -33.5, 1.17, 1.63); R.boite(5.2, .04, .66, vit, -33.5, 1.45, 1.3); OBS.push([24.9, -35.2, .8], [24.9, -33.5, .8], [24.9, -31.8, .8]);
+      const pa = panneau("La Panetière · Boulangerie · Pâtisserie", "#f2e8d8", "#6a3a1e", 1024, 96, `italic bold 48px ${serif}`); R.plan(5.4, .5, lumi(pa, .45), -33.5, 2.75, .05); }
+    balustrade(31.6, -27, 31.6, -24.6, true);   // (la barrière de bois blanc, au décroché)
+    // le couloir des grandes fenêtres : à gauche le verre et la balustrade de pin, à droite le pilier rouge et le renfoncement
+    { reserve("I", "zmin", 6, 24); const R = repere(I_, "zmin"), pin2 = mat({ map: rep(T.pinV, 6, 1), roughness: .7 });
+      R.boite(18, .5, .2, pin2, 15, .25, 0); R.boite(18, .4, .2, blancP, 15, 2.7, 0); R.plan(18, 2.0, mat({ color: 0xdcecf2, roughness: .05, transparent: true, opacity: .1, depthWrite: false }), 15, 1.5, .02);
+      for (let u = 6.1; u < 24; u += 2.25) R.boite(.12, 2.0, .16, pin2, u, 1.5, .02); balustrade(6.2, -26.15, 23.8, -26.15, false);
+      pilier(17.2, -22.75, mat({ color: 0xc8202a, roughness: .6 }), .5); const Rz = repere(I_, "zmax"); Rz.boite(1.6, 2.4, .05, mat({ color: 0x3a3e44, roughness: .8 }), 11.5, 1.2, .02);
+      for (const [x, z, h] of [[9, -31.5, 14], [15, -35, 12], [19.5, -32, 11]]) sapin(x, z, h, melezeM); bouleau(12.5, -30, 10); }
+    // l'affiche Intersport au bout, sur les lambris ; à droite la pharmacie et son présentoir Nutergia ; à gauche la balustrade de pin
+    { const R = repere(J_, "xmin"); R.boite(6, 1.1, .04, mat({ map: rep(T.pinV, 3, 1), roughness: .7 }), -23.5, .55, .02);
+      const af = tex(1024, 512, (c, w, h) => { c.fillStyle = "#f4f4f2"; c.fillRect(0, 0, w, h); c.fillStyle = "#1a1a1a"; c.fillRect(0, 0, w, 14); c.fillRect(0, h - 14, w, 14);
+        c.fillStyle = "#c8202a"; c.font = `bold 64px ${sans}`; c.textAlign = "center"; c.fillText("PLUS TÔT VOUS RÉSERVEZ", w / 2, 100); c.fillStyle = "#2a2a2a"; c.font = `italic 34px ${sans}`; c.fillText("THE EARLIER YOU BOOK", w / 2, 150);
+        c.fillStyle = "#1a3a8a"; c.font = `italic bold 130px ${sans}`; c.fillText("intersport.fr", w / 2, 300); c.fillStyle = "#2a2a2a"; c.font = `28px ${sans}`; c.fillText("sur la location de skis en ligne", w / 2, 350); c.fillStyle = "#c8202a"; c.font = `bold 64px ${sans}`; c.fillText("MOINS VOUS PAYEZ !", w / 2, 440); });
+      R.boite(4.2, 2.1, .06, noirP, -24.4, 2.15, .03); R.plan(4.0, 1.95, lumi(af, .45), -24.4, 2.15, .07);
+      boutique(J_, "xmax", -22, -16.8, { nom: "PHARMACIE DU CORBIER", fond: "#2a9a4a", coul: "#fff", motif: "pharma", porte: "gauche", cadre: 0xe8e8e4 });
+      { const Rx = repere(J_, "xmax"), ct = panneau("✚", "#2a9a4a", "#ffffff", 128, 128, `bold 100px ${sans}`); const [x, y, z] = Rx.pos(-17.1, 2.4, .5); box(.06, .6, .6, lumi(ct, .8), x, y, z); }
+      { const nt = tex(128, 256, (c, w, h) => { c.fillStyle = "#1a5ab8"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 18px ${sans}`; c.fillText("Nutergia", 14, 30); c.font = `bold 14px ${sans}`; c.fillText("ERGYPHILUS", 14, 70); c.font = `11px ${sans}`; c.fillText("L'expertise", 14, 92); c.fillText("probiotiques", 14, 106); c.fillStyle = "#e8eef4"; c.fillRect(20, 130, 88, 90); c.fillStyle = "#2a9a4a"; c.fillRect(44, 150, 40, 50); });
+        box(.9, 1.9, .5, lumi(nt, .35), 4.4, .95, -16.9); OBS.push([4.4, -16.9, .6]); }
+      pilier(5.6, -22.6); }
+    // le couloir de l'armoire à incendie : les placards de pin, l'armoire rouge, le chat qui dort
+    { const R = repere(K_, "zmax"); R.boite(1.6, 2.2, .5, mat({ map: rep(T.pinV, 1, 1), roughness: .7 }), -4.2, 1.1, .25); OBS.push([-4.2, -16.7, .9]);
+      const ria = panneau("R.I.A.", "#c8202a", "#ffffff", 128, 96, `bold 30px ${sans}`); R.boite(.9, .7, .28, mat({ color: 0xc8202a, roughness: .5 }), -7.2, 1.7, .14); R.plan(.8, .6, lumi(ria, .3), -7.2, 1.7, .29);
+      R.boite(1.5, 2.3, .06, mat({ map: rep(T.pinV, 1, 1) }), -10, 1.15, .03); const Rz = repere(K_, "zmin"); Rz.plan(1.0, 2.1, mat({ color: 0xf4f2ee }), -4.5, 1.05, .02); balustrade(-14.5, -20.1, -7.5, -20.1, true);
+      chat(-11.5, -17.0); sortie(-15.9, 2.5, -18.4, Math.PI / 2); }
+    // le hall final : Cadeaux Souvenirs au fond, la vitrine aux cadres rouges et Skiset, les chaussures, l'ardoise du « 1550 »
+    boutique(L_, "xmin", -25.8, -19.2, { nom: "Cadeaux · Souvenirs", fond: "#f2f2ee", coul: "#2a3a6a", motif: "souv", porte: "droite", police: `italic bold 56px ${serif}` });
+    boutique(L_, "zmin", -30, -24, { nom: "SKISET · LOCATION DE SKIS", fond: "#1a1a1a", coul: "#f0c020", motif: "ski", porte: "gauche", saillie: "SKISET" });
+    { const R = repere(L_, "zmin"); reserve("L", "zmin", -23.6, -17); R.boite(6.6, 3.3, .04, mat({ color: 0x4a4c54, roughness: .7 }), -20.3, 1.65, .02); for (const u of [-22.4, -20.3, -18.2]) { R.boite(1.4, 1.1, .05, mat({ color: 0xd8202a, roughness: .5 }), u, 1.6, .05); R.plan(1.2, .9, lumi(tex(128, 96, MARCH.souv), .4), u, 1.6, .08); } }
+    ardoise(-22, -21.6, .9, ["Le 1550", "Vente à emporter", "Crêpes", "Gaufres", "Glaces", "Paninis"]); for (const [x, z] of [[-24.5, -17.6], [-26.4, -17.9]]) presentoir(x, z); pilier(-17.4, -25.4);
+
+    /* --- les murs, les sols, les plafonds de chaque pièce (les murs : la face intérieure habillée, l'extérieure en crépi) --- */
+    const moins = (a0, a1, trous) => { let seg = [[a0, a1]]; for (const [b0, b1] of trous) seg = seg.flatMap(([s0, s1]) => b1 <= s0 || b0 >= s1 ? [[s0, s1]] : [[s0, Math.max(s0, b0)], [Math.min(s1, b1), s1]].filter(([u, v]) => v - u > .02)); return seg; };
+    for (const p of P) { const H = p.h;
+      for (const cote of ["zmin", "zmax", "xmin", "xmax"]) { const [a0, a1] = cote[0] === "z" ? [p.x0, p.x1] : [p.z0, p.z1], ouv = p.ouv[cote] || [], res = RES[p.nom + cote] || [];
+        for (const [s0, s1] of moins(a0, a1, ouv)) SEGS.push({ p, cote, s0, s1 });
+        for (const [s0, s1] of moins(a0, a1, [...ouv, ...res])) { const L2 = s1 - s0, mi = matMur(p.mur, L2, H), c = (s0 + s1) / 2;
+          const M6 = [exterieur, exterieur, exterieur, exterieur, exterieur, exterieur]; M6[{ zmin: 4, zmax: 5, xmin: 1, xmax: 0 }[cote]] = mi;   /* (xmin/xmax : le miroir de la scène retourne les faces) */
+          const b = new THREE.Mesh(cote[0] === "z" ? new THREE.BoxGeometry(L2, H, .14) : new THREE.BoxGeometry(.14, H, L2), M6);
+          b.position.set(cote[0] === "z" ? c : cote === "xmin" ? p.x0 - .07 : p.x1 + .07, H / 2, cote[0] === "z" ? (cote === "zmin" ? p.z0 - .07 : p.z1 + .07) : c); scene.add(b); }
+        for (const [o0, o1] of ouv) { const hv = Math.min(H, hVois(p, cote, (o0 + o1) / 2)) - .3; if (H - hv > .05) { const L2 = o1 - o0, c = (o0 + o1) / 2, mi = matMur(p.mur, L2, H - hv); const b = new THREE.Mesh(cote[0] === "z" ? new THREE.BoxGeometry(L2, H - hv, .14) : new THREE.BoxGeometry(.14, H - hv, L2), mi); b.position.set(cote[0] === "z" ? c : cote === "xmin" ? p.x0 - .07 : p.x1 + .07, hv + (H - hv) / 2, cote[0] === "z" ? (cote === "zmin" ? p.z0 - .07 : p.z1 + .07) : c); scene.add(b); } } }
+      const W2 = p.x1 - p.x0, D2 = p.z1 - p.z0, cx = (p.x0 + p.x1) / 2, cz = (p.z0 + p.z1) / 2;
+      const st = rep(T[p.sol], W2 / (p.sol === "moquette" ? 3 : 2.4), D2 / (p.sol === "moquette" ? 3 : 2.4)), sm = lu(mat({ map: st, roughness: p.sol === "moquette" ? .95 : .35, metalness: p.sol === "moquette" ? 0 : .08, emissive: 0xffffff, emissiveMap: st, emissiveIntensity: .1 }), .1);
+      if (p.pente) { const [xa, ya, xb, yb] = p.pente, yy = (x) => ya + (yb - ya) * (x - xa) / (xb - xa) + .02, g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute([-p.x0, yy(p.x0), p.z0, -p.x1, yy(p.x1), p.z0, -p.x0, yy(p.x0), p.z1, -p.x1, yy(p.x1), p.z1], 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 1, 1], 2)); g.setIndex([0, 1, 2, 1, 3, 2]);   /* (déjà retourné : le miroir ne touche pas aux sommets) */ g.computeVertexNormals(); const s = new THREE.Mesh(g, sm); s.receiveShadow = true; scene.add(s); }
+      else { const s = add(new THREE.PlaneGeometry(W2, D2), sm, cx, .02, cz); s.rotation.x = -Math.PI / 2; }
+      const pt = p.plaf === "sombre" ? rep(T.sombre, W2 / 2, D2 / 2) : rep(T.dalles, W2 / 2.4, D2 / 2.4), pm = lu(mat({ map: pt, roughness: .9, emissive: 0xffffff, emissiveMap: pt, emissiveIntensity: .14 }), .14);
+      const c6 = new THREE.Mesh(new THREE.BoxGeometry(W2 + .28, .12, D2 + .28), [exterieur, exterieur, mat({ color: 0x5a5852, roughness: .95 }), pm, exterieur, exterieur]); c6.position.set(cx, H + .06, cz); scene.add(c6);
+      if (p.plaf === "sombre") { const along = W2 >= D2; for (let k = .8; k < (along ? W2 : D2); k += 1.4) box(along ? .14 : W2, .16, along ? D2 : .14, noirP, along ? p.x0 + k : cx, H - .08, along ? cz : p.z0 + k); }
+      plafonniers(p); }
+
+    // où l'on est dedans (coordonnées d'origine)
+    const PAS = (x, z) => x > 82 && x < 98.3 && z > -4.1 && z < -1.5;
+    const dans = (x, z) => P.find(p => x >= p.x0 && x <= p.x1 && z >= p.z0 && z <= p.z1);
+    const contreMur = (x, z) => SEGS.some(({ p, cote, s0, s1 }) => { const u = cote[0] === "z" ? x : z, d = cote === "zmin" ? z - p.z0 : cote === "zmax" ? p.z1 - z : cote === "xmin" ? x - p.x0 : p.x1 - x; return d < .3 && d > -.3 && u > s0 - .25 && u < s1 + .25; });
+    return { marche: (x, z) => PAS(x, z) || (!!dans(x, z) && !contreMur(x, z) && !OBS.some(([a, b, r]) => (x - a) ** 2 + (z - b) ** 2 < r * r)),
+      dedans: (x, z) => (x > 82 && x < 97.9 && z > -4.2 && z < -1.4) || (!!dans(x, z) && !(z > -3.6 && x < -32 && x > -36)),
+      y: (x, z) => { if (PAS(x, z) && x > 82.4) return .5; const p = dans(x, z); if (p && p.pente) { const [xa, ya, xb, yb] = p.pente; return ya + (yb - ya) * Math.min(1, Math.max(0, (x - xa) / (xb - xa))); } return null; } };
   })();
   { let tP = 0; const a2 = L.anim; L.anim = (tm) => { try { a2 && a2(tm); } catch (e) {} const dt = Math.min(.1, (tm - (tP || tm)) / 1000); tP = tm; const moi = M && M.gens && M.gens.get(M.moiNum), p = moi && moi.g && moi.g.position;
       for (const d of PORTES) { const prox = p && Math.hypot(p.x - d.g.position.x, p.z - d.g.position.z) < 2.6; d.a += ((prox ? 1.3 : 0) - d.a) * Math.min(1, dt * 4); d.g.rotation.y = -(d.base + d.sens * d.a); } }; }
   L.premiereIci = (x, z) => GAL.dedans(-x, z);
 
-  L.limites = (x, z) => libre(x, z) && (GAL.marche(x, z) || (x > -48 && x < -10 && z > -3.0 && z < 7.6) || (x > 82.6 && x < 98 && z > .3 && z < 16.2 && !(x > 87.2 && x < 92.8 && z < 6)) || (x > 98.2 && x < 169.8 && z > -4.1 && z < 16.2) || (x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
+  L.limites = (x, z) => libre(x, z) && (GAL.marche(x, z) || (x > -48 && x < -10 && z > -3.3 && z < 7.6) || (x > 82.6 && x < 98 && z > .3 && z < 16.2 && !(x > 87.2 && x < 92.8 && z < 6)) || (x > 98.2 && x < 169.8 && z > -4.1 && z < 16.2) || (x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
   L.hauteur = (x, z) => { const ox = -x; const gy = GAL.y(ox, z); if (gy !== null) return gy; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
