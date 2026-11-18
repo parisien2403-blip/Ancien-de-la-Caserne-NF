@@ -667,7 +667,7 @@ function construireCorbier(A, L, scene) {
       cyl(.07, .07, 2.8, mat({ color: 0x7a5a3a }), 86.4, 1.4, 3.6, 6); for (const [y, c2, d] of [[2.5, 0x3a6ab8, 1], [2.15, 0xd8b850, -1], [1.8, 0xf2f2ee, 1], [1.45, 0xd8b850, -1]]) box(.9, .2, .05, mat({ color: c2 }), 86.4 + d * .4, y, 3.6); OB.push([86.4, 3.6, .3]);
       // les arbres
       bouleau(83.3, -7.5, 11); sapin(97, -15.5, 14, melezeM); { const rx = mat({ color: 0xd8862a, roughness: .9 }), vx = mat({ color: 0x6a8a2a, roughness: .9 }); cyl(.15, .22, 6, mat({ color: 0x6a5a4a }), 83.4, 3, -11.5, 7); for (let k = 0; k < 7; k++) add(new THREE.IcosahedronGeometry(1.3 + al(), 1), k % 2 ? rx : vx, 83.6 + al() * 1.6, 5 + al() * 3, -11.5 + (al() - .5) * 2.4); }
-      barriere(83.8, -1.2, 83.8, -14); barriere(96.2, -1.2, 96.2, -12); jardiniere(84.8, -.7);   // (la barrière de bois au bord du creux, ses géraniums)
+      barriere(83.8, -4.7, 83.8, -14); barriere(96.2, -4.7, 96.2, -12); jardiniere(84.8, -.7);   // (la barrière de bois au bord du creux, ses géraniums)
       /* (10.126, d'après le dessin) la passerelle couverte, droite : elle part du flanc du Yéti, passe devant le haut de l'escalier et entre dans le bout du porche
          des balcons de la tour (reculée), qu'elle ferme : on y entre par des portes battantes, depuis le porche */
       { const xa = 82.4, xb = 108, cx = (xa + xb) / 2, W = xb - xa, zc = -2.8, yP = 0, bardT2 = tT(256, 64, (c, w, h) => { c.fillStyle = "#8a6a52"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8 % 2) * 6; x < w; x += 12) { c.fillStyle = ["#9a7a60", "#7a5a44", "#a88a6e"][(x + y) % 3]; c.fillRect(x, y, 11, 7); } }, 6, 2);
@@ -726,8 +726,14 @@ function construireCorbier(A, L, scene) {
       box(W, .16, .16, noirP, cx, 3.0, zc);   // (la poutre faîtière, sombre)
       const solG = tex(1024, 128, (c, w, h) => { c.fillStyle = "#3a2216"; c.fillRect(0, 0, w, h); bruit(c, w, h, 6000, .18, ["#2a180e", "#4a2e1e"]);   /* (le balatum marron foncé, ses pastilles rondes antidérapantes) */
         for (let y = 5; y < h; y += 10) for (let x = (y / 10 % 2) * 5 + 3; x < w; x += 10) { c.fillStyle = "#24140a"; c.beginPath(); c.arc(x + .6, y + .6, 2.6, 0, 7); c.fill(); c.fillStyle = "#5a3826"; c.beginPath(); c.arc(x, y, 2.4, 0, 7); c.fill(); c.fillStyle = "rgba(255,220,180,.18)"; c.beginPath(); c.arc(x - .7, y - .7, 1, 0, 7); c.fill(); }
-        for (let x = 20; x < w; x += 84) { c.fillStyle = "rgba(255,226,170,.55)"; c.fillRect(x, 50, 54, 26); } }, W / 7, 1);
+      }, W / 7, 1);
       const sg2 = add(new THREE.PlaneGeometry(W, 2.9), mat({ map: solG, roughness: .9 }), cx, .51, zc); sg2.rotation.x = -Math.PI / 2;
+      /* (10.131) les taches de soleil : la lumière des fenêtres posée sur le balatum, en biais, aux bords adoucis ; elles s'en vont la nuit */
+      { const ST = tex(512, 128, (c, w, h) => { c.clearRect(0, 0, w, h); c.filter = "blur(3px)"; for (let x = 6; x < w; x += 64) { const g = c.createLinearGradient(0, 30, 0, 98); g.addColorStop(0, "rgba(255,236,190,.0)"); g.addColorStop(.2, "rgba(255,236,190,.85)"); g.addColorStop(.8, "rgba(255,240,205,.95)"); g.addColorStop(1, "rgba(255,236,190,.0)");
+            c.fillStyle = g; c.beginPath(); c.moveTo(x + 14, 34); c.lineTo(x + 54, 34); c.lineTo(x + 44, 94); c.lineTo(x + 4, 94); c.closePath(); c.fill(); c.fillStyle = "rgba(60,40,20,.5)"; c.fillRect(x + 30, 34, 3, 60); } c.filter = "none"; }, W / 9, 1);
+        const sm = new THREE.MeshBasicMaterial({ map: ST, transparent: true, opacity: .8, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+        const so = add(new THREE.PlaneGeometry(W, 1.4), sm, cx, .515, zc + .25); so.rotation.x = -Math.PI / 2; so.renderOrder = 2; L.solPasserelle = so;
+        const a4 = L.anim; L.anim = (tm) => { try { a4 && a4(tm); } catch (e) {} const v = !L.nuit && !(M && M.hiver && false); if (so.visible !== v) so.visible = v; }; }
       // le pignon de bois sombre, au bout côté Yéti, et son ouverture ; la boîte jaune, à droite ; le panneau rouge suspendu
       const sb = mat({ map: rep(T.sombre, 2, 1), roughness: .8 }); for (const sz of [-1.25, 1.25]) box(.12, 2.4, .7, sb, xa + .06, .5 + 1.2, zc + sz); box(.12, .5, 3.2, sb, xa + .06, .5 + 2.15, zc);
       { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute([-(xa + .13), 2.9, zc - 1.6, -(xa + .13), 2.9, zc + 1.6, -(xa + .13), 3.75, zc], 3)); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat({ map: T.sombre, side: THREE.DoubleSide })); scene.add(m); }
