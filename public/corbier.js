@@ -24,8 +24,17 @@ function construireCorbier(A, L, scene) {
   const boisRouge = planches("#8a4a2c", "255,190,150"), boisGris = planches("#7a6a58", "220,210,190"), boisSombre = planches("#4a2c1c", "200,140,100");
   const facR = mat({ map: boisRouge }), facG = mat({ map: boisGris }), facS = mat({ map: boisSombre }), boisC = mat({ color: 0x6a3e22, roughness: .7 }), blancB = mat({ color: 0xece8e0, roughness: .8 });
   const deckT = tT(256, 256, (c, w, h) => { c.fillStyle = "#a08670"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) { const k = (y * 7) % 5; c.fillStyle = `rgba(${k % 2 ? "255,240,220" : "60,40,30"},${.06 + k * .02})`; c.fillRect(0, y, w, 15); c.fillStyle = "rgba(40,28,20,.45)"; c.fillRect(0, y + 15, w, 1); for (let x = (y * 3) % 90; x < w; x += 90 + (y % 40)) { c.fillStyle = "rgba(40,28,20,.35)"; c.fillRect(x, y, 1, 15); } } }, 6, 2);
-  const gravT = tT(256, 256, (c, w, h) => { c.fillStyle = "#b8b2a6"; c.fillRect(0, 0, w, h); for (let i = 0; i < 2600; i++) { c.fillStyle = ["#9a948a", "#d0cabe", "#88827a", "#c4bcae"][i % 4]; c.fillRect(al() * w, al() * h, 2, 2); } }, 30, 6);
-  const herbeT = tT(256, 256, (c, w, h) => { c.fillStyle = "#6a8a3a"; c.fillRect(0, 0, w, h); for (let i = 0; i < 2600; i++) { c.fillStyle = ["#5a7a2e", "#7a9a46", "#8aa04a", "#4a6a26"][i % 4]; c.fillRect(al() * w, al() * h, 2, 3); } }, 60, 30);
+  /* (10.111) le chemin de terre battue : le fond beige-ocre, les cailloux, les graviers clairs, les traces plus sombres, quelques touffes au bord */
+  const gravT = tT(512, 512, (c, w, h) => { c.fillStyle = "#b8a88e"; c.fillRect(0, 0, w, h); for (let i = 0; i < 90; i++) { c.fillStyle = `rgba(${al() < .5 ? "120,100,70" : "220,210,190"},${.06 + al() * .08})`; c.beginPath(); c.ellipse(al() * w, al() * h, 20 + al() * 60, 8 + al() * 26, al() * 3, 0, 7); c.fill(); }
+    for (let i = 0; i < 5200; i++) { const r = .6 + al() * 1.8; c.fillStyle = ["#8a7a62", "#d8ccb4", "#6e6252", "#c4b498", "#9a9088", "#e6dccb"][i % 6]; c.beginPath(); c.arc(al() * w, al() * h, r, 0, 7); c.fill(); }
+    for (let i = 0; i < 70; i++) { const x = al() * w, y = al() * h, r = 2 + al() * 4; c.fillStyle = ["#a8a098", "#8c847a", "#c8c0b4"][i % 3]; c.beginPath(); c.ellipse(x, y, r * 1.3, r, al() * 3, 0, 7); c.fill(); c.fillStyle = "rgba(40,30,20,.25)"; c.beginPath(); c.ellipse(x + 1, y + 1.5, r * 1.2, r * .6, 0, 0, 7); c.fill(); } }, 22, 5);
+  /* l'herbe : les taches plus claires et plus sombres, les brins dressés, des touffes jaunies, quelques fleurs blanches et jaunes */
+  const herbeT = tT(512, 512, (c, w, h) => { c.fillStyle = "#5f8434"; c.fillRect(0, 0, w, h); for (let i = 0; i < 110; i++) { c.fillStyle = `rgba(${["70,110,40", "120,150,60", "150,140,70", "40,80,30"][i % 4]},.18)`; c.beginPath(); c.ellipse(al() * w, al() * h, 18 + al() * 50, 12 + al() * 30, al() * 3, 0, 7); c.fill(); }
+    c.lineWidth = 1.4; for (let i = 0; i < 9000; i++) { const x = al() * w, y = al() * h, l = 3 + al() * 6; c.strokeStyle = ["#4c7028", "#6e9a3c", "#86a84a", "#3c5e22", "#9aa858"][i % 5]; c.beginPath(); c.moveTo(x, y); c.lineTo(x + (al() - .5) * 2.5, y - l); c.stroke(); }
+    for (let i = 0; i < 160; i++) { c.fillStyle = ["#f4f2ea", "#f0d040", "#e8e0f0"][i % 3]; c.beginPath(); c.arc(al() * w, al() * h, 1.2, 0, 7); c.fill(); } }, 50, 25);
+  /* le bardage du bandeau : les planches verticales de mélèze, grisées par le soleil, les veines plus claires, les joints sombres */
+  const bardT = tT(256, 128, (c, w, h) => { c.fillStyle = "#7e6a56"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 6) { const k = (x * 7 % 11) / 11; c.fillStyle = `rgba(${k > .5 ? "200,190,175" : "70,50,35"},${.12 + k * .2})`; c.fillRect(x, 0, 5, h); c.fillStyle = "rgba(30,20,12,.45)"; c.fillRect(x + 5, 0, 1, h); }
+    for (let i = 0; i < 200; i++) { c.fillStyle = `rgba(${al() < .5 ? "230,225,210" : "50,35,25"},.12)`; c.fillRect(al() * w, al() * h, 1, 8 + al() * 30); } c.fillStyle = "rgba(20,12,8,.35)"; c.fillRect(0, h - 6, w, 6); }, 1, 1);
   const dalleT = tT(256, 256, (c, w, h) => { c.fillStyle = "#d8ccb4"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 32) for (let x = (y / 32 % 2) * 24; x < w; x += 48) { c.fillStyle = ["#e0d4bc", "#cfc2a8", "#d8cab0"][(x + y) % 3]; c.fillRect(x + 1, y + 1, 46, 30); } }, 4, 2);
 
   /* ---------- le sol : le platelage de la promenade, le parking de gravier, l'herbe, et la vallée qui descend ---------- */
@@ -154,7 +163,7 @@ function construireCorbier(A, L, scene) {
   const residence = (x0, x1, zf, niv, fac, o = {}) => { const W = x1 - x0, cx = (x0 + x1) / 2, HR = 3.4, HE = 2.8, H = HR + niv * HE, D = 12;
     box(W, H, D, facS, cx, H / 2, zf - D / 2 - .6);   // le corps du bâtiment
     box(W + .6, .25, D + 1.6, boisC, cx, H + 1.2, zf - D / 2);   // le toit
-    { const f = box(W + .6, 2.2, .35, fac, cx, H + .3, zf + 1.3); f.material = mat({ map: fac.map.clone(), roughness: .85 }); f.material.map.repeat.set(W / 1.6, 1.4); f.material.map.needsUpdate = true; }   // le grand bandeau de planches qui avance
+    { const f = box(W + .6, 2.2, .35, fac, cx, H + .3, zf + 1.3); f.material = mat({ map: bardT.clone(), roughness: .9 }); f.material.map.repeat.set(W / 3, 1); f.material.map.needsUpdate = true; }   // le grand bandeau de planches qui avance
     box(W + .6, .2, 1.7, boisC, cx, H - .8, zf + .5);   // sa sous-face
     for (let x = x0 + 1.6; x < x1 - .5; x += 3.2) { const s = box(.18, 1.9, .18, boisC, x, H - .3, zf + .9); s.rotation.x = .55; }   // les jambes de force
     const bay = 2.7, nB = Math.floor(W / bay), b0 = cx - nB * bay / 2;
@@ -165,7 +174,9 @@ function construireCorbier(A, L, scene) {
         for (const s of [-1, 1]) box(.14, HE, prof, fm, bx + s * (bay / 2 - .07), y + HE / 2, zf + prof / 2);   // les joues du caisson
         box(bay, .16, prof, fm, bx, y + HE - .08, zf + prof / 2); box(bay, .14, prof, boisC, bx, y + .07, zf + prof / 2);   // le haut, le plancher
         box(bay - .3, .9, .05, verreB, bx, y + .6, zf + prof - .05); box(bay - .2, .07, .1, boisC, bx, y + 1.08, zf + prof - .05);   // le garde-corps vitré, sa main courante
-        if ((i + e) % 2) box(.3, .4, .5, blancB, bx - bay / 2 + .25, y - .05, zf + .25);   // les consoles de béton blanc
+        for (const sg of [-1, 1]) { const cxx = bx + sg * (bay / 2 - .2); box(.32, .55, .12, blancB, cxx, y - .2, zf + prof - .1); box(.32, .14, .55, blancB, cxx, y + .02, zf + prof - .35); box(.14, .3, .3, blancB, cxx - sg * .1, y - .32, zf + prof - .45); }   // (10.111) les consoles en Z de béton blanc, sous chaque caisson, comme sur les photos
+        box(bay - .36, .06, prof - .2, mat({ color: 0x4a2c1c }), bx, y + HE - .2, zf + prof / 2);   // le plafond sombre du caisson
+        for (const sg of [-1, 1]) box(.09, HE - .12, .09, mat({ color: 0x3e2414, roughness: .7 }), bx + sg * (bay / 2 - .12), y + HE / 2, zf + prof - .02);   // les montants foncés, devant
         if (al() < .25) box(bay - .5, .08, .5, mat({ color: [0xd8c8a0, 0xc85040, 0x3a7a5a][i % 3] }), bx, y + HE - .35, zf + prof - .25);   // un store replié
       } }
     return { H, HR }; };
@@ -405,10 +416,24 @@ function construireCorbier(A, L, scene) {
   /* ---------- les arbres : les bouleaux, les mélèzes, les épicéas, à droite au bout et derrière la piscine ---------- */
   const ecorceB = mat({ color: 0xe8e4dc, roughness: .8 }), bouleauM = [mat({ color: 0x8aa04a }), mat({ color: 0xa8b04a }), mat({ color: 0x7a9a3a })], sapinM = mat({ color: 0x2a4a2a, roughness: .9 }), melezeM = mat({ color: 0x6a8a3a });
   const bouleau = (x, z, h = 9) => { cyl(.12, .2, h, ecorceB, x, h / 2, z, 7); for (let k = 0; k < 6; k++) { const s = add(new THREE.IcosahedronGeometry(1.4 + al(), 0), bouleauM[k % 3], x + (al() - .5) * 2.6, h * .55 + al() * h * .45, z + (al() - .5) * 2.6); s.scale.y = 1.4; } OB.push([x, z, .5]); };
-  const sapin = (x, z, h = 12, m = sapinM) => { cyl(.18, .3, h * .3, mat({ color: 0x4a3424 }), x, h * .15, z, 6); for (let k = 0; k < 4; k++) add(new THREE.ConeGeometry(h * (.26 - k * .05), h * .4, 8), m, x, h * (.3 + k * .18), z); OB.push([x, z, .6]); };
+  /* (10.111) l'épicéa : le tronc brun, une dizaine d'étages de branches qui retombent, deux verts, la pointe ; légèrement de travers, chacun le sien */
+  const sapinM2 = mat({ color: 0x1e3a22, roughness: .95 }), troncM = mat({ color: 0x4a3424, roughness: .9 });
+  const sapin = (x, z, h = 12, m = sapinM) => { const y0 = L.hautPiste ? L.hautPiste(x, z) : 0, n = 9; cyl(.14, .32, h * .35, troncM, x, y0 + h * .17, z, 7);
+    for (let k = 0; k < n; k++) { const t = k / n, r = h * (.3 - t * .26) * (.9 + al() * .2), y = y0 + h * (.18 + t * .78); const c = add(new THREE.ConeGeometry(r, h * .2, 9), k % 2 ? m : sapinM2, x + (al() - .5) * .12, y, z + (al() - .5) * .12); c.rotation.y = al() * 6; c.rotation.z = (al() - .5) * .08; }
+    add(new THREE.ConeGeometry(h * .03, h * .12, 6), m, x, y0 + h * 1.0, z); OB.push([x, z, .6]); };
+  const buisson = (x, z, r = 1) => { const y0 = L.hautPiste ? L.hautPiste(x, z) : 0; for (let k = 0; k < 4; k++) { const b = add(new THREE.IcosahedronGeometry(r * (.6 + al() * .4), 1), [mat({ color: 0x3e6a2a, roughness: 1, flatShading: true }), mat({ color: 0x567a30, roughness: 1, flatShading: true }), mat({ color: 0x2e5222, roughness: 1, flatShading: true })][k % 3], x + (al() - .5) * r, y0 + r * .5 + al() * r * .3, z + (al() - .5) * r); b.scale.y = .75; } };
   for (const [x, z] of [[88, 4], [91, 9], [86, 12], [95, 2]]) bouleau(x, z, 9 + al() * 3);
   for (const [x, z, h] of [[93, -6, 14], [98, 6, 12], [-90, -16, 11], [-92, 20, 13], [-40, -14, 12], [24, -18, 15]]) sapin(x, z, h, al() < .4 ? melezeM : sapinM);
   for (let k = 0; k < 14; k++) sapin(-130 + k * 18 + al() * 6, -78 - al() * 30, 14 + al() * 8);   // la forêt, derrière les tours
+  /* (10.111, d'après les photos de la promenade) les arbres et la végétation : les épicéas et mélèzes du talus, au bout côté Yéti et au bout côté piscine, les buissons le long des chemins */
+  for (const [x, z, h] of [[-48, 24, 13], [-44, 27, 11], [-62, 20, 14], [72, 22, 12], [78, 26, 14], [86, 20, 11], [-20, 52, 12], [10, 56, 10]]) sapin(x, z, h, al() < .35 ? melezeM : sapinM);
+  for (let k = 0; k < (PETIT ? 10 : 26); k++) { const x = -60 + al() * 140, z = 22 + al() * 22; if (Math.abs(x - 30) < 14 && z < 34) continue; buisson(x, z, .7 + al() * .7); }
+  /* le mobilier de la promenade : les gros pots rouges et leur petit pin, les barrières de rondins, les bancs de bois contre les vitrines, les jardinières de géraniums roses */
+  { const potR = mat({ color: 0xd84a3a, roughness: .55 }), terreM = mat({ color: 0x3a2a1e }), rondin = mat({ color: 0x9a7a58, roughness: .85 }), fleurR = [mat({ color: 0xe86a9a }), mat({ color: 0xf0a0c0 }), mat({ color: 0xffffff })], vertF = mat({ color: 0x3a6a2a });
+    for (const x of [-30, -6, 18, 42]) { cyl(.7, .5, .75, potR, x, .4, 5.4, 16); cyl(.62, .62, .04, terreM, x, .76, 5.4, 14); cyl(.04, .05, 1.6, mat({ color: 0xd8d0c0 }), x, 1.5, 5.4, 5); for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(.5 - k * .08, 1), [vertF, mat({ color: 0x4a7a32 })][k % 2], x + (al() - .5) * .3, 2.0 + k * .32, 5.4 + (al() - .5) * .3); OB.push([x, 5.4, .9]); }
+    for (const x of [-22, 6, 30]) { for (const sx of [-1.4, 1.4]) { for (const sg of [-1, 1]) { const j = cyl(.06, .06, .9, rondin, x + sx, .4, 6.2, 6); j.rotation.x = sg * .5; } } for (const y of [.45, .7]) { const r = cyl(.08, .08, 3.2, rondin, x, y, 6.2, 8); r.rotation.z = Math.PI / 2; } OB.push([x - 1, 6.2, .5], [x + 1, 6.2, .5]); }
+    for (const x of [-14, 2, 14, 26, 38, 50]) { for (let k = 0; k < 3; k++) box(1.6, .05, .12, boisC, x, .46, .85 + k * .14); for (const sx of [-.7, .7]) box(.08, .46, .4, mat({ color: 0x3a2a1a }), x + sx, .23, 1); box(1.6, .3, .05, boisC, x, .72, .7); OB.push([x, 1, .9]); }
+    for (const x of [-26, 10, 34, 54]) { box(1.8, .4, .5, boisC, x, .2, 6.6); for (let k = 0; k < 14; k++) add(new THREE.IcosahedronGeometry(.12, 0), k % 4 === 3 ? vertF : fleurR[k % 3], x - .8 + al() * 1.6, .48 + al() * .2, 6.6 + (al() - .5) * .35); OB.push([x, 6.6, 1]); } }
 
   /* ---------- l'arrêt du car (pour revenir à Paris) ---------- */
   L.arretCar = { x: 26, z: 13.8 };
