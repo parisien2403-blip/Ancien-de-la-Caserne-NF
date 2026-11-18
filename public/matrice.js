@@ -11585,6 +11585,31 @@ function creerEcto1() {
   // (les tuyaux bleus : sur la photo du flanc)
   g.traverse(o => { if (o.isMesh) o.receiveShadow = true; });
   return g; }
+/* (10.140) le petit train blanc et bleu du Corbier : la locomotive au nez rond et sa grille, la cabine vitrée, trois voitures ouvertes vitrées de bleu,
+   les toits blancs et leurs panneaux « Le Corbier · Les Sybelles » ; l'avant vers les x locaux croissants (comme les bus) */
+function petitTrain(scene, x, z, rot) { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+  const m = (o) => new THREE.MeshStandardMaterial({ roughness: .45, ...o }), blanc = m({ color: 0xf4f4f0 }), bleu = m({ color: 0x1f4fb0 }), noir = m({ color: 0x1a1a1c, roughness: .7 }), chrome = m({ color: 0xd8dcde, metalness: .8, roughness: .25 }), vitre = m({ color: 0x9ab8d8, transparent: true, opacity: .35, roughness: .05 });
+  const b = (w, h, d, mm, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mm); o.position.set(px, py, pz); g.add(o); return o; };
+  const roue = (px, pz) => { const r = new THREE.Mesh(new THREE.CylinderGeometry(.32, .32, .22, 16), noir); r.rotation.x = Math.PI / 2; r.position.set(px, .32, pz); g.add(r); const j = new THREE.Mesh(new THREE.CylinderGeometry(.18, .18, .23, 12), blanc); j.rotation.x = Math.PI / 2; j.position.set(px, .32, pz); g.add(j); };
+  const tc = (txt, w, h, fond, coul, police) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const x2 = c.getContext("2d"); x2.fillStyle = fond; x2.fillRect(0, 0, w, h); x2.fillStyle = coul; x2.font = police; x2.textAlign = "center"; x2.textBaseline = "middle"; x2.fillText(txt, w / 2, h / 2 + 2); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const pan = tc("Le Corbier · Les Sybelles", 512, 64, "#ffffff", "#1f4fb0", "bold 34px Arial");
+  // la locomotive
+  b(3.1, .45, 1.7, bleu, 6.5, .6, 0); for (const sz of [-1, 1]) { roue(5.4, sz * .8); roue(7.4, sz * .8); }
+  { const ch = new THREE.Mesh(new THREE.CylinderGeometry(.62, .62, 1.5, 24), blanc); ch.rotation.z = Math.PI / 2; ch.position.set(7.25, 1.25, 0); g.add(ch);
+    const gr = document.createElement("canvas"); gr.width = gr.height = 128; const c = gr.getContext("2d"); c.fillStyle = "#f4f4f0"; c.fillRect(0, 0, 128, 128); c.strokeStyle = "#1f4fb0"; c.lineWidth = 10; c.beginPath(); c.arc(64, 64, 56, 0, 7); c.stroke(); c.strokeStyle = "#2a2a2c"; c.lineWidth = 3; for (let r = 12; r < 48; r += 7) { c.beginPath(); c.arc(64, 64, r, 0, 7); c.stroke(); } c.fillStyle = "#2a2a2c"; c.beginPath(); c.arc(64, 64, 9, 0, 7); c.fill();
+    const tg = new THREE.CanvasTexture(gr); tg.colorSpace = THREE.SRGBColorSpace; const f = new THREE.Mesh(new THREE.CircleGeometry(.62, 24), m({ map: tg })); f.rotation.y = Math.PI / 2; f.position.set(8.01, 1.25, 0); g.add(f);
+    for (const sz of [-.45, .45]) { const ph = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .12, 12), chrome); ph.rotation.z = Math.PI / 2; ph.position.set(8.05, .82, sz); g.add(ph); }
+    b(.12, .3, 1.75, bleu, 8.0, .45, 0); b(.04, .14, .5, blanc, 8.07, .45, 0); }
+  b(1.7, 1.55, 1.7, blanc, 5.7, 1.6, 0); for (const sz of [-.86, .86]) { b(1.2, .7, .02, vitre, 5.6, 1.9, sz); b(1.7, .12, .03, bleu, 5.7, 1.2, sz); } b(.02, .7, 1.3, vitre, 6.56, 1.9, 0);
+  b(2.0, .1, 2.0, blanc, 5.8, 2.42, 0); { const s = b(1.8, .38, .06, m({ map: pan }), 5.8, 2.7, 0); void s; } b(.06, .35, .06, m({ color: 0xc8202a, emissive: 0xff2010, emissiveIntensity: .6 }), 5.0, 2.65, .7);
+  // les voitures
+  for (const x0 of [3.3, -.7, -4.7]) { b(3.6, .3, 1.75, bleu, x0 - .3, .6, 0); for (const sz of [-1, 1]) { roue(x0 - 1.6, sz * .82); roue(x0 + 1.0, sz * .82); }
+    for (const sz of [-.87, .87]) { b(3.6, .55, .05, blanc, x0 - .3, 1.02, sz); b(3.6, .1, .06, bleu, x0 - .3, 1.18, sz); b(3.6, .7, .02, vitre, x0 - .3, 1.75, sz); }
+    for (const px of [-1.5, -.3, .9]) for (const sz of [-.86, .86]) b(.07, 1.4, .07, blanc, x0 + px - .3 + .6, 1.55, sz);
+    b(.06, 1.3, 1.75, blanc, x0 - 2.1, 1.4, 0); b(3.8, .1, 1.95, blanc, x0 - .3, 2.3, 0); b(3.4, .32, .06, m({ map: pan }), x0 - .3, 2.53, 0);
+    for (const px of [-1.4, -.2, 1.0]) b(.5, .08, 1.5, m({ color: 0x2a4a8a }), x0 + px - .3 + .2, .95, 0);   // (les banquettes)
+    b(.5, .08, .1, noir, x0 + 1.6, .55, 0); }
+  g.userData.train = true; return g; }
 function busCaserne(scene, modele, x, z, rot) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
   const gn = modele === "gendarmerie", L = gn ? 10.6 : 11, W = 2.5, H = gn ? 3.05 : 2.95, Y0 = .35, P = 60;
@@ -13045,8 +13070,8 @@ function interieurBus(g) {
   I.traverse(o => { if (o.isMesh) o.userData.perso = true; }); I.userData.sieges = sieges; return I; }
 function busLigne(L, scene, C) {
   const y0 = (() => { try { return L.hauteur ? L.hauteur(C.ax, C.az) : 0; } catch (e) { return 0; } })();
-  abribus(scene, C.ax, y0, C.az - .3, 0, C.affiche);   // (le dos de l'abribus vers les façades)
-  if (L.limites) { const lim0 = L.limites, z0 = C.az - 1.15, z1 = C.az - .2; L.limites = (a, b) => lim0(a, b) && !(Math.abs(a - C.ax) < 1.95 && b > z0 && b < z1); }   // (l'abribus : sa vitre, son banc — on ne passe pas au travers ; on le contourne par devant, côté rue, où l'on attend le bus)
+  if (!C.poteau) abribus(scene, C.ax, y0, C.az - .3, 0, C.affiche);   // (le dos de l'abribus vers les façades)
+  if (L.limites && !C.poteau) { const lim0 = L.limites, z0 = C.az - 1.15, z1 = C.az - .2; L.limites = (a, b) => lim0(a, b) && !(Math.abs(a - C.ax) < 1.95 && b > z0 && b < z1); }   // (l'abribus : sa vitre, son banc — on ne passe pas au travers ; on le contourne par devant, côté rue, où l'on attend le bus)
   const B = L.busL = { C, phase: "rien", g: null, x: C.x0, v: 0, t: 0 }, xs = C.ax - C.sens * 4.2, obst = { x: C.x0, z: C.voie, L: 11 };
   const PLACE = [.45, .05];   // (notre place : debout dans le couloir, la main sur la barre jaune)
   let avant = 0;
@@ -13057,7 +13082,8 @@ function busLigne(L, scene, C) {
     const A = p.av3; if (A && A.sc && A.sc.parent === p.g) { A.sc.visible = true; if (p.corps) p.corps.visible = false; A.sc.position.set(0, 0, 0); A.sc.rotation.set(0, C.sens > 0 ? Math.PI / 2 : -Math.PI / 2, 0); A.sc.updateMatrixWorld(true);
       try { const haut = new THREE.Vector3(0, 1, 0), bas = new THREE.Vector3(0, -1, 0); viser3D(A, "RightArm", "RightForeArm", haut.clone().addScaledVector(new THREE.Vector3(C.sens, 0, 0), .15).normalize()); viser3D(A, "RightForeArm", "RightHand", haut); viser3D(A, "LeftArm", "LeftForeArm", bas); viser3D(A, "LeftForeArm", "LeftHand", bas); } catch (e) { } } };   // (le bras levé, la main sur la barre)
   const cacher = (c) => { const p = moi(); if (p) { p.g.visible = !c; if (c) { p.cible = null; p.chemin = []; } } };
-  const camInt = () => { M.cine = { gel: true, fov: [72, 84], maj: () => { if (!B.g) return; debout(true); const c = B.g.localToWorld(new THREE.Vector3(3.5, 2.05, .75)), l = B.g.localToWorld(new THREE.Vector3(PLACE[0], 1.35, PLACE[1])); M.camera.position.copy(c); M.camera.lookAt(l); } }; };   // (la vue de l'intérieur, pendant le trajet)
+  const camInt = () => { if (B.train) { M.cine = { gel: true, fov: [60, 72], maj: () => { if (!B.g) return; cacher(true); const c = B.g.localToWorld(new THREE.Vector3(-9, 3.4, 4.2)), l = B.g.localToWorld(new THREE.Vector3(6, 1.2, 0)); M.camera.position.copy(c); M.camera.lookAt(l); } }; return; }
+    M.cine = { gel: true, fov: [72, 84], maj: () => { if (!B.g) return; debout(true); const c = B.g.localToWorld(new THREE.Vector3(3.5, 2.05, .75)), l = B.g.localToWorld(new THREE.Vector3(PLACE[0], 1.35, PLACE[1])); M.camera.position.copy(c); M.camera.lookAt(l); } }; };   // (la vue de l'intérieur, pendant le trajet)
   const camExt = (cache) => { const cp = new THREE.Vector3(C.ax + C.sens * 5.5, y0 + 2.4, C.az + .6), cl = new THREE.Vector3(C.ax - C.sens * 10, y0 + 1.1, C.voie);   // (sur le trottoir, à côté de l'abribus : on voit le bus arriver, s'arrêter)
     M.cine = { gel: true, fov: [62, 76], maj: () => { M.camera.position.copy(cp); M.camera.lookAt(cl); if (B.cache) cacher(true); const p = moi(); if (p && !B.cache) { p.cible = null; p.chemin = []; } } }; };
   const passagers = () => { const I = B.g.userData.int, S = I.userData.sieges.filter(([x, z]) => x < PLACE[0] - .4); const P = [];   // (les passagers derrière nous)
@@ -13067,14 +13093,17 @@ function busLigne(L, scene, C) {
       m.position.set(x, 1.1 - m.userData.hipY + .02, z); m.rotation.y = Math.PI / 2; m.userData.poser("assis", 0); I.add(m); P.push(m); }
     B.g.userData.pass = P; };
   const creer = (x) => { const cc = L.circH || L.circR; if (cc) for (let i = cc.enRoute.length - 1; i >= 0; i--) { const o = cc.enRoute[i]; if (Math.abs(o.g.position.x - x) < 13 && Math.abs(o.g.position.z - C.voie) < 2) { scene.remove(o.g); cc.enRoute.splice(i, 1); } }   // (pas de voiture « dans » le bus quand il apparaît)
-    B.g = busCaserne(scene, "ratp", x, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0 - .12; B.g.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m) m.side = THREE.FrontSide; });
-    B.g.userData.int = interieurBus(B.g); passagers(); B.x = x; B.v = 9; (L.obstRue = L.obstRue || []).push(obst); };
+    B.train = !!(C.train || (B.dest && B.dest.train));
+    if (B.train) { B.g = petitTrain(scene, x, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0; B.g.userData.pass = []; }
+    else { B.g = busCaserne(scene, "ratp", x, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0 - .12; B.g.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m) m.side = THREE.FrontSide; });
+      B.g.userData.int = interieurBus(B.g); passagers(); }
+    B.x = x; B.v = 9; (L.obstRue = L.obstRue || []).push(obst); };
   const fin = () => { if (B.g) { scene.remove(B.g); B.g = null; } L.obstRue = (L.obstRue || []).filter(o => o !== obst); B.phase = "rien"; };
   if (!C.dest) C.dest = [{ vers: C.vers, nom: LIEUX[C.vers] ? LIEUX[C.vers].nom : C.vers, arrivee: C.arrivee, yawA: C.yawA || 0 }];
   B.appeler = (d) => { if (B.phase !== "rien") return; B.dest = d || C.dest[0]; B.phase = "vient"; B.avecMoi = true; B.cache = false; camExt(); };   // (on ne bouge plus : comme une cinématique)
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const dt = avant ? Math.min(.1, (tm - avant) / 1000) : 0; avant = tm;
     if (!M || M.L !== L || L.apo || L.sh || L.gb || L.bttf) { if (B.phase !== "rien") fin(); return; }
-    if (B.phase === "rien" && M.busArrive && M.busArrive.vers === M.lieu) { M.busArrive = null; B.phase = "amene"; B.avecMoi = true; B.cache = true; cacher(true); creer(xs - C.sens * 45); camExt(); }   // (on arrive en bus d'une autre rue : il part de plus haut dans la rue, pas du bout de la carte)
+    if (B.phase === "rien" && M.busArrive && M.busArrive.vers === M.lieu) { B.dest = { train: !!M.busArrive.train }; M.busArrive = null; B.phase = "amene"; B.avecMoi = true; B.cache = true; cacher(true); creer(xs - C.sens * 45); camExt(); }   // (on arrive en bus d'une autre rue : il part de plus haut dans la rue, pas du bout de la carte)
     if (B.phase === "rien") return;
     const circ = L.circH || L.circR;
     if (!B.g) { if (circ && circ.enRoute.some(o => { const e = (o.g.position.x - C.x0) * C.sens; return Math.abs(o.g.position.z - C.voie) < 2 && e > -6 && e < 30; })) return; creer(C.x0); }   // (seulement les voitures de sa voie)   // (on attend que la voie soit libre au départ)
@@ -13087,15 +13116,16 @@ function busLigne(L, scene, C) {
     else if (B.phase === "descend") { if (tm - B.t > 1000 && B.cache) { B.cache = false; const p = moi(); if (p) { p.g.position.set(C.ax, y0, C.az); p.g.visible = true; envoyerWS({ t: "aller", x: C.ax, z: C.az }); } }   // (les portes s'ouvrent : on apparaît à l'arrêt)
       if (tm - B.t > 2600) { B.avecMoi = false; finCine(); placerCamera(true); B.phase = "repart"; B.t = tm; B.v = 0; } }
     else if (B.phase === "part" || B.phase === "repart") { B.v += (10 - B.v) * Math.min(1, dt * .7); freine(); B.x += C.sens * B.v * dt;
-      if (B.phase === "part" && B.avecMoi && tm - B.t > 6000) { const D = B.dest || C.dest[0]; M.busArrive = { vers: D.vers }; debout(false); finCine(); fin(); changerLieu(D.vers, D.arrivee, D.yawA || 0); return; }
+      if (B.phase === "part" && B.avecMoi && tm - B.t > 6000) { const D = B.dest || C.dest[0]; M.busArrive = { vers: D.vers, train: !!(D.train || C.train) }; debout(false); finCine(); fin(); changerLieu(D.vers, D.arrivee, D.yawA || 0); return; }
       if ((B.x - C.x1) * C.sens > 0) { fin(); return; } }
-    B.g.position.x = B.x; obst.x = B.x; for (const m of B.g.userData.pass || []) { const P = m.userData.parts; P.tete.rotation.y = Math.sin(tm / 1500 + m.id) * .3; } };
+    B.g.position.x = B.x; obst.x = B.x; if (C.suitSol && L.hauteur) { try { B.g.position.y = L.hauteur(B.x, C.voie); } catch (e) {} } for (const m of B.g.userData.pass || []) { const P = m.userData.parts; P.tete.rotation.y = Math.sin(tm / 1500 + m.id) * .3; } };
 }
 /* (10.11) le choix de la destination, à l'arrêt de bus : une petite fiche, une ligne par arrêt desservi */
 function choixBus(B) { if (M.choixBusEl) M.choixBusEl.remove(); const d = document.createElement("div"); M.choixBusEl = d;
   d.style.cssText = "position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:30;background:rgba(18,28,24,.94);color:#fff;border-radius:16px;padding:14px 16px;font:15px Lato,Arial,sans-serif;min-width:260px;max-width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)";
   d.innerHTML = `<div style="font-weight:700;margin-bottom:10px">🚌 Où allez-vous ?</div>`;
-  for (const D of B.C.dest) { const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.nom; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#2a8a5a;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
+  const DS = B.C.dest.concat(M.lieu !== "corbier" ? [{ vers: "corbier", nom: "🚂 Le Corbier - Les Sybelles (le petit train)", arrivee: [52, 16], yawA: Math.PI / 2, train: true }] : []);   // (10.140)
+  for (const D of DS) { const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.nom; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#2a8a5a;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
     b.onclick = () => { d.remove(); M.choixBusEl = null; dire(M.moiNum, "🚌 J'attends le bus…"); B.appeler(D); }; d.appendChild(b); }
   const x = document.createElement("button"); x.type = "button"; x.textContent = "Annuler"; x.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:14px Lato,Arial,sans-serif;cursor:pointer"; x.onclick = () => { d.remove(); M.choixBusEl = null; }; d.appendChild(x);
   (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer: () => { d.remove(); M.choixBusEl = null; M.manMenu = null; } };   // (10.15 : à la manette — la croix ou le joystick choisit, A valide, B annule)
@@ -16141,7 +16171,7 @@ function chercherAction(t) {
     else if (M.L.portesRex && M.L.portesRex.some(p => Math.hypot(x - p.x, z - p.z) < 1.1)) { const p = M.L.portesRex.find(p => Math.hypot(x - p.x, z - p.z) < 1.1); a = { type: "rexFilm", cle: p.f.cle, id: p.f.cle, label: `🎬 Entrer dans « ${p.f.titre} »` }; }   // (10.11, le Grand Rex : on entre dans le film par sa porte)
     else if (M.L.actionLieu && (a = M.L.actionLieu(x, z, moi))) ;   // (10.95 : ce que le lieu propose — à Montmartre, la Vespa)
     else if (metroProche(x, z)) a = M.lieu === "corbier" ? { type: "car", label: "🚌 Prendre le car" } : { type: "metro", label: "🚇 Prendre le métro" };   // (10.53) les bouches de métro
-    else if (M.L.busL && Math.hypot(x - M.L.busL.C.ax, z - M.L.busL.C.az) < 2.4 && !M.L.apo && !M.L.sh) a = M.L.busL.phase === "rien" ? { type: "bus", label: "🚌 Prendre le bus" } : null;   // (10.07, l'arrêt de bus)
+    else if (M.L.busL && Math.hypot(x - M.L.busL.C.ax, z - M.L.busL.C.az) < 2.4 && !M.L.apo && !M.L.sh) a = M.L.busL.phase === "rien" ? { type: "bus", label: M.L.busL.C.train ? "🚂 Prendre le petit train" : "🚌 Prendre le bus" } : null;   // (10.07, l'arrêt de bus)
     else if (M.hiver && M.lieu === "grande" && M.L.neigeB && !M.L.nuit && (M.bouleMain ? M.L.neigeB.cible(x, z) : M.L.neigeB.proche(x, z))) a = M.bouleMain ? { type: "neigeLancer", label: "❄️ Lancer la boule de neige" } : { type: "neigeRamasser", label: "❄️ Ramasser de la neige" };   // (10.01, l'hiver : la neige des voitures)
     else if (false && M.cage && M.lieu === "grande" && !enCage() && (Math.hypot(x - PIERRES.x, z - PIERRES.z) < 1.4 || (M.pierreMain && Math.hypot(x - CAGE.x, z - CAGE.z) < 14))) a = M.pierreMain ? { type: "lancerPierre", label: "🪨 Lancer sur 003" } : { type: "pierre", label: "🪨 Ramasser une pierre" };
     else if (M.hwFete && M.hwFete.etat === "jeu") { const G = M.L.gensFete || [], i = G.findIndex(E => E.G.r === "danse" && !E.mort && Math.hypot(E.m.position.x - x, E.m.position.z - z) < 1.6); a = i >= 0 ? { type: "hwTuer", i, label: "🔪 Frapper" } : null; }
