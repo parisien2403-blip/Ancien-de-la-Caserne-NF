@@ -52,7 +52,7 @@ function construireCorbier(A, L, scene) {
   L.hautPiste = HP;
   { const g2 = new THREE.PlaneGeometry(700, 430, 90, 60); g2.rotateX(-Math.PI / 2); const p = g2.attributes.position, C = [];
     for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i) + 236; p.setZ(i, z - 236); p.setY(i, HP(-x, z)); const h = HP(-x, z), n = Math.sin(x * .07) * Math.sin(z * .05);
-      const c2 = z < 25 ? [.42, .56, .24] : h > 40 ? [.62 + n * .05, .52, .3] : [.56 + n * .06, .54 + n * .04, .28]; C.push(...c2); }
+      const c2 = z < 60 ? [.36 + n * .03, .56, .22] :   /* (en face des immeubles : l'herbe verte, comme sur la photo) */ h > 40 ? [.62 + n * .05, .52, .3] : [.56 + n * .06, .54 + n * .04, .28]; C.push(...c2); }
     g2.setAttribute("color", new THREE.Float32BufferAttribute(C, 3)); g2.computeVertexNormals();
     const preT = tT(256, 256, (c, w, h) => { c.fillStyle = "#d8d0b0"; c.fillRect(0, 0, w, h); for (let i = 0; i < 3000; i++) { c.fillStyle = ["#c8c0a0", "#e8e0c0", "#b8b49a", "#d0d8b0"][i % 4]; c.fillRect(al() * w, al() * h, 2, 3); } }, 70, 40);
     const pente = new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ vertexColors: true, map: preT }));   /* (l'herbe rase, roussie par l'automne) */ pente.position.set(0, .01, 236); pente.receiveShadow = true; scene.add(pente); }
@@ -69,6 +69,31 @@ function construireCorbier(A, L, scene) {
     ruban([[-30, 46], [-52, 49], [-34, 53], [-55, 57], [-36, 61], [-58, 65]], 1.6);
     ruban([[10, 31], [6, 46], [-2, 62], [-6, 82]], 2.2);
     for (const [x, z] of [[40, 32], [-8, 44], [-62, 46], [52, 46]]) { const y = HP(x, z); box(2, 2, 2, facS, x, y + 1, z); const t = box(2.5, .1, 2.6, mat({ color: 0x4a5058, metalness: .4 }), x, y + 2.1, z); t.rotation.x = .2; OB.push([x, z, 1.6]); } }
+  /* (10.110, d'après la photo prise du bout côté Yéti) en face des immeubles : la place de gravier clair et sa petite scène de bois couverte, la structure d'accrobranche
+     aux cadres orange et ses filets, les deux trampolines bleus, le grand cercle orange tracé sur l'herbe, le tapis roulant couvert (le tunnel blanc) qui monte à côté de l'office,
+     son enclos au filet vert, les petits bancs le long du chemin */
+  { const gravC = mat({ color: 0xc8c2b4, roughness: 1 }), bois2 = mat({ color: 0xb08a5a, roughness: .8 }), orange = mat({ color: 0xe8701a, roughness: .5 }), filet = mat({ color: 0x3a3a3a, wireframe: true });
+    const place = add(new THREE.PlaneGeometry(22, 9), gravC, 29, HP(29, 26) + .04, 26); place.rotation.x = -Math.PI / 2;
+    // la petite scène
+    { const sx = 32, sz = 25, y = HP(sx, sz); box(6, .5, 4, bois2, sx, y + .25, sz); for (let k = 0; k < 3; k++) box(1.2, .15, .35, bois2, sx - 2 + k * 2, y + .07, sz + 2.2);
+      for (const [dx, dz] of [[-2.8, -1.8], [2.8, -1.8], [-2.8, 1.8], [2.8, 1.8]]) cyl(.07, .07, 2.6, mat({ color: 0xd8d8d0 }), sx + dx, y + 1.8, sz + dz, 6);
+      box(6.4, .1, 4.4, mat({ color: 0xf0ebe0, roughness: .7 }), sx, y + 3.1, sz); OB.push([sx - 1.5, sz, 1.8], [sx + 1.5, sz, 1.8]); }
+    // l'accrobranche : les portiques orange, les poutres, les filets
+    { const ax = 22, az = 31, y = HP(ax, az); for (const dx of [-3, 0, 3]) for (const sg of [-1, 1]) { const p2 = box(.14, 4.6, .14, orange, ax + dx + sg * .6, y + 2.2, az); p2.rotation.z = sg * -.13; }
+      for (const h of [1.6, 3.6]) box(6.6, .1, .1, orange, ax, y + h, az); const f = box(6.2, 1.6, .02, filet, ax, y + 2.6, az + .4); void f; const f2 = box(6.2, .02, 1.2, filet, ax, y + 1.6, az + .2); void f2;
+      box(1.5, .1, 1.5, bois2, ax - 3.6, y + 1.6, az); const ech = box(.6, .08, 2.2, bois2, ax - 3.9, y + .8, az + 1.3); ech.rotation.x = .7; OB.push([ax - 2, az, 1.4], [ax + 2, az, 1.4]); }
+    // les deux trampolines bleus
+    for (const [tx, tz] of [[17, 34], [19.5, 36]]) { const y = HP(tx, tz); cyl(1.3, 1.3, .08, mat({ color: 0x1a1a1a }), tx, y + .6, tz, 20); add(new THREE.TorusGeometry(1.35, .1, 6, 24), mat({ color: 0x2a6ac8 }), tx, y + .62, tz).rotation.x = Math.PI / 2; for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; cyl(.04, .04, .6, mat({ color: 0x8a8a8a }), tx + Math.cos(a) * 1.3, y + .3, tz + Math.sin(a) * 1.3, 5); } OB.push([tx, tz, 1.5]); }
+    // le grand cercle orange tracé sur l'herbe, et sa croix
+    { const cx = -6, cz = 38, y = HP(cx, cz) + .05, r = add(new THREE.RingGeometry(4.2, 4.6, 40), mat({ color: 0xe8701a, side: THREE.DoubleSide }), cx, y, cz); r.rotation.x = -Math.PI / 2; for (const ry of [0, Math.PI / 2]) { const b = box(5, .02, .3, orange, cx, y, cz); b.rotation.y = ry; } }
+    // le tapis roulant couvert : le tunnel blanc en demi-cercle, qui monte le long de la pente, son enclos au filet vert
+    { const a0 = [-36, 44], a1 = [-70, 42.5], n = 10, blancT = mat({ color: 0xf2f4f4, roughness: .3, transparent: true, opacity: .85, side: THREE.DoubleSide });
+      for (let k = 0; k < n; k++) { const t0 = k / n, t1 = (k + 1) / n, x0 = a0[0] + (a1[0] - a0[0]) * t0, z0 = a0[1] + (a1[1] - a0[1]) * t0, x1 = a0[0] + (a1[0] - a0[0]) * t1, z1 = a0[1] + (a1[1] - a0[1]) * t1, y0 = HP(x0, z0), y1 = HP(x1, z1), L2 = Math.hypot(x1 - x0, z1 - z0, y1 - y0);
+        const G = new THREE.Group(); G.position.set((x0 + x1) / 2, (y0 + y1) / 2 + .1, (z0 + z1) / 2); G.rotation.order = "YZX"; G.rotation.y = -Math.atan2(z1 - z0, x1 - x0); G.rotation.z = Math.atan2(y1 - y0, Math.hypot(x1 - x0, z1 - z0)); scene.add(G);
+        const tu = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, L2, 14, 1, true, 0, Math.PI), blancT); tu.rotation.z = Math.PI / 2; G.add(tu);
+        for (let q = 0; q < 3; q++) { const ar = new THREE.Mesh(new THREE.TorusGeometry(1.12, .04, 4, 14, Math.PI), mat({ color: 0xc8ccd0 })); ar.rotation.y = Math.PI / 2; ar.position.x = -L2 / 2 + q * L2 / 3; G.add(ar); } }      const vert = mat({ color: 0x3aa84a, transparent: true, opacity: .55, side: THREE.DoubleSide }); for (const dz of [-3, 3]) { const x0 = -48, x1 = -64, z = 41 + dz; const v = box(Math.abs(x1 - x0), 1.2, .03, vert, (x0 + x1) / 2, HP((x0 + x1) / 2, z) + .6, z); void v; } }
+    // les petits bancs le long du chemin (ceux de la photo)
+    for (const [bx, bz, ry] of [[12, 27.5, 0], [40, 32, -.4], [2, 33, .2]]) { const g = new THREE.Group(); g.position.set(bx, HP(bx, bz), bz); g.rotation.y = ry; scene.add(g); for (let k = 0; k < 3; k++) { const l = new THREE.Mesh(new THREE.BoxGeometry(1.6, .05, .12), boisC); l.position.set(0, .45, -.14 + k * .14); g.add(l); } for (const sx of [-.7, .7]) { const l = new THREE.Mesh(new THREE.BoxGeometry(.08, .45, .45), mat({ color: 0x2a2a2a })); l.position.set(sx, .22, 0); g.add(l); } OB.push([bx, bz, .9]); } }
   // les bosquets de sapins sur les pentes
   { const sapM = mat({ color: 0x24402a, roughness: .9 }); for (const [cx, cz, n] of [[-60, 150, 40], [-20, 170, 30], [70, 210, 30], [-140, 120, 26], [130, 130, 22], [20, 90, 8]]) for (let k = 0; k < (PETIT ? n / 3 : n); k++) { const x = cx + (al() - .5) * 50, z = cz + (al() - .5) * 40, h = 8 + al() * 7; add(new THREE.ConeGeometry(h * .27, h, 7), sapM, x, HP(x, z) + h / 2 - .5, z); } }
   // l'office du tourisme : la rotonde sous sa grande pyramide de poutres rouges et blanches, le chapeau blanc
