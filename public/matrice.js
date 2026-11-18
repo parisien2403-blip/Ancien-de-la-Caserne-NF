@@ -19,6 +19,7 @@ export const LIEUX = {
   rex: { nom: "Bonne-Nouvelle (le Grand Rex)", icone: "🎬" },
   jouffroy: { nom: "Le passage Jouffroy", icone: "🛍️" },
   tertre: { nom: "Montmartre, la place du Tertre", icone: "🎨" },
+  corbier: { nom: "Le Corbier, le Front de Neige", icone: "🏔️" },
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
@@ -7574,7 +7575,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "rue") construireRue(A, T, L, scene);
   if (id === "rex") construireRex(A, L, scene);
   if (id === "jouffroy") construireJouffroy(A, L, scene);
-  if (id === "tertre") MD.montmartre.construireTertre(A, L, scene);   // (Montmartre : son propre fichier, chargé la première fois qu'on y va)
+  if (id === "tertre") MD.montmartre.construireTertre(A, L, scene);
+  if (id === "corbier") MD.corbier.construireCorbier(A, L, scene);   // (10.99 : Le Corbier, la station de ski de Savoie)   // (Montmartre : son propre fichier, chargé la première fois qu'on y va)
 
   if (id === "grande") {
     /* La cour d'honneur (d'après les photos) :
@@ -13099,14 +13101,22 @@ function choixBus(B) { if (M.choixBusEl) M.choixBusEl.remove(); const d = docume
 /* (10.53) le métro parisien : devant une bouche de métro, on choisit sa station ; puis la cinématique, debout dans la rame (une MF 67 de 1990 : la caisse crème,
    les banquettes bleues, les barres inox, les néons), au milieu des voyageurs ; le quai de départ, le tunnel, ses lampes qui défilent, le quai d'arrivée, et l'on ressort là-haut */
 const METRO_STATIONS = { rex: { nom: "Bonne Nouvelle", ligne: "8 · 9", lieu: "rex", arrivee: [-66.6, 9.8], yaw: -Math.PI / 2, libelle: "Bonne Nouvelle — les Grands Boulevards, le Grand Rex" },
-  tertre: { nom: "Abbesses", ligne: "12", lieu: "tertre", arrivee: [-83, 35.3], yaw: Math.PI, libelle: "Abbesses — Montmartre, la place du Tertre" } };
+  tertre: { nom: "Abbesses", ligne: "12", lieu: "tertre", arrivee: [-83, 35.3], yaw: Math.PI, libelle: "Abbesses — Montmartre, la place du Tertre" },
+  corbier: { nom: "Le Corbier", lieu: "corbier", arrivee: [26, 13.8], yaw: Math.PI, libelle: "🚌 Le Corbier — en car, jusqu'à la station (Savoie)", car: true } };
 function metroProche(x, z) { if (!M || !M.L || M.L.apo || M.L.sh) return false; if (M.lieu === "rex") return [[-70.5, 9.8], [-43.6, -10.4]].some(([a, b]) => Math.hypot(x - a, z - b) < 3.4);
-  if (M.lieu === "tertre" && M.L.metroAbbesses) return Math.hypot(x - M.L.metroAbbesses.x, z - M.L.metroAbbesses.z) < 3; return false; }
+  if (M.lieu === "tertre" && M.L.metroAbbesses) return Math.hypot(x - M.L.metroAbbesses.x, z - M.L.metroAbbesses.z) < 3;
+  if (M.lieu === "corbier" && M.L.arretCar) return Math.hypot(x - M.L.arretCar.x, z - M.L.arretCar.z) < 2.5; return false; }
+/* (10.99) le car : de Paris au Corbier, ou du Corbier à Paris — l'écran noir, la route de montagne qui défile en mots, et l'on y est */
+function voyageCar(dep, arr) { if (!M || M.cine) return; const n = voile("background:#000;opacity:0;transition:opacity .9s;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#f2ead8;font:600 20px Lato,Arial,sans-serif;text-align:center;padding:20px");
+  const vers = arr.car ? ["🚌 Le car quitte Paris…", "L'autoroute, Chambéry, la vallée de la Maurienne…", "Saint-Jean-de-Maurienne, la route qui monte en lacets…", "Villarembert… Le Corbier !"] : ["🚌 Le car redescend la vallée…", "Paris, enfin. " + arr.nom + "."];
+  requestAnimationFrame(() => { n.style.opacity = "1"; }); let i = 0; const dire2 = () => { n.textContent = vers[i]; }; dire2(); M.cine = { gel: true, maj: () => {} };
+  try { preparerLieu(arr.lieu); } catch (e) {}
+  const iv = setInterval(() => { i++; if (i < vers.length) { dire2(); return; } clearInterval(iv); finCine(); changerLieu(arr.lieu, arr.arrivee, arr.yaw); setTimeout(() => { n.style.opacity = "0"; setTimeout(() => n.remove(), 1000); }, 400); }, 1800); }
 function choixMetro() { if (M.choixBusEl) M.choixBusEl.remove(); const d = document.createElement("div"); M.choixBusEl = d; const ici = METRO_STATIONS[M.lieu];
   d.style.cssText = "position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:30;background:rgba(14,22,44,.95);color:#fff;border-radius:16px;padding:14px 16px;font:15px Lato,Arial,sans-serif;min-width:260px;max-width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)";
-  d.innerHTML = `<div style="font-weight:700;margin-bottom:4px">🚇 Métro ${ici ? ici.nom : ""}</div><div style="font-size:13px;opacity:.75;margin-bottom:8px">Où allez-vous ?</div>`;
+  d.innerHTML = `<div style="font-weight:700;margin-bottom:4px">${ici && ici.car ? "🚌 Arrêt du car — " : "🚇 Métro "}${ici ? ici.nom : ""}</div><div style="font-size:13px;opacity:.75;margin-bottom:8px">Où allez-vous ?</div>`;
   for (const [k, D] of Object.entries(METRO_STATIONS)) { if (k === M.lieu) continue; const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.libelle; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#1f4aa8;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
-    b.onclick = () => { d.remove(); M.choixBusEl = null; M.manMenu = null; cineMetro(ici || METRO_STATIONS.rex, D); }; d.appendChild(b); }
+    b.onclick = () => { d.remove(); M.choixBusEl = null; M.manMenu = null; if (D.car || (ici && ici.car)) voyageCar(ici || METRO_STATIONS.rex, D); else cineMetro(ici || METRO_STATIONS.rex, D); }; d.appendChild(b); }
   const x = document.createElement("button"); x.type = "button"; x.textContent = "Annuler"; x.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:14px Lato,Arial,sans-serif;cursor:pointer"; x.onclick = () => { d.remove(); M.choixBusEl = null; M.manMenu = null; }; d.appendChild(x);
   (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer: () => { d.remove(); M.choixBusEl = null; M.manMenu = null; } }; }
 // le bruit de la rame : le grondement qui monte avec la vitesse, le tac-tac des rails, la sonnerie de fermeture des portes (tout est fabriqué : aucun fichier)
@@ -16127,7 +16137,7 @@ function chercherAction(t) {
     else if (M.cine) a = null;
     else if (M.L.portesRex && M.L.portesRex.some(p => Math.hypot(x - p.x, z - p.z) < 1.1)) { const p = M.L.portesRex.find(p => Math.hypot(x - p.x, z - p.z) < 1.1); a = { type: "rexFilm", cle: p.f.cle, id: p.f.cle, label: `🎬 Entrer dans « ${p.f.titre} »` }; }   // (10.11, le Grand Rex : on entre dans le film par sa porte)
     else if (M.L.actionLieu && (a = M.L.actionLieu(x, z, moi))) ;   // (10.95 : ce que le lieu propose — à Montmartre, la Vespa)
-    else if (metroProche(x, z)) a = { type: "metro", label: "🚇 Prendre le métro" };   // (10.53) les bouches de métro
+    else if (metroProche(x, z)) a = M.lieu === "corbier" ? { type: "car", label: "🚌 Prendre le car" } : { type: "metro", label: "🚇 Prendre le métro" };   // (10.53) les bouches de métro
     else if (M.L.busL && Math.hypot(x - M.L.busL.C.ax, z - M.L.busL.C.az) < 2.4 && !M.L.apo && !M.L.sh) a = M.L.busL.phase === "rien" ? { type: "bus", label: "🚌 Prendre le bus" } : null;   // (10.07, l'arrêt de bus)
     else if (M.hiver && M.lieu === "grande" && M.L.neigeB && !M.L.nuit && (M.bouleMain ? M.L.neigeB.cible(x, z) : M.L.neigeB.proche(x, z))) a = M.bouleMain ? { type: "neigeLancer", label: "❄️ Lancer la boule de neige" } : { type: "neigeRamasser", label: "❄️ Ramasser de la neige" };   // (10.01, l'hiver : la neige des voitures)
     else if (false && M.cage && M.lieu === "grande" && !enCage() && (Math.hypot(x - PIERRES.x, z - PIERRES.z) < 1.4 || (M.pierreMain && Math.hypot(x - CAGE.x, z - CAGE.z) < 14))) a = M.pierreMain ? { type: "lancerPierre", label: "🪨 Lancer sur 003" } : { type: "pierre", label: "🪨 Ramasser une pierre" };
@@ -16197,7 +16207,7 @@ export function agir() {
     const p = (M.L.portesRex || []).find(p => p.f.cle === f.cle); if (p) M.retourFilm = { lieu: M.lieu, pos: [p.x + Math.sin(p.ry) * .9, p.z + Math.cos(p.ry) * .9], yaw: p.ry };   // (10.17) à la fin du film, on ressort devant la porte du Rex
     louerFilm(f); return; }
   if (a.type === "lieu" && a.faire) { M.actionCle = null; a.faire(); return; }
-  if (a.type === "metro") { M.actionCle = null; choixMetro(); return; }
+  if (a.type === "metro" || a.type === "car") { M.actionCle = null; choixMetro(); return; }
   if (a.type === "bus") { const B = M.L.busL; if (!B) return; M.actionCle = null; choixBus(B); return; }
   if (a.type === "neigeRamasser") { M.bouleMain = true; M.actionCle = null; dire(M.moiNum, "❄️ Une belle boule de neige…"); return; }
   if (a.type === "neigeLancer") { if (M.L.neigeB && M.L.neigeB.lancer()) M.bouleMain = false; M.actionCle = null; return; }
@@ -17726,7 +17736,7 @@ function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ct
 /* Les mondes des films ont chacun leur fichier (kingston.js pour Gremlins, santacarla.js pour Génération perdue…) : on le charge la première fois
    qu'on va dans l'un de ses lieux (pas avant : l'appli s'ouvre plus vite), et on l'exécute ici même (eval direct), pour qu'il se serve de tout
    ce que la matrice a (M, THREE, voile, sonBruit…) sans rien changer à son code. MD[monde] : ce que le fichier rend (ses points d'entrée). */
-const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id), montmartre: id => id === "tertre" };
+const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id), montmartre: id => id === "tertre", corbier: id => id === "corbier" };
 function chargerMonde(nom) { if (MD[nom]) return Promise.resolve(MD[nom]);
   return MD_P[nom] = MD_P[nom] || fetch(nom + ".js?v=" + (new URL(import.meta.url).searchParams.get("v") || DIAG_V))   /* (la version du site : chaque mise à jour recharge les mondes) */.then(r => { if (!r.ok) throw new Error(nom + ".js : " + r.status); return r.text(); })
     .then(src => (MD[nom] = eval(src + "\n//# sourceURL=" + nom + ".js"))).catch(e => { MD_P[nom] = null; throw e; }); }
