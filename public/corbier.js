@@ -548,14 +548,15 @@ function construireCorbier(A, L, scene) {
   { const orange = mat({ map: planches("#a8582c", "255,200,150") }), blancP = mat({ color: 0xf2f0ea, roughness: .7 }), brunC = mat({ color: 0x4a2418, roughness: .7 }), creme = mat({ color: 0xe8e0d0, roughness: .8 });
     const vitreN = mat({ color: 0x2a3036, roughness: .1, metalness: .3, transparent: true, opacity: .6 }), verreR = mat({ color: 0xdcecf0, roughness: .05, transparent: true, opacity: .3, depthWrite: false });
     const XF = 158;   // (le bout)
-    sapin(84.4, 3.2, 15, melezeM);
+    sapin(84.2, 10.5, 15, melezeM);
     // la grande tour blanche
     { const x0 = 86, x1 = 110, cx = (x0 + x1) / 2, W = x1 - x0, N = 11, H0 = 3.4, HE = 3, HT = H0 + N * HE;
       const coteT = tT(128, 256, (c, w, h) => { c.fillStyle = "#7a4a34"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 4) { c.fillStyle = `rgba(${x % 8 ? "255,220,190" : "40,20,10"},.08)`; c.fillRect(x, 0, 2, h); } for (let y = 20; y < h; y += 23) { c.fillStyle = "#ece6da"; c.fillRect(w * .35, y, w * .65, 3); } }, 1, 1);
       box(W, HT, 11, mat({ map: coteT }), cx, HT / 2, -6.6); box(W + .6, 1.4, 12, mat({ color: 0x8a4a2a, roughness: .7 }), cx, HT + .5, -6.4);
       const etT = tT(1024, 128, (c, w, h) => { c.fillStyle = "#ece6da"; c.fillRect(0, 0, w, h); c.fillStyle = "#d8d0c2"; c.fillRect(0, 0, w, 30); for (let x = 0; x < w; x += 146) { const k = (x / 146) % 3; c.fillStyle = ["#3a4048", "#4a4c52", "#6a4a36"][k]; c.fillRect(x + 18, 40, 110, h - 40); c.fillStyle = "rgba(240,236,228,.85)"; if (k !== 2) for (let m = 0; m < 3; m++) c.fillRect(x + 22 + m * 36, 46, 28, h - 52); c.fillStyle = "#5a2a1a"; for (let m = 0; m < 4; m++) c.fillRect(x + 18 + m * 36, 40, 3, h - 40); } }, 1, N);
       add(new THREE.PlaneGeometry(W, N * HE), mat({ map: etT, roughness: .7 }), cx, H0 + N * HE / 2, -.98);
-      for (let k = 0; k <= N; k++) { const y = H0 + k * HE; box(W, .32, 1.7, creme, cx, y, -.2); if (k < N) { box(W, .95, .03, verreR, cx, y + .6, .4); box(W, .05, .06, brunC, cx, y + 1.08, .4); } }
+      for (let k = 0; k <= N; k++) { const y = H0 + k * HE, zb = k ? .4 : 2.4; if (k) box(W, .32, 1.7, creme, cx, y, -.2); else box(W, .4, 3.5, creme, cx, y, .7); if (k < N) { box(W, .95, .03, verreR, cx, y + .6, zb); box(W, .05, .06, brunC, cx, y + 1.08, zb); } }
+      for (let i = 0; i <= 8; i++) { const x = x0 + .15 + i * (W - .3) / 8; box(.24, H0 - .2, .24, brunC, x, (H0 - .2) / 2, 2.25); OB.push([x, 2.25, .3]); }   // (10.122 : le porche, sous le premier balcon)
       for (let i = 0; i <= 8; i++) { const x = x0 + .15 + i * (W - .3) / 8; box(.22, N * HE, 1.6, brunC, x, H0 + N * HE / 2, -.25); }
       // en bas, de la droite vers la gauche : Interhome, La Fine Bouche (deux vitrines), Location, La Godille, Vente, Chauvin Immobilier
       const bT = tT(2048, 128, (c, w, h) => { const m = w / W; c.fillStyle = "#6a3a22"; c.fillRect(0, 0, w, h);
@@ -585,8 +586,8 @@ function construireCorbier(A, L, scene) {
         for (let x = 10; x < w; x += 120) { c.fillStyle = "#5a3420"; c.fillRect(x, 34, 108, h - 34); c.fillStyle = "#7a8a94"; c.fillRect(x + 6, 40, 44, h - 46); c.fillRect(x + 58, 40, 44, h - 46); c.fillStyle = "rgba(255,255,255,.25)"; c.fillRect(x + 8, 42, 10, h - 50); }
         for (const [u, t, f, co] of enseignes) { c.fillStyle = f; c.font = `bold 20px ${sans}`; const tw = c.measureText(t).width + 20; c.fillRect(u * w, 3, tw, 24); c.fillStyle = co; c.fillText(t, u * w + 10, 21); } });
       add(new THREE.PlaneGeometry(W, 3.2), lum(mat({ map: rdcT, emissive: 0xffffff, emissiveMap: rdcT, emissiveIntensity: .08 }), .08, .5), cx, 1.6, -1.58);
-      const n = Math.max(2, Math.round(W / 3.4)); for (let k = 0; k <= n; k++) { const x = x0 + .2 + k * (W - .4) / n; box(.22, 3.2, .22, blancP, x, 1.6, -.4); OB.push([x, -.4, .3]); }
-      box(W, .3, 1.4, blancP, cx, 3.35, -.9);
+      const n = Math.max(2, Math.round(W / 3.4)); for (let k = 0; k <= n; k++) { const x = x0 + .2 + k * (W - .4) / n; box(.22, 3.2, .22, blancP, x, 1.6, 2.2); OB.push([x, 2.2, .3]); }
+      box(W, .3, 4, blancP, cx, 3.35, .4); box(W, 1.1, .25, orange, cx, 4.05, 2.25);   // (10.122 : le porche ; au-dessus, le bandeau de bois du balcon)
       const voletT = tT(256, 64, (c, w, h) => { c.fillStyle = "#4a4a4c"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 4) { c.fillStyle = "rgba(0,0,0,.3)"; c.fillRect(0, y, w, 1); } }, Math.max(1, Math.round(W / 4)), 1);
       add(new THREE.PlaneGeometry(W, 1.6), mat({ map: voletT }), cx, 4.5, -1.58);
       box(W, 1.1, .25, orange, cx, 5.95, -.35); box(W, .2, 1.5, blancP, cx, 6.55, -.9);
