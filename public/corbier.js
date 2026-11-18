@@ -747,11 +747,13 @@ function construireCorbier(A, L, scene) {
     piece("A", 80.4, 82.4, -4.4, -1.2, { h: 2.7, mur: "sombre", sol: "moquette", plaf: "sombre", ext: "bois", pente: [80.4, 0, 82.4, .5], ouv: { xmax: [[-4.4, -1.2]] } });
     piece("B", 75.4, 80.4, -6.4, -.8, { h: 2.7, mur: "bleu", sol: "moquette", plaf: "dalles", ext: "bois" });
     piece("C", 72.4, 75.4, -4.2, -1.6, { h: 2.6, mur: "sombre", sol: "moquette", plaf: "sombre", ext: "bois" });
-    piece("D", 58, 72.4, -6.6, -1.6, { h: 2.9 });
-    piece("E", 40, 58, -13, -1.6, { h: 3.2 });
+    piece("D", 66, 72.4, -6.6, -1.6, { h: 3.3 });
+    piece("D2", 58, 66, -5.4, -1.0, { h: 2.9 });   // (10.133 : après le Yéti, le couloir tourne légèrement à droite)
+    piece("E", 52, 58, -13, -1.0, { h: 3.2 });
+    piece("E2", 40, 52, -13, -3.0, { h: 3.2 });   // (derrière le renfoncement de la façade)
     piece("F", 30, 40, -8, -3.6, { h: 2.8 });
-    piece("G", 16, 30, -12, -2, { h: 3.1 });
-    piece("H", 4, 16, -14, -2, { h: 3.1 });
+    piece("G", 16, 30, -12, -3.0, { h: 3.1 });
+    piece("H", 4, 16, -14, -3.0, { h: 3.1 });
     piece("H2", 4, 8, -17, -14, { h: 2.9 });
     piece("I", -14, 8, -20, -17, { h: 2.9, sol: "carrelageB" });
     piece("J", -14, -7, -17, -7.5, { h: 3 });
@@ -822,20 +824,36 @@ function construireCorbier(A, L, scene) {
       for (const s of [-1, 1]) { const o = new THREE.Mesh(new THREE.ConeGeometry(.04, .08, 4), m); o.position.set(.38, .22, .05 + s * .05); g.add(o); } const q = new THREE.Mesh(new THREE.CylinderGeometry(.025, .02, .45, 5), m); q.rotation.z = Math.PI / 2; q.position.set(-.5, .05, .1); g.add(q); OBS.push([x, z, .5]); };
 
     /* --- l'habillage, pièce par pièce, d'après la vidéo --- */
-    // B : le petit hall gris-bleu ; à gauche, la double porte vitrée, toute claire (le dehors), son affichette
-    { const B_ = Pn("B"), R = repere(B_, "zmin"); reserve("B", "zmin", 76.6, 79.2); R.boite(2.6, .1, .12, noirP, 77.9, 2.2, 0); for (const u of [76.65, 77.9, 79.15]) R.boite(.08, 2.2, .12, noirP, u, 1.1, 0);
-      R.plan(2.5, 2.1, lumi(tex(64, 64, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#ffffff"); g.addColorStop(1, "#e8eef0"); c.fillStyle = g; c.fillRect(0, 0, w, h); }), 1.0), 77.9, 1.1, -.02);
-      for (const u of [77.3, 78.5]) R.boite(.04, .04, .7, mat({ color: 0xb8bcc0, metalness: .7 }), u, 1.05, .06);
-      R.plan(2.6, .5, matMur("bleu", 2.6, .5), 77.9, 2.45, 0); R.plan(.42, .3, lumi(panneau("Accès galerie", "#f8f8f4", "#2a2a2a", 256, 160, `bold 28px ${sans}`), .3), 79.8, 1.65, .02);
+    // B : le petit hall gris-bleu ; à gauche, l'ascenseur — ses portes de verre, la cabine d'inox éclairée derrière, l'indicateur d'étage, les boutons d'appel
+    { const B_ = Pn("B"), R = repere(B_, "zmin"), ux = 77.9; reserve("B", "zmin", 76.6, 79.2);
+      const inox = mat({ color: 0xb8bcc2, roughness: .3, metalness: .85 }), inoxT = tex(128, 256, (c, w, h) => { c.fillStyle = "#b4b8be"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 2) { c.fillStyle = `rgba(${al() < .5 ? "255,255,255" : "60,64,70"},${.05 + al() * .08})`; c.fillRect(0, y, w, 1); } });
+      R.boite(2.6, .14, .14, inox, ux, 2.2, 0); for (const u of [76.65, 79.15]) R.boite(.1, 2.2, .14, inox, u, 1.1, 0); R.boite(.04, 2.1, .1, inox, ux, 1.07, .02);
+      const verre = mat({ color: 0xc8dce4, roughness: .05, metalness: .2, transparent: true, opacity: .28, depthWrite: false });
+      for (const s2 of [-.6, .6]) { R.boite(1.16, 2.06, .03, verre, ux + s2, 1.07, .03); R.boite(1.16, .05, .05, inox, ux + s2, 2.08, .03); R.boite(1.16, .05, .05, inox, ux + s2, .06, .03); }
+      R.plan(2.6, .5, matMur("bleu", 2.6, .5), ux, 2.45, 0);
+      // la cabine, derrière les portes
+      const cab = lu(mat({ map: inoxT, roughness: .35, metalness: .6, emissive: 0xffffff, emissiveMap: inoxT, emissiveIntensity: .35 }), .35), D2 = 1.6;
+      { const [x, , z] = R.pos(ux, 0, -D2 / 2); for (const s2 of [-1, 1]) box(.06, 2.3, D2, cab, x + s2 * 1.27, 1.15, z); const [xb, , zb] = R.pos(ux, 0, -D2); box(2.6, 2.3, .06, cab, xb, 1.15, zb);
+        box(2.6, .06, D2, lu(mat({ color: 0xfffaf0, emissive: 0xfff6e0, emissiveIntensity: .9 }), .9), x, 2.3, z); const sl = add(new THREE.PlaneGeometry(2.5, D2), mat({ color: 0x3a3c40, roughness: .6 }), x, .02, z); sl.rotation.x = -Math.PI / 2;
+        box(1.4, .9, .02, mat({ color: 0xe8f0f4, roughness: .02, metalness: .9 }), xb, 1.45, zb + .05); box(2.2, .05, .05, inox, xb, .95, zb + .1); }
+      // l'indicateur d'étage, les boutons d'appel
+      const ind = tex(128, 48, (c, w, h) => { c.fillStyle = "#101214"; c.fillRect(0, 0, w, h); c.fillStyle = "#ff3a2a"; c.font = `bold 30px ${sans}`; c.textAlign = "center"; c.fillText("▲ 0", w / 2, 35); }); R.boite(.5, .2, .04, inox, ux, 2.42, .02); R.plan(.44, .15, lumi(ind, .9), ux, 2.42, .05);
+      R.boite(.16, .32, .03, inox, 79.55, 1.15, .02); for (const [v, t] of [[1.22, "▲"], [1.08, "▼"]]) { const bt = tex(32, 32, (c, w, h) => { c.fillStyle = "#c0c4c8"; c.fillRect(0, 0, w, h); c.fillStyle = "#3a8af0"; c.beginPath(); c.arc(16, 16, 10, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = `bold 12px ${sans}`; c.textAlign = "center"; c.fillText(t, 16, 21); }); R.plan(.08, .08, lumi(bt, .5), 79.55, v, .04); }
       for (let x = 76; x < 80.4; x += 1.4) box(.14, .14, 5.6, mat({ map: T.sombre }), x, 2.62, -3.6); }
     // C : le couloir de bois sombre, le long tube de néon
     { const C_ = Pn("C"); box(2.6, .05, .1, neon, 73.9, 2.5, -2.0); box(.08, 2.4, .08, mat({ color: 0x2a160c }), 74, 1.2, -4.12); }
     // D : le couloir blanc ; à droite la vitrine du Yéti (son arrière-boutique de crêpes), à gauche les portes de service, le logo rond, l'extincteur
-    { const D_ = Pn("D"), Rd = repere(D_, "zmax"), Rg = repere(D_, "zmin");
-      boutique(D_, "zmax", 66.4, 71.6, { nom: "LE YETI · Crêpes · Gaufres · Glaces", fond: "#c8202a", coul: "#ffffff", motif: "yeti", porte: "gauche", cadre: 0xf2f2ee, police: `bold 50px ${serif}` });
-      porteBlanche(Rd, 63.2); porteBlanche(Rd, 59.5); for (const u of [69.4, 66.2]) porteBlanche(Rg, u); extincteur(68.4, -6.4);
-      const lg = tex(256, 256, (c, w, h) => { c.fillStyle = "rgba(0,0,0,0)"; c.clearRect(0, 0, w, h); c.strokeStyle = "#c83a3a"; c.lineWidth = 8; c.beginPath(); c.arc(128, 128, 100, .3, 5.6); c.stroke(); c.strokeStyle = "#8a8e92"; c.lineWidth = 5; c.beginPath(); c.arc(128, 128, 76, 2, 7.4); c.stroke(); c.fillStyle = "#5a5e62"; c.font = `bold 22px ${sans}`; c.textAlign = "center"; c.fillText("LE CORBIER", 128, 136); });
-      Rg.plan(1.3, 1.3, mat({ map: lg, transparent: true, roughness: .8 }), 62, 1.7, .03); }
+    { const D_ = Pn("D"), D2_ = Pn("D2"), Rd = repere(D_, "zmax"), Rg = repere(D_, "zmin");
+      /* le Yéti, vu de la galerie : le fronton de planches, la grande enseigne rouge « LE YETI · crêpes · pizzeria », la porte et les vitrines à cadre blanc */
+      boutique(D_, "zmax", 66.2, 71.8, { nom: "", fond: "#c8a878", coul: "#c8a878", motif: "yeti", porte: "gauche", cadre: 0xf4f2ee });
+      { const fr = tex(1024, 192, (c, w, h) => { c.fillStyle = "#b8925e"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 22) { c.fillStyle = ["#c09a66", "#ad8654", "#c8a470"][(x / 22) % 3]; c.fillRect(x, 0, 21, h); c.fillStyle = "rgba(60,36,16,.4)"; c.fillRect(x + 21, 0, 1, h); }
+          c.save(); c.translate(560, 96); c.rotate(-.08); c.fillStyle = "#c8202a"; c.fillRect(-300, -78, 600, 150); c.fillStyle = "#f4f2ee"; c.font = `bold 34px ${sans}`; c.fillText("LE", -270, 0); c.font = `900 130px ${sans}`; c.fillText("YETI", -210, 40);
+          c.font = `italic 30px ${serif}`; c.fillText("Crêpes · Pizzeria", 80, 50); c.restore(); });
+        Rd.plan(5.6, .95, lumi(fr, .3), 69, 2.83, .09); Rd.boite(5.7, .08, .14, mat({ color: 0xf4f2ee }), 69, 2.35, .06); }
+      { const af = tex(128, 64, (c, w, h) => { c.fillStyle = "#f4f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8202a"; c.font = `bold 20px ${sans}`; c.textAlign = "center"; c.fillText("OUVERT", w / 2, 40); }); Rd.plan(.5, .22, lumi(af, .3), 70.9, 1.9, .05); }
+      porteBlanche(repere(D2_, "zmax"), 61.2); for (const u of [69.4]) porteBlanche(Rg, u); { const Rg2 = repere(D2_, "zmin"); porteBlanche(Rg2, 64.6); porteBlanche(Rg2, 60.6); } extincteur(67.6, -6.4);
+      const lg = tex(256, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = "#c83a3a"; c.lineWidth = 8; c.beginPath(); c.arc(128, 128, 100, .3, 5.6); c.stroke(); c.strokeStyle = "#8a8e92"; c.lineWidth = 5; c.beginPath(); c.arc(128, 128, 76, 2, 7.4); c.stroke(); c.fillStyle = "#5a5e62"; c.font = `bold 22px ${sans}`; c.textAlign = "center"; c.fillText("LE CORBIER", 128, 136); });
+      repere(D2_, "zmin").plan(1.3, 1.3, mat({ map: lg, transparent: true, roughness: .8 }), 62.6, 1.7, .03); }
     // E : le hall ; au fond à gauche l'opticien (Trompe l'Œil), les Pains spéciaux et leurs ardoises, le salon de thé ; à droite le pilier, la grosse poubelle ; le panneau vert suspendu
     { const E_ = Pn("E");
       boutique(E_, "zmin", 51.4, 57.4, { nom: "TROMPE L'ŒIL · OPTICIEN", fond: "#1e2a36", coul: "#f2f2ee", motif: "optique", porte: "gauche", cadre: 0x4a5058 });
@@ -843,8 +861,8 @@ function construireCorbier(A, L, scene) {
       boutique(E_, "xmin", -13, -8.4, { nom: "La Panetière · Salon de thé", fond: "#f2e8d8", coul: "#6a3a1e", motif: "gateau", porte: "droite", police: `italic bold 50px ${serif}` });
       { const pa = panneau("APOLLO", "#2a2a2a", "#f2f2ee", 256, 64, `bold 34px ${sans}`); repere(E_, "zmin").plan(1.3, .32, lumi(pa, .4), 55.6, 3.0, .2); }
       ardoise(48.4, -11.6, .3, ["PAINS", "Baguette 1,10", "Tradition 1,30", "Croissant 1,20", "Pain au choc. 1,40"]); ardoise(46.6, -11.4, -.2, ["Menu du jour", "Croque", "Sandwich", "Quiche"]);
-      poubelle(53.2, -2.6); pilier(55.2, -2.4); pilier(45.2, -2.4);
-      const gv = panneau("GALERIE MARCHANDE  ↑", "#2a7a4a", "#ffffff", 512, 80, `bold 36px ${sans}`); box(.06, .3, 1.6, lumi(gv, .5), 57.2, 2.75, -5.6); for (const sz of [-.6, .6]) box(.02, .3, .02, noirP, 57.2, 3.05, -5.6 + sz); }
+      poubelle(53.2, -2.2); pilier(55.2, -2.0); pilier(45.2, -3.6);
+      const gv = panneau("GALERIE MARCHANDE  ↑", "#2a7a4a", "#ffffff", 512, 80, `bold 36px ${sans}`); box(.06, .3, 1.6, lumi(gv, .5), 57.2, 2.75, -3.6); for (const sz of [-.6, .6]) box(.02, .3, .02, noirP, 57.2, 3.05, -3.6 + sz); }
     // F : le couloir de la fresque (à gauche), le tableau ; à droite les portes de pin ; les chevalets à l'entrée
     { const F_ = Pn("F"), R = repere(F_, "zmin"), fr = tex(1024, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#b8ccdc"); g.addColorStop(1, "#e8eef2"); c.fillStyle = g; c.fillRect(0, 0, w, h);
         for (const [x0, hh, col] of [[0, 120, "#8a949e"], [180, 160, "#9aa4ae"], [420, 190, "#7a848e"], [700, 150, "#8a949e"]]) { c.fillStyle = col; c.beginPath(); c.moveTo(x0 - 80, h); c.lineTo(x0 + 120, h - hh); c.lineTo(x0 + 360, h); c.fill(); c.fillStyle = "#f6f8fa"; c.beginPath(); c.moveTo(x0 + 70, h - hh + 40); c.lineTo(x0 + 120, h - hh); c.lineTo(x0 + 175, h - hh + 45); c.fill(); }
@@ -853,18 +871,18 @@ function construireCorbier(A, L, scene) {
       const cadreT = tex(128, 96, (c, w, h) => { c.fillStyle = "#5a3a1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8d4dc"; c.fillRect(10, 10, w - 20, h - 20); c.fillStyle = "#6a7a5a"; c.fillRect(10, 50, w - 20, 36); }); R.plan(1.1, .8, lumi(cadreT, .2), 31.6, 1.7, .03);
       const Rz = repere(F_, "zmax"), pB = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#a8743e"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = "rgba(90,50,20,.25)"; c.fillRect(x, 0, 1, h); } c.fillStyle = "#c8ccd0"; c.fillRect(w - 14, 62, 8, 4); }), roughness: .7 });
       for (const u of [38.6, 33.4]) { Rz.plan(1.0, 2.15, pB, u, 1.075, .02); Rz.boite(1.25, 2.3, .08, mat({ color: 0xc08850, roughness: .7 }), u, 1.15, .01); }
-      chevalet(41.2, -3.0, 2.0); chevalet(42.1, -4.2, 1.4); }
+      chevalet(41.2, -3.7, 2.0); chevalet(41.6, -7.3, 1.4); }
     // G : le hall des cartes postales ; à gauche les présentoirs ; le pilier ; le coffret gris ; à droite Sport 2000
-    { const G_ = Pn("G"); for (const [x, z] of [[27, -10.8], [25.4, -11.1], [23.8, -10.8]]) presentoir(x, z); pilier(20.5, -4.2);
+    { const G_ = Pn("G"); for (const [x, z] of [[27, -10.8], [25.4, -11.1], [23.8, -10.8]]) presentoir(x, z); pilier(20.5, -4.6);
       repere(G_, "zmin").boite(1.4, .9, .3, mat({ color: 0x8a8e92, roughness: .6, metalness: .3 }), 18.6, 1.6, .15);
       boutique(G_, "zmax", 18, 25, { nom: "SPORT 2000 · TEXTILE", fond: "#c8202a", coul: "#fff", motif: "chaussures", porte: "droite" }); }
     // H : la boulangerie au fond ; sa grande vitrine réfrigérée le long du mur ; la barrière de bois blanc, à droite
-    { const H_ = Pn("H"), R = repere(H_, "xmin"); reserve("H", "xmin", -13.4, -2.4); R.plan(10.8, 2.6, lumi(tex(512, 256, MARCH.pain), .45), -7.9, 1.3, .02);
+    { const H_ = Pn("H"), R = repere(H_, "xmin"); reserve("H", "xmin", -13.4, -3.4); R.plan(9.8, 2.6, lumi(tex(512, 256, MARCH.pain), .45), -8.4, 1.3, .02);
       const vit = mat({ color: 0xdcecf2, roughness: .05, transparent: true, opacity: .2, depthWrite: false });
-      R.boite(10.4, .9, .7, mat({ color: 0x6a4a2e, roughness: .6 }), -7.9, .45, 1.2); R.boite(10.4, .5, .62, lumi(tex(512, 64, MARCH.gateau), .5), -7.9, 1.12, 1.2); R.boite(10.4, .55, .04, vit, -7.9, 1.17, 1.53); R.boite(10.4, .04, .66, vit, -7.9, 1.45, 1.2);
-      for (let z = -12.8; z <= -3; z += 1.6) OBS.push([5.3, z, .8]);
-      R.plan(5.6, .5, lumi(panneau("La Panetière · Boulangerie · Pâtisserie", "#f2e8d8", "#6a3a1e", 1024, 96, `italic bold 48px ${serif}`), .45), -7.9, 2.75, .05);
-      const bb = mat({ color: 0xf2f0ea, roughness: .7 }); for (let x = 9; x < 13; x += .22) box(.07, 1.0, .06, bb, x, .5, -2.3); box(4, .08, .1, bb, 11, 1.02, -2.3); box(4, .08, .1, bb, 11, .2, -2.3); }
+      R.boite(9.4, .9, .7, mat({ color: 0x6a4a2e, roughness: .6 }), -8.4, .45, 1.2); R.boite(9.4, .5, .62, lumi(tex(512, 64, MARCH.gateau), .5), -8.4, 1.12, 1.2); R.boite(9.4, .55, .04, vit, -8.4, 1.17, 1.53); R.boite(9.4, .04, .66, vit, -8.4, 1.45, 1.2);
+      for (let z = -12.8; z <= -4; z += 1.6) OBS.push([5.3, z, .8]);
+      R.plan(5.6, .5, lumi(panneau("La Panetière · Boulangerie · Pâtisserie", "#f2e8d8", "#6a3a1e", 1024, 96, `italic bold 48px ${serif}`), .45), -8.4, 2.75, .05);
+      const bb = mat({ color: 0xf2f0ea, roughness: .7 }); for (let x = 9; x < 13; x += .22) box(.07, 1.0, .06, bb, x, .5, -3.3); box(4, .08, .1, bb, 11, 1.02, -3.3); box(4, .08, .1, bb, 11, .2, -3.3); }
     // H2 : on longe la vitrine (à droite), la porte blanche à barre anti-panique (à gauche) ; en face, la lumière des grandes fenêtres
     { const H2 = Pn("H2"); boutique(H2, "xmin", -16.8, -14.1, { nom: "La Panetière", fond: "#f2e8d8", coul: "#6a3a1e", motif: "pain", porte: "aucune", police: `italic bold 50px ${serif}` });
       const Rp = repere(H2, "xmax"); porteBlanche(Rp, -15.6, 1.1); Rp.boite(.9, .05, .06, mat({ color: 0xb8bcc0, metalness: .7 }), -15.6, 1.05, .12); }
