@@ -257,15 +257,15 @@ function construireCorbier(A, L, scene) {
     for (const [x, z, h, w] of [[-104, -14, 50, 18], [-110, 10, 46, 16], [-100, 34, 42, 15]]) { box(w, h, 15, mat({ map: tourO }), x, h / 2, z); box(w + 1, 1.2, 16, mat({ color: 0x5a2a12 }), x, h + .6, z); } }   // (les tours orangées, au bout de la piscine)
 
   /* ---------- le bâtiment de l'École du Ski Français, la Fontaine de l'Ours ---------- */
-  { const n0E = scene.children.length; residence(-39, -13, -3.2, 3, facG);
+  { const n0E = scene.children.length; residence(-39, -1, -3.2, 3, facG);   /* (10.108 : collé à la longue résidence — plus d'espace entre les deux) */
     const esf = tT(512, 96, (c, w, h) => { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8202a"; c.beginPath(); c.arc(40, 48, 30, 0, 7); c.fill(); c.fillStyle = "#1a3a8a"; c.font = `italic bold 40px ${sans}`; c.fillText("ÉCOLE DU SKI FRANÇAIS", 82, 60); });
     const s = add(new THREE.PlaneGeometry(9, 1.7), lum(mat({ map: esf, emissive: 0xffffff, emissiveMap: esf, emissiveIntensity: .1 }), .1, .8), -26, 4.9, -1.9); void s;
     const ours = tT(512, 96, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 30px ${serif}`; c.fillText("Bar - Restaurant", 14, 60); c.font = `italic bold 38px ${serif}`; c.fillText("La Fontaine de l'Ours", 232, 60); });
     add(new THREE.PlaneGeometry(10, 1.4), lum(mat({ map: ours, emissive: 0xffffff, emissiveMap: ours, emissiveIntensity: .12 }), .12, .9), -25, 2.6, -2.15);
     const bas = tT(512, 160, (c, w, h) => { c.fillStyle = "#4a2a18"; c.fillRect(0, 0, w, h); for (let k = 0; k < 5; k++) { c.fillStyle = "#e8d8b0"; c.fillRect(10 + k * 100, 20, 88, h - 34); c.fillStyle = "rgba(90,50,30,.5)"; c.fillRect(30 + k * 100, h - 60, 50, 6); } });
-    add(new THREE.PlaneGeometry(26, 1.9), lum(mat({ map: bas, emissive: 0xffffff, emissiveMap: bas, emissiveIntensity: .1 }), .1, .7), -26, .95, -3.18);
+    add(new THREE.PlaneGeometry(38, 1.9), lum(mat({ map: bas, emissive: 0xffffff, emissiveMap: bas, emissiveIntensity: .1 }), .1, .7), -20, .95, -3.18);
     // la terrasse de bois de la Fontaine de l'Ours, sa barrière de rondins
-    box(26, .35, 3, boisC, -26, .17, -1.6); for (let x = -38.8; x <= -13.2; x += 1.6) box(.12, 1.0, .12, boisC, x, .85, -.15); for (const y of [.75, 1.25]) box(26, .1, .1, boisC, -26, y, -.15);
+    box(38, .35, 3, boisC, -20, .17, -1.6); for (let x = -38.8; x <= -1.2; x += 1.6) box(.12, 1.0, .12, boisC, x, .85, -.15); for (const y of [.75, 1.25]) box(38, .1, .1, boisC, -20, y, -.15);
     for (const o of scene.children.slice(n0E)) o.position.x -= 9; }   // (10.105, d'après la photo : juste derrière la longueur de bâtiment de la piscine)
   /* (10.107, d'après les photos) le petit chalet de la Fontaine de l'Ours, entre l'École du Ski et la piscine : le soubassement crème, le haut en madriers de bois et ses fenêtres,
      le toit de tôle qui avance ; devant, côté piscine, sa terrasse de dalles claires, ses tables carrées blanches et ses chaises ajourées rouges et noires, sous la grande voile d'ombrage grise ;
@@ -301,12 +301,7 @@ function construireCorbier(A, L, scene) {
   // « LE WAGON · Bar - Snack » sur la longueur de bâtiment, sous la terrasse, côté piscine
   { const wT = tT(512, 96, (c, w, h) => { c.fillStyle = "#f2efe6"; c.fillRect(0, 0, w, h); c.strokeStyle = "#8a2a20"; c.lineWidth = 6; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = "#8a2a20"; c.font = `bold 46px ${serif}`; c.textAlign = "center"; c.fillText("LE WAGON", w / 2, 52); c.font = `bold 20px ${sans}`; c.fillText("Bar - Snack - Glaces", w / 2, 82); });
     const wp = add(new THREE.PlaneGeometry(3.2, .6), lum(mat({ map: wT, emissive: 0xffffff, emissiveMap: wT, emissiveIntensity: .12 }), .12, .8), -60.57, YP + 2.0, 3); wp.rotation.y = -Math.PI / 2; }
-  /* le chalet des crêpes : sa planche « CRÊPES », sa fenêtre de vente, son toit à lambrequins */
-  { const cx = -13.2, cz = 2.6; box(4.2, 2.4, 3, mat({ color: 0xf0ead8 }), cx, 1.2, cz); const tt = box(5.2, .25, 4, mat({ color: 0x4a4a50 }), cx, 2.7, cz); tt.rotation.z = .08;
-    const cT = tT(256, 64, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 44px ${serif}`; c.textAlign = "center"; c.fillText("CRÊPES", w / 2, 48); });
-    add(new THREE.PlaneGeometry(1.8, .45), mat({ map: cT }), cx - 1.0, 2.15, cz + 1.52); box(1.9, 1, .06, boisC, cx + .9, 1.6, cz + 1.52); box(1.6, .8, .02, mat({ color: 0x8aa0a8, roughness: .1 }), cx + .9, 1.6, cz + 1.55); box(2, .08, .4, boisC, cx + .9, 1.06, cz + 1.7);
-    for (let x = cx - 2.5; x < cx + 2.6; x += .3) { const d = box(.16, .2, .04, boisC, x, 2.48, cz + 2.02); d.rotation.z = .3; }   // les lambrequins
-    OB.push([cx - 1, cz, 1.6], [cx + 1, cz, 1.6]); }
+  // (10.108 : le cabanon des crêpes retiré)
 
   /* ---------- le Yéti, au bout : la salle basse, l'enseigne entre les deux Amstel, la pergola blanche, les tables de pique-nique sur les dalles ---------- */
   { const yT = tT(1024, 128, (c, w, h) => { c.fillStyle = "#5a2a18"; c.fillRect(0, 0, w, h); for (const [x, t] of [[60, "AMSTEL"], [420, "LE YETI"], [780, "AMSTEL"]]) { c.fillStyle = "#c8202a"; c.fillRect(x, 20, 220, 60); c.fillStyle = "#fff"; c.font = `bold 40px ${serif}`; c.textAlign = "center"; c.fillText(t, x + 110, 64); } });
