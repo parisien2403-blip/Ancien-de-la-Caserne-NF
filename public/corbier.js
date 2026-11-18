@@ -58,7 +58,7 @@ function construireCorbier(A, L, scene) {
   /* (10.104) la rue qui descend : depuis le petit restaurant jusqu'au bas de la piscine, au fond, la pente — trois mètres de moins au bout ; l'herbe à côté suit */
   const DESC = (x, z) => { const u = Math.min(1, Math.max(0, (-50 - x) / 33)), f = z < 21 ? 1 : z > 34 ? 0 : 1 - (z - 21) / 13; return z < 10.5 && x > -84.5 ? 0 : -3.45 * u * u * (3 - 2 * u) * f * f * (3 - 2 * f); };   /* (en bas, la rue arrive au niveau des plages de la piscine) */   // (au bout, derrière la piscine, le terrain est descendu lui aussi)
   { const hm = mat({ map: herbeT, roughness: 1 }); L.sol = sol(-400, 400, 34, 400, hm, -.02); L.solsPlus = [sol(-400, -90, 14, 34, hm, -.02), sol(-50, 400, 14, 34, hm, -.02), sol(-400, 400, -300, -22, hm, -.02), sol(-400, -90, -22, -10, hm, -.02), sol(-84.6, 400, -22, -10, hm, -.02), sol(-400, -84, -10, 14, hm, -.02), sol(-50, 400, -10, 14, hm, -.02), sol(-60.5, -50, -10, 10.4, hm, -.02)]; }   /* (le trou : la piscine en contrebas) */
-  L.solsPlus.push(sol(-48, 66, 0, 7, mat({ map: deckT, roughness: .8 }), .03), sol(-48, -36, 7, 10.4, mat({ map: deckT, roughness: .8 }), .034),   /* (10.120 : le platelage va jusqu'au bâtiment, et avance en L jusqu'à son bout) */ sol(-50, 100, 7, 16, mat({ map: gravT, roughness: 1 }), .01), sol(66, 84, 0, 8, mat({ map: dalleT, roughness: .8 }), .03), sol(-40.5, -38.6, 0, 7, mat({ map: dalleT, roughness: .8 }), .055));
+  L.solsPlus.push(sol(-48, 66, -3.6, 7, mat({ map: deckT, roughness: .8 }), .03),   /* (10.123 : le platelage clair va jusqu'au pied des façades, dans les renfoncements aussi) */ sol(-48, -36, 7, 10.4, mat({ map: deckT, roughness: .8 }), .034),   /* (10.120 : le platelage va jusqu'au bâtiment, et avance en L jusqu'à son bout) */ sol(-50, 100, 7, 16, mat({ map: gravT, roughness: 1 }), .01), sol(66, 84, 0, 8, mat({ map: dalleT, roughness: .8 }), .03));
   for (const [x0, x1] of [[-36, 66]]) box(x1 - x0, .08, .2, boisC, (x0 + x1) / 2, .04, 7); box(12, .08, .2, boisC, -42, .04, 10.4); box(.2, .08, 3.4, boisC, -36, .04, 8.7);   // (le rebord du platelage)
 
   /* ---------- les montagnes de la Maurienne tout autour : les crêtes, les pentes d'herbe, les rochers ; quelques sommets plus hauts ---------- */
@@ -386,7 +386,7 @@ function construireCorbier(A, L, scene) {
     const bas = tT(512, 160, (c, w, h) => { c.fillStyle = "#4a2a18"; c.fillRect(0, 0, w, h); for (let k = 0; k < 5; k++) { c.fillStyle = "#e8d8b0"; c.fillRect(10 + k * 100, 20, 88, h - 34); c.fillStyle = "rgba(90,50,30,.5)"; c.fillRect(30 + k * 100, h - 60, 50, 6); } });
     add(new THREE.PlaneGeometry(38, 1.9), lum(mat({ map: bas, emissive: 0xffffff, emissiveMap: bas, emissiveIntensity: .1 }), .1, .7), -20, .95, -3.18);
     // la terrasse de bois de la Fontaine de l'Ours, sa barrière de rondins
-    box(38, .35, 3, boisC, -20, .17, -1.6); for (let x = -38.8; x <= -1.2; x += 1.6) box(.12, 1.0, .12, boisC, x, .85, -.15); for (const y of [.75, 1.25]) box(38, .1, .1, boisC, -20, y, -.15);
+    // (10.123 : le parquet sombre et sa barrière retirés : le platelage clair va jusqu'au bâtiment)
     for (const o of scene.children.slice(n0E)) o.position.x -= 9; }   // (10.105, d'après la photo : juste derrière la longueur de bâtiment de la piscine)
   /* (10.107, d'après les photos) le petit chalet de la Fontaine de l'Ours, entre l'École du Ski et la piscine : le soubassement crème, le haut en madriers de bois et ses fenêtres,
      le toit de tôle qui avance ; devant, côté piscine, sa terrasse de dalles claires, ses tables carrées blanches et ses chaises ajourées rouges et noires, sous la grande voile d'ombrage grise ;
@@ -548,7 +548,7 @@ function construireCorbier(A, L, scene) {
   { const orange = mat({ map: planches("#a8582c", "255,200,150") }), blancP = mat({ color: 0xf2f0ea, roughness: .7 }), brunC = mat({ color: 0x4a2418, roughness: .7 }), creme = mat({ color: 0xe8e0d0, roughness: .8 });
     const vitreN = mat({ color: 0x2a3036, roughness: .1, metalness: .3, transparent: true, opacity: .6 }), verreR = mat({ color: 0xdcecf0, roughness: .05, transparent: true, opacity: .3, depthWrite: false });
     const XF = 158;   // (le bout)
-    sapin(84.2, 10.5, 15, melezeM);
+    sapin(83.9, 4.6, 15, melezeM);
     // la grande tour blanche
     { const x0 = 86, x1 = 110, cx = (x0 + x1) / 2, W = x1 - x0, N = 11, H0 = 3.4, HE = 3, HT = H0 + N * HE;
       const coteT = tT(128, 256, (c, w, h) => { c.fillStyle = "#7a4a34"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 4) { c.fillStyle = `rgba(${x % 8 ? "255,220,190" : "40,20,10"},.08)`; c.fillRect(x, 0, 2, h); } for (let y = 20; y < h; y += 23) { c.fillStyle = "#ece6da"; c.fillRect(w * .35, y, w * .65, 3); } }, 1, 1);
