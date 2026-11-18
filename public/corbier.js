@@ -45,8 +45,8 @@ function construireCorbier(A, L, scene) {
   /* ---------- (en face des bâtiments) le domaine skiable, d'après les photos : la piste de gravier, le talus et son muret de rochers, puis les pentes d'herbe rousse
      qui montent vers les crêtes, les bosquets de sapins ; l'office « Corbier Tourisme » sous sa pyramide, le portique rouge, la gare du télésiège des Sybelles,
      le chalet des remontées, la cabane, la tête d'un autre télésiège ; les pylônes et les sièges qui montent jusqu'en haut ; l'aire de jeux des enfants ---------- */
-  const HP = (x, z) => { if (z < 21) return 0; const t = Math.min(1, (z - 21) / 4), base = t * t * (3 - 2 * t) * 2.4; if (z < 25) return base;
-    const d = z - 25; return base + d * .24 + Math.max(0, d - 120) * .18 + Math.sin(x * .013 + 1.2) * Math.min(1, d / 60) * 14 + Math.sin(x * .031 + z * .02) * Math.min(1, d / 40) * 5; };
+  const HP = (x, z) => { if (z < 44) return z < 30 ? 0 : (z - 30) * .03; const t = Math.min(1, (z - 44) / 5), base = .42 + t * t * (3 - 2 * t) * 2.4; if (z < 49) return base;   /* (devant les immeubles : l'esplanade presque plate, puis le pré qui monte) */
+    const d = z - 49; return base + d * .24 + Math.max(0, d - 120) * .18 + Math.sin(x * .013 + 1.2) * Math.min(1, d / 60) * 14 + Math.sin(x * .031 + z * .02) * Math.min(1, d / 40) * 5; };
   L.hautPiste = HP;
   { const g2 = new THREE.PlaneGeometry(700, 430, 90, 60); g2.rotateX(-Math.PI / 2); const p = g2.attributes.position, C = [];
     for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i) + 236; p.setZ(i, z - 236); p.setY(i, HP(-x, z)); const h = HP(-x, z), n = Math.sin(x * .07) * Math.sin(z * .05);
@@ -55,26 +55,34 @@ function construireCorbier(A, L, scene) {
     const preT = tT(256, 256, (c, w, h) => { c.fillStyle = "#d8d0b0"; c.fillRect(0, 0, w, h); for (let i = 0; i < 3000; i++) { c.fillStyle = ["#c8c0a0", "#e8e0c0", "#b8b49a", "#d0d8b0"][i % 4]; c.fillRect(al() * w, al() * h, 2, 3); } }, 70, 40);
     const pente = new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ vertexColors: true, map: preT }));   /* (l'herbe rase, roussie par l'automne) */ pente.position.set(0, .01, 236); pente.receiveShadow = true; scene.add(pente); }
   // la piste de gravier, au pied du talus ; le muret de rochers dans le talus
-  L.solsPlus.push(sol(-80, 100, 18.6, 21.2, mat({ map: gravT, roughness: 1 }), .02));
-  { const rocM = [mat({ color: 0xa8a49a, roughness: .9 }), mat({ color: 0x8a867e, roughness: .9 })]; for (let x = 40; x < 64; x += .9 + al() * .5) { const r = add(new THREE.DodecahedronGeometry(.45 + al() * .25, 0), rocM[(x * 3 | 0) % 2], x, HP(x, 22.6) + .1, 22.4); r.scale.set(1.3, .7, .8); r.rotation.y = al() * 3; } }
+  L.solsPlus.push(sol(-80, 100, 18.6, 21.2, mat({ map: gravT, roughness: 1 }), .02), sol(-60, 60, 21.2, 30, mat({ map: gravT, roughness: 1 }), .02));   // (le chemin, l'esplanade de gravier)
+  { const rocM = [mat({ color: 0xa8a49a, roughness: .9 }), mat({ color: 0x8a867e, roughness: .9 })]; for (let x = 36; x < 56; x += .9 + al() * .5) { const r = add(new THREE.DodecahedronGeometry(.45 + al() * .25, 0), rocM[(x * 3 | 0) % 2], x, HP(x, 45.6) + .1, 45.4); r.scale.set(1.3, .7, .8); r.rotation.y = al() * 3; } }
   if (false) { const mar = mat({ color: 0x8a7a64 }); for (let k = 0; k < 6; k++) box(1.6, .1, .25, mar, 30, HP(30, 21.3 + k * .6) + .05, 21.3 + k * .6); }   // (les marches de bois dans le talus)
   // les bosquets de sapins sur les pentes
   { const sapM = mat({ color: 0x24402a, roughness: .9 }); for (const [cx, cz, n] of [[-60, 150, 40], [-20, 170, 30], [70, 210, 30], [-140, 120, 26], [130, 130, 22], [20, 90, 8]]) for (let k = 0; k < (PETIT ? n / 3 : n); k++) { const x = cx + (al() - .5) * 50, z = cz + (al() - .5) * 40, h = 8 + al() * 7; add(new THREE.ConeGeometry(h * .27, h, 7), sapM, x, HP(x, z) + h / 2 - .5, z); } }
   // l'office du tourisme : la rotonde sous sa grande pyramide de poutres rouges et blanches, le chapeau blanc
-  { const ox = 6, oz = 24.5, rouge = mat({ color: 0xa8342a, roughness: .6 }), blanc2 = mat({ color: 0xf2f0ea, roughness: .6 });
-    cyl(4.4, 4.4, 3, mat({ color: 0xe8e2d4 }), ox, 1.5, oz, 24); const bd = add(new THREE.CylinderGeometry(4.6, 4.6, .8, 24, 1, true), mat({ color: 0x8a2a20, side: THREE.DoubleSide }), ox, 3.1, oz); void bd; cyl(4.8, 4.8, .2, blanc2, ox, 3.55, oz, 24);
-    for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; const w = box(1.6, 1.8, .06, mat({ color: 0x9ab0b8, roughness: .1 }), ox + Math.sin(a) * 4.42, 1.4, oz + Math.cos(a) * 4.42); w.rotation.y = a; }
-    const tT2 = tT(1024, 64, (c, w, h) => { c.fillStyle = "#8a2a20"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 40px ${sans}`; c.textAlign = "center"; for (const x of [w / 4, w * 3 / 4]) c.fillText("CORBIER TOURISME", x, 46); });
-    const bnd = add(new THREE.CylinderGeometry(4.62, 4.62, .8, 32, 1, true), mat({ map: tT2, side: THREE.DoubleSide }), ox, 3.1, oz); void bnd;
-    const top = [ox, 12.5, oz]; for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2 + .5, bx = ox + Math.sin(a) * 6.5, bz = oz + Math.cos(a) * 6.5, A = new THREE.Vector3(bx, 0, bz), B = new THREE.Vector3(...top), d = B.clone().sub(A);
-      for (const [m, off] of [[rouge, 0], [blanc2, .32]]) { const o = add(new THREE.BoxGeometry(.32, d.length(), .5), m, 0, 0, 0); o.position.copy(A).addScaledVector(d, .5); o.position.x += Math.cos(a) * off; o.position.z -= Math.sin(a) * off; o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); } OB.push([bx, bz, .6]); }
-    add(new THREE.ConeGeometry(1.7, 2.6, 16), blanc2, ox, 12.4, oz); cyl(1.7, 1.7, .5, blanc2, ox, 11.1, oz, 16);
-    for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; const f = add(new THREE.CylinderGeometry(.015, .015, 7.5, 3), mat({ color: 0xd8d8d8, metalness: .6 }), ox + Math.sin(a) * 1.4, 7.1, oz + Math.cos(a) * 1.4); f.rotation.z = Math.sin(a) * .35; f.rotation.x = -Math.cos(a) * .35; }   // les haubans
-    OB.push([ox, oz, 4.8]); }
+  /* l'office du tourisme, d'après les vues du ciel : la grande rotonde à deux niveaux (le soubassement de béton clair, la galerie vitrée, le bandeau rouge « CORBIER TOURISME »),
+     son toit conique en bardeaux gris, et les trois grandes poutres de bois lamellé, rouge-orangé côté dehors et blanches côté dedans, qui se rejoignent très haut sous le chapeau blanc */
+  { const n0 = scene.children.length, ox = -42, oz = 36, R0 = 8.5, rouge = mat({ color: 0xb8502a, roughness: .55 }), blanc2 = mat({ color: 0xf2f0ea, roughness: .6 }), beton = mat({ color: 0xd8d2c4, roughness: .8 });
+    cyl(R0 + .6, R0 + .9, 1.4, beton, ox, .7, oz, 40); cyl(R0, R0, 2.6, mat({ color: 0xe8e2d4 }), ox, 2.7, oz, 40);   // le soubassement, le rez-de-chaussée
+    for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; const w = box(1.9, 2.0, .06, mat({ color: 0x8aa4b0, roughness: .1, metalness: .2 }), ox + Math.sin(a) * (R0 + .02), 2.7, oz + Math.cos(a) * (R0 + .02)); w.rotation.y = a; }   // les baies vitrées tout autour
+    const tT2 = tT(2048, 64, (c, w, h) => { c.fillStyle = "#9a2a1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 40px ${sans}`; c.textAlign = "center"; for (const x of [w / 6, w / 2, w * 5 / 6]) c.fillText("CORBIER TOURISME", x, 46); });
+    add(new THREE.CylinderGeometry(R0 + .25, R0 + .25, .9, 48, 1, true), mat({ map: tT2, side: THREE.DoubleSide }), ox, 4.45, oz);   // le bandeau rouge
+    cyl(R0 + 1.4, R0 + 1.4, .25, blanc2, ox, 4.95, oz, 48); for (let k = 0; k < 48; k++) { const a = k / 48 * Math.PI * 2; cyl(.04, .04, .9, mat({ color: 0x3a3a3a }), ox + Math.sin(a) * (R0 + 1.3), 5.5, oz + Math.cos(a) * (R0 + 1.3), 4); } add(new THREE.TorusGeometry(R0 + 1.3, .05, 4, 64), mat({ color: 0x3a3a3a }), ox, 5.95, oz).rotation.x = Math.PI / 2;   // la galerie de l'étage, sa rambarde
+    cyl(R0 - .4, R0 - .4, 1.6, mat({ color: 0xb8c8cc, roughness: .1, metalness: .2 }), ox, 5.9, oz, 40);   // l'étage vitré
+    const toitT = tT(256, 256, (c, w, h) => { c.fillStyle = "#7a7268"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 10) for (let x = (y / 10 % 2) * 8; x < w; x += 16) { c.fillStyle = ["#8a8278", "#6a645c", "#7e766c"][(x + y) % 3]; c.fillRect(x, y, 15, 9); } }, 6, 3);
+    add(new THREE.ConeGeometry(R0 + 1.2, 4.2, 48, 1, true), mat({ map: toitT, roughness: .9, side: THREE.DoubleSide }), ox, 8.8, oz);   // le toit conique en bardeaux
+    const top = [ox, 22, oz]; for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2 + .6, bx = ox + Math.sin(a) * (R0 + 4), bz = oz + Math.cos(a) * (R0 + 4), A = new THREE.Vector3(bx, 0, bz), B = new THREE.Vector3(...top), d = B.clone().sub(A);
+      for (const [m, off] of [[rouge, 0], [blanc2, .55]]) { const o = add(new THREE.BoxGeometry(.6, d.length(), 1.1), m, 0, 0, 0); o.position.copy(A).addScaledVector(d, .5); o.position.x += Math.cos(a) * off; o.position.z -= Math.sin(a) * off; o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()); }
+      box(2, .8, 2, beton, bx, .4, bz); OB.push([bx, bz, 1.4]); }
+    add(new THREE.ConeGeometry(2.6, 4, 24), blanc2, ox, 22.6, oz); cyl(2.6, 2.6, .6, blanc2, ox, 20.3, oz, 24);   // le chapeau blanc, tout en haut
+    for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; const f = add(new THREE.CylinderGeometry(.02, .02, 11, 3), mat({ color: 0xd8d8d8, metalness: .6 }), ox + Math.sin(a) * 2.2, 15, oz + Math.cos(a) * 2.2); f.rotation.z = Math.sin(a) * .5; f.rotation.x = -Math.cos(a) * .5; }   // les haubans, du chapeau au toit
+    for (let k = 0; k < 4; k++) box(4, .2, .5, beton, ox, .1 + k * .2, oz - R0 - 1.4 - k * .5);   // les marches, côté chemin
+    OB.push([ox, oz, R0 + 1]); const yb = HP(ox, oz); for (const o of scene.children.slice(n0)) o.position.y += yb; }
   // (l'aire de jeux, les bacs de fleurs du pré : retirés)
   // le portique rouge des Sybelles et ses tourniquets blancs
-  { const rg = mat({ color: 0x9a2030, roughness: .5 }); box(.35, 3.2, .35, rg, 41, HP(41, 25) + 1.6, 26); box(.35, 2.4, .35, rg, 36, HP(36, 25) + 1.2, 26); const pt = box(5.6, .5, .6, rg, 38.5, HP(38, 25) + 3.0, 26); pt.rotation.z = .14;
-    for (let k = 0; k < 6; k++) box(.25, 1, .25, mat({ color: 0xf2f2f0 }), 36.6 + k * .7, HP(38, 25) + .5, 26); box(1.3, 1.6, .1, mat({ color: 0x1a1a1a }), 34.5, HP(34, 25) + 1.6, 26.2); }
+  { const rg = mat({ color: 0x9a2030, roughness: .5 }); box(.35, 3.2, .35, rg, 38, HP(38, 34) + 1.6, 35); box(.35, 2.4, .35, rg, 33, HP(33, 34) + 1.2, 35); const pt = box(5.6, .5, .6, rg, 35.5, HP(35, 34) + 3.0, 35); pt.rotation.z = .14;
+    for (let k = 0; k < 6; k++) box(.25, 1, .25, mat({ color: 0xf2f2f0 }), 33.6 + k * .7, HP(35, 34) + .5, 35); box(1.3, 1.6, .1, mat({ color: 0x1a1a1a }), 31.5, HP(31, 34) + 1.6, 35.2); }
   /* le télésiège des Sybelles : la gare (la grande coque crème au toit sombre), la poulie, les pylônes qui montent, le câble et les sièges qui tournent */
   const TS = []; const telesiege = (gx, gz, dir, long, gros) => { const y0 = HP(gx, gz), g = new THREE.Group(); g.position.set(gx, y0, gz); g.rotation.y = dir; scene.add(g); const cr = mat({ color: 0xe8e2cc, roughness: .5 }), sombre = mat({ color: 0x2a3036, roughness: .3, metalness: .4 }), gris = mat({ color: 0x9a9ea2, metalness: .6, roughness: .4 });
     if (gros) { const co = new THREE.Mesh(new THREE.CapsuleGeometry(2.6, 6, 6, 16), cr); co.rotation.z = Math.PI / 2; co.scale.set(1, 1, .55); co.position.set(0, 4.2, 0); g.add(co); const to = new THREE.Mesh(new THREE.SphereGeometry(3.6, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), sombre); to.scale.set(1.5, .35, .72); to.position.set(0, 5.4, 0); g.add(to);
@@ -95,12 +103,12 @@ function construireCorbier(A, L, scene) {
       c.userData.anime = true; scene.add(c); S.push(c); }
     const placer = (u, cote) => { let d = u * tot, k = 0; while (k < L2.length - 1 && d > L2[k]) { d -= L2[k]; k++; } const f = Math.min(1, d / L2[k]), A = line[k], B = line[k + 1]; return [A[0] + (B[0] - A[0]) * f + cosd * cote * 2.2, A[1] + (B[1] - A[1]) * f, A[2] + (B[2] - A[2]) * f - sind * cote * 2.2]; };
     TS.push({ S, placer, tot, dir, nS }); };
-  telesiege(52, 27.5, .08, 300, true); telesiege(84, 31, -.1, 220, false); telesiege(-28, 34, .25, 180, false);
+  telesiege(46, 38, .5, 320, true); telesiege(70, 44, .2, 220, false); telesiege(-15, 52, -.1, 200, false);
   // le chalet des remontées : le bardage de bois, le toit de tôle grise, les fenêtres, l'escalier
-  { const cx = 64, cz = 29, y = HP(cx, cz); box(9, 3.4, 6, facR, cx, y + 1.7, cz); const r1 = box(5.4, .15, 7, mat({ color: 0x5a6068, metalness: .4, roughness: .5 }), cx - 2.3, y + 4.4, cz); r1.rotation.z = .55; const r2 = box(5.4, .15, 7, mat({ color: 0x5a6068, metalness: .4, roughness: .5 }), cx + 2.3, y + 4.4, cz); r2.rotation.z = -.55;
+  { const cx = 58, cz = 40, y = HP(cx, cz); box(9, 3.4, 6, facR, cx, y + 1.7, cz); const r1 = box(5.4, .15, 7, mat({ color: 0x5a6068, metalness: .4, roughness: .5 }), cx - 2.3, y + 4.4, cz); r1.rotation.z = .55; const r2 = box(5.4, .15, 7, mat({ color: 0x5a6068, metalness: .4, roughness: .5 }), cx + 2.3, y + 4.4, cz); r2.rotation.z = -.55;
     for (let k = 0; k < 5; k++) box(1, 1.3, .06, mat({ color: 0x2a3a40, roughness: .2 }), cx - 3.4 + k * 1.7, y + 1.8, cz - 3.02); box(.9, .5, .06, mat({ color: 0x1a5aa8 }), cx + 1, y + 2.9, cz - 3.05); OB.push([cx, cz, 5]); }
   // la petite cabane du préposé, au pied du deuxième télésiège
-  { const cx = 77, cz = 31, y = HP(cx, cz); box(3, 2.6, 2.6, facS, cx, y + 1.3, cz); const r = box(3.6, .12, 3.3, mat({ color: 0x4a5058, metalness: .4 }), cx, y + 2.85, cz); r.rotation.x = -.15; box(1.2, .8, .05, mat({ color: 0x9ab0b8, roughness: .1 }), cx + .4, y + 1.7, cz - 1.32); box(.9, 1.4, .9, mat({ color: 0xe8e8e2 }), cx - 2.2, y + .7, cz); }
+  { const cx = 66, cz = 44, y = HP(cx, cz); box(3, 2.6, 2.6, facS, cx, y + 1.3, cz); const r = box(3.6, .12, 3.3, mat({ color: 0x4a5058, metalness: .4 }), cx, y + 2.85, cz); r.rotation.x = -.15; box(1.2, .8, .05, mat({ color: 0x9ab0b8, roughness: .1 }), cx + .4, y + 1.7, cz - 1.32); box(.9, 1.4, .9, mat({ color: 0xe8e8e2 }), cx - 2.2, y + .7, cz); }
 
 
   /* ---------- la résidence en bois : le rez-de-chaussée des boutiques, trois étages de balcons en caissons, le bandeau de planches qui avance en haut ---------- */
@@ -181,7 +189,9 @@ function construireCorbier(A, L, scene) {
     // les grandes tours sombres derrière (Les Tours du Corbier)
     const tourT = tT(128, 256, (c, w, h) => { c.fillStyle = "#4a2418"; c.fillRect(0, 0, w, h); for (let y = 6; y < h; y += 18) { c.fillStyle = "#2a1610"; c.fillRect(0, y, w, 8); c.fillStyle = "#c8b8a0"; c.fillRect(0, y + 8, w, 2); for (let x = 4; x < w; x += 32) { c.fillStyle = "#1a1a20"; c.fillRect(x, y + 10, 24, 7); } } }, 3, 1);
     const tourM = lum(mat({ map: tourT, emissive: 0xffc890, emissiveMap: null, emissiveIntensity: 0 }), 0, .08);
-    for (const [x, z, h, w] of [[-38, -46, 46, 16], [-8, -62, 52, 18], [-86, -30, 38, 14], [104, -36, 40, 15]]) { box(w, h, 14, tourM, x, h / 2, z); box(w + 1, 1.2, 15, mat({ color: 0x3a2014 }), x, h + .6, z); } }
+    for (const [x, z, h, w] of [[100, -6, 46, 18], [114, 14, 40, 16]]) { box(w, h, 14, tourM, x, h / 2, z); box(w + 1, 1.2, 15, mat({ color: 0x3a2014 }), x, h + .6, z); }   // (la grande tour sombre, au bout du Yéti)
+    const tourO = tT(128, 256, (c, w, h) => { c.fillStyle = "#c8761e"; c.fillRect(0, 0, w, h); for (let y = 6; y < h; y += 18) { c.fillStyle = "#7a3a14"; c.fillRect(0, y, w, 7); c.fillStyle = "#e8c070"; c.fillRect(0, y + 7, w, 2); for (let x = 4; x < w; x += 32) { c.fillStyle = ["#e8d8c0", "#c84a3a", "#2a2a30"][(x + y) % 3]; c.fillRect(x, y + 10, 24, 7); } } }, 3, 1);
+    for (const [x, z, h, w] of [[-92, -8, 50, 18], [-104, 14, 46, 16], [-86, 36, 42, 15]]) { box(w, h, 15, mat({ map: tourO }), x, h / 2, z); box(w + 1, 1.2, 16, mat({ color: 0x5a2a12 }), x, h + .6, z); } }   // (les tours orangées, au bout de la piscine)
 
   /* ---------- le bâtiment de l'École du Ski Français, la Fontaine de l'Ours ---------- */
   { residence(-39, -13, -3.2, 3, facG);
@@ -267,8 +277,8 @@ function construireCorbier(A, L, scene) {
   /* ---------- les limites : la promenade, le parking, le tour de la piscine, la terrasse du Yéti ---------- */
   const CASES = new Map(); for (const o of OB) { const [a, b, r] = o; for (let i = Math.floor((a - r) / 2); i <= Math.floor((a + r) / 2); i++) for (let j = Math.floor((b - r) / 2); j <= Math.floor((b + r) / 2); j++) { const k = i * 4096 + j; (CASES.get(k) || CASES.set(k, []).get(k)).push(o); } }
   const libre = (x, z) => { const l = CASES.get(Math.floor(x / 2) * 4096 + Math.floor(z / 2)); if (l) for (const [a, b, r] of l) if ((x - a) ** 2 + (z - b) ** 2 < r * r) return false; return true; };
-  L.limites = (x, z) => libre(x, z) && ((x > -71.5 && x < 96 && z > 7.6 && z < 21 && !(x < -40 && z < 14)) || (x > -38.6 && x < 82 && z > .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
-  L.hauteur = (x, z) => z > 21 ? HP(-x, z) : 0;
+  L.limites = (x, z) => libre(x, z) && ((x > -71.5 && x < 96 && z > 7.6 && z < 34 && !(x < -40 && z < 14)) || (x > -38.6 && x < 82 && z > .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
+  L.hauteur = (x, z) => HP(-x, z);
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
 
