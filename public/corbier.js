@@ -373,7 +373,7 @@ function construireCorbier(A, L, scene) {
     // les grandes tours sombres derrière (Les Tours du Corbier)
     const tourT = tT(128, 256, (c, w, h) => { c.fillStyle = "#5a2618"; c.fillRect(0, 0, w, h); for (let y = 4; y < h; y += 16) { c.fillStyle = "rgba(20,10,6,.55)"; c.fillRect(0, y, w, 11); for (let x = 3; x < w; x += 21) { c.fillStyle = ["#1c1c22", "#2a2a30", "#3a3e44"][(x + y) % 3]; c.fillRect(x, y + 2, 15, 8); c.fillStyle = "rgba(200,200,200,.35)"; c.fillRect(x, y + 9, 15, 1); } c.fillStyle = "rgba(255,230,210,.18)"; c.fillRect(0, y + 11, w, 2); } c.fillStyle = "#e8e2d8"; c.fillRect(0, 0, 3, h); c.fillRect(w - 3, 0, 3, h); c.fillStyle = "rgba(232,226,216,.8)"; c.fillRect(w / 2 - 1, 0, 2, h); }, 3, 1);
     const tourM = lum(mat({ fog: false, map: tourT, emissive: 0xffc890, emissiveMap: null, emissiveIntensity: 0 }), 0, .08);
-    for (const [x, z, h, w] of [[90, -26, 42, 17]]) { box(w, h, 14, tourM, x, h / 2, z); box(w + 1, 1.2, 15, mat({ color: 0x3a2014 }), x, h + .6, z); }   // (la grande tour sombre, au bout du Yéti)
+    for (const [x, z, h, w] of []) { box(w, h, 14, tourM, x, h / 2, z); box(w + 1, 1.2, 15, mat({ color: 0x3a2014 }), x, h + .6, z); }   // (la grande tour sombre, au bout du Yéti)
     const tourO = tT(128, 256, (c, w, h) => { c.fillStyle = "#4a2418"; c.fillRect(0, 0, w, h); for (let y = 4; y < h; y += 16) { c.fillStyle = "rgba(20,10,6,.55)"; c.fillRect(0, y, w, 11); for (let x = 3; x < w; x += 21) { c.fillStyle = ["#1c1c22", "#2a2a30", "#3a3e44"][(x + y) % 3]; c.fillRect(x, y + 2, 15, 8); c.fillStyle = "rgba(200,200,200,.35)"; c.fillRect(x, y + 9, 15, 1); } c.fillStyle = "rgba(255,230,210,.18)"; c.fillRect(0, y + 11, w, 2); } c.fillStyle = "#e8e2d8"; c.fillRect(0, 0, 3, h); c.fillRect(w - 3, 0, 3, h); c.fillStyle = "rgba(232,226,216,.8)"; c.fillRect(w / 2 - 1, 0, 2, h); }, 3, 1);
     for (const [x, z, h, w] of [[-104, -14, 50, 18], [-110, 10, 46, 16], [-100, 34, 42, 15]]) { box(w, h, 15, mat({ map: tourO, fog: false }), x, h / 2, z); box(w + 1, 1.2, 16, mat({ color: 0x5a2a12 }), x, h + .6, z); } }   // (les tours orangées, au bout de la piscine)
 
@@ -542,57 +542,84 @@ function construireCorbier(A, L, scene) {
   /* ---------- les limites : la promenade, le parking, le tour de la piscine, la terrasse du Yéti ---------- */
   const CASES = new Map(); for (const o of OB) { const [a, b, r] = o; for (let i = Math.floor((a - r) / 2); i <= Math.floor((a + r) / 2); i++) for (let j = Math.floor((b - r) / 2); j <= Math.floor((b + r) / 2); j++) { const k = i * 4096 + j; (CASES.get(k) || CASES.set(k, []).get(k)).push(o); } }
   const libre = (x, z) => { const l = CASES.get(Math.floor(x / 2) * 4096 + Math.floor(z / 2)); if (l) for (const [a, b, r] of l) if ((x - a) ** 2 + (z - b) ** 2 < r * r) return false; return true; };
-  /* (10.121, d'après les photos) au bout, après le Yéti : le bâtiment bas en bois orange à deux étages (la galerie, les poteaux, la location de skis),
-     collé à la grande tour aux balcons crème et aux cadres bruns ; en bas, Chauvin Immobilier, les stores bleus de La Godille, le store rouge de La Fine Bouche ;
-     les jardinières de géraniums ; au bout, les barrières de bois qui ferment l'herbe */
+  /* (10.121, d'après les photos) au bout, après le Yéti : le mélèze ; la grande tour blanche aux balcons crème et aux cadres bruns (en bas, Interhome, La Fine Bouche,
+     les stores bleus de La Godille, Chauvin Immobilier) ; puis la tour sombre en bois, en retrait ; devant elle, les bâtiments bas à deux étages, tous collés
+     (la location de skis, Ski rental, Sport 2000), jusqu'au pub Le Sinoze et sa terrasse à balustrade de bois ; au bout, les barrières de bois qui ferment l'herbe */
   { const orange = mat({ map: planches("#a8582c", "255,200,150") }), blancP = mat({ color: 0xf2f0ea, roughness: .7 }), brunC = mat({ color: 0x4a2418, roughness: .7 }), creme = mat({ color: 0xe8e0d0, roughness: .8 });
     const vitreN = mat({ color: 0x2a3036, roughness: .1, metalness: .3, transparent: true, opacity: .6 }), verreR = mat({ color: 0xdcecf0, roughness: .05, transparent: true, opacity: .3, depthWrite: false });
-    // le bâtiment bas, deux étages au-dessus des boutiques
-    { const x0 = 82.7, x1 = 92, cx = (x0 + x1) / 2, W = x1 - x0;
-      box(W, 8.2, 10, orange, cx, 4.1, -6.6);
-      const rdcT = tT(1024, 128, (c, w, h) => { c.fillStyle = "#e8e2d4"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ec"; c.fillRect(0, 0, w, 26); c.fillStyle = "#c8202a"; c.font = `bold 18px ${sans}`; c.fillText("LOCATION DE SKIS", 12, 19); c.fillStyle = "#555"; c.font = `italic 18px ${serif}`; c.fillText("Ski rental", 300, 19);
-        for (let x = 10; x < w; x += 120) { c.fillStyle = "#5a3420"; c.fillRect(x, 30, 108, h - 30); c.fillStyle = "#6a7a84"; c.fillRect(x + 6, 36, 44, h - 42); c.fillRect(x + 58, 36, 44, h - 42); c.fillStyle = "rgba(255,255,255,.25)"; c.fillRect(x + 8, 38, 10, h - 46); } });
-      add(new THREE.PlaneGeometry(W, 3.2), lum(mat({ map: rdcT, emissive: 0xffffff, emissiveMap: rdcT, emissiveIntensity: .08 }), .08, .5), cx, 1.6, -1.58);
-      for (let x = x0 + .2; x <= x1; x += W / 3) { box(.22, 3.2, .22, blancP, x, 1.6, -.4); OB.push([x, -.4, .3]); }
-      box(W, .3, 1.4, blancP, cx, 3.35, -.9);   // (la poutre blanche, la dalle du balcon)
-      const voletT = tT(256, 64, (c, w, h) => { c.fillStyle = "#4a4a4c"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 4) { c.fillStyle = "rgba(0,0,0,.3)"; c.fillRect(0, y, w, 1); } }, 3, 1);
-      add(new THREE.PlaneGeometry(W, 1.6), mat({ map: voletT }), cx, 4.5, -1.58);
-      box(W, 1.1, .25, orange, cx, 5.95, -.35);   // (le bandeau de bois du balcon)
-      box(W, .2, 1.5, blancP, cx, 6.55, -.9);
-      add(new THREE.PlaneGeometry(W, 1.7), vitreN, cx, 7.4, -1.58);
-      for (let x = x0 + .2; x <= x1; x += W / 3) { box(.25, 1.8, .25, orange, x, 7.55, -.3); const br = box(.12, 1.3, .12, orange, x, 7.9, -.9); br.rotation.x = .7; }
-      box(W, .9, .05, mat({ color: 0x1e2226, roughness: .1, transparent: true, opacity: .55 }), cx, 7.1, -.3);
-      box(W + .3, .9, 2.2, orange, cx, 8.65, -1.3); }
-    // la grande tour : les balcons crème, les cadres bruns, les garde-corps de verre ; le toit brun
-    { const x0 = 92, x1 = 112, cx = (x0 + x1) / 2, W = x1 - x0, N = 11, H0 = 3.4, HE = 3, HT = H0 + N * HE;
-      box(W, HT, 11, facS, cx, HT / 2, -6.6); box(W + .6, 1.4, 12, brunC, cx, HT + .5, -6.4);
+    const XF = 158;   // (le bout)
+    sapin(84.4, 3.2, 15, melezeM);
+    // la grande tour blanche
+    { const x0 = 86, x1 = 110, cx = (x0 + x1) / 2, W = x1 - x0, N = 11, H0 = 3.4, HE = 3, HT = H0 + N * HE;
+      const coteT = tT(128, 256, (c, w, h) => { c.fillStyle = "#7a4a34"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 4) { c.fillStyle = `rgba(${x % 8 ? "255,220,190" : "40,20,10"},.08)`; c.fillRect(x, 0, 2, h); } for (let y = 20; y < h; y += 23) { c.fillStyle = "#ece6da"; c.fillRect(w * .35, y, w * .65, 3); } }, 1, 1);
+      box(W, HT, 11, mat({ map: coteT }), cx, HT / 2, -6.6); box(W + .6, 1.4, 12, mat({ color: 0x8a4a2a, roughness: .7 }), cx, HT + .5, -6.4);
       const etT = tT(1024, 128, (c, w, h) => { c.fillStyle = "#ece6da"; c.fillRect(0, 0, w, h); c.fillStyle = "#d8d0c2"; c.fillRect(0, 0, w, 30); for (let x = 0; x < w; x += 146) { const k = (x / 146) % 3; c.fillStyle = ["#3a4048", "#4a4c52", "#6a4a36"][k]; c.fillRect(x + 18, 40, 110, h - 40); c.fillStyle = "rgba(240,236,228,.85)"; if (k !== 2) for (let m = 0; m < 3; m++) c.fillRect(x + 22 + m * 36, 46, 28, h - 52); c.fillStyle = "#5a2a1a"; for (let m = 0; m < 4; m++) c.fillRect(x + 18 + m * 36, 40, 3, h - 40); } }, 1, N);
       add(new THREE.PlaneGeometry(W, N * HE), mat({ map: etT, roughness: .7 }), cx, H0 + N * HE / 2, -.98);
       for (let k = 0; k <= N; k++) { const y = H0 + k * HE; box(W, .32, 1.7, creme, cx, y, -.2); if (k < N) { box(W, .95, .03, verreR, cx, y + .6, .4); box(W, .05, .06, brunC, cx, y + 1.08, .4); } }
-      for (let i = 0; i <= 7; i++) { const x = x0 + .15 + i * (W - .3) / 7; box(.22, N * HE, 1.6, brunC, x, H0 + N * HE / 2, -.25); }
-      // en bas, les boutiques
-      const bT = tT(2048, 128, (c, w, h) => { c.fillStyle = "#5a3420"; c.fillRect(0, 0, w, h);
-        c.fillStyle = "#f2efe6"; c.fillRect(8, 6, 340, 34); c.fillStyle = "#5a2a1a"; c.font = `bold 26px ${serif}`; c.textAlign = "center"; c.fillText("CHAUVIN  IMMOBILIER", 178, 33);
-        c.fillStyle = "#8a6a4a"; c.fillRect(14, 46, 230, h - 50); for (let yy = 50; yy < h - 8; yy += 14) for (let xx = 20; xx < 240; xx += 22) { c.fillStyle = "#f4f2ee"; c.fillRect(xx, yy, 16, 10); c.fillStyle = "#c84a3a"; c.fillRect(xx + 2, yy + 2, 6, 3); }
-        c.fillStyle = "#3a3e44"; c.fillRect(256, 46, 86, h - 50);
-        for (let x = 360; x < 1540; x += 118) { c.fillStyle = "#8a5a30"; c.fillRect(x, 40, 110, h - 40); for (let yy = 46; yy < h; yy += 20) for (let xx = x + 6; xx < x + 104; xx += 12) { c.fillStyle = (xx + yy) % 24 < 12 ? "#f2f2ee" : "#5a5e66"; c.fillRect(xx, yy, 8, 14); } }
-        for (let x = 1550; x < w; x += 124) { c.fillStyle = "#a86a3a"; c.fillRect(x, 40, 116, h - 40); c.fillStyle = "#f2f0ea"; c.fillRect(x + 6, 46, 104, h - 50); } });
+      for (let i = 0; i <= 8; i++) { const x = x0 + .15 + i * (W - .3) / 8; box(.22, N * HE, 1.6, brunC, x, H0 + N * HE / 2, -.25); }
+      // en bas, de la droite vers la gauche : Interhome, La Fine Bouche (deux vitrines), Location, La Godille, Vente, Chauvin Immobilier
+      const bT = tT(2048, 128, (c, w, h) => { const m = w / W; c.fillStyle = "#6a3a22"; c.fillRect(0, 0, w, h);
+        const R = (a, b) => [(x1 - b) * m, (b - a) * m];   // (la scène est retournée : l'est du monde d'origine est à gauche de l'image)
+        const vitrines = (a, b, pas, f) => { const [l, L2] = R(a, b); for (let x = l; x < l + L2 - 10; x += pas) f(x); };
+        { const [l, L2] = R(86.2, 89.6); c.fillStyle = "#f4f4f2"; c.fillRect(l, 4, L2, 26); c.fillStyle = "#1a5ab8"; c.font = `bold 22px ${sans}`; c.fillText("Interhome", l + 8, 25); c.fillStyle = "#e85a1a"; c.beginPath(); c.arc(l + L2 - 18, 17, 8, 0, 7); c.fill(); }
+        vitrines(86.3, 89.5, 46, (x) => { c.fillStyle = "#a8582c"; c.fillRect(x, 34, 42, h - 34); c.fillStyle = "#5a4a40"; c.fillRect(x + 5, 40, 32, h - 44); });
+        vitrines(89.7, 97, 100, (x) => { c.fillStyle = "#a8682c"; c.fillRect(x, 30, 96, h - 30); c.fillStyle = "#f2f0ea"; c.fillRect(x + 6, 36, 84, h - 40); });
+        vitrines(97.1, 107.5, 92, (x) => { c.fillStyle = "#8a5a30"; c.fillRect(x, 30, 88, h - 30); for (let yy = 36; yy < h; yy += 18) for (let xx = x + 6; xx < x + 82; xx += 10) { c.fillStyle = (xx + yy) % 20 < 10 ? "#f2f2ee" : "#5a5e66"; c.fillRect(xx, yy, 7, 12); } });
+        { const [l, L2] = R(107.6, 110); c.fillStyle = "#f2efe6"; c.fillRect(l + 4, 4, L2 - 8, 28); c.fillStyle = "#5a2a1a"; c.font = `bold 17px ${serif}`; c.textAlign = "center"; c.fillText("CHAUVIN IMMOBILIER", l + L2 / 2, 24); c.textAlign = "left";
+          c.fillStyle = "#8a6a4a"; c.fillRect(l + 8, 36, L2 - 16, h - 40); for (let yy = 40; yy < h - 8; yy += 13) for (let xx = l + 12; xx < l + L2 - 24; xx += 20) { c.fillStyle = "#f4f2ee"; c.fillRect(xx, yy, 15, 9); c.fillStyle = "#c84a3a"; c.fillRect(xx + 2, yy + 2, 6, 3); } } });
       add(new THREE.PlaneGeometry(W, H0), lum(mat({ map: bT, emissive: 0xffffff, emissiveMap: bT, emissiveIntensity: .08 }), .08, .5), cx, H0 / 2, -.97);
-      const store = (xa, xb, txt, coul, fond) => { const rT = tT(256, 64, (c, w, h) => { for (let x = 0; x < w; x += 16) { c.fillStyle = (x / 16) % 2 ? "#f4f4f2" : coul; c.fillRect(x, 0, 16, h); } });
-        const st = box(xb - xa, .04, 1.3, mat({ map: rT, roughness: .8 }), (xa + xb) / 2, 3.05, -.4); st.rotation.x = .35;
-        const tx = tT(512, 64, (c, w, h) => { c.fillStyle = fond; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 12) { c.fillStyle = "#f4f4f2"; c.fillRect(x, 0, 6, 8); } c.fillStyle = fond === "#c8202a" ? "#fff" : "#f0e040"; c.font = `${fond === "#c8202a" ? "italic " : ""}bold 34px ${fond === "#c8202a" ? serif : sans}`; c.textAlign = "center"; c.fillText(txt, w / 2, 48); });
+      const store = (xa, xb, txt, coul) => { const rT = tT(256, 64, (c, w, h) => { for (let x = 0; x < w; x += 16) { c.fillStyle = (x / 16) % 2 ? "#f4f4f2" : coul; c.fillRect(x, 0, 16, h); } });
+        const st = box(xb - xa, .04, 1.3, mat({ map: rT, roughness: .8 }), (xa + xb) / 2, 3.05, -.4); st.rotation.x = .35; const rouge = coul === "#c8202a";
+        const tx = tT(512, 64, (c, w, h) => { c.fillStyle = coul; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 12) { c.fillStyle = "#f4f4f2"; c.fillRect(x, 0, 6, 8); } c.fillStyle = rouge ? "#fff" : "#f0e040"; c.font = `${rouge ? "italic " : ""}bold 34px ${rouge ? serif : sans}`; c.textAlign = "center"; c.fillText(txt, w / 2, 48); });
         add(new THREE.PlaneGeometry(xb - xa, .38), mat({ map: tx }), (xa + xb) / 2, 2.62, .22); };
-      store(95.6, 99.4, "VENTE", "#2a5ab8", "#2a5ab8"); store(99.5, 103.3, "LA - GODILLE . COM", "#2a5ab8", "#2a5ab8"); store(103.4, 107, "LOCATION", "#2a5ab8", "#2a5ab8"); store(107.2, 111.9, "La Fine Bouche", "#c8202a", "#c8202a");
-      for (const x of [100, 108.5]) jardiniere(x, .6); }
+      store(89.7, 93.3, "La Fine Bouche", "#c8202a"); store(93.4, 97, "La Fine Bouche", "#c8202a"); store(97.1, 100.6, "LOCATION", "#2a5ab8"); store(100.7, 104.2, "LA - GODILLE . COM", "#2a5ab8"); store(104.3, 107.5, "VENTE", "#2a5ab8");
+      for (let x = 86.3; x < 89.6; x += .5) box(.05, .9, .05, mat({ color: 0x8a4a2a }), x, H0 + .6, .3);   // (le balcon de bois au-dessus d'Interhome)
+      for (const x of [92, 98.8, 105.5]) jardiniere(x, .6); }
+    // la tour sombre en bois, en retrait, derrière les bâtiments bas : le bois brun, les loggias aux plafonds crème
+    const tourS = tT(256, 512, (c, w, h) => { c.fillStyle = "#6a4a30"; c.fillRect(0, 0, w, h); for (let y = 6; y < h; y += 24) for (let x = 6; x < w; x += 42) { c.fillStyle = "#e0c890"; c.fillRect(x, y, 36, 8); c.fillStyle = "#2a2a2e"; c.fillRect(x, y + 8, 36, 10); c.fillStyle = "rgba(220,230,235,.5)"; c.fillRect(x, y + 14, 36, 4); } }, 2, 3);
+    { const x0 = 112, x1 = 134, H = 44; box(x1 - x0, H, 15, mat({ map: tourS, fog: false }), (x0 + x1) / 2, H / 2, -22); box(x1 - x0 + 1.2, 1.4, 16, mat({ color: 0x6a3a1e }), (x0 + x1) / 2, H + .7, -22); }
+    // les bâtiments bas à deux étages, tous collés : le rez-de-chaussée sous la galerie blanche, le premier aux volets roulants, le second à la galerie de bois orange
+    const deuxEt = (x0, x1, enseignes) => { const cx = (x0 + x1) / 2, W = x1 - x0;
+      box(W, 8.2, 10, orange, cx, 4.1, -6.6);
+      const rdcT = tT(Math.round(W * 60), 128, (c, w, h) => { c.fillStyle = "#e8e2d4"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ec"; c.fillRect(0, 0, w, 28);
+        for (let x = 10; x < w; x += 120) { c.fillStyle = "#5a3420"; c.fillRect(x, 34, 108, h - 34); c.fillStyle = "#7a8a94"; c.fillRect(x + 6, 40, 44, h - 46); c.fillRect(x + 58, 40, 44, h - 46); c.fillStyle = "rgba(255,255,255,.25)"; c.fillRect(x + 8, 42, 10, h - 50); }
+        for (const [u, t, f, co] of enseignes) { c.fillStyle = f; c.font = `bold 20px ${sans}`; const tw = c.measureText(t).width + 20; c.fillRect(u * w, 3, tw, 24); c.fillStyle = co; c.fillText(t, u * w + 10, 21); } });
+      add(new THREE.PlaneGeometry(W, 3.2), lum(mat({ map: rdcT, emissive: 0xffffff, emissiveMap: rdcT, emissiveIntensity: .08 }), .08, .5), cx, 1.6, -1.58);
+      const n = Math.max(2, Math.round(W / 3.4)); for (let k = 0; k <= n; k++) { const x = x0 + .2 + k * (W - .4) / n; box(.22, 3.2, .22, blancP, x, 1.6, -.4); OB.push([x, -.4, .3]); }
+      box(W, .3, 1.4, blancP, cx, 3.35, -.9);
+      const voletT = tT(256, 64, (c, w, h) => { c.fillStyle = "#4a4a4c"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 4) { c.fillStyle = "rgba(0,0,0,.3)"; c.fillRect(0, y, w, 1); } }, Math.max(1, Math.round(W / 4)), 1);
+      add(new THREE.PlaneGeometry(W, 1.6), mat({ map: voletT }), cx, 4.5, -1.58);
+      box(W, 1.1, .25, orange, cx, 5.95, -.35); box(W, .2, 1.5, blancP, cx, 6.55, -.9);
+      add(new THREE.PlaneGeometry(W, 1.7), vitreN, cx, 7.4, -1.58);
+      for (let k = 0; k <= n; k++) { const x = x0 + .2 + k * (W - .4) / n; box(.25, 1.8, .25, orange, x, 7.55, -.3); const br = box(.12, 1.3, .12, orange, x, 7.9, -.9); br.rotation.x = .7; }
+      box(W, .9, .05, mat({ color: 0x1e2226, roughness: .1, transparent: true, opacity: .55 }), cx, 7.1, -.3);
+      box(W + .3, .9, 2.2, orange, cx, 8.65, -1.3); };
+    deuxEt(110, 124, [[.02, "SPORT 2000", "#c8202a", "#fff"], [.3, "LOCATION DE SKIS", "#f4f2ec", "#c8202a"], [.68, "Ski rental", "#f4f2ec", "#555"]]);
+    deuxEt(124, 140, [[.1, "LOCATION · SKI SHOP", "#f4f2ec", "#2a5ab8"], [.6, "Ski rental", "#f4f2ec", "#555"]]);
+    // le pub Le Sinoze, au pied : la façade de bois, l'enseigne « La Bouille », la terrasse et sa balustrade de bois découpée
+    { const x0 = 140, x1 = XF - 2, cx = (x0 + x1) / 2, W = x1 - x0;
+      box(W, 8.2, 10, orange, cx, 4.1, -6.6);
+      const sT = tT(1024, 160, (c, w, h) => { c.fillStyle = "#7a4426"; c.fillRect(0, 0, w, h); c.fillStyle = "#b8784a"; c.fillRect(0, 0, w, 40); c.fillStyle = "#f2e8d8"; c.font = `italic bold 30px ${serif}`; c.fillText("Bar - Restaurant   LA BOUILLE   Spécialités savoyardes", 20, 30);
+        for (let x = 30; x < w; x += 150) { c.fillStyle = "#5a3018"; c.fillRect(x, 50, 120, h - 50); c.fillStyle = "#3a3a3e"; c.fillRect(x + 10, 60, 100, h - 70); } });
+      add(new THREE.PlaneGeometry(W, 3.6), lum(mat({ map: sT, emissive: 0xffffff, emissiveMap: sT, emissiveIntensity: .1 }), .1, .6), cx, 1.8, -1.58);
+      box(W, .9, 1.4, orange, cx, 4.2, -.9);
+      for (let x = x0 + .4; x < x1; x += .45) box(.3, .9, .04, mat({ color: 0x8a5a38 }), x, 4.95, -.25);   // (la balustrade découpée du balcon)
+      add(new THREE.PlaneGeometry(W, 3), vitreN, cx, 6.6, -1.58); box(W + .3, .9, 2.2, orange, cx, 8.65, -1.3);
+      // la terrasse de planches, sa balustrade, l'enseigne « Le Sinoze, pub restaurant »
+      const d = add(new THREE.PlaneGeometry(W, 6), mat({ map: deckT, roughness: .8 }), cx, .12, 1.4); d.rotation.x = -Math.PI / 2;
+      for (let x = x0; x < x1; x += .3) box(.22, .9, .04, mat({ color: 0x6a4a32 }), x, .55, 4.4); box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, 1.02, 4.4); box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, .2, 4.4);
+      const pT = tT(512, 192, (c, w, h) => { c.fillStyle = "#f2f0ec"; c.fillRect(0, 0, w, h); c.strokeStyle = "#7a5a3a"; c.lineWidth = 10; c.beginPath(); c.arc(80, 96, 60, 0, 7); c.stroke(); c.fillStyle = "#3a2a1e"; c.font = `italic bold 76px ${serif}`; c.fillText("Sino", 160, 110); c.fillStyle = "#3a9ad8"; c.fillText("Ze", 320, 110); c.fillStyle = "#555"; c.font = `24px ${sans}`; c.fillText("PUB   RESTAURANT", 170, 160); });
+      add(new THREE.PlaneGeometry(3.4, 1.3), mat({ map: pT }), x0 + 3, 1.4, 4.47);
+      { const vC = mat({ color: 0x4a6a5a, roughness: .5 }); for (let k = 0; k < 3; k++) for (let q = 0; q < 6; q++) box(.46, .04, .44, vC, x0 + 6 + k * .6, .5 + q * .12, 2.6); OB.push([x0 + 6.6, 2.6, 1.2]); } }
     // le sol devant : les dalles ; au bout, les barrières de bois (deux lisses sur des poteaux)
-    L.solsPlus.push(sol(82.5, 112.5, -1, 7.6, mat({ map: dalleT, roughness: .85 }), .03), sol(100, 112.5, 7.6, 16.5, mat({ map: gravT, roughness: 1 }), .01));
+    L.solsPlus.push(sol(82.5, XF, -1, 7.6, mat({ map: dalleT, roughness: .85 }), .03), sol(100, XF, 7.6, 16.5, mat({ map: gravT, roughness: 1 }), .01));
     const rond = mat({ color: 0x8a6a48, roughness: .85 });
     const barriere = (xa, za, xb, zb) => { const L2 = Math.hypot(xb - xa, zb - za), n = Math.max(1, Math.round(L2 / 2.2)), a = Math.atan2(zb - za, xb - xa);
       for (let k = 0; k <= n; k++) { const x = xa + (xb - xa) * k / n, z = za + (zb - za) * k / n; cyl(.08, .09, 1.1, rond, x, .55, z, 6); OB.push([x, z, .25]); }
       for (const y of [.45, .9]) { const l = cyl(.05, .05, L2, rond, (xa + xb) / 2, y, (za + zb) / 2, 6); l.rotation.z = Math.PI / 2; l.rotation.y = -a; } };
-    barriere(112.4, -.9, 112.4, 16.4); barriere(96, 16.4, 112.4, 16.4); }
+    barriere(XF - .2, -.9, XF - .2, 16.4); barriere(96, 16.4, XF - .2, 16.4); }
 
-  L.limites = (x, z) => libre(x, z) && ((x > 82.6 && x < 112.2 && z > .3 && z < 16.2) || (x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
+  L.limites = (x, z) => libre(x, z) && ((x > 82.6 && x < 157.8 && z > .3 && z < 16.2) || (x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
   L.hauteur = (x, z) => { const ox = -x; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
