@@ -192,7 +192,7 @@ function construireCorbier(A, L, scene) {
     for (const x of [-79, -67]) box(.05, .8, .5, mat({ color: 0xc8ccd0, metalness: .9, roughness: .2 }), x, YP + .4, -5.5);
     OB.push(...Array.from({ length: 7 }, (_, i) => [-80 + i * 2.3, -1, 4.8]));
     // les murs de soutènement autour du contrebas ; la clôture de verre en haut
-    const murP = mat({ color: 0xd8d2c4, roughness: .9 }); box(23.5, -YP, .5, murP, -72.25, YP / 2, -10.25); box(.5, -YP, 24, murP, -84.25, YP / 2, 2); box(.5, -YP, 10.2, murP, -60.25, YP / 2, 5.1);
+    const murP = mat({ color: 0xd8d2c4, roughness: .9 }); box(23.5, -YP, .5, murP, -72.25, YP / 2, -10.25); box(.5, -YP, 24, murP, -84.25, YP / 2, 2);
     const verreP = mat({ color: 0xd8e8ec, roughness: .05, transparent: true, opacity: .22 }), poteauP = mat({ color: 0x8a8e92, metalness: .6, roughness: .4 });
     /* (10.103, d'après les photos de la rue) le muret blanc enduit, sa margelle de béton, et dessus les grands panneaux de verre sur leurs poteaux d'acier : tout le long du haut de la fosse,
        entre la rue (ou l'herbe) et la piscine en contrebas ; on regarde la piscine par-dessus, on ne tombe pas dedans */
@@ -200,7 +200,7 @@ function construireCorbier(A, L, scene) {
       const muret = (ax, az, bx, bz) => { const l = Math.hypot(bx - ax, bz - az), cx = (ax + bx) / 2, cz = (az + bz) / 2, ry = Math.atan2(bz - az, bx - ax);
         const m = box(l, .8, .32, enduit, cx, .4, cz); m.rotation.y = -ry; const c = box(l + .1, .09, .46, marg, cx, .84, cz); c.rotation.y = -ry;
         const n = Math.max(1, Math.round(l / 2.3)); for (let k = 0; k <= n; k++) { const t = k / n, x = ax + (bx - ax) * t, z = az + (bz - az) * t; box(.09, 2.1, .09, acier, x, 1.9, z); if (k < n) { const g = box(l / n - .12, 1.9, .025, verreG, x + (bx - ax) / n / 2, 1.85, z + (bz - az) / n / 2); g.rotation.y = -ry; } } };
-      muret(-84.4, 10.4, -60.3, 10.4); muret(-84.4, -10.3, -84.4, 10.4); muret(-60.3, 0, -60.3, 10.4);
+      muret(-84.4, 10.4, -60.3, 10.4); muret(-84.4, -10.3, -84.4, 10.4);
       box(23.9, -YP, .4, murP, -72.3, YP / 2, 10.42); }   // (la paroi de la fosse, sous le muret)
     // la petite pataugeoire, le kiosque au toit sombre dans le coin, côté rue
     { const pt2 = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, .3, 24), blancP); pt2.scale.z = .6; pt2.position.set(-64, YP + .05, 4); scene.add(pt2); const e2 = new THREE.Mesh(new THREE.CircleGeometry(2, 24), eau); e2.rotation.x = -Math.PI / 2; e2.scale.y = .6; e2.position.set(-64, YP + .22, 4); scene.add(e2);
@@ -212,17 +212,22 @@ function construireCorbier(A, L, scene) {
     // le bâtiment bas : de la piscine jusqu'à la promenade ; sa façade de boutiques sur la piscine ; son toit, l'aire de jeux
     const gT = tT(1024, 160, (c, w, h) => { c.fillStyle = "#9a2a1e"; c.fillRect(0, 0, w, 44); c.fillStyle = "#fff"; c.font = `bold 26px ${sans}`; c.textAlign = "center"; c.fillText("RESTAURANT  ·  BAR  ·  GALERIE CHARVIN  ·  CORBIER FROMAGERIE", w / 2, 32);
       for (let k = 0; k < 8; k++) { const x = 10 + k * 126; c.fillStyle = "#c8d8dc"; c.fillRect(x, 50, 110, h - 54); c.fillStyle = "rgba(255,240,200,.35)"; c.fillRect(x + 6, 60, 40, h - 70); c.fillStyle = "#5a3420"; c.fillRect(x - 6, 44, 6, h); } });
-    box(20, -YP, 10, facR, -50.5, YP / 2, -5);
-    const fa = add(new THREE.PlaneGeometry(10, -YP - .2), lum(mat({ map: gT, emissive: 0xffffff, emissiveMap: gT, emissiveIntensity: .08 }), .08, .6), -60.52, YP / 2 - .1, -5); fa.rotation.y = -Math.PI / 2;
-    const toitJ = add(new THREE.PlaneGeometry(20, 10), mat({ color: 0x8a8e88, roughness: .9 }), -50.5, .04, -5); toitJ.rotation.x = -Math.PI / 2; L.solsPlus.push(toitJ);
-    const boisR = mat({ color: 0x6a3e22, roughness: .7 }); for (let x = -60.4; x <= -40.6; x += .45) box(.07, .85, .07, boisR, x, .45, -9.9); box(19.8, .1, .12, boisR, -50.5, .9, -9.9);   // (la balustrade de bois du toit)
-    for (let z = -9.9; z <= 0; z += .45) box(.07, .85, .07, boisR, -60.4, .45, z); box(.12, .1, 9.9, boisR, -60.4, .9, -5);
-    { const fM = [0xe83a3a, 0xf0c020, 0x2a6ac8, 0xf2f2f2].map(c2 => mat({ color: c2, side: THREE.DoubleSide })); for (let k = 0; k < 16; k++) { const f = add(new THREE.ConeGeometry(.28, .55, 3), fM[k % 4], -60.75, YP + 2.7, -9.6 + k * .62); f.rotation.x = Math.PI; } }   // (les fanions de couleur sous l'auvent)
+    box(12.5, -YP, 20.6, facR, -54.25, YP / 2, .1);   /* (10.104) en face de la piscine : une longueur de bâtiment, sans étage, sur toute la largeur de la fosse ; son toit au niveau de la promenade */
+    const fa = add(new THREE.PlaneGeometry(20.4, -YP - .2), lum(mat({ map: gT, emissive: 0xffffff, emissiveMap: gT, emissiveIntensity: .08 }), .08, .6), -60.52, YP / 2 - .1, .1); fa.material.map.repeat.x = 1; fa.rotation.y = -Math.PI / 2;
+    const toitJ = add(new THREE.PlaneGeometry(12.5, 20.6), mat({ color: 0x8a8e88, roughness: .9 }), -54.25, .04, .1); toitJ.rotation.x = -Math.PI / 2; L.solsPlus.push(toitJ);
+    const boisR = mat({ color: 0x6a3e22, roughness: .7 });    // (la balustrade de bois du toit)
+    for (let z = -10.1; z <= 10.3; z += .45) box(.07, .85, .07, boisR, -60.4, .45, z); box(.12, .1, 20.4, boisR, -60.4, .9, .1);
+    { const fM = [0xe83a3a, 0xf0c020, 0x2a6ac8, 0xf2f2f2].map(c2 => mat({ color: c2, side: THREE.DoubleSide })); for (let k = 0; k < 33; k++) { const f = add(new THREE.ConeGeometry(.28, .55, 3), fM[k % 4], -60.75, YP + 2.7, -9.8 + k * .62); f.rotation.x = Math.PI; } }   // (les fanions de couleur sous l'auvent)
+    /* l'aire de jeux : en hauteur, à droite de la piscine (de l'autre côté de la rue), sur sa terrasse au sol vert, sa rambarde de verre au-dessus du bassin */
+    const terr = add(new THREE.PlaneGeometry(23.8, 12), mat({ color: 0x4a8a4a, roughness: .9 }), -72.4, .05, -16.3); terr.rotation.x = -Math.PI / 2; L.solsPlus.push(terr);
+    for (let x = -84.2; x < -60.6; x += 2.35) { box(2.3, 1.1, .03, verreP, x + 1.17, .55, -10.5); box(.06, 1.2, .06, poteauP, x, .6, -10.5); }
+    const n0J = scene.children.length, o0J = OB.length;
     const coul = [0xe83a3a, 0xf0c020, 0x2a6ac8, 0x3aa84a].map(c2 => mat({ color: c2, roughness: .6 }));
     for (const x of [-57, -53.5]) { cyl(1.4, 1.4, .1, mat({ color: 0x1a1a1a }), x, .7, -6.5, 20); add(new THREE.TorusGeometry(1.45, .08, 6, 24), coul[2], x, .72, -6.5).rotation.x = Math.PI / 2; for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; cyl(.04, .04, 2.2, coul[3], x + Math.cos(a) * 1.45, 1.3, -6.5 + Math.sin(a) * 1.45, 5); } OB.push([x, -6.5, 1.7]); }   // les trampolines
     box(4, 1.4, 3.4, coul[0], -48, .7, -6); for (const [dx, dz] of [[-1.8, -1.5], [1.8, -1.5], [-1.8, 1.5], [1.8, 1.5]]) cyl(.45, .45, 2.4, coul[1], -48 + dx, 1.2, -6 + dz, 10); box(3, .3, 1, coul[2], -48, 2.2, -4.4); OB.push([-48, -6, 2.8]);   // le château gonflable
     { const tn = add(new THREE.ConeGeometry(2.6, 2.4, 4), mat({ color: 0x2a9a4a, roughness: .7 }), -43.5, 2.4, -6.2); tn.rotation.y = Math.PI / 4; for (const [dx, dz] of [[-1.8, -1.8], [1.8, -1.8], [-1.8, 1.8], [1.8, 1.8]]) cyl(.05, .05, 2.4, mat({ color: 0xe8e8e8 }), -43.5 + dx, 1.2, -6.2 + dz, 5); OB.push([-43.5, -6.2, 2.3]); }   // la tente verte
     { const tb = box(.9, .08, 4, coul[1], -52, 1.0, -2.6); tb.rotation.x = -.45; box(1.2, 1.8, 1.2, coul[2], -52, .9, -4.6); OB.push([-52, -3.4, 1.4]); }   // le toboggan
+    for (const o of scene.children.slice(n0J)) { o.position.x -= 22; o.position.z -= 10.5; } for (const o of OB.slice(o0J)) { o[0] -= 22; o[1] -= 10.5; }   // (les jeux, posés sur leur terrasse)
     L.solsPlus.push(sol(-86, -60.3, 10.6, 17, mat({ map: gravT, roughness: 1 }), .01));   // (la rue, en haut, le long du muret)
     // les grandes tours sombres derrière (Les Tours du Corbier)
     const tourT = tT(128, 256, (c, w, h) => { c.fillStyle = "#4a2418"; c.fillRect(0, 0, w, h); for (let y = 6; y < h; y += 18) { c.fillStyle = "#2a1610"; c.fillRect(0, y, w, 8); c.fillStyle = "#c8b8a0"; c.fillRect(0, y + 8, w, 2); for (let x = 4; x < w; x += 32) { c.fillStyle = "#1a1a20"; c.fillRect(x, y + 10, 24, 7); } } }, 3, 1);
@@ -315,7 +320,7 @@ function construireCorbier(A, L, scene) {
   /* ---------- les limites : la promenade, le parking, le tour de la piscine, la terrasse du Yéti ---------- */
   const CASES = new Map(); for (const o of OB) { const [a, b, r] = o; for (let i = Math.floor((a - r) / 2); i <= Math.floor((a + r) / 2); i++) for (let j = Math.floor((b - r) / 2); j <= Math.floor((b + r) / 2); j++) { const k = i * 4096 + j; (CASES.get(k) || CASES.set(k, []).get(k)).push(o); } }
   const libre = (x, z) => { const l = CASES.get(Math.floor(x / 2) * 4096 + Math.floor(z / 2)); if (l) for (const [a, b, r] of l) if ((x - a) ** 2 + (z - b) ** 2 < r * r) return false; return true; };
-  L.limites = (x, z) => libre(x, z) && ((x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -60 && z >= 10.75 && z < 17) || (x > -60.2 && x < -40.6 && z > -9.6 && z < 7.6) || (x > -38.6 && x < 82 && z > .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
+  L.limites = (x, z) => libre(x, z) && ((x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -60 && z >= 10.75 && z < 17) || (x > -60.2 && x < -40.6 && z > -22 && z < 7.6) || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
   L.hauteur = (x, z) => { const ox = -x; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
