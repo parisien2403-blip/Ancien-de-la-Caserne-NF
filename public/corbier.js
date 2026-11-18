@@ -163,7 +163,7 @@ function construireCorbier(A, L, scene) {
   const residence = (x0, x1, zf, niv, fac, o = {}) => { const W = x1 - x0, cx = (x0 + x1) / 2, HR = 3.4, HE = 2.8, H = HR + niv * HE, D = 12;
     box(W, H, D, facS, cx, H / 2, zf - D / 2 - .6);   // le corps du bâtiment
     box(W + .6, .25, D + 1.6, boisC, cx, H + 1.2, zf - D / 2);   // le toit
-    { const f = box(W + .6, 2.2, .35, fac, cx, H + .3, zf + 1.3); f.material = mat({ map: bardT.clone(), roughness: .9 }); f.material.map.repeat.set(W / 3, 1); f.material.map.needsUpdate = true; }   // le grand bandeau de planches qui avance
+    { const f = box(W + .6, 2.2, .35, fac, cx, H + .3, zf + 1.3); f.material = mat({ map: bardT.clone(), roughness: .9, color: o.rouge ? 0xd88a66 : 0xffffff });   /* (le bandeau grisé, ou rouge-brun selon le bloc, comme sur les photos) */ f.material.map.repeat.set(W / 3, 1); f.material.map.needsUpdate = true; }   // le grand bandeau de planches qui avance
     box(W + .6, .2, 1.7, boisC, cx, H - .8, zf + .5);   // sa sous-face
     for (let x = x0 + 1.6; x < x1 - .5; x += 3.2) { const s = box(.18, 1.9, .18, boisC, x, H - .3, zf + .9); s.rotation.x = .55; }   // les jambes de force
     const bay = 2.7, nB = Math.floor(W / bay), b0 = cx - nB * bay / 2;
@@ -209,15 +209,19 @@ function construireCorbier(A, L, scene) {
     [6.5, "Pâtisserie « La Gourmande » Salon de Thé", "#3a3a3a", "#f2e8d8", { serif: true, ital: true, motif: gateaux }],
     [4.5, "JACK ★★ CIRCUS", "#e8c020", "#c8202a", { motif: affiches }],
     [9, "BAR · PIZZERIA · RESTAURANT", "#2a4aa8", "#ffffff", { motif: tables, pergola: true }]];
+  /* (10.112, d'après les photos de la promenade) la longue résidence n'est pas d'un seul tenant : des blocs qui avancent et d'autres en renfoncement, le bandeau tantôt gris, tantôt rouge-brun */
+  const BLOCS = [[-10, 7, 0, 0], [7, 23, -2, 1], [23, 39, 0, 0], [39, 52, -2.2, 1], [52, 66, 0, 0]];
+  const zfAt = (x) => { for (const [a, b, z] of BLOCS) if (x >= a && x < b) return z; return 0; };
   const LIGNES = [];   // (pour placer les terrasses, les bancs, les lampadaires devant)
   { const kW = 76 / BOUT.reduce((a, b) => a + b[0], 0); let x = -10; for (const [w0, txt, fond, coul, o] of BOUT) { const w = w0 * kW; const t = devantureT(txt, fond, coul, o), m = lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .12, roughness: .4 }), .12, .75);
-      add(new THREE.PlaneGeometry(w - .1, 3.3), m, x + w / 2, 1.65, .02); LIGNES.push({ x0: x, x1: x + w, txt, o });
-      if (o.bleu) box(w - .4, .12, 1.1, mat({ color: 0x2a5ac8, roughness: .6 }), x + w / 2, 3.0, .55);   // le store bleu d'Intersport
-      if (o.croix) { const cr = lum(mat({ color: 0x1a8a3a, emissive: 0x20c050, emissiveIntensity: .3 }), .3, 1.6); box(.18, .6, .08, cr, x + w - .6, 2.6, .35); box(.6, .18, .08, cr, x + w - .6, 2.6, .35); }
+      { const xa = x, xb = x + w; for (const [a, b, z] of BLOCS) { const u0 = Math.max(a, xa), u1 = Math.min(b, xb); if (u1 - u0 < .05) continue; const g = new THREE.PlaneGeometry(u1 - u0 - .05, 3.3), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, ((uv.getX(i) ? u1 : u0) - xa) / w); add(g, m, (u0 + u1) / 2, 1.65, z + .02); } } LIGNES.push({ x0: x, x1: x + w, txt, o });   // (la vitrine suit les renfoncements)
+      if (o.bleu) box(w - .4, .12, 1.1, mat({ color: 0x2a5ac8, roughness: .6 }), x + w / 2, 3.0, zfAt(x + w / 2) + .55);   // le store bleu d'Intersport
+      if (o.croix) { const cr = lum(mat({ color: 0x1a8a3a, emissive: 0x20c050, emissiveIntensity: .3 }), .3, 1.6); box(.18, .6, .08, cr, x + w - .6, 2.6, zfAt(x + w - .6) + .35); box(.6, .18, .08, cr, x + w - .6, 2.6, zfAt(x + w - .6) + .35); }
       x += w; } }
-  const RA = residence(-10, 66, 0, 3, facR); void RA;
+  for (const [a, b, z, r] of BLOCS) residence(a, b, z, 3, r ? facR : facG, { rouge: !!r });   // (chaque bloc, avec son avancée ou son renfoncement)
+  { const blancM = mat({ color: 0xece8e0, roughness: .8 }); for (const [a, b, z] of BLOCS) if (z < 0) for (const x of [a, b]) box(.3, 3.4, -z, facS, x, 1.7, z / 2); }   // (les murs en retour, au pied des renfoncements)
   // les stores rouges et bleus des terrasses, au pied de la résidence (d'après la vue du ciel)
-  for (const [x0, x1, c2] of [[-9.5, -.5, 0xc8202a], [.5, 6, 0x2a5ac8], [30, 36, 0xd8602a]]) { const st = box(x1 - x0, .08, 2.6, mat({ color: c2, roughness: .8 }), (x0 + x1) / 2, 3.0, 1.4); st.rotation.x = .2; }   // (la longue résidence, jusqu'au Yéti)
+  for (const [x0, x1, c2] of [[-9.5, -.5, 0xc8202a], [.5, 6, 0x2a5ac8], [30, 36, 0xd8602a]]) { const st = box(x1 - x0, .08, 2.6, mat({ color: c2, roughness: .8 }), (x0 + x1) / 2, 3.0, zfAt((x0 + x1) / 2) + 1.4); st.rotation.x = .2; }   // (la longue résidence, jusqu'au Yéti)
 
   /* ---------- à gauche : la piscine, la galerie Charvin, les tours ---------- */
   /* (10.102, d'après les vues du ciel) au bout du Front de Neige : le bâtiment bas dont le toit, au niveau de la promenade, porte l'aire de jeux (trampolines, structure gonflable,
@@ -453,7 +457,7 @@ function construireCorbier(A, L, scene) {
   /* ---------- les limites : la promenade, le parking, le tour de la piscine, la terrasse du Yéti ---------- */
   const CASES = new Map(); for (const o of OB) { const [a, b, r] = o; for (let i = Math.floor((a - r) / 2); i <= Math.floor((a + r) / 2); i++) for (let j = Math.floor((b - r) / 2); j <= Math.floor((b + r) / 2); j++) { const k = i * 4096 + j; (CASES.get(k) || CASES.set(k, []).get(k)).push(o); } }
   const libre = (x, z) => { const l = CASES.get(Math.floor(x / 2) * 4096 + Math.floor(z / 2)); if (l) for (const [a, b, r] of l) if ((x - a) ** 2 + (z - b) ** 2 < r * r) return false; return true; };
-  L.limites = (x, z) => libre(x, z) && ((x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
+  L.limites = (x, z) => libre(x, z) && ((x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
   L.hauteur = (x, z) => { const ox = -x; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
