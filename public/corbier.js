@@ -247,6 +247,17 @@ function construireCorbier(A, L, scene) {
     // la terrasse de bois de la Fontaine de l'Ours, sa barrière de rondins
     box(26, .35, 3, boisC, -26, .17, -1.6); for (let x = -38.8; x <= -13.2; x += 1.6) box(.12, 1.0, .12, boisC, x, .85, -.15); for (const y of [.75, 1.25]) box(26, .1, .1, boisC, -26, y, -.15);
     for (const o of scene.children.slice(n0E)) o.position.x -= 9; }   // (10.105, d'après la photo : juste derrière la longueur de bâtiment de la piscine)
+  /* (10.106) entre la longueur de bâtiment de la piscine et l'École du Ski : le restaurant à un étage, son bandeau rouge, ses baies vitrées ; sur son toit, la terrasse et ses parasols rouges */
+  { const x0 = -48.6, x1 = -36.5, z0 = -3, z1 = 6.8, H = 6.2, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, D = z1 - z0;
+    box(W, H, D, facS, cx, H / 2, cz); box(W + .4, .3, D + .4, boisC, cx, H + .15, cz);
+    const rT = tT(1024, 96, (c, w, h) => { c.fillStyle = "#b01a22"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 46px ${sans}`; c.textAlign = "center"; c.fillText("RESTAURANT  ·  BAR  ·  PIZZERIA", w / 2, 64); });
+    const rM = lum(mat({ map: rT, emissive: 0xffffff, emissiveMap: rT, emissiveIntensity: .15 }), .15, .9), vit = lum(mat({ color: 0x8aa4b0, roughness: .1, metalness: .2, emissive: 0xffd8a0, emissiveIntensity: 0 }), 0, .5);
+    const b1 = add(new THREE.PlaneGeometry(W - .4, .9), rM, cx, 3.5, z1 + .02); void b1; const b2 = add(new THREE.PlaneGeometry(D - .4, .9), rM, x1 + .02, 3.5, cz); b2.rotation.y = Math.PI / 2;
+    for (let x = x0 + 1; x < x1 - .5; x += 2.2) { box(1.9, 2.5, .05, vit, x + .9, 1.5, z1 + .03); box(1.9, 1.6, .05, vit, x + .9, 4.8, z1 + .03); }
+    for (let z = z0 + .8; z < z1 - .5; z += 2.2) { const v1 = box(.05, 2.5, 1.9, vit, x1 + .03, 1.5, z + .9); void v1; box(.05, 1.6, 1.9, vit, x1 + .03, 4.8, z + .9); }
+    for (let x = x0 + .2; x <= x1 - .2; x += .5) box(.06, .9, .06, boisC, x, H + .75, z1 - .1); box(W - .4, .08, .1, boisC, cx, H + 1.2, z1 - .1);   // la balustrade du toit
+    for (const [x, z] of [[x0 + 2.5, cz], [cx, cz + 1.5], [x1 - 2.5, cz], [cx, cz - 2]]) { cyl(.04, .04, 2.4, mat({ color: 0xd8d8d8 }), x, H + 1.5, z, 5); const p2 = add(new THREE.ConeGeometry(1.4, .5, 8, 1, true), mat({ color: 0xc8202a, side: THREE.DoubleSide, roughness: .8 }), x, H + 2.6, z); void p2; cyl(.4, .4, .04, mat({ color: 0xf2efe6 }), x, H + 1.05, z, 10); }   // les parasols rouges, les tables
+    OB.push([cx, cz, 0]); }
   /* le chalet des crêpes : sa planche « CRÊPES », sa fenêtre de vente, son toit à lambrequins */
   { const cx = -13.2, cz = 2.6; box(4.2, 2.4, 3, mat({ color: 0xf0ead8 }), cx, 1.2, cz); const tt = box(5.2, .25, 4, mat({ color: 0x4a4a50 }), cx, 2.7, cz); tt.rotation.z = .08;
     const cT = tT(256, 64, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 44px ${serif}`; c.textAlign = "center"; c.fillText("CRÊPES", w / 2, 48); });
@@ -321,7 +332,7 @@ function construireCorbier(A, L, scene) {
   /* ---------- les limites : la promenade, le parking, le tour de la piscine, la terrasse du Yéti ---------- */
   const CASES = new Map(); for (const o of OB) { const [a, b, r] = o; for (let i = Math.floor((a - r) / 2); i <= Math.floor((a + r) / 2); i++) for (let j = Math.floor((b - r) / 2); j <= Math.floor((b + r) / 2); j++) { const k = i * 4096 + j; (CASES.get(k) || CASES.set(k, []).get(k)).push(o); } }
   const libre = (x, z) => { const l = CASES.get(Math.floor(x / 2) * 4096 + Math.floor(z / 2)); if (l) for (const [a, b, r] of l) if ((x - a) ** 2 + (z - b) ** 2 < r * r) return false; return true; };
-  L.limites = (x, z) => libre(x, z) && ((x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -60 && z >= 10.75 && z < 17) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6) || (x >= -48.2 && x < -38.6 && z > .4 && z < 7.6) || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
+  L.limites = (x, z) => libre(x, z) && ((x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -60 && z >= 10.75 && z < 17) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
   L.hauteur = (x, z) => { const ox = -x; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
