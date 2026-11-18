@@ -247,17 +247,16 @@ function construireCorbier(A, L, scene) {
     // la terrasse de bois de la Fontaine de l'Ours, sa barrière de rondins
     box(26, .35, 3, boisC, -26, .17, -1.6); for (let x = -38.8; x <= -13.2; x += 1.6) box(.12, 1.0, .12, boisC, x, .85, -.15); for (const y of [.75, 1.25]) box(26, .1, .1, boisC, -26, y, -.15);
     for (const o of scene.children.slice(n0E)) o.position.x -= 9; }   // (10.105, d'après la photo : juste derrière la longueur de bâtiment de la piscine)
-  /* (10.106) entre la longueur de bâtiment de la piscine et l'École du Ski : le restaurant à un étage, son bandeau rouge, ses baies vitrées ; sur son toit, la terrasse et ses parasols rouges */
-  { const x0 = -48.6, x1 = -36.5, z0 = -3, z1 = 6.8, H = 6.2, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, D = z1 - z0;
-    box(W, H, D, facS, cx, H / 2, cz); box(W + .4, .3, D + .4, boisC, cx, H + .15, cz);
-    const rT = tT(1024, 96, (c, w, h) => { c.fillStyle = "#b01a22"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 46px ${sans}`; c.textAlign = "center"; c.fillText("RESTAURANT  ·  BAR  ·  PIZZERIA", w / 2, 64); });
-    const rM = lum(mat({ map: rT, emissive: 0xffffff, emissiveMap: rT, emissiveIntensity: .15 }), .15, .9), vit = lum(mat({ color: 0x8aa4b0, roughness: .1, metalness: .2, emissive: 0xffd8a0, emissiveIntensity: 0 }), 0, .5);
-    const b1 = add(new THREE.PlaneGeometry(W - .4, .9), rM, cx, 3.5, z1 + .02); void b1; const b2 = add(new THREE.PlaneGeometry(D - .4, .9), rM, x1 + .02, 3.5, cz); b2.rotation.y = Math.PI / 2;
-    for (let x = x0 + 1; x < x1 - .5; x += 2.2) { box(1.9, 2.5, .05, vit, x + .9, 1.5, z1 + .03); box(1.9, 1.6, .05, vit, x + .9, 4.8, z1 + .03); }
-    for (let z = z0 + .8; z < z1 - .5; z += 2.2) { const v1 = box(.05, 2.5, 1.9, vit, x1 + .03, 1.5, z + .9); void v1; box(.05, 1.6, 1.9, vit, x1 + .03, 4.8, z + .9); }
-    for (let x = x0 + .2; x <= x1 - .2; x += .5) box(.06, .9, .06, boisC, x, H + .75, z1 - .1); box(W - .4, .08, .1, boisC, cx, H + 1.2, z1 - .1);   // la balustrade du toit
-    for (const [x, z] of [[x0 + 2.5, cz], [cx, cz + 1.5], [x1 - 2.5, cz], [cx, cz - 2]]) { cyl(.04, .04, 2.4, mat({ color: 0xd8d8d8 }), x, H + 1.5, z, 5); const p2 = add(new THREE.ConeGeometry(1.4, .5, 8, 1, true), mat({ color: 0xc8202a, side: THREE.DoubleSide, roughness: .8 }), x, H + 2.6, z); void p2; cyl(.4, .4, .04, mat({ color: 0xf2efe6 }), x, H + 1.05, z, 10); }   // les parasols rouges, les tables
-    OB.push([cx, cz, 0]); }
+  /* (10.106, d'après la photo entourée) au-dessus de la longueur de bâtiment de la piscine, et parallèle à elle : le restaurant de plain-pied sur la promenade, son toit gris
+     un peu en pente, sa longue enseigne rouge, ses baies vitrées, et devant, sur le bord, sa terrasse de tables qui regarde la piscine */
+  { const x0 = -57.2, x1 = -49.6, z0 = -9.6, z1 = 9.8, H = 3.1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, D = z1 - z0;
+    box(W, H, D, facS, cx, H / 2, cz); const tt = box(W + 1.6, .22, D + .6, mat({ color: 0x6a6a66, roughness: .8 }), cx - .3, H + .35, cz); tt.rotation.z = -.08;
+    const rT = tT(1024, 96, (c, w, h) => { c.fillStyle = "#b01a22"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 50px ${serif}`; c.textAlign = "center"; c.fillText("Restaurant  ·  Bar", w / 2, 66); });
+    const en = add(new THREE.PlaneGeometry(7, .8), lum(mat({ map: rT, emissive: 0xffffff, emissiveMap: rT, emissiveIntensity: .15 }), .15, .9), x0 - .05, H - .2, cz + 2); en.rotation.y = -Math.PI / 2;
+    const vit = lum(mat({ color: 0x8aa4b0, roughness: .1, metalness: .2, emissive: 0xffd8a0, emissiveIntensity: 0 }), 0, .55);
+    for (let z = z0 + .6; z < z1 - 1; z += 2.1) { const v = box(.05, 2.2, 1.8, vit, x0 - .03, 1.3, z + .9); void v; box(.12, 2.5, .12, boisC, x0 - .06, 1.25, z); }
+    for (let z = z0 + 1.2; z < z1 - 1; z += 2.6) { cyl(.38, .38, .04, mat({ color: 0xf2efe6 }), x0 - 1.6, .74, z, 12); cyl(.03, .03, .72, mat({ color: 0x2a2a2a }), x0 - 1.6, .37, z, 5); for (const dz of [-.55, .55]) box(.4, .05, .4, mat({ color: 0x8a2a22 }), x0 - 1.6, .46, z + dz); OB.push([x0 - 1.6, z, .9]); }   // la terrasse de tables, sur le bord
+    OB.push([cx, z0 + 2.5, 3], [cx, cz - 2.5, 3], [cx, cz + 2.5, 3], [cx, z1 - 2.5, 3]); }
   /* le chalet des crêpes : sa planche « CRÊPES », sa fenêtre de vente, son toit à lambrequins */
   { const cx = -13.2, cz = 2.6; box(4.2, 2.4, 3, mat({ color: 0xf0ead8 }), cx, 1.2, cz); const tt = box(5.2, .25, 4, mat({ color: 0x4a4a50 }), cx, 2.7, cz); tt.rotation.z = .08;
     const cT = tT(256, 64, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 44px ${serif}`; c.textAlign = "center"; c.fillText("CRÊPES", w / 2, 48); });
