@@ -57,7 +57,7 @@ function construireCorbier(A, L, scene) {
   // la piste de gravier, au pied du talus ; le muret de rochers dans le talus
   L.solsPlus.push(sol(-80, 100, 18.6, 21.2, mat({ map: gravT, roughness: 1 }), .02));
   { const rocM = [mat({ color: 0xa8a49a, roughness: .9 }), mat({ color: 0x8a867e, roughness: .9 })]; for (let x = 40; x < 64; x += .9 + al() * .5) { const r = add(new THREE.DodecahedronGeometry(.45 + al() * .25, 0), rocM[(x * 3 | 0) % 2], x, HP(x, 22.6) + .1, 22.4); r.scale.set(1.3, .7, .8); r.rotation.y = al() * 3; } }
-  { const mar = mat({ color: 0x8a7a64 }); for (let k = 0; k < 6; k++) box(1.6, .1, .25, mar, 30, HP(30, 21.3 + k * .6) + .05, 21.3 + k * .6); }   // (les marches de bois dans le talus)
+  if (false) { const mar = mat({ color: 0x8a7a64 }); for (let k = 0; k < 6; k++) box(1.6, .1, .25, mar, 30, HP(30, 21.3 + k * .6) + .05, 21.3 + k * .6); }   // (les marches de bois dans le talus)
   // les bosquets de sapins sur les pentes
   { const sapM = mat({ color: 0x24402a, roughness: .9 }); for (const [cx, cz, n] of [[-60, 150, 40], [-20, 170, 30], [70, 210, 30], [-140, 120, 26], [130, 130, 22], [20, 90, 8]]) for (let k = 0; k < (PETIT ? n / 3 : n); k++) { const x = cx + (al() - .5) * 50, z = cz + (al() - .5) * 40, h = 8 + al() * 7; add(new THREE.ConeGeometry(h * .27, h, 7), sapM, x, HP(x, z) + h / 2 - .5, z); } }
   // l'office du tourisme : la rotonde sous sa grande pyramide de poutres rouges et blanches, le chapeau blanc
@@ -71,11 +71,7 @@ function construireCorbier(A, L, scene) {
     add(new THREE.ConeGeometry(1.7, 2.6, 16), blanc2, ox, 12.4, oz); cyl(1.7, 1.7, .5, blanc2, ox, 11.1, oz, 16);
     for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; const f = add(new THREE.CylinderGeometry(.015, .015, 7.5, 3), mat({ color: 0xd8d8d8, metalness: .6 }), ox + Math.sin(a) * 1.4, 7.1, oz + Math.cos(a) * 1.4); f.rotation.z = Math.sin(a) * .35; f.rotation.x = -Math.cos(a) * .35; }   // les haubans
     OB.push([ox, oz, 4.8]); }
-  // l'aire de jeux : le toboggan orange, le bonhomme de neige blanc ; les bacs de fleurs rouges sur le pré
-  { const or = mat({ color: 0xe86a1a, roughness: .5 }); for (const s of [-1, 1]) { const pi = box(.08, 2.2, .08, or, 22 + s * .4, 1.1 + HP(22, 23), 23.5); pi.rotation.z = s * .2; } const tb = box(.7, .06, 3.4, or, 22, 1.0 + HP(22, 23), 22.4); tb.rotation.x = -.55;
-    const bn = mat({ color: 0xf6f6f2, roughness: .6 }); add(new THREE.SphereGeometry(.7, 14, 10), bn, 28, .7, 22.6); add(new THREE.SphereGeometry(.5, 14, 10), bn, 28, 1.75, 22.6); add(new THREE.SphereGeometry(.36, 14, 10), bn, 28, 2.5, 22.6); add(new THREE.ConeGeometry(.08, .35, 8), or, 28, 2.5, 22.95).rotation.x = Math.PI / 2;
-    cyl(.6, .6, .3, mat({ color: 0xb8b8b0 }), 28, .15, 22.6, 16);
-    for (const x of [14, 18, 25, 31, 34]) { box(1.4, .4, .5, mat({ color: 0x6a3a22 }), x, .2 + HP(x, 23), 23.4); for (let k = 0; k < 6; k++) add(new THREE.IcosahedronGeometry(.16, 0), mat({ color: [0xc8202a, 0xe83a3a][k % 2] }), x - .55 + k * .22, .5 + HP(x, 23), 23.4 + (al() - .5) * .2); } }
+  // (l'aire de jeux, les bacs de fleurs du pré : retirés)
   // le portique rouge des Sybelles et ses tourniquets blancs
   { const rg = mat({ color: 0x9a2030, roughness: .5 }); box(.35, 3.2, .35, rg, 41, HP(41, 25) + 1.6, 26); box(.35, 2.4, .35, rg, 36, HP(36, 25) + 1.2, 26); const pt = box(5.6, .5, .6, rg, 38.5, HP(38, 25) + 3.0, 26); pt.rotation.z = .14;
     for (let k = 0; k < 6; k++) box(.25, 1, .25, mat({ color: 0xf2f2f0 }), 36.6 + k * .7, HP(38, 25) + .5, 26); box(1.3, 1.6, .1, mat({ color: 0x1a1a1a }), 34.5, HP(34, 25) + 1.6, 26.2); }
@@ -182,8 +178,6 @@ function construireCorbier(A, L, scene) {
       for (let k = 0; k < 8; k++) { const x = 10 + k * 126; c.fillStyle = "#c8d8dc"; c.fillRect(x, 56, 110, h - 60); c.fillStyle = "#5a3420"; c.fillRect(x - 6, 50, 6, h); } });
     add(new THREE.PlaneGeometry(31, 3.6), lum(mat({ map: gT, emissive: 0xffffff, emissiveMap: gT, emissiveIntensity: .08 }), .08, .6), -56, 1.8, -.98);
     box(31, 3.6, 10, facR, -56, 1.8, -6.05); box(31.4, .2, 11, boisC, -56, 3.7, -5.5); for (let x = -71.5; x <= -40.5; x += .9) box(.06, .9, .06, boisC, x, 4.2, -.2); box(31, .08, .1, boisC, -56, 4.65, -.2);   // la terrasse sur le toit, sa barrière
-    for (let k = 0; k < 10; k++) { const fl = add(new THREE.ConeGeometry(.35, .5, 3), mat({ color: [0xe83a3a, 0xf0c020, 0x2a6ac8, 0xffffff][k % 4], side: THREE.DoubleSide }), -64 + k * 1.6, 3.2, -.6); fl.rotation.x = Math.PI; }   // les fanions
-    for (const [x, c2] of [[-47, 0x2a4aa8], [-45.5, 0xffffff], [-44, 0xc8202a], [-42.5, 0x3a8a4a]]) { cyl(.05, .06, 9, mat({ color: 0xd8d8d8, metalness: .6 }), x, 4.5, 15); box(.02, .9, 1.3, mat({ color: c2, side: THREE.DoubleSide }), x, 8.3, 15.65); }   // les mâts et leurs drapeaux
     // les grandes tours sombres derrière (Les Tours du Corbier)
     const tourT = tT(128, 256, (c, w, h) => { c.fillStyle = "#4a2418"; c.fillRect(0, 0, w, h); for (let y = 6; y < h; y += 18) { c.fillStyle = "#2a1610"; c.fillRect(0, y, w, 8); c.fillStyle = "#c8b8a0"; c.fillRect(0, y + 8, w, 2); for (let x = 4; x < w; x += 32) { c.fillStyle = "#1a1a20"; c.fillRect(x, y + 10, 24, 7); } } }, 3, 1);
     const tourM = lum(mat({ map: tourT, emissive: 0xffc890, emissiveMap: null, emissiveIntensity: 0 }), 0, .08);
@@ -225,19 +219,18 @@ function construireCorbier(A, L, scene) {
   for (let x = -36; x < 82; x += 13) lampadaire(x, 7.3);
   const rougeP = mat({ color: 0xd84838, roughness: .5 }), feuilleM = [mat({ color: 0x4a7a2a }), mat({ color: 0x5a8a34 }), mat({ color: 0x3a6a24 })];
   const bacArbre = (x, z, pin) => { cyl(.65, .45, .55, rougeP, x, .3, z, 14); cyl(.04, .06, 2.4, mat({ color: 0x8a7a6a }), x, 1.5, z, 6); for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(pin ? .55 : .5, 0), feuilleM[k % 3], x + (al() - .5) * .5, 2.3 + al() * .7, z + (al() - .5) * .5); OB.push([x, z, .8]); };
-  for (const x of [-4, 15, 32, 52]) bacArbre(x, 1.8, x === 52);
+  void bacArbre;   // (10.100 : les accessoires retirés — l'administrateur les redemande un par un, par les notes)
   const fleurM = [0xe8306a, 0xf090b0, 0xffffff, 0xe85a2a].map(c2 => mat({ color: c2 }));
   const jardiniere = (x, z) => { box(1.8, .45, .7, boisC, x, .23, z); for (let k = 0; k < 14; k++) add(new THREE.IcosahedronGeometry(.13 + al() * .08, 0), fleurM[k % 4], x - .8 + al() * 1.6, .55 + al() * .2, z + (al() - .5) * .5); OB.push([x, z, 1]); };
-  for (const x of [8, 26, 45, 58]) jardiniere(x, 5.6);
+  void jardiniere;
   const banc = (x, z, ry = 0) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); for (let k = 0; k < 3; k++) { const l = new THREE.Mesh(new THREE.BoxGeometry(1.8, .05, .12), boisC); l.position.set(0, .45, -.15 + k * .14); g.add(l); } for (let k = 0; k < 2; k++) { const l = new THREE.Mesh(new THREE.BoxGeometry(1.8, .12, .04), boisC); l.position.set(0, .65 + k * .16, -.25); g.add(l); } for (const s of [-.75, .75]) { const p = new THREE.Mesh(new THREE.BoxGeometry(.06, .45, .45), boisC); p.position.set(s, .22, 0); g.add(p); } OB.push([x, z, .9]); return g; };
-  const BANCS = [[3, .9], [21, .9], [27, .9], [37, .9], [41, .9]].map(([x, z]) => [x, z, banc(x, z)]);
+  const BANCS = []; void banc;
   // les tables de pique-nique du Yéti, les tables de la terrasse des Roches Blanches
   const pique = (x, z) => { box(1.8, .06, .7, boisC, x, .74, z); for (const s of [-1, 1]) { box(1.8, .05, .26, boisC, x, .44, z + s * .55); box(.08, .74, .08, boisC, x + .75, .37, z + s * .25); box(.08, .74, .08, boisC, x - .75, .37, z + s * .25); } OB.push([x, z, 1.1]); };
-  for (const [x, z] of [[70, 3], [74, 3], [78, 3], [72, 5.5], [76, 5.5]]) pique(x, z);
+  void pique;
   const TABLES = [], nappeM = mat({ color: 0xc8202a }), chaiseM = mat({ color: 0x8a5a32 });
   const table = (x, z) => { cyl(.4, .4, .04, nappeM, x, .74, z, 14); cyl(.04, .05, .72, mat({ color: 0x222222 }), x, .37, z, 6); for (const s of [-1, 1]) { box(.42, .05, .42, chaiseM, x + s * .62, .46, z); box(.05, .5, .42, chaiseM, x + s * .85, .72, z); } TABLES.push([x, z]); OB.push([x, z, 1.1]); };
-  { const R = LIGNES[0]; for (let x = R.x0 + 1.3; x < R.x0 + 10; x += 2.4) { table(x, 2.0); table(x + 1.2, 4.2); } }
-  { const P2 = LIGNES.find(l => l.o.pergola); for (let x = P2.x0 + 1.4; x < P2.x1 - .8; x += 2.4) table(x, 3.0); }
+  void table;
   // les voitures garées sur le gravier
   const voiture = (x, z, ry, coul) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const c = mat({ color: coul, roughness: .25, metalness: .5 }), vit = mat({ color: 0x1a2228, roughness: .1, metalness: .4 }), pn = mat({ color: 0x141414 });
     const b = new THREE.Mesh(new THREE.BoxGeometry(1.8, .7, 4.3), c); b.position.y = .62; g.add(b); const h = new THREE.Mesh(new THREE.BoxGeometry(1.6, .6, 2.3), vit); h.position.set(0, 1.25, -.2); g.add(h); const t = new THREE.Mesh(new THREE.BoxGeometry(1.62, .06, 2.1), c); t.position.set(0, 1.56, -.2); g.add(t);
@@ -300,6 +293,44 @@ function construireCorbier(A, L, scene) {
   { const mir = new Set(TS.flatMap(T => T.S)); for (const o of scene.children) { if (mir.has(o) || o.isLight || o === L.sol) continue; o.position.x = -o.position.x; const q = o.quaternion; q.set(q.x, -q.y, -q.z, q.w); }
     const lim0 = L.limites; L.limites = (x, z) => lim0(-x, z); L.arretCar.x = -L.arretCar.x; L.depart = [54.5, 15]; L.zone = [-98, 73, -2, 40]; L.cam = { pos: [-26, 5, 24], vise: [-26, 3, 0] };
     for (const W of MARCH) for (const pt of W.R) pt[0] = -pt[0]; }
+  /* (10.100) le carnet de chantier de l'administrateur : il pose le doigt (ou clique) sur un endroit, il écrit ce qu'il y veut ; la note reste là, numérotée,
+     gardée par le serveur ; « Copier » met toutes les notes dans le presse-papier, pour les donner à Claude */
+  { const NOTES = new THREE.Group(); NOTES.userData.anime = true; scene.add(NOTES); let mode = false, liste = [];
+    const C = M.ctx.conteneur, barre = document.createElement("div"); barre.style.cssText = "position:absolute;left:10px;top:120px;z-index:40;display:flex;flex-direction:column;gap:6px";
+    const bt = (txt, f) => { const b = document.createElement("button"); b.type = "button"; b.textContent = txt; b.style.cssText = "padding:9px 12px;border:0;border-radius:12px;background:rgba(40,20,70,.88);color:#fff;font:600 14px Lato,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.4);cursor:pointer;text-align:left"; b.onclick = (e) => { e.stopPropagation(); f(b); }; barre.appendChild(b); return b; };
+    const bNote = bt("📝 Poser une note", (b) => { mode = !mode; b.textContent = mode ? "👆 Touche l'endroit…  (annuler)" : "📝 Poser une note"; b.style.background = mode ? "rgba(150,60,220,.95)" : "rgba(40,20,70,.88)"; });
+    bt("📋 Voir / copier les notes", () => voir());
+    const fini = () => { mode = false; bNote.textContent = "📝 Poser une note"; bNote.style.background = "rgba(40,20,70,.88)"; };
+    const etiquette = (n, txt) => { const c = document.createElement("canvas"); c.width = 256; c.height = 96; const x = c.getContext("2d"); x.fillStyle = "rgba(60,20,110,.92)"; x.beginPath(); x.roundRect(4, 4, 248, 88, 18); x.fill(); x.strokeStyle = "#e0c0ff"; x.lineWidth = 4; x.stroke();
+      x.fillStyle = "#fff"; x.font = "bold 40px Arial"; x.fillText("📝 " + n, 16, 50); x.font = "18px Arial"; x.fillText(txt.length > 22 ? txt.slice(0, 21) + "…" : txt, 16, 80); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+    L.majNotes = (ns) => { liste = ns || []; for (const o of [...NOTES.children]) { NOTES.remove(o); o.traverse(q => { if (q.material) { if (q.material.map) q.material.map.dispose(); q.material.dispose(); } if (q.geometry) q.geometry.dispose(); }); }
+      liste.forEach((N, i) => { const g = new THREE.Group(); g.position.set(N.x, N.y, N.z); g.userData.note = N;
+        const tige = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 1.6, 6), new THREE.MeshBasicMaterial({ color: 0xb070ff })); tige.position.y = .8; g.add(tige); const pt = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8), new THREE.MeshBasicMaterial({ color: 0xb070ff })); g.add(pt);
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: etiquette(i + 1, N.texte), depthTest: false })); sp.scale.set(2.4, .9, 1); sp.position.y = 2.1; sp.renderOrder = 9; sp.userData.note = N; g.add(sp); NOTES.add(g); }); };
+    if (M.notesCorbier) L.majNotes(M.notesCorbier);
+    const texte = (n) => liste.map((N, i) => `${i + 1}. [x ${N.x}, z ${N.z}, hauteur ${N.y}] ${N.texte}`).join("\n");
+    const voir = (seule) => { const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;width:min(92vw,520px);max-height:80vh;overflow:auto;background:rgba(24,12,44,.97);color:#fff;border-radius:16px;padding:16px;font:14px Lato,Arial,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.6)";
+      const h = document.createElement("div"); h.style.cssText = "font-weight:700;font-size:16px;margin-bottom:10px"; h.textContent = seule ? "📝 Note" : `📝 Les notes du Corbier (${liste.length})`; d.appendChild(h);
+      for (const [i, N] of liste.entries()) { if (seule && N !== seule) continue; const r = document.createElement("div"); r.style.cssText = "display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:1px solid rgba(255,255,255,.12)";
+        const t = document.createElement("div"); t.style.flex = "1"; t.innerHTML = `<b>${i + 1}.</b> `; t.appendChild(document.createTextNode(N.texte)); r.appendChild(t);
+        const x = document.createElement("button"); x.type = "button"; x.textContent = "🗑"; x.title = "Supprimer"; x.style.cssText = "border:0;border-radius:8px;background:rgba(255,80,80,.25);color:#fff;padding:4px 8px;cursor:pointer"; x.onclick = () => { if (confirm("Supprimer la note " + (i + 1) + " ?")) { envoyerWS({ t: "note_corbier_suppr", id: N.id }); d.remove(); } }; r.appendChild(x); d.appendChild(r); }
+      if (!liste.length) { const v = document.createElement("div"); v.style.opacity = ".7"; v.textContent = "Aucune note pour l'instant : touche « 📝 Poser une note », puis l'endroit."; d.appendChild(v); }
+      const pied = document.createElement("div"); pied.style.cssText = "display:flex;gap:8px;margin-top:12px";
+      if (!seule && liste.length) { const cp = document.createElement("button"); cp.type = "button"; cp.textContent = "📋 Copier toutes les notes"; cp.style.cssText = "flex:1;padding:10px;border:0;border-radius:10px;background:#8a3ae0;color:#fff;font-weight:700;cursor:pointer"; cp.onclick = async () => { const tx = "Notes du Corbier :\n" + texte(); try { await navigator.clipboard.writeText(tx); cp.textContent = "✅ Copié — colle-le à Claude"; } catch (e) { const ta = document.createElement("textarea"); ta.value = tx; ta.style.cssText = "width:100%;height:140px;margin-top:8px"; d.insertBefore(ta, pied); ta.select(); cp.textContent = "Sélectionne et copie le texte ci-dessus"; } }; pied.appendChild(cp); }
+      const f = document.createElement("button"); f.type = "button"; f.textContent = "Fermer"; f.style.cssText = "flex:1;padding:10px;border:0;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;cursor:pointer"; f.onclick = () => d.remove(); pied.appendChild(f); d.appendChild(pied); C.appendChild(d); };
+    // le toucher : en mode note, on vise l'endroit (le sol, un mur, un toit…) ; hors mode, toucher une étiquette l'ouvre
+    const ray = new THREE.Raycaster(), cv = M.rendu.domElement; let dn = null;
+    const viser = (e) => { const r = cv.getBoundingClientRect(), v = new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(v, M.camera); return ray; };
+    const pd = (e) => { if (!M || M.L !== L) return; dn = { x: e.clientX, y: e.clientY }; if (mode) { e.stopImmediatePropagation(); e.preventDefault(); } };
+    const pu = (e) => { if (!M || M.L !== L || !dn) return; const bouge = Math.hypot(e.clientX - dn.x, e.clientY - dn.y) > 10; dn = null; if (bouge) return;
+      if (!mode) { const h = viser(e).intersectObjects(NOTES.children, true).find(h => h.object.userData.note); if (h) { e.stopImmediatePropagation(); voir(h.object.userData.note); } return; }
+      e.stopImmediatePropagation(); e.preventDefault(); const hits = viser(e).intersectObjects(scene.children, true).filter(h => h.object.isMesh && h.object.visible && !NOTES.children.some(g => g === h.object.parent) && !(h.object.material && h.object.material.transparent && h.object.material.opacity < .3));
+      const h = hits[0]; if (!h) return; const p = h.point; fini();
+      setTimeout(() => { const tx = prompt("📝 Qu'est-ce que je dois mettre ici ?"); if (tx && tx.trim()) envoyerWS({ t: "note_corbier", x: p.x, y: p.y, z: p.z, texte: tx.trim() }); }, 30); };
+    for (const [ev, f] of [["pointerdown", pd], ["pointerup", pu]]) cv.addEventListener(ev, f, true);
+    const clicStop = (e) => { if (M && M.L === L && mode) e.stopImmediatePropagation(); }; cv.addEventListener("click", clicStop, true);
+    const a1 = L.anim; L.anim = (tm) => { try { a1 && a1(tm); } catch (e) {} const ici = !!(M && M.L === L && !M.cine); if (ici && !barre.isConnected) { C.appendChild(barre); envoyerWS({ t: "notes_corbier" }); } else if (!ici && barre.isConnected) { barre.remove(); fini(); } };   // (la barre : seulement quand on est au Corbier)
+    const veille = setInterval(() => { if (!M || M.L !== L) { if (barre.isConnected) { barre.remove(); fini(); } if (!M || (M.prets && !Object.values(M.prets).some(q => q && q.L === L) && M.L !== L)) { clearInterval(veille); cv.removeEventListener("pointerdown", pd, true); cv.removeEventListener("pointerup", pu, true); cv.removeEventListener("click", clicStop, true); } } }, 1500); }
   /* (fluidité) tout ce qui ne bouge pas est fondu en quelques pièces */
   { scene.updateMatrixWorld(true); for (const g of scene.children.slice()) { if (!g.isGroup || g.userData.poser || g.userData.parts || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
   fusionStatique(scene, L, 0);

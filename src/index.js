@@ -613,6 +613,11 @@ export class Compteur extends DurableObject {
       al.pris = Number(a.numero); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al); ws.send(JSON.stringify({ t: "almanach_ok" }));
     } else if (m.t === "affiche_taille" && a.admin) {   // l'affiche de 1996 au sol, devant les encombrants : sa taille (l'administrateur)
       const v = Math.max(.2, Math.min(2.5, Number(m.v) || .6)); await this.ctx.storage.put("affiche_taille", v); const t = JSON.stringify({ t: "affiche", taille: v }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+    } else if ((m.t === "notes_corbier" || m.t === "note_corbier" || m.t === "note_corbier_suppr") && a.admin) {   // (10.100) les notes de l'administrateur, posées au doigt sur Le Corbier : ce qu'il faut y construire
+      const notes = (await this.ctx.storage.get("notes_corbier")) || [];
+      if (m.t === "note_corbier") { const x = Number(m.x), y = Number(m.y), z = Number(m.z), tx = String(m.texte || "").trim().slice(0, 600); if (!tx || ![x, y, z].every(Number.isFinite)) return; notes.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, z: Math.round(z * 10) / 10, texte: tx, d: Date.now() }); if (notes.length > 400) notes.shift(); await this.ctx.storage.put("notes_corbier", notes); }
+      if (m.t === "note_corbier_suppr") { const k = notes.findIndex(n => n.id === m.id); if (k >= 0) { notes.splice(k, 1); await this.ctx.storage.put("notes_corbier", notes); } }
+      const t = JSON.stringify({ t: "notes_corbier", notes }); for (const w of this.ctx.getWebSockets()) { const b = w.deserializeAttachment(); if (b && b.admin) { try { w.send(t); } catch (e) {} } }
     } else if (m.t === "almanach_ici" && a.admin) {
       // l'administrateur fait venir l'Almanach près de lui, dans le lieu où il se trouve (pas en 1955, ni à l'apocalypse)
       if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^(z|sh)-/.test(a.lieu)) return;
