@@ -181,7 +181,7 @@ function construireCorbier(A, L, scene) {
       x += w; } }
   const RA = residence(-10, 66, 0, 3, facR); void RA;
   // les stores rouges et bleus des terrasses, au pied de la résidence (d'après la vue du ciel)
-  for (const [x0, x1, c2] of [[-9.5, -.5, 0xc8202a], [.5, 6, 0x2a5ac8], [30, 36, 0xd8602a], [56, 65, 0xc8202a], [67, 81, 0xc8202a]]) { const st = box(x1 - x0, .08, 2.6, mat({ color: c2, roughness: .8 }), (x0 + x1) / 2, 3.0, 1.4); st.rotation.x = .2; }   // (la longue résidence, jusqu'au Yéti)
+  for (const [x0, x1, c2] of [[-9.5, -.5, 0xc8202a], [.5, 6, 0x2a5ac8], [30, 36, 0xd8602a]]) { const st = box(x1 - x0, .08, 2.6, mat({ color: c2, roughness: .8 }), (x0 + x1) / 2, 3.0, 1.4); st.rotation.x = .2; }   // (la longue résidence, jusqu'au Yéti)
 
   /* ---------- à gauche : la piscine, la galerie Charvin, les tours ---------- */
   /* (10.102, d'après les vues du ciel) au bout du Front de Neige : le bâtiment bas dont le toit, au niveau de la promenade, porte l'aire de jeux (trampolines, structure gonflable,
@@ -304,7 +304,7 @@ function construireCorbier(A, L, scene) {
   // (10.108 : le cabanon des crêpes retiré)
 
   /* ---------- le Yéti, au bout : la salle basse, l'enseigne entre les deux Amstel, la pergola blanche, les tables de pique-nique sur les dalles ---------- */
-  { const yT = tT(1024, 128, (c, w, h) => { c.fillStyle = "#5a2a18"; c.fillRect(0, 0, w, h); for (const [x, t] of [[60, "AMSTEL"], [420, "LE YETI"], [780, "AMSTEL"]]) { c.fillStyle = "#c8202a"; c.fillRect(x, 20, 220, 60); c.fillStyle = "#fff"; c.font = `bold 40px ${serif}`; c.textAlign = "center"; c.fillText(t, x + 110, 64); } });
+  { const yT = tT(1024, 128, (c, w, h) => { c.fillStyle = "#5a2a18"; c.fillRect(0, 0, w, h); for (const x of [40, 640, 860]) { c.fillStyle = "#c8202a"; c.fillRect(x, 22, 130, 64); c.fillStyle = "#f0c020"; c.beginPath(); c.ellipse(x + 65, 54, 26, 22, 0, 0, 7); c.fill(); c.fillStyle = "#c8202a"; c.beginPath(); c.ellipse(x + 65, 54, 14, 11, 0, 0, 7); c.fill(); } c.fillStyle = "#c8202a"; c.fillRect(300, 18, 260, 72); c.strokeStyle = "#fff"; c.lineWidth = 4; c.strokeRect(306, 24, 248, 60); c.fillStyle = "#fff"; c.font = `bold 46px ${serif}`; c.textAlign = "center"; c.fillText("LE YETI", 430, 70); });
     box(16, 3.6, 10, facS, 74.5, 1.8, -6); add(new THREE.PlaneGeometry(16, 1.2), lum(mat({ map: yT, emissive: 0xffffff, emissiveMap: yT, emissiveIntensity: .12 }), .12, .9), 74.5, 3.0, -.98);
     const yB = devantureT("Crêpes · Pizzas · Spécialités savoyardes", "#c8202a", "#ffffff", { motif: tables, serif: true }); add(new THREE.PlaneGeometry(16, 2.4), lum(mat({ map: yB, emissive: 0xffffff, emissiveMap: yB, emissiveIntensity: .12 }), .12, .75), 74.5, 1.2, -.98);
     box(16.4, .3, 11, mat({ color: 0x8a5a3a }), 74.5, 3.75, -5.8); }
@@ -312,7 +312,40 @@ function construireCorbier(A, L, scene) {
   const pergola = (x0, x1, z0, z1) => { const bl = mat({ color: 0xf2f2f2, roughness: .4, metalness: .2 });
     for (let x = x0; x <= x1 + .01; x += (x1 - x0) / Math.max(1, Math.round((x1 - x0) / 4))) { cyl(.06, .06, 2.7, bl, x, 1.35, z1, 8); OB.push([x, z1, .3]); const ch = box(.08, .08, z1 - z0 + .3, bl, x, 2.7 + (z1 - z0) * .05, (z0 + z1) / 2); ch.rotation.x = -.1; }
     box(x1 - x0, .08, .08, bl, (x0 + x1) / 2, 2.7, z1); const t = box(x1 - x0, .02, z1 - z0, mat({ color: 0xf8f8f4, transparent: true, opacity: .55, side: THREE.DoubleSide }), (x0 + x1) / 2, 2.85, (z0 + z1) / 2); t.rotation.x = -.1; };
-  const LP = LIGNES.find(l => l.o.pergola); pergola(LP.x0 + .3, LP.x1 - .3, .3, 5.8); pergola(67, 81, .3, 6.5);
+  void pergola;
+  /* (10.109, d'après la photo) au bout, côté Yéti : la véranda rouge du Yéti, la pergola blanche à toile rayée bleu et blanc de la pizzeria, puis le grand chapiteau bleu
+     « RESTAURANT LA PICORAILLE » sous la résidence, sa terrasse de planches et sa bordure, ses tables blanches et ses chaises grises, le parasol Affligem ; un banc de bois sur le gravier */
+  const LP = LIGNES.find(l => l.o.pergola);
+  { const blanc = mat({ color: 0xf4f4f2, roughness: .4, metalness: .15 }), gris = mat({ color: 0x6e7074, roughness: .6 }), tabB = mat({ color: 0xf2f2f0, roughness: .35 }), noirP = mat({ color: 0x2a2a2a });
+    const terrasse = (x0, x1, z0, z1) => { const d = add(new THREE.PlaneGeometry(x1 - x0, z1 - z0), mat({ map: deckT, roughness: .8 }), (x0 + x1) / 2, .09, (z0 + z1) / 2); d.rotation.x = -Math.PI / 2; box(x1 - x0, .16, .18, mat({ color: 0x8a4a32, roughness: .8 }), (x0 + x1) / 2, .08, z1); };
+    const chaiseG = (x, z, ry, m) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const a = new THREE.Mesh(new THREE.BoxGeometry(.44, .05, .42), m); a.position.y = .45; g.add(a); for (let k = 0; k < 4; k++) { const l = new THREE.Mesh(new THREE.BoxGeometry(.06, .5, .03), m); l.position.set(-.15 + k * .1, .74, -.2); l.rotation.x = -.15; g.add(l); } for (const [dx, dz] of [[-.19, -.17], [.19, -.17], [-.19, .17], [.19, .17]]) { const l = new THREE.Mesh(new THREE.BoxGeometry(.04, .45, .04), m); l.position.set(dx, .22, dz); g.add(l); } };
+    const tables = (x0, x1, z0, z1, mC) => { let k = 0; for (let x = x0 + .9; x < x1 - .6; x += 1.8) for (let z = z0 + .9; z < z1 - .6; z += 1.7) { box(.75, .04, .75, tabB, x, .74, z); cyl(.03, .03, .72, noirP, x, .37, z, 5); for (const sg of [-1, 1]) chaiseG(x, z + sg * .55, sg < 0 ? 0 : Math.PI, mC[k++ % mC.length]); OB.push([x, z, .7]); } };
+    // la véranda rouge du Yéti : le toit rouge en pente, les poteaux blancs, le vitrage, les chaises rouges et blanches dedans
+    { const x0 = 67.2, x1 = 81.6, z0 = .2, z1 = 6.4; terrasse(x0, x1, z0, z1 + .2); const tr = box(x1 - x0 + .4, .1, z1 - z0 + .6, mat({ color: 0xd01c22, roughness: .6 }), (x0 + x1) / 2, 2.9, (z0 + z1) / 2); tr.rotation.x = -.12;
+      for (let x = x0; x <= x1 + .01; x += (x1 - x0) / 4) { cyl(.07, .07, 2.6, blanc, x, 1.3, z1, 8); OB.push([x, z1, .3]); } box(x1 - x0, .14, .14, blanc, (x0 + x1) / 2, 2.6, z1);
+      const vg = mat({ color: 0xdcecf0, roughness: .05, transparent: true, opacity: .25, depthWrite: false }); box(x1 - x0, 1.9, .03, vg, (x0 + x1) / 2, 1.5, z1); box(.03, 2, z1 - z0, vg, x1, 1.4, (z0 + z1) / 2);
+      tables(x0, x1, z0, z1, [mat({ color: 0xd02a26 }), mat({ color: 0xf2f2f2 })]); }
+    // la pergola blanche de la pizzeria, sa toile rayée bleu et blanc, « BAR PIZZERIA » sur la poutre
+    { const x0 = LP.x0 + .2, x1 = LP.x1 - .2, z0 = .2, z1 = 6.2; terrasse(x0, x1, z0, z1 + .2);
+      const rayT = tT(256, 64, (c, w, h) => { for (let x = 0; x < w; x += 32) { c.fillStyle = (x / 32) % 2 ? "#f2f2f2" : "#2a5ab8"; c.fillRect(x, 0, 32, h); } });
+      const ty = box(x1 - x0, .04, z1 - z0 + .4, mat({ map: rayT, roughness: .8, side: THREE.DoubleSide }), (x0 + x1) / 2, 2.85, (z0 + z1) / 2); ty.rotation.x = -.08;
+      for (let x = x0; x <= x1 + .01; x += (x1 - x0) / 3) { cyl(.07, .07, 2.7, blanc, x, 1.35, z1, 8); OB.push([x, z1, .3]); }
+      const pzT = tT(512, 64, (c, w, h) => { c.fillStyle = "#f4f4f2"; c.fillRect(0, 0, w, h); c.fillStyle = "#2a5ab8"; c.font = `bold 40px ${sans}`; c.textAlign = "center"; c.fillText("BAR       PIZZERIA", w / 2, 46); });
+      add(new THREE.PlaneGeometry(x1 - x0, .42), mat({ map: pzT }), (x0 + x1) / 2, 2.62, z1 + .08); tables(x0, x1, z0, z1, [gris]); }
+    // le grand chapiteau bleu de La Picoraille : le toit bleu à deux pans, l'armature blanche, le lambrequin « RESTAURANT LA PICORAILLE », le panneau blanc au bout
+    { const x1 = LP.x0 - .1, x0 = x1 - 13, z0 = .2, z1 = 7.2, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2; terrasse(x0 - 1, x1, z0, z1 + .3);
+      const bleu = mat({ color: 0x1f5ec8, roughness: .55, side: THREE.DoubleSide });
+      for (const sg of [-1, 1]) { const pan = box(x1 - x0 + .3, .04, (z1 - z0) / 2 + .5, bleu, cx, 3.3, cz + sg * (z1 - z0) / 4); pan.rotation.x = sg * .22; }
+      for (let x = x0; x <= x1 + .01; x += (x1 - x0) / 4) { for (const z of [z0 + .2, z1]) cyl(.08, .08, 2.9, blanc, x, 1.45, z, 8); OB.push([x, z1, .35]); } box(x1 - x0, .16, .16, blanc, cx, 2.9, z1);
+      const piT = tT(1024, 96, (c, w, h) => { c.fillStyle = "#1f5ec8"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.fillRect(0, h - 8, w, 8); c.font = `bold 52px ${sans}`; c.textAlign = "center"; c.fillText("RESTAURANT        LA  PICORAILLE", w / 2, 64); });
+      add(new THREE.PlaneGeometry(x1 - x0, .75), lum(mat({ map: piT, emissive: 0xffffff, emissiveMap: piT, emissiveIntensity: .12 }), .12, .8), cx, 3.2, z1 + .16);
+      box(.05, 2.9, z1 - z0, mat({ color: 0xf2f2f0, transparent: true, opacity: .75, roughness: .6 }), x1, 1.45, cz);   // le panneau blanc, au bout
+      tables(x0, x1, z0, z1, [gris]);
+      // le parasol Affligem, bleu nuit
+      const afT = tT(256, 64, (c, w, h) => { c.fillStyle = "#1c2c50"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 34px ${serif}`; c.textAlign = "center"; c.fillText("Affligem", w / 2, 44); });
+      cyl(.05, .05, 2.9, mat({ color: 0xd8d8d8 }), x0 - .2, 1.45, z1 - .6, 6); const pa = add(new THREE.ConeGeometry(2, .55, 4, 1, true), mat({ map: afT, side: THREE.DoubleSide, roughness: .8 }), x0 - .2, 2.95, z1 - .6); pa.rotation.y = Math.PI / 4; OB.push([x0 - .2, z1 - .6, .4]); }
+    // le banc de bois sur le gravier, devant
+    { const bx = LP.x0 - 6, bz = 9.4; for (let k = 0; k < 3; k++) box(1.9, .05, .12, boisC, bx, .46, bz - .14 + k * .14); for (let k = 0; k < 2; k++) box(1.9, .14, .04, boisC, bx, .68 + k * .2, bz - .3); for (const sx of [-.8, .8]) box(.08, .46, .5, mat({ color: 0x2a2a2a, metalness: .4 }), bx + sx, .23, bz - .05); OB.push([bx, bz, 1]); } }
 
   /* ---------- le mobilier de la promenade : les lampadaires verts à deux lanternes, les bacs rouges et leurs arbres, les jardinières, les bancs, les tables ---------- */
   const vertL = mat({ color: 0x8aa898, roughness: .45, metalness: .4 }), verreL = lum(mat({ color: 0xf2f0e0, emissive: 0xffe0a0, emissiveIntensity: .05, transparent: true, opacity: .9 }), .05, 2.4), HALO = [];
