@@ -72,7 +72,7 @@ function construireCorbier(A, L, scene) {
   // l'office du tourisme : la rotonde sous sa grande pyramide de poutres rouges et blanches, le chapeau blanc
   /* l'office du tourisme, d'après les vues du ciel : la grande rotonde à deux niveaux (le soubassement de béton clair, la galerie vitrée, le bandeau rouge « CORBIER TOURISME »),
      son toit conique en bardeaux gris, et les trois grandes poutres de bois lamellé, rouge-orangé côté dehors et blanches côté dedans, qui se rejoignent très haut sous le chapeau blanc */
-  { const n0 = scene.children.length, ox = -42, oz = 36, R0 = 8.5, rouge = mat({ color: 0xb8502a, roughness: .55 }), blanc2 = mat({ color: 0xf2f0ea, roughness: .6 }), beton = mat({ color: 0xd8d2c4, roughness: .8 });
+  { const n0 = scene.children.length, ox = -32, oz = 46, R0 = 8.5, rouge = mat({ color: 0xb8502a, roughness: .55 }), blanc2 = mat({ color: 0xf2f0ea, roughness: .6 }), beton = mat({ color: 0xd8d2c4, roughness: .8 });
     cyl(R0 + .6, R0 + .9, 1.4, beton, ox, .7, oz, 40); cyl(R0, R0, 2.6, mat({ color: 0xe8e2d4 }), ox, 2.7, oz, 40);   // le soubassement, le rez-de-chaussée
     for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; const w = box(1.9, 2.0, .06, mat({ color: 0x8aa4b0, roughness: .1, metalness: .2 }), ox + Math.sin(a) * (R0 + .02), 2.7, oz + Math.cos(a) * (R0 + .02)); w.rotation.y = a; }   // les baies vitrées tout autour
     const tT2 = tT(2048, 64, (c, w, h) => { c.fillStyle = "#9a2a1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 40px ${sans}`; c.textAlign = "center"; for (const x of [w / 6, w / 2, w * 5 / 6]) c.fillText("CORBIER TOURISME", x, 46); });
