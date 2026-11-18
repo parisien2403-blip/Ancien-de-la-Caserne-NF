@@ -614,12 +614,15 @@ function construireCorbier(A, L, scene) {
       { const vC = mat({ color: 0x4a6a5a, roughness: .5 }); for (let k = 0; k < 3; k++) for (let q = 0; q < 6; q++) box(.46, .04, .44, vC, x0 + 6 + k * .6, .5 + q * .12, 2.6); OB.push([x0 + 6.6, 2.6, 1.2]); } }
     // le sol devant : les dalles ; au bout, les barrières de bois (deux lisses sur des poteaux)
     L.solsPlus.push(sol(82.5, XF, -1, 7.6, mat({ map: dalleT, roughness: .85 }), .03), sol(100, XF, 7.6, 16.5, mat({ map: gravT, roughness: 1 }), .01));
+    const nBar = scene.children.length, oBar = OB.length, solsB = new Set(L.solsPlus);
     const rond = mat({ color: 0x8a6a48, roughness: .85 });
     const barriere = (xa, za, xb, zb) => { const L2 = Math.hypot(xb - xa, zb - za), n = Math.max(1, Math.round(L2 / 2.2)), a = Math.atan2(zb - za, xb - xa);
       for (let k = 0; k <= n; k++) { const x = xa + (xb - xa) * k / n, z = za + (zb - za) * k / n; cyl(.08, .09, 1.1, rond, x, .55, z, 6); OB.push([x, z, .25]); }
       for (const y of [.45, .9]) { const l = cyl(.05, .05, L2, rond, (xa + xb) / 2, y, (za + zb) / 2, 6); l.rotation.z = Math.PI / 2; l.rotation.y = -a; } };
     barriere(XF - .2, -.9, XF - .2, 16.4); barriere(96, 16.4, XF - .2, 16.4);
     for (const o of scene.children.slice(n0B)) o.position.x += 12; for (const o of OB.slice(o0B)) o[0] += 12;
+    for (const o of scene.children.slice(n0B, nBar)) if (!solsB.has(o)) o.position.z -= 3.5; for (const o of OB.slice(o0B, oBar)) o[1] -= 3.5;   // (10.126 : toute la rangée de gauche reculée de 3,5 m)
+    L.solsPlus.push(sol(98, XF + 12, -4.6, -1, mat({ map: dalleT, roughness: .85 }), .03));
     /* (10.124, d'après les photos) entre le Yéti et la tour : le grand escalier de ferraille qui descend vers la route, ses rampes ; le totem blanc « Le Corbier »,
        le poteau aux panneaux de bois ; le mélèze, le bouleau, l'arbre roux ; au-dessus, la passerelle couverte (toit de bardeaux, murs de bois, fenêtres, piliers de béton)
        qui relie le Yéti à la tour, et arrive sous le porche des balcons */
@@ -645,29 +648,22 @@ function construireCorbier(A, L, scene) {
       // les arbres
       bouleau(82.9, -3.2, 11); sapin(97, -15.5, 14, melezeM); { const rx = mat({ color: 0xd8862a, roughness: .9 }), vx = mat({ color: 0x6a8a2a, roughness: .9 }); cyl(.15, .22, 6, mat({ color: 0x6a5a4a }), 82.8, 3, -13, 7); for (let k = 0; k < 7; k++) add(new THREE.IcosahedronGeometry(1.3 + al(), 1), k % 2 ? rx : vx, 82.8 + (al() - .5) * 2.4, 5 + al() * 3, -13 + (al() - .5) * 2.4); }
       barriere(83.8, -1.2, 83.8, -14); barriere(96.2, -1.2, 96.2, -12); jardiniere(84.8, -.7);   // (la barrière de bois au bord du creux, ses géraniums)
-      // la passerelle couverte : du toit du Yéti jusqu'au porche de la tour
-      { const xa = 82.4, xb = 95.3, cx = (xa + xb) / 2, W = xb - xa, zc = -8.5, yP = .15, bardT2 = tT(256, 64, (c, w, h) => { c.fillStyle = "#8a6a52"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8 % 2) * 6; x < w; x += 12) { c.fillStyle = ["#9a7a60", "#7a5a44", "#a88a6e"][(x + y) % 3]; c.fillRect(x, y, 11, 7); } }, 6, 2);
+      /* (10.126, d'après le dessin) la passerelle couverte, droite : elle part du flanc du Yéti, passe devant le haut de l'escalier et entre dans le bout du porche
+         des balcons de la tour (reculée), qu'elle ferme : on y entre par des portes battantes, depuis le porche */
+      { const xa = 82.4, xb = 98, cx = (xa + xb) / 2, W = xb - xa, zc = -2.8, yP = .15, bardT2 = tT(256, 64, (c, w, h) => { c.fillStyle = "#8a6a52"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8 % 2) * 6; x < w; x += 12) { c.fillStyle = ["#9a7a60", "#7a5a44", "#a88a6e"][(x + y) % 3]; c.fillRect(x, y, 11, 7); } }, 6, 2);
         const murT = tT(512, 64, (c, w, h) => { c.fillStyle = "#7a3e24"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 6) { c.fillStyle = "rgba(0,0,0,.15)"; c.fillRect(x, 0, 1, h); } for (let x = 20; x < w; x += 64) { c.fillStyle = "#5a2a18"; c.fillRect(x - 3, 10, 46, 34); c.fillStyle = "#8a9aa4"; c.fillRect(x, 13, 40, 28); c.fillStyle = "rgba(255,255,255,.3)"; c.fillRect(x + 2, 15, 10, 24); } }, 1, 1);
-        box(W, .9, 3.4, betonM, cx, yP + .45, zc);   // (le tablier de béton blanc)
+        box(W, .9, 3.2, betonM, cx, yP + .45, zc);
         for (const sz of [-1.6, 1.6]) add(new THREE.PlaneGeometry(W, 1.6), mat({ map: murT, side: THREE.DoubleSide }), cx, yP + 1.7, zc + sz);
-        for (const sg of [-1, 1]) { const t = box(W + .8, .14, 2.6, mat({ map: bardT2, roughness: .9 }), cx, yP + 2.75, zc + sg * 1.05); t.rotation.x = sg * .5; }
+        for (const sg of [-1, 1]) { const t = box(W + .6, .14, 2.4, mat({ map: bardT2, roughness: .9 }), cx - .3, yP + 2.75, zc + sg * 1.0); t.rotation.x = sg * .5; }
         box(W, .3, .3, mat({ color: 0x5a3a26 }), cx, yP + 3.2, zc);
-        { const yT = Y0 * (-zc - 1.2) / 13; for (const x of [85.4, 93.6]) for (const sz of [-1.2, 1.2]) box(.6, yP - yT, .6, betonM, x, (yP + yT) / 2, zc + sz); }
-        /* (10.125) côté tour, elle tourne d'équerre et revient vers la promenade, le long de l'escalier (un L) : son bout ferme le côté droit du porche
-           des balcons, et on y entre par des portes battantes, depuis le porche */
-        { const xl = 96.65, Wl = 2.7, z0 = zc - 1.7, z1 = 2.4, Ll = z1 - z0, zm = (z0 + z1) / 2, murM = mat({ map: murT, side: THREE.DoubleSide });
-          box(Wl, .9, Ll, betonM, xl, yP + .45, zm);
-          for (const sx of [-Wl / 2, Wl / 2]) { const m = add(new THREE.PlaneGeometry(Ll, 1.6), murM, xl + sx, yP + 1.7, zm); m.rotation.y = Math.PI / 2; }
-          for (const sg of [-1, 1]) { const t = box(2.3, .14, Ll + .8, mat({ map: bardT2, roughness: .9 }), xl + sg * .95, yP + 2.75, zm); t.rotation.z = -sg * .5; }
-          box(.3, .3, Ll, mat({ color: 0x5a3a26 }), xl, yP + 3.2, zm);
-          box(Wl, 1.6, .12, mat({ color: 0x7a3e24 }), xl, yP + 1.7, z1);   // (le pignon, côté promenade)
-          // les portes battantes, sous le porche : deux vantaux vitrés, cadres de bois, barres de poussée
-          const porteM = mat({ color: 0x7a9aa8, roughness: .1, metalness: .2 }), cadreM = mat({ color: 0x5a3018, roughness: .7 });
-          for (const dz of [-.55, .55]) { box(.06, 2.1, 1.05, porteM, xl + Wl / 2 + .02, yP + 1.95, .7 + dz); box(.1, 2.2, .08, cadreM, xl + Wl / 2 + .03, yP + 1.95, .7 + dz * 1.95); box(.1, .06, .8, galvaM, xl + Wl / 2 + .1, yP + 1.9, .7 + dz); }
-          box(.12, .12, 2.3, cadreM, xl + Wl / 2 + .03, yP + 3.0, .7);
-          for (let z = .4; z < 2.4; z += .7) OB.push([xl, z, .9]); } } } }
+        { const yT = Y0 * (-zc - 1.2) / 13; for (const x of [86, 94]) for (const sz of [-1.3, 1.3]) box(.5, yP - yT, .5, betonM, x, (yP + yT) / 2, zc + sz); }
+        // le bout, côté tour : le pignon de bois et ses portes battantes, sous le porche
+        box(.14, 1.6, 3.2, mat({ color: 0x7a3e24 }), xb, yP + 1.7, zc);
+        const porteM = mat({ color: 0x7a9aa8, roughness: .1, metalness: .2 }), cadreM = mat({ color: 0x5a3018, roughness: .7 });
+        for (const dz of [-.55, .55]) { box(.06, 2.1, 1.05, porteM, xb + .1, yP + 1.2, zc + dz); box(.1, 2.2, .08, cadreM, xb + .12, yP + 1.2, zc + dz * 1.95); box(.1, .06, .8, galvaM, xb + .18, yP + 1.15, zc + dz); }
+        box(.12, .12, 2.3, cadreM, xb + .12, yP + 2.3, zc); } } }
 
-  L.limites = (x, z) => libre(x, z) && ((x > 82.6 && x < 169.8 && z > .3 && z < 16.2) || (x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
+  L.limites = (x, z) => libre(x, z) && ((x > 82.6 && x < 98 && z > .3 && z < 16.2) || (x > 98.2 && x < 169.8 && z > -4.1 && z < 16.2) || (x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
   L.hauteur = (x, z) => { const ox = -x; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
