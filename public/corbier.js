@@ -512,7 +512,7 @@ function construireCorbier(A, L, scene) {
   const sapin = (x, z, h = 12, m = sapinM) => { const y0 = L.hautPiste ? L.hautPiste(x, z) : 0; epicea(x, y0, z, h, m === melezeM ? .85 : 1); void sapinM2; void troncM; OB.push([x, z, .6]); };
   const buisson = (x, z, r = 1) => { const y0 = L.hautPiste ? L.hautPiste(x, z) : 0; for (let k = 0; k < 4; k++) { const b = add(new THREE.IcosahedronGeometry(r * (.6 + al() * .4), 1), [mat({ color: 0x3e6a2a, roughness: 1, flatShading: true }), mat({ color: 0x567a30, roughness: 1, flatShading: true }), mat({ color: 0x2e5222, roughness: 1, flatShading: true })][k % 3], x + (al() - .5) * r, y0 + r * .5 + al() * r * .3, z + (al() - .5) * r); b.scale.y = .75; } };
   // (10.124 : les quatre bouleaux du bout retirés : à leur place, l'escalier et la passerelle)
-  for (const [x, z, h] of [[93, -6, 14], [98, 6, 12], [-90, -16, 11], [-92, 20, 13], [-40, -14, 12], [24, -18, 15]]) sapin(x, z, h, al() < .4 ? melezeM : sapinM);
+  for (const [x, z, h] of [[-90, -16, 11], [-92, 20, 13], [-40, -14, 12], [24, -18, 15]]) sapin(x, z, h, al() < .4 ? melezeM : sapinM);
   for (let k = 0; k < 14; k++) sapin(-130 + k * 18 + al() * 6, -78 - al() * 30, 14 + al() * 8);   // la forêt, derrière les tours
   /* (10.111, d'après les photos de la promenade) les arbres et la végétation : les épicéas et mélèzes du talus, au bout côté Yéti et au bout côté piscine, les buissons le long des chemins */
   for (const [x, z, h] of [[-48, 24, 13], [-44, 27, 11], [-62, 20, 14], [72, 22, 12], [78, 26, 14], [86, 20, 11], [-20, 52, 12], [10, 56, 10]]) sapin(x, z, h, al() < .35 ? melezeM : sapinM);
@@ -646,15 +646,26 @@ function construireCorbier(A, L, scene) {
       bouleau(82.9, -3.2, 11); sapin(97, -15.5, 14, melezeM); { const rx = mat({ color: 0xd8862a, roughness: .9 }), vx = mat({ color: 0x6a8a2a, roughness: .9 }); cyl(.15, .22, 6, mat({ color: 0x6a5a4a }), 82.8, 3, -13, 7); for (let k = 0; k < 7; k++) add(new THREE.IcosahedronGeometry(1.3 + al(), 1), k % 2 ? rx : vx, 82.8 + (al() - .5) * 2.4, 5 + al() * 3, -13 + (al() - .5) * 2.4); }
       barriere(83.8, -1.2, 83.8, -14); barriere(96.2, -1.2, 96.2, -12); jardiniere(84.8, -.7);   // (la barrière de bois au bord du creux, ses géraniums)
       // la passerelle couverte : du toit du Yéti jusqu'au porche de la tour
-      { const xa = 82.4, xb = 97.4, cx = (xa + xb) / 2, W = xb - xa, zc = -8.5, yP = .15, bardT2 = tT(256, 64, (c, w, h) => { c.fillStyle = "#8a6a52"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8 % 2) * 6; x < w; x += 12) { c.fillStyle = ["#9a7a60", "#7a5a44", "#a88a6e"][(x + y) % 3]; c.fillRect(x, y, 11, 7); } }, 6, 2);
+      { const xa = 82.4, xb = 95.3, cx = (xa + xb) / 2, W = xb - xa, zc = -8.5, yP = .15, bardT2 = tT(256, 64, (c, w, h) => { c.fillStyle = "#8a6a52"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8 % 2) * 6; x < w; x += 12) { c.fillStyle = ["#9a7a60", "#7a5a44", "#a88a6e"][(x + y) % 3]; c.fillRect(x, y, 11, 7); } }, 6, 2);
         const murT = tT(512, 64, (c, w, h) => { c.fillStyle = "#7a3e24"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 6) { c.fillStyle = "rgba(0,0,0,.15)"; c.fillRect(x, 0, 1, h); } for (let x = 20; x < w; x += 64) { c.fillStyle = "#5a2a18"; c.fillRect(x - 3, 10, 46, 34); c.fillStyle = "#8a9aa4"; c.fillRect(x, 13, 40, 28); c.fillStyle = "rgba(255,255,255,.3)"; c.fillRect(x + 2, 15, 10, 24); } }, 1, 1);
         box(W, .9, 3.4, betonM, cx, yP + .45, zc);   // (le tablier de béton blanc)
         for (const sz of [-1.6, 1.6]) add(new THREE.PlaneGeometry(W, 1.6), mat({ map: murT, side: THREE.DoubleSide }), cx, yP + 1.7, zc + sz);
         for (const sg of [-1, 1]) { const t = box(W + .8, .14, 2.6, mat({ map: bardT2, roughness: .9 }), cx, yP + 2.75, zc + sg * 1.05); t.rotation.x = sg * .5; }
         box(W, .3, .3, mat({ color: 0x5a3a26 }), cx, yP + 3.2, zc);
-        { const yT = Y0 * (-zc - 1.2) / 13; for (const x of [85.4, 94.6]) for (const sz of [-1.2, 1.2]) box(.6, yP - yT, .6, betonM, x, (yP + yT) / 2, zc + sz); }
-        // côté tour : il arrive sous le porche ; le porche fait le tour, le long du flanc de la tour
-        box(1.8, .4, 14.5, mat({ color: 0xe8e0d0, roughness: .8 }), 97.2, 3.4, -4.85); } } }
+        { const yT = Y0 * (-zc - 1.2) / 13; for (const x of [85.4, 93.6]) for (const sz of [-1.2, 1.2]) box(.6, yP - yT, .6, betonM, x, (yP + yT) / 2, zc + sz); }
+        /* (10.125) côté tour, elle tourne d'équerre et revient vers la promenade, le long de l'escalier (un L) : son bout ferme le côté droit du porche
+           des balcons, et on y entre par des portes battantes, depuis le porche */
+        { const xl = 96.65, Wl = 2.7, z0 = zc - 1.7, z1 = 2.4, Ll = z1 - z0, zm = (z0 + z1) / 2, murM = mat({ map: murT, side: THREE.DoubleSide });
+          box(Wl, .9, Ll, betonM, xl, yP + .45, zm);
+          for (const sx of [-Wl / 2, Wl / 2]) { const m = add(new THREE.PlaneGeometry(Ll, 1.6), murM, xl + sx, yP + 1.7, zm); m.rotation.y = Math.PI / 2; }
+          for (const sg of [-1, 1]) { const t = box(2.3, .14, Ll + .8, mat({ map: bardT2, roughness: .9 }), xl + sg * .95, yP + 2.75, zm); t.rotation.z = -sg * .5; }
+          box(.3, .3, Ll, mat({ color: 0x5a3a26 }), xl, yP + 3.2, zm);
+          box(Wl, 1.6, .12, mat({ color: 0x7a3e24 }), xl, yP + 1.7, z1);   // (le pignon, côté promenade)
+          // les portes battantes, sous le porche : deux vantaux vitrés, cadres de bois, barres de poussée
+          const porteM = mat({ color: 0x7a9aa8, roughness: .1, metalness: .2 }), cadreM = mat({ color: 0x5a3018, roughness: .7 });
+          for (const dz of [-.55, .55]) { box(.06, 2.1, 1.05, porteM, xl + Wl / 2 + .02, yP + 1.95, .7 + dz); box(.1, 2.2, .08, cadreM, xl + Wl / 2 + .03, yP + 1.95, .7 + dz * 1.95); box(.1, .06, .8, galvaM, xl + Wl / 2 + .1, yP + 1.9, .7 + dz); }
+          box(.12, .12, 2.3, cadreM, xl + Wl / 2 + .03, yP + 3.0, .7);
+          for (let z = .4; z < 2.4; z += .7) OB.push([xl, z, .9]); } } } }
 
   L.limites = (x, z) => libre(x, z) && ((x > 82.6 && x < 169.8 && z > .3 && z < 16.2) || (x > -60.2 && x < 96 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
   L.hauteur = (x, z) => { const ox = -x; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
