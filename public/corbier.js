@@ -385,7 +385,8 @@ function construireCorbier(A, L, scene) {
   /* ---------- le bâtiment de l'École du Ski Français, la Fontaine de l'Ours ---------- */
   { const n0E = scene.children.length; residence(-39, -1, -3.2, 3, facG);
     { const corps = scene.children[n0E]; scene.remove(corps); const H = 3.4 + 3 * 2.8, zc = -3.2 - 6.6;   /* (10.128 : le corps de l'École du Ski, ouvert au rez-de-chaussée : le passage de la galerie) */
-      box(12.5, H, 12, facS, -32.75, H / 2, zc); box(22.5, H, 12, facS, -12.25, H / 2, zc); box(3.0, H - 3.1, 12, facS, -25, 3.1 + (H - 3.1) / 2, zc); }   /* (10.108 : collé à la longue résidence — plus d'espace entre les deux) */
+      const bx = (x0, x1, z0, z1, y0 = 0, y1 = H) => box(x1 - x0, y1 - y0, z1 - z0, facS, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);   /* (10.132 : découpé autour du hall final de la galerie et de la porte) */
+      bx(-39, -36.25, -15.2, -3.2); bx(-23.35, -1, -15.2, -3.2); bx(-36.25, -23.35, -15.2, -13.25); bx(-36.25, -26.45, -3.95, -3.2); bx(-36.25, -23.35, -13.25, -3.2, 3.25); bx(-26.45, -23.55, -3.95, -3.2, 2.6); void zc; }   /* (10.108 : collé à la longue résidence — plus d'espace entre les deux) */
     const esf = tT(512, 96, (c, w, h) => { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8202a"; c.beginPath(); c.arc(40, 48, 30, 0, 7); c.fill(); c.fillStyle = "#1a3a8a"; c.font = `italic bold 40px ${sans}`; c.fillText("ÉCOLE DU SKI FRANÇAIS", 82, 60); });
     const s = add(new THREE.PlaneGeometry(9, 1.7), lum(mat({ map: esf, emissive: 0xffffff, emissiveMap: esf, emissiveIntensity: .1 }), .1, .8), -26, 4.9, -1.9); void s;
     const ours = tT(512, 96, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 30px ${serif}`; c.fillText("Bar - Restaurant", 14, 60); c.font = `italic bold 38px ${serif}`; c.fillText("La Fontaine de l'Ours", 232, 60); });
