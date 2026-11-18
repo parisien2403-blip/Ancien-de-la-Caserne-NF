@@ -8051,6 +8051,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // au milieu de la cour : le cercle vert du chantier de la nouvelle caserne (l'administrateur seul le voit)
     L.portails.push({ dans: (x, z) => x > 10 && z > 5.4 && z < 7.6, vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
+    L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "corbier", arrivee: [54.5, 15], yaw: -Math.PI / 2, violet: true, pasApo: true });   // (10.99) le cercle violet : Le Corbier, pour l'administrateur seul (le temps de le construire)
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
   }
 
@@ -12484,12 +12485,12 @@ function animerCercles(t) {
     if (q.traverse && q.centre && Math.hypot(moi.g.position.x - q.centre[0], moi.g.position.z - q.centre[1]) < RAYON_CERCLE * .85) { allerVers(q.traverse[0], q.traverse[1], true); break; } }
   for (const c of M.cercles) {
     if (!c.g) { const ce = centrePortail(c.pt); if (!ce) continue;
-      const rouge = estApo(c.pt.vers) !== estApo(M.lieu), bleu = !!c.pt.bleu, vert = !!c.pt.vert;   // (le passage vers l'apocalypse, ou celui qui en ramène : en rouge ; celui de l'appartement, en bleu)
-      const g = new THREE.Group(), or = new THREE.MeshBasicMaterial({ color: vert ? 0x1fbf4a : bleu ? 0x2a7bff : rouge ? 0xd8281c : 0xf5b82e, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide });
+      const rouge = estApo(c.pt.vers) !== estApo(M.lieu), bleu = !!c.pt.bleu, vert = !!c.pt.vert, vio = !!c.pt.violet;   // (le passage vers l'apocalypse, ou celui qui en ramène : en rouge ; celui de l'appartement, en bleu)
+      const g = new THREE.Group(), or = new THREE.MeshBasicMaterial({ color: vio ? 0x9a3ae8 : vert ? 0x1fbf4a : bleu ? 0x2a7bff : rouge ? 0xd8281c : 0xf5b82e, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide });
       const anneau = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE - .07, RAYON_CERCLE, 48), or); anneau.rotation.x = -Math.PI / 2; g.add(anneau);
-      const disque = new THREE.Mesh(new THREE.CircleGeometry(RAYON_CERCLE - .07, 48), new THREE.MeshBasicMaterial({ color: vert ? 0x6ee08c : bleu ? 0x6aa8ff : rouge ? 0xff5040 : 0xffe28a, transparent: true, opacity: .35, depthWrite: false, side: THREE.DoubleSide }));
+      const disque = new THREE.Mesh(new THREE.CircleGeometry(RAYON_CERCLE - .07, 48), new THREE.MeshBasicMaterial({ color: vio ? 0xc890ff : vert ? 0x6ee08c : bleu ? 0x6aa8ff : rouge ? 0xff5040 : 0xffe28a, transparent: true, opacity: .35, depthWrite: false, side: THREE.DoubleSide }));
       disque.rotation.x = -Math.PI / 2; disque.position.y = -.002; g.add(disque);
-      const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .15, 48), new THREE.MeshBasicMaterial({ color: vert ? 0x2ee05a : bleu ? 0x3d8bff : rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
+      const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .15, 48), new THREE.MeshBasicMaterial({ color: vio ? 0xb060ff : vert ? 0x2ee05a : bleu ? 0x3d8bff : rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
       { let h = 0; try { h = M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0; } catch (e) { h = null; } const y = c.pt.y != null ? (h != null && h > c.pt.y && h - c.pt.y < .3 ? h : c.pt.y) : (h || 0); g.position.set(ce[0], y + .04, ce[1]); } /* (10.02 : au-dessus du trottoir — le cercle de l'escalier Z était caché dessous) */ M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
@@ -13105,7 +13106,7 @@ const METRO_STATIONS = { rex: { nom: "Bonne Nouvelle", ligne: "8 · 9", lieu: "r
   corbier: { nom: "Le Corbier", lieu: "corbier", arrivee: [-26, 13.8], yaw: Math.PI, libelle: "🚌 Le Corbier — en car, jusqu'à la station (Savoie)", car: true } };
 function metroProche(x, z) { if (!M || !M.L || M.L.apo || M.L.sh) return false; if (M.lieu === "rex") return [[-70.5, 9.8], [-43.6, -10.4]].some(([a, b]) => Math.hypot(x - a, z - b) < 3.4);
   if (M.lieu === "tertre" && M.L.metroAbbesses) return Math.hypot(x - M.L.metroAbbesses.x, z - M.L.metroAbbesses.z) < 3;
-  if (M.lieu === "corbier" && M.L.arretCar) return Math.hypot(x - M.L.arretCar.x, z - M.L.arretCar.z) < 2.5; return false; }
+  return false; }
 /* (10.99) le car : de Paris au Corbier, ou du Corbier à Paris — l'écran noir, la route de montagne qui défile en mots, et l'on y est */
 function voyageCar(dep, arr) { if (!M || M.cine) return; const n = voile("background:#000;opacity:0;transition:opacity .9s;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#f2ead8;font:600 20px Lato,Arial,sans-serif;text-align:center;padding:20px");
   const vers = arr.car ? ["🚌 Le car quitte Paris…", "L'autoroute, Chambéry, la vallée de la Maurienne…", "Saint-Jean-de-Maurienne, la route qui monte en lacets…", "Villarembert… Le Corbier !"] : ["🚌 Le car redescend la vallée…", "Paris, enfin. " + arr.nom + "."];
@@ -13115,7 +13116,7 @@ function voyageCar(dep, arr) { if (!M || M.cine) return; const n = voile("backgr
 function choixMetro() { if (M.choixBusEl) M.choixBusEl.remove(); const d = document.createElement("div"); M.choixBusEl = d; const ici = METRO_STATIONS[M.lieu];
   d.style.cssText = "position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:30;background:rgba(14,22,44,.95);color:#fff;border-radius:16px;padding:14px 16px;font:15px Lato,Arial,sans-serif;min-width:260px;max-width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)";
   d.innerHTML = `<div style="font-weight:700;margin-bottom:4px">${ici && ici.car ? "🚌 Arrêt du car — " : "🚇 Métro "}${ici ? ici.nom : ""}</div><div style="font-size:13px;opacity:.75;margin-bottom:8px">Où allez-vous ?</div>`;
-  for (const [k, D] of Object.entries(METRO_STATIONS)) { if (k === M.lieu) continue; const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.libelle; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#1f4aa8;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
+  for (const [k, D] of Object.entries(METRO_STATIONS)) { if (k === M.lieu || D.car) continue;   /* (le car du Corbier : fermé tant que l'administrateur y travaille — on y va par le cercle violet) */ const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.libelle; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#1f4aa8;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
     b.onclick = () => { d.remove(); M.choixBusEl = null; M.manMenu = null; if (D.car || (ici && ici.car)) voyageCar(ici || METRO_STATIONS.rex, D); else cineMetro(ici || METRO_STATIONS.rex, D); }; d.appendChild(b); }
   const x = document.createElement("button"); x.type = "button"; x.textContent = "Annuler"; x.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:14px Lato,Arial,sans-serif;cursor:pointer"; x.onclick = () => { d.remove(); M.choixBusEl = null; M.manMenu = null; }; d.appendChild(x);
   (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer: () => { d.remove(); M.choixBusEl = null; M.manMenu = null; } }; }
