@@ -679,14 +679,14 @@ function construireCorbier(A, L, scene) {
     /* (10.146, d'après les photos de l'été) la terrasse des Roches Blanches : le platelage de bois, fermé de grandes vitres sur poteaux noirs, les bâches rouges
        « LES ROCHES BLANCHES » en bas des vitres, les grands parasols carrés rouges Kronenbourg, la guirlande de guinguette, les canapés gris et leurs tables basses,
        les tables rouges et leurs chaises ; l'ardoise devant l'entrée */
-    { const x0 = -42.4, x1 = -29.6, z0 = -2.5, z1 = 3.6, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, porte = [-35.2, -33.4], XS = -36.2;   /* (10.147 : plus petite, scindée en deux par une paroi de verre : le côté restaurant, le côté salon) */
+    { const nT0 = scene.children.length, oT0 = OB.length; const x0 = -42.4, x1 = -29.6, z0 = -2.5, z1 = 3.6, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, porte = [-35.2, -33.4], XS = -36.2;   /* (10.147 : plus petite, scindée en deux par une paroi de verre : le côté restaurant, le côté salon) */
       const noir = mat({ color: 0x1c1e20, roughness: .5, metalness: .4 }), verre = mat({ color: 0xdcecf2, roughness: .04, metalness: .3, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide }), rouge = mat({ color: 0xd8202a, roughness: .6, side: THREE.DoubleSide });
       L.solsPlus.push(sol(x0, x1, z0, z1, mat({ map: deckT, roughness: .8 }), .06));
       const banT = tT(1024, 96, (c, w, h) => { c.fillStyle = "#d8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 40px ${sans}`; c.textAlign = "center"; c.textBaseline = "middle"; for (let k = 0; k < 3; k++) { c.fillText("LES ROCHES BLANCHES", w * (k + .5) / 3, h / 2 + 2); } });
       const paroi = (xa, za, xb, zb, bache) => { const L2 = Math.hypot(xb - xa, zb - za), a2 = Math.atan2(zb - za, xb - xa), n = Math.max(1, Math.round(L2 / 2)), mx = (xa + xb) / 2, mz = (za + zb) / 2;
-        for (let k = 0; k <= n; k++) { const x = xa + (xb - xa) * k / n, z = za + (zb - za) * k / n; box(.08, 2.3, .08, noir, x, 1.15, z); }
-        box(L2, .06, .08, noir, mx, 2.3, mz, -a2); box(L2, .06, .08, noir, mx, 1.0, mz, -a2); add(new THREE.PlaneGeometry(L2, 2.2), verre, mx, 1.15, mz, -a2);
-        if (bache) { const t = repT(banT, Math.max(1, Math.round(L2 / 5))); add(new THREE.PlaneGeometry(L2, .62), mat({ map: t, side: THREE.DoubleSide, roughness: .7 }), mx, .55, mz, -a2); }
+        for (let k = 0; k <= n; k++) { const x = xa + (xb - xa) * k / n, z = za + (zb - za) * k / n; box(.08, 1.6, .08, noir, x, .8, z); }
+        box(L2, .06, .08, noir, mx, 1.6, mz, -a2); box(L2, .06, .08, noir, mx, .9, mz, -a2); add(new THREE.PlaneGeometry(L2, 1.5), verre, mx, .8, mz, -a2);
+        if (bache) { const t = repT(banT, Math.max(1, Math.round(L2 / 5))); add(new THREE.PlaneGeometry(L2, .55), mat({ map: t, side: THREE.DoubleSide, roughness: .7 }), mx, .45, mz, -a2); }
         for (let k = 0; k <= Math.ceil(L2 / .5); k++) OB.push([xa + (xb - xa) * Math.min(1, k * .5 / L2), za + (zb - za) * Math.min(1, k * .5 / L2), .3]); };
       paroi(x0, z1, porte[0], z1, true); paroi(porte[1], z1, x1, z1, true); paroi(x0, z0 + .3, x0, z1, true); paroi(x1, z0 + .3, x1, z1, true); paroi(XS, z0 + .3, XS, -.2, false); paroi(XS, 1.4, XS, z1, false);   // (la paroi de verre du milieu, son passage)
       // les parasols carrés rouges, sur leur mât, leurs baleines ; « Kronenbourg » sur le lambrequin
@@ -714,7 +714,21 @@ function construireCorbier(A, L, scene) {
       // l'ardoise « Brasserie · Pizzas » à l'entrée, les jardinières carrées sombres
       { const aT = tT(96, 160, (c, w, h) => { c.fillStyle = "#1a1c1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ea"; c.font = `bold 13px ${sans}`; c.textAlign = "center"; c.fillText("BRASSERIE", w / 2, 24); c.fillText("PIZZAS", w / 2, 42); for (let k = 0; k < 7; k++) c.fillRect(14, 58 + k * 13, 50 + (k * 11) % 20, 3); });
         const g = new THREE.Group(); g.position.set(-32.9, 0, z1 + 1.1); scene.add(g); for (const sg of [-1, 1]) { const b2 = new THREE.Mesh(new THREE.BoxGeometry(.6, 1.0, .03), mat({ map: aT })); b2.position.set(0, .48, sg * .17); b2.rotation.x = sg * .32; g.add(b2); } OB.push([-32.9, z1 + 1.1, .45]); }
-      for (const x of [x0 - .8, x1 + .8]) { box(.8, .6, .8, mat({ color: 0x2a2e34, roughness: .7 }), x, .3, z1 - .4); for (let k = 0; k < 8; k++) add(new THREE.IcosahedronGeometry(.14, 0), [mat({ color: 0x3a6a2a }), mat({ color: 0xe86a9a })][k % 2], x + (al() - .5) * .5, .7, z1 - .4 + (al() - .5) * .5); OB.push([x, z1 - .4, .6]); } } }
+      /* (10.148, d'après la photo au poney) la terrasse est surélevée : tout monte de 45 cm, sur un socle de béton ; deux marches à l'entrée ;
+         devant, plus de plancher : le parvis d'enrobé gris ; au bord de la terrasse, les grands parasols rouges fermés ; côté piscine, le poteau
+         « École du Ski Français · Les Roches Blanches », les flèches jaunes des sentiers, les grands bacs gris de fleurs */
+      const HT = .45; for (const o of scene.children.slice(nT0)) o.position.y += HT;
+      for (const x of [x0 - .8, x1 + .8]) { box(.8, .6, .8, mat({ color: 0x2a2e34, roughness: .7 }), x, .3, z1 - .4); for (let k = 0; k < 8; k++) add(new THREE.IcosahedronGeometry(.14, 0), [mat({ color: 0x3a6a2a }), mat({ color: 0xe86a9a })][k % 2], x + (al() - .5) * .5, .7, z1 - .4 + (al() - .5) * .5); OB.push([x, z1 - .4, .6]); }
+      void oT0; const beton = mat({ color: 0x9a968e, roughness: .95 });
+      box(x1 - x0 + .2, HT, z1 - z0 + .1, beton, cx, HT / 2, cz); for (let k = 0; k < 2; k++) box(porte[1] - porte[0], HT * (2 - k) / 2, .35, beton, (porte[0] + porte[1]) / 2, HT * (2 - k) / 4, z1 + .2 + k * .35);
+      const enrobe = tT(256, 256, (c, w, h) => { c.fillStyle = "#6e6e6c"; c.fillRect(0, 0, w, h); for (let k = 0; k < 4000; k++) { c.fillStyle = ["#5a5a58", "#82827e", "#6a6866", "#94928c"][k % 4]; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }, 10, 4);
+      L.solsPlus.push(sol(-48, -10, -3.2, 10.4, mat({ map: enrobe, roughness: .95 }), .045));
+      const rgP = mat({ color: 0xd8202a, roughness: .7 }); for (const [px, pz] of [[x0 + .5, z1 + .7], [x0 + 3.2, z1 + .7], [porte[1] + 1.4, z1 + .7], [x1 - .5, z1 + .7], [x1 + .7, cz]]) { cyl(.035, .035, 3.0, noir, px, 1.5, pz, 6); const f = add(new THREE.ConeGeometry(.28, 2.1, 8), rgP, px, 1.9, pz); void f; OB.push([px, pz, .3]); }
+      { const px = x0 - 2.2, pz = z1 + 1.6; cyl(.06, .06, 3.4, mat({ color: 0x9a9ea2, metalness: .5 }), px, 1.7, pz, 6);
+        add(new THREE.PlaneGeometry(1.3, .3), mat({ map: esfT, side: THREE.DoubleSide }), px, 3.0, pz + .05);
+        add(new THREE.PlaneGeometry(1.3, .26), mat({ map: txT(256, 48, "#2a2a2a", "#f4f2ea", "Les Roches Blanches", 26, `italic bold @ ${serif}`), side: THREE.DoubleSide }), px, 2.68, pz + .05); OB.push([px, pz, .2]); }
+      { const px = x0 - 3.6, pz = z1 + 3.2, jaune = mat({ color: 0xe8c020, roughness: .6 }); cyl(.06, .06, 2.6, mat({ color: 0x8a6a4a }), px, 1.3, pz, 6); for (const [y, d] of [[2.3, 1], [2.05, -1], [1.8, 1]]) box(.7, .16, .04, jaune, px + d * .32, y, pz); OB.push([px, pz, .2]); }
+      for (const [bx, bz] of [[x0 - 4.5, z1 + 5.2], [x1 + 2.6, z1 + 5.6]]) { box(2.0, .7, .9, mat({ color: 0x2a2e36, roughness: .7 }), bx, .35, bz); for (let k = 0; k < 12; k++) add(new THREE.IcosahedronGeometry(.14, 0), [mat({ color: 0x4a7a32 }), mat({ color: 0xf2f0e8 }), mat({ color: 0xe86a9a })][k % 3], bx - .8 + Math.random() * 1.6, .78, bz + (Math.random() - .5) * .6); OB.push([bx - .6, bz, .55], [bx + .6, bz, .55]); } } }
 
   /* ---------- l'arrêt du car (pour revenir à Paris) ---------- */
   L.arretCar = { x: 26, z: 13.8 };
@@ -1200,7 +1214,7 @@ function construireCorbier(A, L, scene) {
   { let vu = true; const a3 = L.anim; L.anim = (tm) => { try { a3 && a3(tm); } catch (e) {} const moi = M && M.gens && M.gens.get(M.moiNum), q = moi && moi.g && moi.g.position, dd = !!(q && L.premiereIci(q.x, q.z)); if (dd === !vu) return; vu = !dd; for (const o of L.corpsGal) o.visible = vu; }; }
 
   L.limites = (x, z) => libre(x, z) && (GAL.marche(x, z) || GALZ.some(l => x > l.x0 + .4 && x < l.x1 - .4 && z > zfAt(x) - .3 && z < zfAt(x) + .8) || (x > -48 && x < -10 && z > -3.3 && z < 7.6) || (x > 82.6 && x < 108.4 && z > -.9 && z < 16.2 && !(x > 87.2 && x < 92.8 && z < 6)) || (x > 108.2 && x < 179.8 && z > -4.1 && z < 16.2) || (x > -60.2 && x < 106 && z > 7.6 && z < 34) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
-  L.hauteur = (x, z) => { const ox = -x; const gy = GAL.y(ox, z); if (gy !== null) return gy; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
+  L.hauteur = (x, z) => { const ox = -x; const gy = GAL.y(ox, z); if (gy !== null) return gy; if (ox > -42.4 && ox < -29.6 && z > -2.6 && z < 3.6) return .45; if (ox > -35.2 && ox < -33.4 && z >= 3.6 && z < 4.3) return z < 3.95 ? .34 : .17; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
 
