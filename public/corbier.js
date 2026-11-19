@@ -1768,7 +1768,7 @@ function construireCorbier(A, L, scene) {
     // les amplis
     for (const [x, z] of [[SX - 2.5, 26.4], [SX + 2.5, 26.4]]) { box(.7, .9, .4, mat({ color: 0x141416, roughness: .6 }), x, ST + .45, z); box(.6, .6, .02, mat({ color: 0x2a2a2c, roughness: .9 }), x, ST + .45, z - .21); }
     // les trois projecteurs, sur leurs pieds, qui changent de couleur
-    const SPOTS = [], PALS = [0xff2a3c, 0x2a6bff, 0x22e06a, 0xff2ad4, 0xffb020, 0x22d8ff];
+    const SPOTS = [], PALS = [0xff1a1a, 0x1aff3a];   // (10.138 : rouge et vert)
     for (const [x, z] of [[SX - 3.3, 22.4], [SX + 3.3, 22.4], [SX - 3.6, 27.6]]) { const y0 = L.hauteur(x, z); cyl(.04, .05, 3, mat({ color: 0x2a2a2c, metalness: .6 }), x, y0 + 1.5, z, 6);
       const tete = new THREE.Mesh(new THREE.CylinderGeometry(.12, .18, .32, 12), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, emissive: 0xffffff, emissiveIntensity: .8 })); tete.position.set(x, y0 + 3.1, z); tete.lookAt(SX, ST + 1, SZ); tete.rotateX(Math.PI / 2); tete.userData.anime = true; scene.add(tete);
       const sp = new THREE.SpotLight(0xffffff, 0, 16, .5, .6, 1.2); sp.position.set(x, y0 + 3.1, z); sp.target.position.set(SX + (x - SX) * .3, ST, SZ); sp.userData.anime = true; scene.add(sp); scene.add(sp.target); SPOTS.push({ sp, tete }); }
@@ -1789,6 +1789,7 @@ function construireCorbier(A, L, scene) {
     const GR = [[-60, BAT, "batterie", "La batteuse", "batteuse", "#121214", "#141416", "#1a1a1a", 18], [-61, BAS, "basse", "Le bassiste", "bassiste", "#2c2e31", "#151517", "#1a1a1a", 19], [-62, GUI, "guitare", "Le guitariste", "guitariste", "#151517", "#151517", "#0e0e0e", 20]];
     const a13 = L.anim; L.anim = (tm) => { try { a13 && a13(tm); } catch (e) {} if (!M || M.L !== L) { if (son && !son.paused) son.pause(); if (pan && pan.isConnected) pan.remove(); return; }
       const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position, d = Math.hypot(p.x - SX, p.z - SZ), t = (tm || performance.now());
+      if (!L.nuit) { for (const [num] of GR) if (M.gens.has(num)) retirerAncien(num); if (son && !son.paused) son.pause(); if (pan && pan.isConnected) pan.remove(); SPOTS.forEach(S2 => { S2.sp.intensity = 0; S2.tete.material.emissive.setHex(0x222222); }); return; }   /* (10.138 : le concert, seulement le soir) */
       for (const [num, pos, place, nom, tenue, couleur, bas, pieds, id] of GR) { let g = M.gens.get(num);
         if (!g) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}; g = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || tenue, couleur: P.couleur || couleur, bas: P.bas || bas, pieds: P.pieds || pieds, reglage: P.reglage || null, initiales: "♪",
             teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/${tenue}-tete.png`, pnj: true, danseur: true, musicien: place, x: pos[0], z: pos[1] }); if (!g) continue; }
@@ -1799,10 +1800,27 @@ function construireCorbier(A, L, scene) {
       if (son) { const c = pres ? vol * Math.max(0, Math.min(1, (45 - d) / 30)) : 0; son._v = (son._v || 0) + (c - (son._v || 0)) * .08; try { son.volume = Math.max(0, Math.min(1, son._v)); } catch (e) {} if (son._v > .01 && son.paused && !M.cine) son.play().catch(() => {}); else if ((son._v <= .01 || M.cine) && !son.paused) son.pause(); }
       const vu = d < 30 && !M.cine; if (vu && !(pan && pan.isConnected)) (M.ctx.conteneur || document.body).appendChild(panneau()); else if (!vu && pan && pan.isConnected) pan.remove();
       // les projecteurs, en rythme
-      const on = !!(son && !son.paused); SPOTS.forEach((S2, k) => { const c = PALS[(k * 2 + Math.floor(t / 1700)) % PALS.length]; S2.sp.color.setHex(c); S2.sp.intensity = on ? (L.nuit ? 40 : 12) : 0; S2.tete.material.emissive.setHex(on ? c : 0x222222); }); };
+      const on = !!(son && !son.paused); SPOTS.forEach((S2, k) => { const c = PALS[(k + Math.floor(t / 1700)) % PALS.length]; S2.sp.color.setHex(c); S2.sp.intensity = on ? 45 : 0; S2.tete.material.emissive.setHex(on ? c : 0x222222); }); };
     const a14 = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a14 && a14(x, z, moi); if (r) return r; if (Math.abs(z - 22.4) > 1.1) return null;
       if (Math.abs(x - (SX + 1.2)) < .9) return { type: "lieu", id: "concertPrec", label: "⏮ Musique précédente", faire: () => { charger(); piste(-1); } };
       if (Math.abs(x - (SX - 1.2)) < .9) return { type: "lieu", id: "concertSuiv", label: "⏭ Musique suivante", faire: () => { charger(); piste(1); } }; return null; }; }
+  /* (10.138) le chef de poste en vacances : t-shirt vert kaki, short beige, baskets blanches ; le caméscope à l'œil, il se promène partout et filme tout */
+  { const CHEF = -63, ETAPES = [[-40, 5.5], [-10, 5], [20, 5.5], [45, 5], [40, 12.5], [10, 13], [-20, 12.5], [-32, 20.5], [-10, 23], [12, 22], [20, 42], [5, 30], [-48, 12.5], [-60, 13]];
+    const cam = new THREE.Group(); { const n = new THREE.MeshStandardMaterial({ color: 0x1a1a1c, roughness: .4, metalness: .3 }), v = new THREE.MeshStandardMaterial({ color: 0x3a6ab0, roughness: .1, metalness: .5 });
+      const b = new THREE.Mesh(new THREE.BoxGeometry(.11, .1, .22), n); cam.add(b); const o = new THREE.Mesh(new THREE.CylinderGeometry(.035, .04, .08, 12), n); o.rotation.x = Math.PI / 2; o.position.z = .14; cam.add(o);
+      const l = new THREE.Mesh(new THREE.CircleGeometry(.03, 12), v); l.position.z = .181; cam.add(l); const ec = new THREE.Mesh(new THREE.BoxGeometry(.015, .08, .1), n); ec.position.set(-.065, 0, 0); cam.add(ec);
+      const led = new THREE.Mesh(new THREE.SphereGeometry(.01, 6, 4), new THREE.MeshBasicMaterial({ color: 0xff2020 })); led.position.set(.03, .055, .08); cam.add(led); cam.userData.led = led; } cam.userData.anime = true;
+    let k = 0, pause = 0;
+    const a15 = L.anim; L.anim = (tm) => { try { a15 && a15(tm); } catch (e) {} if (!M || M.L !== L) return; const t = tm || performance.now(); let p = M.gens.get(CHEF);
+      if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(115)) || {}; p = ajouterAncien({ numero: CHEF, nom: P.nom || "Le chef de poste", tenue: P.tenue || "tshirt", couleur: P.couleur || "#6b7a3a", bas: P.bas || "#d8c49a", pieds: P.pieds || "#f4f4f2", short: true, reglage: P.reglage || null,   /* (10.138 : son propre réglage, dans les PNJ de l'administrateur) */
+          teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 115) : "images/pere-tete.png", pnj: true, sansVerre: true, x: ETAPES[0][0], z: ETAPES[0][1] }); if (!p) return; p.g.add(cam); }
+      if (cam.parent !== p.g) p.g.add(cam);
+      // le caméscope devant l'œil, tourné là où il filme ; la petite lumière rouge clignote
+      const h = (typeof tailleBonhomme === "function" ? tailleBonhomme() : 1.75); cam.position.set(.08, h * .88, .05); cam.userData.led.visible = Math.floor(t / 500) % 2 === 0;
+      const [ex, ez] = ETAPES[k], g = p.g.position, d = Math.hypot(g.x - ex, g.z - ez);
+      if (t < pause) { p.cible = null; p.chemin = []; cam.rotation.y = Math.sin(t / 1400) * .9; }   // (il s'arrête, et balaie lentement la scène)
+      else if (d < 1.2) { k = (k + 1 + Math.floor(al() * 2)) % ETAPES.length; pause = t + 3000 + al() * 5000; }
+      else { if (!p.cible) viser(p, ex, ez); cam.rotation.y = Math.atan2(ex - g.x, ez - g.z) - p.g.rotation.y; } }; }
   /* (fluidité) tout ce qui ne bouge pas est fondu en quelques pièces */
   { scene.updateMatrixWorld(true); for (const g of scene.children.slice()) { if (!g.isGroup || g.userData.poser || g.userData.parts || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
   fusionStatique(scene, L, 0);
