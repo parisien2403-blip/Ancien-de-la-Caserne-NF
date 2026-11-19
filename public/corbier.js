@@ -1689,6 +1689,45 @@ function construireCorbier(A, L, scene) {
       if (!son) { if (!cible) return; son = new Audio("sons/corbier-enfants.mp3"); son.loop = true; son.volume = 0; }
       v += (cible - v) * .04; try { son.volume = Math.max(0, Math.min(1, v)); } catch (e) {} if (v > .01 && son.paused) son.play().catch(() => {}); else if (v <= .01 && !son.paused) son.pause(); };
     const veille10 = setInterval(() => { if (son && (!M || M.L !== L || M.cine)) { son.pause(); v = 0; } if (!M || (M.prets && !Object.values(M.prets).some(q => q && q.L === L) && M.L !== L)) { clearInterval(veille10); if (son) { son.pause(); son = null; } } }, 500); }
+  /* (10.134) le parapente : à l'office du tourisme, « Faire du parapente » ; on se retrouve là-haut, sur la montagne, face à la vallée ; on court, on décolle,
+     et l'on vole, à la première personne, la voile au-dessus de soi ; à gauche, à droite (boutons, flèches, manette) ; on se pose en bas, près de la station */
+  { const VOILE = new THREE.Group(); VOILE.userData.anime = true; VOILE.visible = false; scene.add(VOILE);
+    { const n = 13, cols = [0xe8301a, 0xf0c020, 0x2a6ad8, 0xf4f4f0]; for (let k = 0; k < n; k++) { const a2 = (k / (n - 1) - .5) * 2.1, c = new THREE.Mesh(new THREE.BoxGeometry(.62, .16, 1.5), new THREE.MeshStandardMaterial({ color: cols[k % 4], roughness: .6, side: THREE.DoubleSide }));
+        c.position.set(Math.sin(a2) * 3.6, 1.6 + Math.cos(a2) * 1.5, -2.6); c.rotation.z = -a2 * .45; VOILE.add(c); }
+      const ll = []; for (let k = 0; k < 13; k += 2) { const a2 = (k / 12 - .5) * 2.1; for (const sx of [-.3, .3]) if ((sx < 0) === (a2 < .01)) ll.push(new THREE.Vector3(sx, -.5, -.35), new THREE.Vector3(Math.sin(a2) * 3.55, 1.55 + Math.cos(a2) * 1.45, -2.6 + (k % 4 ? .5 : -.5))); }
+      VOILE.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(ll), new THREE.LineBasicMaterial({ color: 0x6a6a6a, transparent: true, opacity: .7 })));
+      for (const sx of [-.28, .28]) { const e = new THREE.Mesh(new THREE.BoxGeometry(.035, .035, .14), new THREE.MeshStandardMaterial({ color: 0xd8202a })); e.position.set(sx, -.5, -.35); VOILE.add(e); } }   // (les élévateurs, dans les mains)
+    let VOL = null, pad = null; const moiP = () => M && M.gens && M.gens.get(M.moiNum);
+    const fini = (x, z) => { const q = moiP(); if (VOL && VOL.F0 && scene.fog) { scene.fog.near = VOL.F0.near; scene.fog.far = VOL.F0.far; } VOL = null; VOILE.visible = false; if (pad) { pad.remove(); pad = null; } try { finCine(); } catch (e) { M.cine = null; }
+      if (q) { let bx = 24, bz = 46; for (let r = 0; r < 30 && L.limites; r += 1.5) { let ok = false; for (let a2 = 0; a2 < 6.3; a2 += .5) { const tx = x + Math.cos(a2) * r, tz = z + Math.sin(a2) * r; if (L.limites(tx, tz)) { bx = tx; bz = tz; ok = true; break; } } if (ok) break; }
+        q.g.position.set(bx, L.hauteur(bx, bz), bz); q.g.visible = true; q.cible = null; q.chemin = []; try { envoyerWS({ t: "aller", x: bx, z: bz }); } catch (e) {} } };
+    const decoller = () => { if (VOL || M.cine) return; const q = moiP(); if (q) { q.g.visible = false; q.cible = null; q.chemin = []; }
+      const x0 = -6, z0 = 175, y0 = L.hauteur(x0, z0); const F0 = scene.fog ? { near: scene.fog.near, far: scene.fog.far } : null; if (scene.fog && scene.fog.far) { scene.fog.near = Math.max(scene.fog.near, 200); scene.fog.far = Math.max(scene.fog.far, 900); }   /* (10.134 : là-haut, on voit loin : la brume s'écarte) */
+      VOL = { F0, x: x0, z: z0, y: y0 + 1.7, cap: Math.PI, vir: 0, t0: performance.now(), tp: performance.now(), g: 0, d: 0 };
+      pad = document.createElement("div"); pad.style.cssText = "position:fixed;left:0;right:0;bottom:22px;z-index:40;display:flex;justify-content:space-between;padding:0 18px;pointer-events:none";
+      const bt = (t, f) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "pointer-events:auto;width:84px;height:84px;border-radius:50%;border:0;background:rgba(20,20,40,.55);color:#fff;font-size:30px;touch-action:none";
+        b.onpointerdown = (e) => { e.preventDefault(); e.stopPropagation(); f(1); }; b.onpointerup = b.onpointercancel = b.onpointerleave = (e) => { e.stopPropagation(); f(0); }; return b; };
+      pad.appendChild(bt("◀", v => VOL && (VOL.g = v))); const mid = document.createElement("div"); mid.style.cssText = "align-self:center;color:#fff;font:600 14px Arial;text-shadow:0 1px 3px #000;text-align:center"; mid.textContent = "🪂 Vole jusqu'à la station"; pad.appendChild(mid); pad.appendChild(bt("▶", v => VOL && (VOL.d = v)));
+      (M.ctx && M.ctx.conteneur || document.body).appendChild(pad);
+      M.cine = { gel: true, fov: [72, 80], maj: () => { if (!VOL) return; const now = performance.now(), dt = Math.min(.05, (now - VOL.tp) / 1000), t = (now - VOL.t0) / 1000; VOL.tp = now;
+          let st = (window.__clavierG ? 1 : 0); const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(g => g) : null, ax = gp ? gp.axes[0] || 0 : 0;
+          const tour = (VOL.d - VOL.g) + (VOL.kd || 0) - (VOL.kg || 0) + (Math.abs(ax) > .2 ? ax : 0); void st;
+          VOL.vir += (tour * .9 - VOL.vir) * Math.min(1, dt * 2.5); VOL.cap -= VOL.vir * dt * .55;   // (on tourne, en s'inclinant)
+          const course = t < 2.2, v = course ? 2 + t * 3.5 : 11, sol = L.hauteur(VOL.x, VOL.z);
+          VOL.x += Math.sin(VOL.cap) * v * dt; VOL.z += Math.cos(VOL.cap) * v * dt;
+          if (course) VOL.y = L.hauteur(VOL.x, VOL.z) + 1.7 + Math.max(0, t - 1.6) * 1.2;
+          else { const h = VOL.y - sol, pose = VOL.z < 95, monte = !pose && t < 16 ? 3.2 : 0, porte = !pose && h < 38 ? (38 - h) * .7 : 0, auto = pose ? Math.max(.6, Math.min(9, (h - 1.2) / Math.max(1, (VOL.z - 12) / v))) : .35;   /* (10.134 : on monte haut, comme sur les photos ; l'air qui remonte la pente nous porte ; au-dessus de la station, on descend se poser) */
+            VOL.y += (monte + porte - auto) * dt; VOL.y = Math.max(VOL.y, sol + .4); VOL.pose = pose; }   // (le décollage porte vers le haut ; puis on plane ; au-dessus de la station, on descend se poser)
+          const h = VOL.y - L.hauteur(VOL.x, VOL.z); if (!course && ((VOL.pose && h < .9) || VOL.z < 10 || t > 180)) { fini(VOL.x, Math.max(VOL.z, 12)); return; }
+          if (Math.abs(VOL.x) > 300) VOL.cap += (VOL.x > 0 ? -1 : 1) * dt * .6;
+          const dir = new THREE.Vector3(Math.sin(VOL.cap), 0, Math.cos(VOL.cap)), eye = new THREE.Vector3(VOL.x, VOL.y, VOL.z);
+          M.camera.position.copy(eye); M.camera.up.set(Math.sin(-VOL.vir * .35) * Math.cos(VOL.cap), 1, -Math.sin(-VOL.vir * .35) * Math.sin(VOL.cap)).normalize();
+          { const hh = VOL.y - L.hauteur(VOL.x, VOL.z); M.camera.lookAt(eye.clone().addScaledVector(dir, 10).add(new THREE.Vector3(0, course ? -1.2 : -2.2 - Math.min(4, hh / 20), 0))); } M.camera.up.set(0, 1, 0);
+          VOILE.visible = true; VOILE.position.copy(eye); VOILE.rotation.set(0, VOL.cap + Math.PI, 0); VOILE.rotateZ(VOL.vir * .25); VOILE.visible = !course || t > .8; VOILE.rotateX(course ? .2 * (1 - Math.min(1, t / 1.6)) : 0); } };
+    };
+    const kd = (e) => { if (!VOL) return; if (e.key === "ArrowLeft" || e.key === "q") VOL.kg = e.type === "keydown" ? 1 : 0; if (e.key === "ArrowRight" || e.key === "d") VOL.kd = e.type === "keydown" ? 1 : 0; };
+    addEventListener("keydown", kd); addEventListener("keyup", kd);
+    const a11 = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a11 && a11(x, z, moi); if (r) return r; if (VOL) return null; return Math.hypot(x - 32, z - 46) < 11.5 ? { type: "lieu", id: "parapente", label: "🪂 Faire du parapente", faire: decoller } : null; }; }
   /* (fluidité) tout ce qui ne bouge pas est fondu en quelques pièces */
   { scene.updateMatrixWorld(true); for (const g of scene.children.slice()) { if (!g.isGroup || g.userData.poser || g.userData.parts || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
   fusionStatique(scene, L, 0);
