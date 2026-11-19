@@ -1625,6 +1625,12 @@ function construireCorbier(A, L, scene) {
     const a8 = L.anim; let jourV = null; L.anim = (tm) => { try { a8 && a8(tm); } catch (e) {} const t = (tm || performance.now()) / 1000, jour = !L.nuit;
       if (jour !== jourV) { jourV = jour; for (const o of JOUR) o.visible = jour; if (jour) { for (const b of BUR) { b.pts.visible = b.tr.visible = b.fus.visible = false; } lumFeu.intensity = 0; } }
       if (jour) { for (const f of ANIM) try { f(t); } catch (e) {} } else { for (const f of ANIM.slice(-(PEU ? 3 : 6))) try { f(t); } catch (e) {} feu(t); } }; }
+  /* (10.128) l'ambiance : le brouhaha des gens qui parlent (le même que la salle des fêtes), sur la promenade, aux terrasses et dans la galerie ; plus doux le soir, coupé à la borne d'arcade */
+  { let son = null, v = 0; const a9 = L.anim; L.anim = (tm) => { try { a9 && a9(tm); } catch (e) {} const ici = M && M.L === L && !M.cine, moi = ici && M.moiNum && M.gens.get(M.moiNum);
+      let cible = 0; if (moi && !window.mxArcadeOn && !document.hidden) { const p = moi.g.position, dz = p.z < 16 ? 0 : p.z - 16; cible = Math.max(0, Math.min(1, 1 - dz / 14)) * (L.nuit ? .35 : .6) * (M.barVol ?? 1); }
+      if (!son) { if (!cible) return; son = new Audio("sons/fete-discussions.mp3"); son.loop = true; son.volume = 0; }
+      v += (cible - v) * .05; try { son.volume = Math.max(0, Math.min(1, v)); } catch (e) {} if (v > .01 && son.paused) son.play().catch(() => {}); else if (v <= .01 && !son.paused) son.pause(); };
+    const veille9 = setInterval(() => { if (son && (!M || M.L !== L || M.cine)) { son.pause(); v = 0; } if (!M || (M.prets && !Object.values(M.prets).some(q => q && q.L === L) && M.L !== L)) { clearInterval(veille9); if (son) { son.pause(); son = null; } } }, 500); }   // (on quitte la station : le son s'arrête)
   /* (fluidité) tout ce qui ne bouge pas est fondu en quelques pièces */
   { scene.updateMatrixWorld(true); for (const g of scene.children.slice()) { if (!g.isGroup || g.userData.poser || g.userData.parts || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
   fusionStatique(scene, L, 0);
