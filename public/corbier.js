@@ -679,7 +679,7 @@ function construireCorbier(A, L, scene) {
     /* (10.146, d'après les photos de l'été) la terrasse des Roches Blanches : le platelage de bois, fermé de grandes vitres sur poteaux noirs, les bâches rouges
        « LES ROCHES BLANCHES » en bas des vitres, les grands parasols carrés rouges Kronenbourg, la guirlande de guinguette, les canapés gris et leurs tables basses,
        les tables rouges et leurs chaises ; l'ardoise devant l'entrée */
-    { const nT0 = scene.children.length, oT0 = OB.length; const x0 = -42.4, x1 = -29.6, z0 = -2.5, z1 = 3.6, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, porte = [-35.2, -33.4], XS = -36.2;   /* (10.147 : plus petite, scindée en deux par une paroi de verre : le côté restaurant, le côté salon) */
+    { const HT0 = .45, nT0 = scene.children.length, oT0 = OB.length; const x0 = -42.4, x1 = -29.6, z0 = -2.5, z1 = 3.6, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, porte = [-35.2, -33.4], XS = -36.2;   /* (10.147 : plus petite, scindée en deux par une paroi de verre : le côté restaurant, le côté salon) */
       const noir = mat({ color: 0x1c1e20, roughness: .5, metalness: .4 }), verre = mat({ color: 0xdcecf2, roughness: .04, metalness: .3, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide }), rouge = mat({ color: 0xd8202a, roughness: .6, side: THREE.DoubleSide });
       L.solsPlus.push(sol(x0, x1, z0, z1, mat({ map: deckT, roughness: .8 }), .06));
       const banT = tT(1024, 96, (c, w, h) => { c.fillStyle = "#d8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 40px ${sans}`; c.textAlign = "center"; c.textBaseline = "middle"; for (let k = 0; k < 3; k++) { c.fillText("LES ROCHES BLANCHES", w * (k + .5) / 3, h / 2 + 2); } });
@@ -688,16 +688,26 @@ function construireCorbier(A, L, scene) {
         box(L2, .06, .08, noir, mx, 1.6, mz, -a2); box(L2, .06, .08, noir, mx, .9, mz, -a2); add(new THREE.PlaneGeometry(L2, 1.5), verre, mx, .8, mz, -a2);
         if (bache) { const t = repT(banT, Math.max(1, Math.round(L2 / 5))); add(new THREE.PlaneGeometry(L2, .55), mat({ map: t, side: THREE.DoubleSide, roughness: .7 }), mx, .45, mz, -a2); }
         for (let k = 0; k <= Math.ceil(L2 / .5); k++) OB.push([xa + (xb - xa) * Math.min(1, k * .5 / L2), za + (zb - za) * Math.min(1, k * .5 / L2), .3]); };
-      paroi(x0, z1, porte[0], z1, true); paroi(porte[1], z1, x1, z1, true); paroi(x0, z0 + .3, x0, z1, true); paroi(x1, z0 + .3, x1, z1, true); paroi(XS, z0 + .3, XS, -.2, false); paroi(XS, 1.4, XS, z1, false);   // (la paroi de verre du milieu, son passage)
+      paroi(x0, z1, porte[0], z1, true); paroi(x0, z0 + .3, x0, z1, true);
+      /* (10.149, d'après la photo) côté salon, vers le Sherpa : pas de vitres, mais les paravents de toile rouge sur leurs piquets, et la grande bâche au logo des Roches Blanches */
+      const logoT = tT(512, 160, (c, w, h) => { c.fillStyle = "#e0482a"; c.fillRect(0, 0, w, h); c.strokeStyle = "#fff"; c.lineWidth = 6; c.strokeRect(8, 8, w - 16, h - 16); c.fillStyle = "#fff"; c.font = `bold 26px ${sans}`; c.fillText("BLRB", 30, 66);
+        c.lineWidth = 5; c.beginPath(); c.moveTo(30, 120); c.lineTo(70, 82); c.lineTo(90, 100); c.lineTo(120, 70); c.lineTo(150, 120); c.stroke(); c.font = `bold 50px ${sans}`; c.fillText("ROCHES", 190, 76); c.fillText("BLANCHES", 190, 132); });
+      const toile = mat({ color: 0xd8503a, roughness: .9, side: THREE.DoubleSide }), alu = mat({ color: 0xc8ccd0, metalness: .6, roughness: .4 });
+      const paravent = (xa, za, xb, zb, logo) => { const L2 = Math.hypot(xb - xa, zb - za), a2 = Math.atan2(zb - za, xb - xa), n = Math.max(1, Math.round(L2 / 1.4));
+        for (let k = 0; k <= n; k++) cyl(.025, .025, 1.05, alu, xa + (xb - xa) * k / n, .52, za + (zb - za) * k / n, 5);
+        add(new THREE.PlaneGeometry(L2, .85), logo ? mat({ map: logoT, side: THREE.DoubleSide, roughness: .8 }) : toile, (xa + xb) / 2, .55, (za + zb) / 2, -a2);
+        for (let k = 0; k <= Math.ceil(L2 / .5); k++) OB.push([xa + (xb - xa) * Math.min(1, k * .5 / L2), za + (zb - za) * Math.min(1, k * .5 / L2), .3]); };
+      paravent(porte[1], z1, porte[1] + 2.6, z1, false); paravent(porte[1] + 2.6, z1, x1 - .6, z1, true); paravent(x1 - .6, z1, x1, z1 - .6, false); paravent(x1, z1 - .6, x1, z0 + .3, false); paroi(XS, z0 + .3, XS, -.2, false); paroi(XS, 1.4, XS, z1, false);   // (la paroi de verre du milieu, son passage)
       // les parasols carrés rouges, sur leur mât, leurs baleines ; « Kronenbourg » sur le lambrequin
       const kroT = tT(512, 64, (c, w, h) => { c.fillStyle = "#c81a22"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 34px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("Kronenbourg", w / 2, h / 2 + 2); });
-      for (const [px, pz] of [[x0 + 1.7, z0 + 1.6], [XS - 1.6, z0 + 1.6], [x0 + 1.7, z1 - 1.6], [XS - 1.6, z1 - 1.6], [XS + 1.8, z0 + 1.6], [x1 - 1.8, z0 + 1.6], [XS + 1.8, z1 - 1.6], [x1 - 1.8, z1 - 1.6]]) {
+      for (const [px, pz] of [[XS + 1.0, z0 + 1.2], [XS + 2.6, z1 - .9], [x1 - 2.2, z0 + 1.2], [x1 - .9, cz + .6]]) { cyl(.035, .035, 3.1, noir, px, 1.55, pz, 6); add(new THREE.ConeGeometry(.3, 2.2, 8), rouge, px, 1.95, pz); OB.push([px, pz, .25]); }   // (côté salon : les grands parasols rouges, fermés)
+      for (const [px, pz] of [[x0 + 1.7, z0 + 1.6], [XS - 1.6, z0 + 1.6], [x0 + 1.7, z1 - 1.6], [XS - 1.6, z1 - 1.6]]) {
         cyl(.06, .06, 3.1, noir, px, 1.55, pz, 8); const toit = add(new THREE.ConeGeometry(2.05, .45, 4, 1, true), rouge, px, 3.25, pz); toit.rotation.y = Math.PI / 4;
         for (const [w2, d2, ox, oz] of [[3.4, .02, 0, 1.7], [3.4, .02, 0, -1.7], [.02, 3.4, 1.7, 0], [.02, 3.4, -1.7, 0]]) { const lb = add(new THREE.PlaneGeometry(2.9, .22), mat({ map: kroT, side: THREE.DoubleSide }), px + ox * .85, 2.95, pz + oz * .85, w2 > 1 ? 0 : Math.PI / 2); void d2; void lb; }
         OB.push([px, pz, .25]); }
       // la guirlande de guinguette, d'un poteau à l'autre
       const ampM = lum(mat({ color: 0xfff2c0, emissive: 0xffe090, emissiveIntensity: .5 }), .5, 2.2), douille = mat({ color: 0x2a6a5a });
-      for (const zl of [z0 + .9, cz, z1 - .3]) { box(x1 - x0, .015, .015, noir, cx, 2.55, zl); for (let x = x0 + .3; x < x1; x += .55) { add(new THREE.SphereGeometry(.06, 8, 6), ampM, x, 2.45, zl); cyl(.025, .03, .07, douille, x, 2.52, zl, 6); } }
+      for (const zl of [z0 + .9, cz, z1 - .3]) { box(XS - x0, .015, .015, noir, (x0 + XS) / 2, 2.55, zl); for (let x = x0 + .3; x < XS; x += .55) { add(new THREE.SphereGeometry(.06, 8, 6), ampM, x, 2.45, zl); cyl(.025, .03, .07, douille, x, 2.52, zl, 6); } }
       // les canapés gris et leurs tables basses, contre la vitre de devant et le long du côté
       const tissu = mat({ color: 0xb8b2aa, roughness: .95 }), pied = mat({ color: 0x2a2a2c, metalness: .4 });
       const canape = (x, z, ry, n2) => { const g = new THREE.Group(); g.position.set(x, .06, z); g.rotation.y = ry; scene.add(g);
@@ -713,7 +723,7 @@ function construireCorbier(A, L, scene) {
         if (z > z1 - .6) continue; box(.8, .05, .8, tR, x, .76, z); box(.06, .72, .06, pied, x, .4, z); for (const sg of [-1, 1]) { box(.45, .05, .45, ch, x, .48, z + sg * .62); box(.45, .45, .05, ch, x, .72, z + sg * .84); } OB.push([x, z, .7]); }
       // l'ardoise « Brasserie · Pizzas » à l'entrée, les jardinières carrées sombres
       { const aT = tT(96, 160, (c, w, h) => { c.fillStyle = "#1a1c1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ea"; c.font = `bold 13px ${sans}`; c.textAlign = "center"; c.fillText("BRASSERIE", w / 2, 24); c.fillText("PIZZAS", w / 2, 42); for (let k = 0; k < 7; k++) c.fillRect(14, 58 + k * 13, 50 + (k * 11) % 20, 3); });
-        const g = new THREE.Group(); g.position.set(-32.9, 0, z1 + 1.1); scene.add(g); for (const sg of [-1, 1]) { const b2 = new THREE.Mesh(new THREE.BoxGeometry(.6, 1.0, .03), mat({ map: aT })); b2.position.set(0, .48, sg * .17); b2.rotation.x = sg * .32; g.add(b2); } OB.push([-32.9, z1 + 1.1, .45]); }
+        const g = new THREE.Group(); g.position.set(x1 - .4, -HT0, z1 + 1.6); scene.add(g); for (const sg of [-1, 1]) { const b2 = new THREE.Mesh(new THREE.BoxGeometry(.6, 1.0, .03), mat({ map: aT })); b2.position.set(0, .48, sg * .17); b2.rotation.x = sg * .32; g.add(b2); } OB.push([x1 - .4, z1 + 1.6, .45]); }
       /* (10.148, d'après la photo au poney) la terrasse est surélevée : tout monte de 45 cm, sur un socle de béton ; deux marches à l'entrée ;
          devant, plus de plancher : le parvis d'enrobé gris ; au bord de la terrasse, les grands parasols rouges fermés ; côté piscine, le poteau
          « École du Ski Français · Les Roches Blanches », les flèches jaunes des sentiers, les grands bacs gris de fleurs */
