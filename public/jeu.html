@@ -19,6 +19,7 @@
   // La borne : EmulatorJS (https://emulatorjs.org, licence GPL-3.0) chargé depuis son CDN officiel.
   // Le fichier du jeu vient du serveur de la caserne, réservé aux anciens connectés.
   const q = new URLSearchParams(location.search);
+  if (q.get("plein")) document.addEventListener("DOMContentLoaded", () => document.body.classList.add("plein"));   // (10.129 : dans une borne du Corbier, la manette de l'émulateur à l'écran)
   let moi = null; try { moi = JSON.parse(localStorage.getItem("caserne-moi")); } catch (e) {}
   if (!moi || !moi.token || !q.get("id")) {
     document.body.insertAdjacentHTML("beforeend", '<div class="msg">CONNECTE-TOI POUR JOUER</div>');

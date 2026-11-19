@@ -724,7 +724,7 @@ function construireCorbier(A, L, scene) {
     const poteau2 = mat({ color: 0x2a5a3a, metalness: .4, roughness: .5 }); for (const s2 of [-1, 1]) { cyl(.025, .03, 1.55, poteau2, 0, .78, cz + s2 * 3.1, 8); OB.push([0, cz + s2 * 3.1, .15]); }
     box(.02, .72, 6.2, mat({ color: 0x1a1a1a, transparent: true, opacity: .45, depthWrite: false }), 0, 1.16, cz); box(.03, .05, 6.2, blanc, 0, 1.53, cz); }
   /* (10.111, d'après les photos de la promenade) les arbres et la végétation : les épicéas et mélèzes du talus, au bout côté Yéti et au bout côté piscine, les buissons le long des chemins */
-  for (const [x, z, h] of [[-48, 24, 13], [-44, 27, 11], [-62, 20, 14], [72, 22, 12], [78, 26, 14], [86, 20, 11], [-20, 52, 12], [10, 56, 10]]) sapin(x, z, h, al() < .35 ? melezeM : sapinM);
+  for (const [x, z, h] of [[-48, 24, 13], [-44, 27, 11], [-70, 28, 14], [72, 22, 12], [78, 26, 14], [86, 20, 11], [-20, 52, 12], [10, 56, 10]]) sapin(x, z, h, al() < .35 ? melezeM : sapinM);
   for (let k = 0; k < (PETIT ? 10 : 26); k++) { const x = -60 + al() * 140, z = 22 + al() * 22; if (Math.abs(x - 30) < 14 && z < 34) continue; if (Math.abs(x) < 10 && z > 17.5 && z < 29) continue; buisson(x, z, .7 + al() * .7); }
   /* (10.144, d'après les photos) le mobilier de la promenade : les gros pots rouges et leur petit arbre, les bancs de bois contre les vitrines, les jardinières de géraniums roses,
      le kiosque d'affichage sur son poteau devant la galerie, le panneau Skiset à flèche et les quads bâchés, le drapeau rouge, les poubelles, le chemin de planches et ses barrières de rondins,
@@ -842,7 +842,7 @@ function construireCorbier(A, L, scene) {
 
   /* ---------- l'arrêt du car (pour revenir à Paris) ---------- */
   L.arretCar = { x: 26, z: 13.8 };
-  L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x - 57.5, z - 15) < .6, seuil: [57.5, 15], vers: "grande", arrivee: [-4.6, 9], yaw: Math.PI / 2, violet: true, pasApo: true });   // (le cercle violet, à côté de la piscine : retour à la cour d'honneur)   // (l'arrêt du car : sans abri pour le moment — on y prend le car pour rentrer)
+  if (false) L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x - 57.5, z - 15) < .6, seuil: [57.5, 15], vers: "grande", arrivee: [-4.6, 9], yaw: Math.PI / 2, violet: true, pasApo: true });   // (le cercle violet, à côté de la piscine : retour à la cour d'honneur)   // (l'arrêt du car : sans abri pour le moment — on y prend le car pour rentrer)
 
   /* ---------- les vacanciers : ceux qui se promènent sur le platelage, ceux qui boivent un verre en terrasse, ceux qui se reposent sur les bancs ---------- */
   const PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#d83a3a", "#2a5ac8", "#f0c020", "#3a3a40", "#5ab05a", "#e8e2d6", "#e86a2a", "#7a3a8a"];
@@ -1465,7 +1465,7 @@ function construireCorbier(A, L, scene) {
     const pt = tT(256, 160, (c, w, h) => { c.fillStyle = "#1f4fb0"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.fillRect(6, 6, w - 12, h - 12); c.fillStyle = "#1f4fb0"; c.font = `bold 30px ${sans}`; c.textAlign = "center"; c.fillText("🚂 PETIT TRAIN", w / 2, 50); c.font = `bold 20px ${sans}`; c.fillText("Le Corbier · Les Sybelles", w / 2, 88); c.fillStyle = "#3a3a3a"; c.font = `16px ${sans}`; c.fillText("Paris : toutes les heures", w / 2, 124); });
     for (const r of [0, Math.PI]) add(new THREE.PlaneGeometry(.9, .56), mat({ map: pt, side: THREE.FrontSide }), ax - 2.6, y + 2.25, az - .4, r);
     void bl; void bleu;
-    busLigne(L, scene, { ax, az, voie: 22.2, sens: 1, x0: -30, x1: 96, train: true, suitSol: true,
+    busLigne(L, scene, { ax, az, voie: 18.2, sens: 1, x0: -30, x1: 96, train: true, suitSol: true,
       dest: [{ vers: "rue", nom: "Rue du Faubourg-Poissonnière (la caserne)", arrivee: [10, -4.7], yawA: 0 }, { vers: "grande", nom: "Rue d'Hauteville", arrivee: [-6, -154.6], yawA: Math.PI }, { vers: "rex", nom: "Bonne-Nouvelle (le Grand Rex)", arrivee: [-26, -10.2], yawA: 0 }] }); }
   /* (10.100) le carnet de chantier de l'administrateur : il pose le doigt (ou clique) sur un endroit, il écrit ce qu'il y veut ; la note reste là, numérotée,
      gardée par le serveur ; « Copier » met toutes les notes dans le presse-papier, pour les donner à Claude */
@@ -1578,8 +1578,9 @@ function construireCorbier(A, L, scene) {
       ANIM.push((t) => { const L2 = x1 - x0, d = (t * v + k * 4) % (2 * L2), aller = d < L2, x = aller ? x0 + d : x1 - (d - L2); W3.position.set(x, YP + .16, zL); W3.rotation.y = aller ? Math.PI / 2 : -Math.PI / 2;
         const B = P(m).bras; B[0].e.rotation.x = -(t * 4 + k) % (Math.PI * 2); B[1].e.rotation.x = -(t * 4 + k + Math.PI) % (Math.PI * 2); for (const [i, J] of P(m).jambes.entries()) J.h.rotation.x = Math.sin(t * 9 + i * Math.PI) * .25; }); }
     // les gens attablés aux terrasses : ils boivent, ils mangent, ils parlent ; leurs places ne sont plus libres
-    if (L.tabourets) { const pris = [], T = L.tabourets, max = PEU ? 30 : 56;   /* (10.128 : du monde aux terrasses — un peu plus d'une chaise sur deux, au hasard, les bancs aussi) */
-      for (let i = 0; i < T.length && pris.length < max; i++) if (T[i][3] > .44 && T[i][3] < .5 && T[i][1] > -3 && al() < .6) pris.push(i);
+    if (L.tabourets) { const pris = [], T = L.tabourets, max = PEU ? 40 : 64;   /* (10.128 : du monde aux terrasses — un peu plus d'une chaise sur deux, au hasard, les bancs aussi) */
+      const cand = T.map((t, i) => i).filter(i => T[i][3] > .44 && T[i][3] < .5 && T[i][1] > -3); for (let i = cand.length - 1; i > 0; i--) { const j = Math.floor(al() * (i + 1)); [cand[i], cand[j]] = [cand[j], cand[i]]; }
+      pris.push(...cand.slice(0, Math.min(max, Math.round(cand.length * .62))));   /* (10.129 : tirées au hasard sur toutes les terrasses : La Picoraille aussi a son monde) */
       pris.forEach((i, k) => { const [x, z, ry, h] = T[i], m = ad(gens(k * 3 + 4)); m.position.set(x, H(x, z) + h + .04 - m.userData.hipY, z); m.rotation.y = ry; JOUR.push(m); const mange = k % 3 === 1;
         const v = new THREE.Mesh(new THREE.CylinderGeometry(.035, .03, .12, 8), mat({ color: mange ? 0xd8d8d8 : 0xe8a020, transparent: !mange, opacity: .85 })); v.position.y = -m.userData.hipY * .36; P(m).bras[1].c.add(v);
         ANIM.push((t) => { m.userData.poser("assis", t * 1000); const ph = (t + k * 1.7) % (mange ? 3 : 6); if (ph < 1.2) { const b = P(m).bras[1]; b.e.rotation.x = -1.1; b.c.rotation.x = -1.6; } }); });
@@ -1626,7 +1627,7 @@ function construireCorbier(A, L, scene) {
       if (jour !== jourV) { jourV = jour; for (const o of JOUR) o.visible = jour; if (jour) { for (const b of BUR) { b.pts.visible = b.tr.visible = b.fus.visible = false; } lumFeu.intensity = 0; } }
       if (jour) { for (const f of ANIM) try { f(t); } catch (e) {} } else { for (const f of ANIM.slice(-(PEU ? 3 : 6))) try { f(t); } catch (e) {} feu(t); } }; }
   /* (10.128) l'ambiance : le brouhaha des gens qui parlent (le même que la salle des fêtes), sur la promenade, aux terrasses et dans la galerie ; plus doux le soir, coupé à la borne d'arcade */
-  { let son = null, v = 0; const a9 = L.anim; L.anim = (tm) => { try { a9 && a9(tm); } catch (e) {} const ici = M && M.L === L && !M.cine, moi = ici && M.moiNum && M.gens.get(M.moiNum);
+  if (false) { let son = null, v = 0; const a9 = L.anim; L.anim = (tm) => { try { a9 && a9(tm); } catch (e) {} const ici = M && M.L === L && !M.cine, moi = ici && M.moiNum && M.gens.get(M.moiNum);
       let cible = 0; if (moi && !window.mxArcadeOn && !document.hidden) { const p = moi.g.position, dz = p.z < 16 ? 0 : p.z - 16; cible = Math.max(0, Math.min(1, 1 - dz / 14)) * (L.nuit ? .35 : .6) * (M.barVol ?? 1); }
       if (!son) { if (!cible) return; son = new Audio("sons/fete-discussions.mp3"); son.loop = true; son.volume = 0; }
       v += (cible - v) * .05; try { son.volume = Math.max(0, Math.min(1, v)); } catch (e) {} if (v > .01 && son.paused) son.play().catch(() => {}); else if (v <= .01 && !son.paused) son.pause(); };
