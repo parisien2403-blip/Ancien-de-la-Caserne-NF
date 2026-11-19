@@ -30,7 +30,7 @@
 </div>
 <script>
 (() => {
-  const JEUX = { sf2: ["STREET FIGHTER II TURBO", "#ffd23a"], mk2: ["MORTAL KOMBAT II", "#ff4a2a"], sunset: ["SUNSET RIDERS", "#ffa42a"], dkc: ["DONKEY KONG COUNTRY", "#5aff6a"] };
+  const JEUX = { sf2: ["STREET FIGHTER II TURBO", "#ffd23a"], ff2: ["FINAL FIGHT 2", "#ffd228"], sunset: ["SUNSET RIDERS", "#ffa42a"], dkc: ["DONKEY KONG COUNTRY", "#5aff6a"] };
   const jeu = new URLSearchParams(location.search).get("jeu") || "sf2", [nom, coul] = JEUX[jeu] || JEUX.sf2;
   document.documentElement.style.setProperty("--c", coul); document.getElementById("titre").textContent = nom;
   const quitter = () => parent.postMessage({ snes: "fermer" }, "*");
@@ -54,7 +54,7 @@
   fi.onchange = async () => { const f = fi.files && fi.files[0]; if (!f) return; if (f.size > 16 * 1024 * 1024) { msg.textContent = "Ce fichier est trop gros pour une cartouche Super Nintendo."; return; }
     const rom = { nom: f.name, data: await f.arrayBuffer() }; await ecrire(rom); lancer(rom); };
   // (10.129) d'abord, le jeu de la Super Nintendo du bar (la borne de la caserne) : on y joue directement, sans chercher de fichier
-  const MOTIF = { sf2: /street|fighter|sf\s*(2|ii)/i, mk2: /mortal|kombat|\bmk\s*(2|ii)?\b/i, sunset: /sunset|riders/i, dkc: /donkey|kong|dkc/i }[jeu];
+  const MOTIF = { sf2: /street|fighter|sf\s*(2|ii)/i, ff2: /final\s*fight/i, sunset: /sunset|riders/i, dkc: /donkey|kong|dkc/i }[jeu];
   const norm = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_.\-]+/g, " ");
   const jouerJeu = (j) => { const a = document.getElementById("accueil"); if (a) a.remove(); const f = document.createElement("iframe"); f.allow = "gamepad; autoplay; fullscreen"; f.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0";
     f.src = `jeu.html?plein=1&id=${j.id}&console=${encodeURIComponent(j.console || "snes")}&titre=${encodeURIComponent(j.titre)}&nom=${encodeURIComponent(j.nom_fichier || "jeu.bin")}`; document.getElementById("jeu").appendChild(f); };
