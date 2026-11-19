@@ -336,11 +336,18 @@ function construireCorbier(A, L, scene) {
   const skisT = tT(256, 128, (c, w, h) => { c.fillStyle = "#3a3e44"; c.fillRect(0, 0, w, h); for (let x = 4; x < w; x += 9) { c.fillStyle = ["#d83a2a", "#2a6ac8", "#f0c020", "#f2f2ee", "#1a1a1a", "#3ab0a0"][(x / 9 | 0) % 6]; c.fillRect(x, 8, 6, h - 14); c.fillStyle = "rgba(0,0,0,.3)"; c.fillRect(x + 4, 8, 2, h - 14); } });
   const habitsT = tT(256, 128, (c, w, h) => { c.fillStyle = "#e8e2d8"; c.fillRect(0, 0, w, h); c.fillStyle = "#8a8a8a"; c.fillRect(0, 14, w, 3); for (let x = 4; x < w - 14; x += 16) { c.fillStyle = ["#2a5ac8", "#d83a5a", "#f0a020", "#3a3a3a", "#5ab05a", "#f2f2ee", "#7a2a8a"][(x / 16 | 0) % 7]; c.beginPath(); c.moveTo(x, 18); c.lineTo(x + 14, 18); c.lineTo(x + 16, 100); c.lineTo(x - 2, 100); c.fill(); } });
   // dedans : les tables, le salon de thé, ou les rayonnages (produits, skis, vêtements, pharmacie)
+  const terroirT = tT(256, 128, (c, w, h) => { c.fillStyle = "#e8dcc4"; c.fillRect(0, 0, w, h); for (let s2 = 0; s2 < 3; s2++) { c.fillStyle = "#8a5a32"; c.fillRect(0, 38 + s2 * 40, w, 4);
+      for (let x = 6; x < w - 14; x += 20) { const k = (x / 20 + s2) % 5; if (k === 0 || k === 3) { c.fillStyle = "#e8c060"; c.beginPath(); c.ellipse(x + 8, 30 + s2 * 40, 9, 6, 0, 0, 7); c.fill(); c.fillStyle = "#c89a40"; c.fillRect(x - 1, 30 + s2 * 40, 18, 3); }
+        else if (k === 1) { c.fillStyle = "#8a2a1a"; c.fillRect(x + 2, 10 + s2 * 40, 6, 26); c.fillStyle = "#f2e8d8"; c.fillRect(x + 2, 14 + s2 * 40, 6, 2); } else if (k === 2) { c.fillStyle = "#d8a030"; c.fillRect(x + 2, 18 + s2 * 40, 12, 18); c.fillStyle = "#f4f2ea"; c.fillRect(x + 2, 16 + s2 * 40, 12, 4); }
+        else { c.fillStyle = "#2a5a2a"; c.fillRect(x + 4, 8 + s2 * 40, 6, 28); c.fillStyle = "#f2e8d8"; c.fillRect(x + 4, 20 + s2 * 40, 6, 8); } } } });
+  const randoT = tT(256, 128, (c, w, h) => { c.fillStyle = "#ece8e0"; c.fillRect(0, 0, w, h); c.fillStyle = "#8a8a8a"; c.fillRect(0, 12, w * .62, 3);
+      for (let x = 4; x < w * .62 - 14; x += 17) { c.fillStyle = ["#d8501a", "#2a6a4a", "#1a3a6a", "#c8a020", "#6a2a6a", "#3a3a3a"][(x / 17 | 0) % 6]; c.beginPath(); c.moveTo(x, 16); c.lineTo(x + 15, 16); c.lineTo(x + 17, 90); c.lineTo(x - 2, 90); c.fill(); c.fillStyle = "rgba(255,255,255,.3)"; c.fillRect(x + 6, 18, 2, 70); }
+      for (let s2 = 0; s2 < 3; s2++) { c.fillStyle = "#8a6a4a"; c.fillRect(w * .66, 40 + s2 * 34, w * .32, 3); for (let x = w * .67; x < w - 18; x += 22) { c.fillStyle = ["#5a3a1e", "#3a3a3e", "#8a4a1e"][(x / 22 + s2 | 0) % 3]; c.beginPath(); c.ellipse(x + 8, 34 + s2 * 34, 9, 5, 0, 0, 7); c.fill(); c.fillRect(x + 1, 26 + s2 * 34, 6, 8); } } });
   const contenu = (u0, u1, zf, zb, k) => { const W2 = u1 - u0, cx = (u0 + u1) / 2, D = zf - zb, cz = (zf + zb) / 2; if (D < .8 || W2 < .8) return;
     if (k === "tables" || k === "salon") { for (let u = u0 + .7; u < u1 - .5; u += 1.5) { cyl(.34, .34, .04, mat({ color: k === "salon" ? 0xf2f0ea : 0x8a5a32 }), u, .74, cz, 10); cyl(.04, .04, .72, boisF, u, .37, cz, 5);
         if (k === "tables") for (const s of [-.18, .18]) box(.4, .45, .04, mat({ color: 0x6a3e22 }), u + s, 1.0, cz + s); else for (const s of [-.5, .5]) box(.38, .45, .38, mat({ color: 0x4a2a1a }), u + s, .45, cz); }
       if (k === "salon") box(Math.min(1.6, W2 * .3), 1.0, .5, lum(mat({ color: 0xf6eee6, emissive: 0xfff0e0, emissiveIntensity: .25 }), .25, .4), u1 - .9, .5, cz); return; }
-    const t = k === "skis" ? skisT : k === "habits" ? habitsT : prodT; box(W2 - .5, 1.6, .45, mat({ map: repT(t, Math.max(1, Math.round(W2 / 1.6))), roughness: .8 }), cx, .8, cz);
+    const t = k === "skis" ? skisT : k === "habits" ? habitsT : k === "terroir" ? terroirT : k === "rando" ? randoT : prodT; box(W2 - .5, 1.6, .45, mat({ map: repT(t, Math.max(1, Math.round(W2 / 1.6))), roughness: .8 }), cx, .8, cz);
     if (k === "pharma") box(Math.min(1.4, W2 * .4), .95, .45, mat({ color: 0xf2f2ee }), u0 + .9, .48, zf - .4); };
   const interieur = (a, b, zf, k, papier) => { const T2 = tranches(a + .1, b - .1, zf);
     for (const [u0, u1, zb, gal] of T2) { const W2 = u1 - u0, cx = (u0 + u1) / 2, D = zf - zb, cz = (zf + zb) / 2;
@@ -826,39 +833,35 @@ function construireCorbier(A, L, scene) {
     // la grande tour blanche
     { const x0 = 86, x1 = 110, cx = (x0 + x1) / 2, W = x1 - x0, N = 11, H0 = 3.4, HE = 3, HT = H0 + N * HE;
       const coteT = tT(128, 256, (c, w, h) => { c.fillStyle = "#7a4a34"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 4) { c.fillStyle = `rgba(${x % 8 ? "255,220,190" : "40,20,10"},.08)`; c.fillRect(x, 0, 2, h); } for (let y = 20; y < h; y += 23) { c.fillStyle = "#ece6da"; c.fillRect(w * .35, y, w * .65, 3); } }, 1, 1);
-      box(W, HT, 11, mat({ map: coteT }), cx, HT / 2, -6.6); box(W + .6, 1.4, 12, mat({ color: 0x8a4a2a, roughness: .7 }), cx, HT + .5, -6.4);
+      box(W, HT - H0, 11, mat({ map: coteT }), cx, H0 + (HT - H0) / 2, -6.6); box(W, H0, 7.6, mat({ map: coteT }), cx, H0 / 2, -8.3);   // (10.154 : le rez-de-chaussée creux, pour les boutiques) box(W + .6, 1.4, 12, mat({ color: 0x8a4a2a, roughness: .7 }), cx, HT + .5, -6.4);
       const etT = tT(1024, 128, (c, w, h) => { c.fillStyle = "#ece6da"; c.fillRect(0, 0, w, h); c.fillStyle = "#d8d0c2"; c.fillRect(0, 0, w, 30); for (let x = 0; x < w; x += 146) { const k = (x / 146) % 3; c.fillStyle = ["#3a4048", "#4a4c52", "#6a4a36"][k]; c.fillRect(x + 18, 40, 110, h - 40); c.fillStyle = "rgba(240,236,228,.85)"; if (k !== 2) for (let m = 0; m < 3; m++) c.fillRect(x + 22 + m * 36, 46, 28, h - 52); c.fillStyle = "#5a2a1a"; for (let m = 0; m < 4; m++) c.fillRect(x + 18 + m * 36, 40, 3, h - 40); } }, 1, N);
       add(new THREE.PlaneGeometry(W, N * HE), mat({ map: etT, roughness: .7 }), cx, H0 + N * HE / 2, -.98);
       for (let k = 0; k <= N; k++) { const y = H0 + k * HE, zb = k ? .4 : 2.4; if (k) box(W, .32, 1.7, creme, cx, y, -.2); else box(W, .4, 3.5, creme, cx, y, .7); if (k < N) { box(W, .95, .03, verreR, cx, y + .6, zb); box(W, .05, .06, brunC, cx, y + 1.08, zb); } }   // (10.122 : le premier balcon fait porche, en porte-à-faux, sans poteaux)
       for (let i = 0; i <= 8; i++) { const x = x0 + .15 + i * (W - .3) / 8; box(.22, N * HE, 1.6, brunC, x, H0 + N * HE / 2, -.25); }
       // en bas, de la droite vers la gauche : Interhome, La Fine Bouche (deux vitrines), Location, La Godille, Vente, Chauvin Immobilier
-      const bT = tT(2048, 128, (c, w, h) => { const m = w / W; c.fillStyle = "#6a3a22"; c.fillRect(0, 0, w, h);
-        const R = (a, b) => [(x1 - b) * m, (b - a) * m];   // (la scène est retournée : l'est du monde d'origine est à gauche de l'image)
-        const vitrines = (a, b, pas, f) => { const [l, L2] = R(a, b); for (let x = l; x < l + L2 - 10; x += pas) f(x); };
-        { const [l, L2] = R(86.2, 89.6); c.fillStyle = "#f4f4f2"; c.fillRect(l, 4, L2, 26); c.fillStyle = "#1a5ab8"; c.font = `bold 22px ${sans}`; c.fillText("Interhome", l + 8, 25); c.fillStyle = "#e85a1a"; c.beginPath(); c.arc(l + L2 - 18, 17, 8, 0, 7); c.fill(); }
-        vitrines(86.3, 89.5, 46, (x) => { c.fillStyle = "#a8582c"; c.fillRect(x, 34, 42, h - 34); c.fillStyle = "#5a4a40"; c.fillRect(x + 5, 40, 32, h - 44); });
-        vitrines(89.7, 97, 100, (x) => { c.fillStyle = "#a8682c"; c.fillRect(x, 30, 96, h - 30); c.fillStyle = "#f2f0ea"; c.fillRect(x + 6, 36, 84, h - 40); });
-        vitrines(97.1, 107.5, 92, (x) => { c.fillStyle = "#8a5a30"; c.fillRect(x, 30, 88, h - 30); for (let yy = 36; yy < h; yy += 18) for (let xx = x + 6; xx < x + 82; xx += 10) { c.fillStyle = (xx + yy) % 20 < 10 ? "#f2f2ee" : "#5a5e66"; c.fillRect(xx, yy, 7, 12); } });
-        { const [l, L2] = R(107.6, 110); c.fillStyle = "#f2efe6"; c.fillRect(l + 4, 4, L2 - 8, 28); c.fillStyle = "#5a2a1a"; c.font = `bold 17px ${serif}`; c.textAlign = "center"; c.fillText("CHAUVIN IMMOBILIER", l + L2 / 2, 24); c.textAlign = "left";
-          c.fillStyle = "#8a6a4a"; c.fillRect(l + 8, 36, L2 - 16, h - 40); for (let yy = 40; yy < h - 8; yy += 13) for (let xx = l + 12; xx < l + L2 - 24; xx += 20) { c.fillStyle = "#f4f2ee"; c.fillRect(xx, yy, 15, 9); c.fillStyle = "#c84a3a"; c.fillRect(xx + 2, yy + 2, 6, 3); } } });
-      add(new THREE.PlaneGeometry(W, H0), lum(mat({ map: bT, emissive: 0xffffff, emissiveMap: bT, emissiveIntensity: .08 }), .08, .5), cx, H0 / 2, -.97);
-      const store = (xa, xb, txt, coul) => { const rT = tT(256, 64, (c, w, h) => { for (let x = 0; x < w; x += 16) { c.fillStyle = (x / 16) % 2 ? "#f4f4f2" : coul; c.fillRect(x, 0, 16, h); } });
-        const st = box(xb - xa, .04, 1.3, mat({ map: rT, roughness: .8 }), (xa + xb) / 2, 3.05, -.4); st.rotation.x = .35; const rouge = coul === "#c8202a";
-        const tx = tT(512, 64, (c, w, h) => { c.fillStyle = coul; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 12) { c.fillStyle = "#f4f4f2"; c.fillRect(x, 0, 6, 8); } c.fillStyle = rouge ? "#fff" : "#f0e040"; c.font = `${rouge ? "italic " : ""}bold 34px ${rouge ? serif : sans}`; c.textAlign = "center"; c.fillText(txt, w / 2, 48); });
-        add(new THREE.PlaneGeometry(xb - xa, .38), mat({ map: tx }), (xa + xb) / 2, 2.62, .22); };
-      store(89.7, 93.3, "La Fine Bouche", "#c8202a"); store(93.4, 97, "La Fine Bouche", "#c8202a"); store(97.1, 100.6, "LOCATION", "#2a5ab8"); store(100.7, 104.2, "LA - GODILLE . COM", "#2a5ab8"); store(104.3, 107.5, "VENTE", "#2a5ab8");
+      /* (10.154) au pied de la tour, des boutiques soignées : produits du terroir, vêtements de randonnée, chaussures de marche, comptoir savoyard (la scène est retournée : listées de l'ouest à l'est d'origine) */
+      { const Z = -.97, BT = [[86.2, 90.6, "Les Alpages · Produits du terroir", "#3a5a2a", "#f2e8c8", "terroir", 0x3a5a2a], [90.6, 95.6, "MONTAGNE & RANDO · Vêtements outdoor", "#1a3a5a", "#ffffff", "rando", 0x2a5a8a],
+          [95.6, 100.2, "La Ferme du Corbier · Fromages · Charcuterie", "#6a3a1e", "#f4e8d0", "terroir", 0x8a4a22], [100.2, 105.2, "ALTITUDE TREK · Chaussures de marche", "#2a2a2e", "#f0a020", "rando", 0x3a3a3e], [105.2, 109.8, "Le Comptoir Savoyard · Miel · Génépi", "#8a2a1e", "#f4e8d0", "terroir", 0x8a2a1e]];
+        for (const [a, b, nom, fond, coul, k, sc] of BT) { poteau(a, Z); poteau(b, Z); vitrine(a, b, Z, { soub: "bois", portes: [[b - .75, .9]], pas: 1.25 }); interieur(a, b, Z, k);
+          enseigne(a + .15, b - .15, Z, txT(1024, 96, fond, coul, nom, 46, `bold @ ${nom === nom.toUpperCase() ? sans : serif}`), .52, 2.92, .1, .2);
+          store(a + .1, b - .1, Z, txT(256, 32, "#f4f4f2", "#000", "", 10, `@ ${sans}`, { raye: 16 }), sc, .9, 2.6, .12); } }
+      void store;
       for (let x = 86.3; x < 89.6; x += .5) box(.05, .9, .05, mat({ color: 0x8a4a2a }), x, H0 + .6, .3);   // (le balcon de bois au-dessus d'Interhome)
-      for (const x of [92, 98.8, 105.5]) jardiniere(x, .6); }
+      for (const x of [90.6, 100.2]) jardiniere(x, 1.4); }
     // la tour sombre en bois, en retrait, derrière les bâtiments bas : le bois brun, les loggias aux plafonds crème
     const tourS = tT(256, 512, (c, w, h) => { c.fillStyle = "#6a4a30"; c.fillRect(0, 0, w, h); for (let y = 6; y < h; y += 24) for (let x = 6; x < w; x += 42) { c.fillStyle = "#e0c890"; c.fillRect(x, y, 36, 8); c.fillStyle = "#2a2a2e"; c.fillRect(x, y + 8, 36, 10); c.fillStyle = "rgba(220,230,235,.5)"; c.fillRect(x, y + 14, 36, 4); } }, 2, 3);
     { const x0 = 112, x1 = 134, H = 44; box(x1 - x0, H, 15, mat({ map: tourS, fog: false }), (x0 + x1) / 2, H / 2, -22); box(x1 - x0 + 1.2, 1.4, 16, mat({ color: 0x6a3a1e }), (x0 + x1) / 2, H + .7, -22); }
     // les bâtiments bas à deux étages, tous collés : le rez-de-chaussée sous la galerie blanche, le premier aux volets roulants, le second à la galerie de bois orange
     const deuxEt = (x0, x1, enseignes) => { const cx = (x0 + x1) / 2, W = x1 - x0;
-      box(W, 8.2, 10, orange, cx, 4.1, -6.6);
-      const rdcT = tT(Math.round(W * 60), 128, (c, w, h) => { c.fillStyle = "#e8e2d4"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ec"; c.fillRect(0, 0, w, 28);
+      box(W, 8.2 - 3.3, 10, orange, cx, 3.3 + (8.2 - 3.3) / 2, -6.6); box(W, 3.3, 7, orange, cx, 1.65, -8.1);   // (10.154 : le rez-de-chaussée creux)
+      const rdcT0 = tT(Math.round(W * 60), 128, (c, w, h) => { c.fillStyle = "#e8e2d4"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ec"; c.fillRect(0, 0, w, 28);
         for (let x = 10; x < w; x += 120) { c.fillStyle = "#5a3420"; c.fillRect(x, 34, 108, h - 34); c.fillStyle = "#7a8a94"; c.fillRect(x + 6, 40, 44, h - 46); c.fillRect(x + 58, 40, 44, h - 46); c.fillStyle = "rgba(255,255,255,.25)"; c.fillRect(x + 8, 42, 10, h - 50); }
         for (const [u, t, f, co] of enseignes) { c.fillStyle = f; c.font = `bold 20px ${sans}`; const tw = c.measureText(t).width + 20; c.fillRect(u * w, 3, tw, 24); c.fillStyle = co; c.fillText(t, u * w + 10, 21); } });
-      add(new THREE.PlaneGeometry(W, 3.2), lum(mat({ map: rdcT, emissive: 0xffffff, emissiveMap: rdcT, emissiveIntensity: .08 }), .08, .5), cx, 1.6, -1.58);
+      void rdcT0; { const Z = -1.58, n2 = enseignes.length; for (let k = 0; k < n2; k++) { const a = x0 + k * W / n2, b = x0 + (k + 1) * W / n2, [, t, f, co] = enseignes[k];
+          poteau(a, Z); poteau(b, Z); vitrine(a, b, Z, { soub: "blanc", portes: [[a + .8, .9, mat({ color: 0xf2f2ee, roughness: .6 })]], pas: 1.3 }); interieur(a, b, Z, /LOC|rental|SKI/i.test(t) ? "skis" : "habits");
+          enseigne(a + .2, b - .2, Z, txT(1024, 80, f, co, t, 44, `bold @ ${sans}`), .42, 2.85, .06, .18); }
+        if (enseignes[0][1] === "SPORT 2000") { const r = tT(128, 128, (c, w, h) => { c.fillStyle = "#c8202a"; c.beginPath(); c.arc(64, 64, 60, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = "bold 24px Arial"; c.textAlign = "center"; c.fillText("SPORT", 64, 58); c.fillText("2000", 64, 88); });
+          add(new THREE.CircleGeometry(.45, 24), mat({ map: r }), x0 + .5, 2.3, Z + .35); store(x0 + 1.4, x0 + 4.4, Z, txT(256, 32, "#a81a1e", "#fff", "", 10, `@ ${sans}`, { raye: 16 }), 0xa81a1e, 1.1, 2.6, .14); } }
       const n = Math.max(2, Math.round(W / 3.4)); for (let k = 0; k <= n; k++) { const x = x0 + .2 + k * (W - .4) / n; box(.22, 3.2, .22, blancP, x, 1.6, 2.2); OB.push([x, 2.2, .3]); }
       box(W, .3, 4, blancP, cx, 3.35, .4); box(W, 1.1, .25, orange, cx, 4.05, 2.25);   // (10.122 : le porche ; au-dessus, le bandeau de bois du balcon)
       const voletT = tT(256, 64, (c, w, h) => { c.fillStyle = "#4a4a4c"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 4) { c.fillStyle = "rgba(0,0,0,.3)"; c.fillRect(0, y, w, 1); } }, Math.max(1, Math.round(W / 4)), 1);
@@ -872,10 +875,12 @@ function construireCorbier(A, L, scene) {
     deuxEt(124, 140, [[.1, "LOCATION · SKI SHOP", "#f4f2ec", "#2a5ab8"], [.6, "Ski rental", "#f4f2ec", "#555"]]);
     // le pub Le Sinoze, au pied : la façade de bois, l'enseigne « La Bouille », la terrasse et sa balustrade de bois découpée
     { const x0 = 140, x1 = XF - 2, cx = (x0 + x1) / 2, W = x1 - x0;
-      box(W, 8.2, 10, orange, cx, 4.1, -6.6);
+      box(W, 8.2 - 3.3, 10, orange, cx, 3.3 + (8.2 - 3.3) / 2, -6.6); box(W, 3.3, 7, orange, cx, 1.65, -8.1);
       const sT = tT(1024, 160, (c, w, h) => { c.fillStyle = "#7a4426"; c.fillRect(0, 0, w, h); c.fillStyle = "#b8784a"; c.fillRect(0, 0, w, 40); c.fillStyle = "#f2e8d8"; c.font = `italic bold 30px ${serif}`; c.fillText("Bar - Restaurant   LA BOUILLE   Spécialités savoyardes", 20, 30);
         for (let x = 30; x < w; x += 150) { c.fillStyle = "#5a3018"; c.fillRect(x, 50, 120, h - 50); c.fillStyle = "#3a3a3e"; c.fillRect(x + 10, 60, 100, h - 70); } });
-      add(new THREE.PlaneGeometry(W, 3.6), lum(mat({ map: sT, emissive: 0xffffff, emissiveMap: sT, emissiveIntensity: .1 }), .1, .6), cx, 1.8, -1.58);
+      void sT; { const Z = -1.58; poteau(x0, Z); poteau(x1, Z); bandeau(x0, x1, Z); vitrine(x0, x1, Z, { soub: "bois", portes: [[x0 + 2.0, .95], [x1 - 1.4, .95]], pas: 1.2 }); interieur(x0, x1, Z, "tables");
+        enseigne(x0 + .3, x1 - .3, Z, txT(1024, 80, "#8a4a26", "#f4e8d0", "Bar - Restaurant   LA BOUILLE   Spécialités savoyardes", 40, `italic bold @ ${serif}`), .5, 3.05, .08, .16);
+        for (const [u, t] of [[x0 + 4.2, "RACLETTE · FONDUE"], [x0 + 6.4, "TARTIFLETTE"]]) add(new THREE.PlaneGeometry(1.0, .35), mat({ map: txT(256, 64, "#1a1c1e", "#f4f2ea", t, 26, `bold @ ${sans}`) }), u, 2.25, Z + .1); }
       box(W, .9, 1.4, orange, cx, 4.2, -.9);
       for (let x = x0 + .4; x < x1; x += .45) box(.3, .9, .04, mat({ color: 0x8a5a38 }), x, 4.95, -.25);   // (la balustrade découpée du balcon)
       add(new THREE.PlaneGeometry(W, 3), vitreN, cx, 6.6, -1.58); box(W + .3, .9, 2.2, orange, cx, 8.65, -1.3);
@@ -886,7 +891,7 @@ function construireCorbier(A, L, scene) {
       add(new THREE.PlaneGeometry(3.4, 1.3), mat({ map: pT }), x0 + 3, 1.4, 4.47);
       { const vC = mat({ color: 0x4a6a5a, roughness: .5 }); for (let k = 0; k < 3; k++) for (let q = 0; q < 6; q++) box(.46, .04, .44, vC, x0 + 6 + k * .6, .5 + q * .12, 2.6); OB.push([x0 + 6.6, 2.6, 1.2]); } }
     // le sol devant : les dalles ; au bout, les barrières de bois (deux lisses sur des poteaux)
-    L.solsPlus.push(sol(82.5, XF, -1, 7.6, mat({ map: dalleT, roughness: .85 }), .03), sol(100, XF, 7.6, 16.5, mat({ map: gravT, roughness: 1 }), .01));
+    L.solsPlus.push(sol(82.5, XF, 2.5, 16.5, mat({ map: gravT, roughness: 1 }), .01), sol(82.5, XF, -1, 2.5, mat({ map: deckT, roughness: .8 }), .03)); box(XF - 82.5, .1, .2, boisC, (82.5 + XF) / 2, .05, 2.5);   // (10.154 : le plancher de la largeur des autres ; au-delà, le gravier)
     const nBar = scene.children.length, oBar = OB.length, solsB = new Set(L.solsPlus);
     const rond = mat({ color: 0x8a6a48, roughness: .85 });
     const barriere = (xa, za, xb, zb) => { const L2 = Math.hypot(xb - xa, zb - za), n = Math.max(1, Math.round(L2 / 2.2)), a = Math.atan2(zb - za, xb - xa);
@@ -895,7 +900,7 @@ function construireCorbier(A, L, scene) {
     barriere(XF - .2, -.9, XF - .2, 16.4); barriere(96, 16.4, XF - .2, 16.4);
     for (const o of scene.children.slice(n0B)) o.position.x += 22; for (const o of OB.slice(o0B)) o[0] += 22;
     for (const o of scene.children.slice(n0B, nBar)) if (!solsB.has(o)) o.position.z -= 3.5; for (const o of OB.slice(o0B, oBar)) o[1] -= 3.5;   // (10.126 : toute la rangée de gauche reculée de 3,5 m)
-    L.solsPlus.push(sol(108, XF + 22, -4.6, -1, mat({ map: dalleT, roughness: .85 }), .03));
+    L.solsPlus.push(sol(108, XF + 22, -4.6, -1, mat({ map: deckT, roughness: .8 }), .03));
     /* (10.124, d'après les photos) entre le Yéti et la tour : le grand escalier de ferraille qui descend vers la route, ses rampes ; le totem blanc « Le Corbier »,
        le poteau aux panneaux de bois ; le mélèze, le bouleau, l'arbre roux ; au-dessus, la passerelle couverte (toit de bardeaux, murs de bois, fenêtres, piliers de béton)
        qui relie le Yéti à la tour, et arrive sous le porche des balcons */
