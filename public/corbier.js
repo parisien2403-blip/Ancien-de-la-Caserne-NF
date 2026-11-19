@@ -847,7 +847,16 @@ function construireCorbier(A, L, scene) {
           store(a + .1, b - .1, Z, txT(256, 32, "#f4f4f2", "#000", "", 10, `@ ${sans}`, { raye: 16 }), sc, .9, 2.6, .12); } }
       void store;
       for (let x = 86.3; x < 89.6; x += .5) box(.05, .9, .05, mat({ color: 0x8a4a2a }), x, H0 + .6, .3);   // (le balcon de bois au-dessus d'Interhome)
-      for (const x of [90.6, 100.2]) jardiniere(x, 1.4); }
+      for (const x of [90.6, 100.2]) jardiniere(x, 1.4);
+      /* (10.159, d'après la photo) le flanc de la tour, face à la passerelle : un mur plein, et sur ce mur un restaurant — sa vitrine, sa porte, son enseigne, son auvent, sa terrasse */
+      { const zc2 = -6.6, W2 = 10.4, fT = tT(1024, 256, (c, w, h) => { c.fillStyle = "#4a2a18"; c.fillRect(0, 0, w, h); c.fillStyle = "#2a3a2e"; c.fillRect(0, 0, w, 56); c.fillStyle = "#f4e8c8"; c.font = `italic bold 40px ${serif}`; c.textAlign = "center"; c.fillText("Le Refuge · Restaurant · Grillades au feu de bois", w / 2, 40);
+          for (let x = 20; x < w - 20; x += 165) { const porte = x > 400 && x < 600; const g = c.createLinearGradient(0, 70, 0, h); g.addColorStop(0, "#f0d8a8"); g.addColorStop(1, "#7a5a3a"); c.fillStyle = porte ? "#6a3a20" : g; c.fillRect(x, 72, 150, h - 80);
+            if (porte) { c.fillStyle = "#c8dce4"; c.fillRect(x + 14, 86, 122, 90); } else { c.fillStyle = "rgba(60,30,15,.6)"; for (let k = 0; k < 3; k++) { c.fillRect(x + 12 + k * 46, 200, 30, 5); c.fillRect(x + 25 + k * 46, 205, 4, 40); } c.fillStyle = "rgba(255,230,180,.7)"; c.beginPath(); c.arc(x + 75, 100, 10, 0, 7); c.fill(); }
+            c.fillStyle = "rgba(255,255,255,.15)"; c.fillRect(x + 6, 76, 20, h - 90); } });
+        add(new THREE.PlaneGeometry(W2, 3.3), lum(mat({ map: fT, emissive: 0xffffff, emissiveMap: fT, emissiveIntensity: .2 }), .2, .7), x0 - .03, 1.65, zc2, -Math.PI / 2);
+        box(.9, .1, W2, mat({ color: 0x2a3a2e, roughness: .7 }), x0 - .45, 3.35, zc2);
+        const d = add(new THREE.PlaneGeometry(6, W2), mat({ map: deckT, roughness: .8 }), x0 - 3, .04, zc2); d.rotation.x = -Math.PI / 2;
+        for (const tz of [zc2 - 3, zc2, zc2 + 3]) { const tx = x0 - 2.2; box(.75, .05, .75, mat({ color: 0x6a4a2e }), tx, .74, tz); box(.05, .72, .05, mat({ color: 0x2a2a2a }), tx, .37, tz); for (const sz of [-.55, .55]) box(.42, .45, .42, mat({ color: 0x3a2a1e }), tx, .23, tz + sz); } } }
     // la tour sombre en bois, en retrait, derrière les bâtiments bas : le bois brun, les loggias aux plafonds crème
     const tourS = tT(256, 512, (c, w, h) => { c.fillStyle = "#6a4a30"; c.fillRect(0, 0, w, h); for (let y = 6; y < h; y += 24) for (let x = 6; x < w; x += 42) { c.fillStyle = "#e0c890"; c.fillRect(x, y, 36, 8); c.fillStyle = "#2a2a2e"; c.fillRect(x, y + 8, 36, 10); c.fillStyle = "rgba(220,230,235,.5)"; c.fillRect(x, y + 14, 36, 4); } }, 2, 3);
     { const x0 = 134, x1 = 157.8, H = 44; box(x1 - x0, H, 15, mat({ map: tourS, fog: false }), (x0 + x1) / 2, H / 2, -17); box(x1 - x0 + 1.2, 1.4, 16, mat({ color: 0x6a3a1e }), (x0 + x1) / 2, H + .7, -17);   /* (10.158, d'après la photo : la grande tour juste derrière La Bouille ; son flanc de bois descend jusqu'au sol, au bout) */
