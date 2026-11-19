@@ -1380,7 +1380,7 @@ function construireCorbier(A, L, scene) {
         for (const u of [-32.6, -30.4, -28.2]) { R.boite(1.1, .9, .06, mat({ color: 0xd8202a, roughness: .5 }), u, 1.55, .05); R.plan(.9, .7, lumi(tex(128, 96, MARCH.souv), .4), u, 1.55, .09); }
         R.boite(1.0, 2.1, .06, mat({ color: 0x2e3440, roughness: .6 }), -26.2, 1.05, .05); R.boite(.04, .4, .08, mat({ color: 0xb8bcc0, metalness: .7 }), -25.85, 1.0, .1);
         const neo = panneau("◆ 1550 ◆", "#2a0a0a", "#ff3a3a", 256, 96, `bold 40px ${sans}`); R.plan(.9, .34, lumi(neo, 1.0), -33.3, 2.35, .06); }
-      boutique(L_, "zmax", -33.8, -26.8, { nom: "LE 1550 · Snack · Crêpes", fond: "#3a2418", coul: "#f2e2c0", motif: "pain", porte: "gauche", cadre: 0xb07a40 });
+      boutique(L_, "zmax", -32.6, -26.8, { nom: "LE 1550 · Snack · Crêpes", fond: "#3a2418", coul: "#f2e2c0", motif: "pain", porte: "gauche", cadre: 0xb07a40 });
       ardoise(-28.6, -8.3, .4, ["Le 1550", "Vente à emporter", "Crêpes", "Gaufres", "Glaces", "Paninis"]);
       sortie(-34, 2.3, -3.35, Math.PI);
       // le panneau suspendu « Cadeaux Souvenirs » au-dessus de l'entrée du hall
@@ -1578,29 +1578,52 @@ function construireCorbier(A, L, scene) {
       ANIM.push((t) => { const L2 = x1 - x0, d = (t * v + k * 4) % (2 * L2), aller = d < L2, x = aller ? x0 + d : x1 - (d - L2); W3.position.set(x, YP + .16, zL); W3.rotation.y = aller ? Math.PI / 2 : -Math.PI / 2;
         const B = P(m).bras; B[0].e.rotation.x = -(t * 4 + k) % (Math.PI * 2); B[1].e.rotation.x = -(t * 4 + k + Math.PI) % (Math.PI * 2); for (const [i, J] of P(m).jambes.entries()) J.h.rotation.x = Math.sin(t * 9 + i * Math.PI) * .25; }); }
     // les gens attablés aux terrasses : ils boivent, ils mangent, ils parlent ; leurs places ne sont plus libres
-    if (L.tabourets) { const pris = [], T = L.tabourets; for (let i = 0; i < T.length && pris.length < (PEU ? 6 : 12); i += 5) if (T[i][3] > .44 && T[i][3] < .5 && T[i][1] > -3) pris.push(i);
+    if (L.tabourets) { const pris = [], T = L.tabourets, max = PEU ? 30 : 56;   /* (10.128 : du monde aux terrasses — un peu plus d'une chaise sur deux, au hasard, les bancs aussi) */
+      for (let i = 0; i < T.length && pris.length < max; i++) if (T[i][3] > .44 && T[i][3] < .5 && T[i][1] > -3 && al() < .6) pris.push(i);
       pris.forEach((i, k) => { const [x, z, ry, h] = T[i], m = ad(gens(k * 3 + 4)); m.position.set(x, H(x, z) + h + .04 - m.userData.hipY, z); m.rotation.y = ry; JOUR.push(m); const mange = k % 3 === 1;
         const v = new THREE.Mesh(new THREE.CylinderGeometry(.035, .03, .12, 8), mat({ color: mange ? 0xd8d8d8 : 0xe8a020, transparent: !mange, opacity: .85 })); v.position.y = -m.userData.hipY * .36; P(m).bras[1].c.add(v);
         ANIM.push((t) => { m.userData.poser("assis", t * 1000); const ph = (t + k * 1.7) % (mange ? 3 : 6); if (ph < 1.2) { const b = P(m).bras[1]; b.e.rotation.x = -1.1; b.c.rotation.x = -1.6; } }); });
       L.tabourets = T.filter((_, i) => !pris.includes(i)); }
+    // (10.128) les promeneurs de la promenade et du chemin de terre : ils vont et viennent, chacun à son pas
+    for (let k = 0; k < (PEU ? 10 : 20); k++) { const m = ad(gens(k * 5 + 2)), z0 = [4.4, 5.6, 2.4, 11.6, 4.9, 13][k % 6], v = .9 + (k % 4) * .18, xa = -60, xb = 46, L2 = xb - xa, ph = k * 23.7; JOUR.push(m);
+      ANIM.push((t) => { const d = (t * v + ph) % (2 * L2), aller = d < L2, x = aller ? xa + d : xb - (d - L2), z = z0 + Math.sin(t * .3 + k) * .35;
+        m.position.set(x, H(x, z), z); m.rotation.y = aller ? Math.PI / 2 : -Math.PI / 2; m.userData.poser("marche", t * 1000 * v); }); }
     // les promeneurs de la galerie marchande : ils vont et viennent le long des couloirs (toute la journée et le soir aussi)
     { const GW = [[-5, -5.5], [-16, -5.8], [-30, -5.8], [-40, -5.8], [-52, -6], [-58, -5], [-64, -4]]; for (let k = 0; k < (PEU ? 3 : 6); k++) { const m = ad(gens(k * 4 + 10)), v = .8 + (k % 3) * .15, tot2 = GW.reduce((a2, q, i) => i ? a2 + Math.hypot(q[0] - GW[i - 1][0], q[1] - GW[i - 1][1]) : 0, 0);
       ANIM.push((t) => { let d = (t * v + k * 9) % (2 * tot2); const ret = d > tot2; if (ret) d = 2 * tot2 - d; let i = 1; for (; i < GW.length; i++) { const l = Math.hypot(GW[i][0] - GW[i - 1][0], GW[i][1] - GW[i - 1][1]); if (d <= l) break; d -= l; } i = Math.min(i, GW.length - 1);
         const A2 = GW[i - 1], B2 = GW[i], l = Math.hypot(B2[0] - A2[0], B2[1] - A2[1]) || 1, u = Math.min(1, d / l), off = (k % 3 - 1) * .7, x = A2[0] + (B2[0] - A2[0]) * u, z = A2[1] + (B2[1] - A2[1]) * u + off;
         m.position.set(x, H(x, z), z); m.rotation.y = Math.atan2((B2[0] - A2[0]) * (ret ? -1 : 1), (B2[1] - A2[1]) * (ret ? -1 : 1)); m.userData.poser("marche", t * 1000); }); } }
     // le feu d'artifice : le soir, sans arrêt, au pied de la montagne derrière la scène
-    const FX = { x: -34, z: 66 }; FX.y = HP(34, 66); const BUR = [];
-    for (let k = 0; k < 7; k++) { const n = PEU ? 60 : 110, g = new THREE.BufferGeometry(), pos = new Float32Array(n * 3), vel = []; for (let i = 0; i < n; i++) { const a2 = Math.random() * Math.PI * 2, c2 = Math.random() * 2 - 1, s2 = Math.sqrt(1 - c2 * c2); vel.push([s2 * Math.cos(a2), c2, s2 * Math.sin(a2)]); }
-      g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); const m = new THREE.PointsMaterial({ size: 1.1, color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }), pts = new THREE.Points(g, m); pts.frustumCulled = false; pts.userData.anime = true; scene.add(pts);
-      const fus = new THREE.Mesh(new THREE.SphereGeometry(.1, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffd080, fog: false })); fus.userData.anime = true; scene.add(fus); fus.visible = false; BUR.push({ pts, m, vel, n, fus, t0: -99, c: new THREE.Vector3() }); }
-    const COUL = [0xff3a3a, 0x3aff6a, 0x4a8aff, 0xffd23a, 0xff5aff, 0x5affff, 0xffffff, 0xff9a2a]; let suiv = 0, kB = 0;
-    const feu = (t) => { if (t > suiv) { const b = BUR[kB++ % BUR.length]; b.t0 = t; b.c.set(FX.x + (Math.random() - .5) * 30, FX.y + 26 + Math.random() * 16, FX.z + (Math.random() - .5) * 10); b.m.color.setHex(COUL[Math.floor(Math.random() * COUL.length)]); b.v = 9 + Math.random() * 6; suiv = t + .45 + Math.random() * 1.1; }
-      for (const b of BUR) { const a2 = t - b.t0; if (a2 < 0 || a2 > 4.6) { b.pts.visible = false; b.fus.visible = false; continue; }
-        if (a2 < 1.2) { b.fus.visible = true; b.pts.visible = false; const u = a2 / 1.2; b.fus.position.set(b.c.x, FX.y + (b.c.y - FX.y) * (1 - (1 - u) * (1 - u)), b.c.z); continue; }
-        b.fus.visible = false; b.pts.visible = true; const e = a2 - 1.2, P2 = b.pts.geometry.attributes.position, r = b.v * (1 - Math.exp(-e * 1.6)) / 1.6;
-        for (let i = 0; i < b.n; i++) { const [vx, vy, vz] = b.vel[i]; P2.setXYZ(i, b.c.x + vx * r, b.c.y + vy * r - 2.2 * e * e, b.c.z + vz * r); } P2.needsUpdate = true; b.m.opacity = Math.max(0, 1 - e / 3.4); b.m.size = 1.4 - e * .2; } };
+    const FX = { x: -34, z: 70 }; FX.y = HP(34, 70); const BUR = [];   /* (10.128 : plus gros, plus vrai — étincelles rondes et lumineuses, traînées, chrysanthèmes, saules d'or qui retombent, anneaux, crépitements) */
+    const etin = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.18, "rgba(255,255,255,.9)"); g.addColorStop(.45, "rgba(255,255,255,.25)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); return t; })();
+    const NP = PEU ? 180 : 360;
+    for (let k = 0; k < (PEU ? 6 : 9); k++) { const g = new THREE.BufferGeometry(), pos = new Float32Array(NP * 3), col = new Float32Array(NP * 3); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      const m = new THREE.PointsMaterial({ size: 2.4, map: etin, vertexColors: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }), pts = new THREE.Points(g, m);
+      const lg = new THREE.BufferGeometry(), lp = new Float32Array(NP * 6), lc = new Float32Array(NP * 6); lg.setAttribute("position", new THREE.BufferAttribute(lp, 3)); lg.setAttribute("color", new THREE.BufferAttribute(lc, 3));
+      const lm = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }), tr = new THREE.LineSegments(lg, lm);
+      const fus = new THREE.Points(new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(new Float32Array(3), 3)), new THREE.PointsMaterial({ size: 1.6, map: etin, color: 0xffd090, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+      for (const o of [pts, tr, fus]) { o.frustumCulled = false; o.userData.anime = true; o.visible = false; scene.add(o); } BUR.push({ pts, m, tr, lm, fus, t0: -99, vie: 0, c: new THREE.Vector3(), dir: [], sp: [] }); }
+    const COUL = [[1, .25, .2], [.3, 1, .4], [.35, .55, 1], [1, .85, .3], [1, .35, 1], [.4, 1, 1], [1, 1, 1], [1, .6, .15]], fl = new THREE.Light();
+    const lumFeu = new THREE.PointLight(0xffffff, 0, 160, 1.4); lumFeu.position.set(FX.x, FX.y + 40, FX.z); lumFeu.userData.anime = true; scene.add(lumFeu); void fl;
+    let suiv = 0, kB = 0;
+    const tirer = (t) => { const b = BUR[kB++ % BUR.length], type = ["pivoine", "pivoine", "saule", "anneau", "double", "palmier"][Math.floor(Math.random() * 6)]; b.t0 = t; b.type = type;
+      b.c.set(FX.x + (Math.random() - .5) * 46, FX.y + 38 + Math.random() * 22, FX.z + (Math.random() - .5) * 14); b.v = type === "saule" ? 20 : 22 + Math.random() * 12; b.k = type === "saule" ? .9 : 1.8; b.gr = type === "saule" ? 5 : 3.2; b.vie = type === "saule" ? 5.2 : 3.6;
+      const c1 = COUL[Math.floor(Math.random() * COUL.length)], c2 = COUL[Math.floor(Math.random() * COUL.length)], C = b.pts.geometry.attributes.color, LC = b.tr.geometry.attributes.color, ax = new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize();
+      for (let i = 0; i < NP; i++) { let d; if (type === "anneau") { const a2 = i / NP * Math.PI * 2, u = new THREE.Vector3(1, 0, 0).cross(ax).normalize(), w = ax.clone().cross(u); d = u.multiplyScalar(Math.cos(a2)).add(w.multiplyScalar(Math.sin(a2))); }
+        else { const a2 = Math.random() * Math.PI * 2, cz = Math.random() * 2 - 1, sz = Math.sqrt(1 - cz * cz); d = new THREE.Vector3(sz * Math.cos(a2), cz, sz * Math.sin(a2)); if (type === "palmier") d.y = Math.abs(d.y) * .6 + .4; }
+        b.dir[i] = d; b.sp[i] = (type === "double" && i % 2 ? .55 : 1) * (.85 + Math.random() * .3);
+        const cc = type === "saule" ? [1, .72, .3] : type === "double" && i % 2 ? c2 : c1; C.setXYZ(i, ...cc); LC.setXYZ(i * 2, ...cc); LC.setXYZ(i * 2 + 1, cc[0] * .15, cc[1] * .15, cc[2] * .15); }
+      C.needsUpdate = true; LC.needsUpdate = true; b.col = c1; };
+    const feu = (t) => { if (t > suiv) { tirer(t); if (Math.random() < .3) tirer(t + .05); suiv = t + .35 + Math.random() * .9; } let flash = 0;
+      for (const b of BUR) { const a2 = t - b.t0, mont = 1.6; if (a2 < 0 || a2 > mont + b.vie) { b.pts.visible = b.tr.visible = b.fus.visible = false; continue; }
+        if (a2 < mont) { const u = a2 / mont, F = b.fus.geometry.attributes.position; b.fus.visible = true; b.pts.visible = b.tr.visible = false; F.setXYZ(0, b.c.x + Math.sin(a2 * 9) * .3, FX.y + (b.c.y - FX.y) * (1 - (1 - u) ** 2), b.c.z); F.needsUpdate = true; continue; }
+        b.fus.visible = false; b.pts.visible = b.tr.visible = true; const e = a2 - mont, P2 = b.pts.geometry.attributes.position, LP = b.tr.geometry.attributes.position, pos = (i, ee) => { const r = b.v * b.sp[i] * (1 - Math.exp(-ee * b.k)) / b.k, d = b.dir[i]; return [b.c.x + d.x * r, b.c.y + d.y * r - b.gr * ee * ee * .5, b.c.z + d.z * r]; };
+        for (let i = 0; i < NP; i++) { const p = pos(i, e), q = pos(i, Math.max(0, e - (b.type === "saule" ? .55 : .22))); P2.setXYZ(i, ...p); LP.setXYZ(i * 2, ...p); LP.setXYZ(i * 2 + 1, ...q); }
+        P2.needsUpdate = true; LP.needsUpdate = true; const f = Math.max(0, 1 - e / b.vie), cr = e > b.vie * .6 ? (Math.random() < .5 ? .3 : 1) : 1;   // (le crépitement, à la fin)
+        b.m.opacity = f * cr; b.lm.opacity = f * .8; b.m.size = 2.6 * (b.type === "saule" ? 1 : .6 + f * .5); if (e < .4) flash = Math.max(flash, 1 - e / .4); }
+      lumFeu.intensity = flash * 6; };
     const a8 = L.anim; let jourV = null; L.anim = (tm) => { try { a8 && a8(tm); } catch (e) {} const t = (tm || performance.now()) / 1000, jour = !L.nuit;
-      if (jour !== jourV) { jourV = jour; for (const o of JOUR) o.visible = jour; if (jour) for (const b of BUR) { b.pts.visible = false; b.fus.visible = false; } }
+      if (jour !== jourV) { jourV = jour; for (const o of JOUR) o.visible = jour; if (jour) { for (const b of BUR) { b.pts.visible = b.tr.visible = b.fus.visible = false; } lumFeu.intensity = 0; } }
       if (jour) { for (const f of ANIM) try { f(t); } catch (e) {} } else { for (const f of ANIM.slice(-(PEU ? 3 : 6))) try { f(t); } catch (e) {} feu(t); } }; }
   /* (fluidité) tout ce qui ne bouge pas est fondu en quelques pièces */
   { scene.updateMatrixWorld(true); for (const g of scene.children.slice()) { if (!g.isGroup || g.userData.poser || g.userData.parts || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
