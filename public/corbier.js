@@ -1494,11 +1494,65 @@ function construireCorbier(A, L, scene) {
       const c2 = P(new THREE.TorusGeometry(.17, .05, 6, 14, Math.PI * .8), noir, s2 * .13, .36, -.04, T); c2.rotation.set(0, Math.PI / 2, Math.PI * .45); }
     // le chemin : la promenade, puis la terre devant, en boucle (coordonnées avant le miroir)
     const W2 = [[-28, 5], [10, 5.4], [40, 5], [60, 5.4], [62, 12.5], [30, 13.2], [-10, 12.6], [-30, 12.8]], Lg = W2.map((q, i) => Math.hypot(W2[(i + 1) % W2.length][0] - q[0], W2[(i + 1) % W2.length][1] - q[1])), tot = Lg.reduce((a2, b2) => a2 + b2, 0);
+    L.mascPos = (t) => { let d = ((t * .9) % tot + tot) % tot, i = 0; while (d > Lg[i]) { d -= Lg[i]; i++; } const A2 = W2[i], B2 = W2[(i + 1) % W2.length], u = d / Lg[i];
+      return { x: -(A2[0] + (B2[0] - A2[0]) * u), z: A2[1] + (B2[1] - A2[1]) * u, ry: Math.atan2(-(B2[0] - A2[0]), B2[1] - A2[1]) }; };
     L.mascotte = G; const a7 = L.anim; L.anim = (tm) => { try { a7 && a7(tm); } catch (e) {} const v = !L.nuit; if (G.visible !== v) G.visible = v; if (!v) return;
-      const t = (tm || performance.now()) / 1000; let d = (t * .9) % tot, i = 0; while (d > Lg[i]) { d -= Lg[i]; i++; } const A2 = W2[i], B2 = W2[(i + 1) % W2.length], u = d / Lg[i];
-      const x = -(A2[0] + (B2[0] - A2[0]) * u), z = A2[1] + (B2[1] - A2[1]) * u; G.position.set(x, L.hauteur ? L.hauteur(x, z) : 0, z); G.rotation.y = Math.atan2(-(B2[0] - A2[0]), B2[1] - A2[1]);
+      const t = (tm || performance.now()) / 1000, q = L.mascPos(t), x = q.x, z = q.z; G.position.set(x, L.hauteur ? L.hauteur(x, z) : 0, z); G.rotation.y = q.ry;
       const ph = t * 5.2; jambes[0].rotation.x = Math.sin(ph) * .45; jambes[1].rotation.x = -Math.sin(ph) * .45; bras[0].rotation.x = -Math.sin(ph) * .35;
       const salut = Math.sin(t * .4) > .55; bras[1].rotation.x = salut ? 0 : Math.sin(ph) * .35; bras[1].rotation.z = salut ? 2.5 + Math.sin(t * 7) * .3 : 0; T.rotation.y = Math.sin(t * .7) * .25; }; }
+  /* (10.127) la station qui vit : le jour, les joueurs de ping-pong et de badminton, les enfants du manège et ceux qui suivent la mascotte, les nageurs de la piscine,
+     les gens attablés qui boivent ou mangent, les promeneurs de la galerie ; le soir, le feu d'artifice au pied de la montagne, derrière la scène (coordonnées du monde : x déjà retourné) */
+  { const PEU = PETIT || MOBILE || GPU_MODESTE, JOUR = [], ANIM = [], ad = (m) => { m.userData.anime = true; scene.add(m); return m; };
+    const enfant = (k) => personne3D({ enfant: true, taille: 1.05 + (k % 3) * .08, peau: PE[k % 6], ch: ["#5a3a22", "#e2c27a", "#141010", "#a5532a"][k % 4], haut: HA[(k * 3) % 8], bas: ["#26324e", "#d83a5a", "#3a3028", "#2a5ac8"][k % 4], chaussures: ["#f4f4f2", "#d83a3a", "#1a1a1a"][k % 3], coif: k % 2 ? "queue" : "court", pantalon: true });
+    const H = (x, z) => L.hauteur ? L.hauteur(x, z) : 0, P = m => m.userData.parts;
+    const raquette = (m, i = 1) => { const r = new THREE.Group(), c = P(m).bras[i].c; r.position.y = -m.userData.hipY * .38; c.add(r); const mm = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .25, 5), mat({ color: 0x2a2a2a })); mm.position.y = -.12; r.add(mm); const t = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .015, 12), mat({ color: 0xc8202a })); t.position.y = -.3; t.rotation.x = Math.PI / 2; r.add(t); };
+    // le ping-pong : deux joueurs par table, la balle qui va et vient
+    { const tabs = [LG("skiset").x0 - .5, LG("vet").x1 + 2.2, LG("pharma").x0 + 4.1, LG("patis").x0 + 6.3].slice(0, PEU ? 2 : 4);
+      tabs.forEach((px, i) => { const tx = -px, tz = 9.2, J = [-1, 1].map(sg => { const m = ad(gens(i * 7 + (sg > 0 ? 2 : 5))); m.position.set(tx + sg * 1.85, H(tx, tz), tz); m.rotation.y = -sg * Math.PI / 2; raquette(m); JOUR.push(m); return m; });
+        const balle = ad(new THREE.Mesh(new THREE.SphereGeometry(.03, 8, 6), mat({ color: 0xf8f4ea, emissive: 0x444444 }))); JOUR.push(balle);
+        ANIM.push((t) => { const T2 = 1.1, ph = ((t + i * .37) % (2 * T2)) / T2, dir = ph < 1 ? 1 : -1, u = ph < 1 ? ph : ph - 1, x0 = tx - dir * 1.5, x1 = tx + dir * 1.5;
+          balle.position.set(x0 + (x1 - x0) * u, .8 + (u < .6 ? Math.sin(u / .6 * Math.PI) * .32 : Math.sin((u - .6) / .4 * Math.PI) * .22), tz + Math.sin((t + i) * 1.7) * .4);
+          J.forEach((m, k) => { const sg = k ? 1 : -1, frappe = (sg === dir ? 1 - u : u); m.userData.poser("debout", 0); const b = P(m).bras[1]; b.e.rotation.x = -.6 - Math.max(0, 1 - frappe * 5) * .9; b.e.rotation.z = .3; m.position.z = tz + Math.sin((t + i + k) * 1.7) * .3; }); }); }); }
+    // le badminton : deux joueurs, le volant en cloche par-dessus le filet
+    { const cz = 23, J = [-1, 1].map(sg => { const m = ad(gens(sg > 0 ? 9 : 16)); m.position.set(sg * 4, H(sg * 4, cz), cz); m.rotation.y = -sg * Math.PI / 2; raquette(m); JOUR.push(m); return m; });
+      const vol = ad(new THREE.Mesh(new THREE.ConeGeometry(.04, .09, 8), mat({ color: 0xf8f8f4 }))); JOUR.push(vol);
+      ANIM.push((t) => { const T2 = 1.6, ph = (t % (2 * T2)) / T2, dir = ph < 1 ? 1 : -1, u = ph < 1 ? ph : ph - 1; vol.position.set(-dir * 3.8 + dir * 7.6 * u, 1.9 + Math.sin(u * Math.PI) * 2.6, cz + Math.sin(t * .9) * .8); vol.rotation.z = dir * (u - .5) * 2;
+        J.forEach((m, k) => { const sg = k ? 1 : -1, fr = sg === -dir ? u : 1 - u; m.userData.poser("debout", 0); const b = P(m).bras[1]; b.e.rotation.x = -1.2 - Math.max(0, 1 - fr * 4) * 1.6; b.e.rotation.z = .2; m.position.z = cz + Math.sin(t * .9) * .6; }); }); }
+    // les enfants dans les bateaux-chiens du manège
+    if (L.manege) L.manege.children.filter(b => b.isGroup).slice(0, PEU ? 3 : 5).forEach((b, k) => { const m = enfant(k + 1); m.position.set(0, .2 - m.userData.hipY * .55, -.08); m.scale.setScalar(.8); m.userData.poser("assis", 0); b.add(m); m.userData.anime = true; JOUR.push(m);
+      ANIM.push((t) => { m.userData.poser("assis", t * 1000); P(m).bras[k % 2].e.rotation.x = -.6 - Math.max(0, Math.sin(t * 1.3 + k)) * 1.6; }); });
+    // les enfants qui suivent la mascotte, en file
+    if (L.mascPos) for (let k = 0; k < (PEU ? 2 : 4); k++) { const m = ad(enfant(k + 4)); JOUR.push(m); ANIM.push((t) => { const q = L.mascPos(t - 1.6 - k * 1.1), off = (k % 2 ? .45 : -.45); const x = q.x + Math.cos(q.ry) * off, z = q.z - Math.sin(q.ry) * off; m.position.set(x, H(x, z), z); m.rotation.y = q.ry; m.userData.poser("marche", t * 1000 * 1.25); if (Math.sin(t * .6 + k) > .7) P(m).bras[1].e.rotation.x = -2.6; }); }
+    // les nageurs : le crawl, d'un bout à l'autre du bassin
+    for (let k = 0; k < (PEU ? 2 : 4); k++) { const W3 = new THREE.Group(); ad(W3); const m = gens(k * 5 + 1); m.rotation.x = Math.PI / 2; m.position.y = -.05; W3.add(m); JOUR.push(W3);
+      const zL = -1 - 3.3 + k * 2.2, v = .9 + k * .12, x0 = 72.5 - 8.3, x1 = 72.5 + 8.3;
+      ANIM.push((t) => { const L2 = x1 - x0, d = (t * v + k * 4) % (2 * L2), aller = d < L2, x = aller ? x0 + d : x1 - (d - L2); W3.position.set(x, YP + .16, zL); W3.rotation.y = aller ? Math.PI / 2 : -Math.PI / 2;
+        const B = P(m).bras; B[0].e.rotation.x = -(t * 4 + k) % (Math.PI * 2); B[1].e.rotation.x = -(t * 4 + k + Math.PI) % (Math.PI * 2); for (const [i, J] of P(m).jambes.entries()) J.h.rotation.x = Math.sin(t * 9 + i * Math.PI) * .25; }); }
+    // les gens attablés aux terrasses : ils boivent, ils mangent, ils parlent ; leurs places ne sont plus libres
+    if (L.tabourets) { const pris = [], T = L.tabourets; for (let i = 0; i < T.length && pris.length < (PEU ? 6 : 12); i += 5) if (T[i][3] > .44 && T[i][3] < .5 && T[i][1] > -3) pris.push(i);
+      pris.forEach((i, k) => { const [x, z, ry, h] = T[i], m = ad(gens(k * 3 + 4)); m.position.set(x, H(x, z) + h + .04 - m.userData.hipY, z); m.rotation.y = ry; JOUR.push(m); const mange = k % 3 === 1;
+        const v = new THREE.Mesh(new THREE.CylinderGeometry(.035, .03, .12, 8), mat({ color: mange ? 0xd8d8d8 : 0xe8a020, transparent: !mange, opacity: .85 })); v.position.y = -m.userData.hipY * .36; P(m).bras[1].c.add(v);
+        ANIM.push((t) => { m.userData.poser("assis", t * 1000); const ph = (t + k * 1.7) % (mange ? 3 : 6); if (ph < 1.2) { const b = P(m).bras[1]; b.e.rotation.x = -1.1; b.c.rotation.x = -1.6; } }); });
+      L.tabourets = T.filter((_, i) => !pris.includes(i)); }
+    // les promeneurs de la galerie marchande : ils vont et viennent le long des couloirs (toute la journée et le soir aussi)
+    { const GW = [[-5, -5.5], [-16, -5.8], [-30, -5.8], [-40, -5.8], [-52, -6], [-58, -5], [-64, -4]]; for (let k = 0; k < (PEU ? 3 : 6); k++) { const m = ad(gens(k * 4 + 10)), v = .8 + (k % 3) * .15, tot2 = GW.reduce((a2, q, i) => i ? a2 + Math.hypot(q[0] - GW[i - 1][0], q[1] - GW[i - 1][1]) : 0, 0);
+      ANIM.push((t) => { let d = (t * v + k * 9) % (2 * tot2); const ret = d > tot2; if (ret) d = 2 * tot2 - d; let i = 1; for (; i < GW.length; i++) { const l = Math.hypot(GW[i][0] - GW[i - 1][0], GW[i][1] - GW[i - 1][1]); if (d <= l) break; d -= l; } i = Math.min(i, GW.length - 1);
+        const A2 = GW[i - 1], B2 = GW[i], l = Math.hypot(B2[0] - A2[0], B2[1] - A2[1]) || 1, u = Math.min(1, d / l), off = (k % 3 - 1) * .7, x = A2[0] + (B2[0] - A2[0]) * u, z = A2[1] + (B2[1] - A2[1]) * u + off;
+        m.position.set(x, H(x, z), z); m.rotation.y = Math.atan2((B2[0] - A2[0]) * (ret ? -1 : 1), (B2[1] - A2[1]) * (ret ? -1 : 1)); m.userData.poser("marche", t * 1000); }); } }
+    // le feu d'artifice : le soir, sans arrêt, au pied de la montagne derrière la scène
+    const FX = { x: -34, z: 66 }; FX.y = HP(34, 66); const BUR = [];
+    for (let k = 0; k < 7; k++) { const n = PEU ? 60 : 110, g = new THREE.BufferGeometry(), pos = new Float32Array(n * 3), vel = []; for (let i = 0; i < n; i++) { const a2 = Math.random() * Math.PI * 2, c2 = Math.random() * 2 - 1, s2 = Math.sqrt(1 - c2 * c2); vel.push([s2 * Math.cos(a2), c2, s2 * Math.sin(a2)]); }
+      g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); const m = new THREE.PointsMaterial({ size: 1.1, color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }), pts = new THREE.Points(g, m); pts.frustumCulled = false; pts.userData.anime = true; scene.add(pts);
+      const fus = new THREE.Mesh(new THREE.SphereGeometry(.1, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffd080, fog: false })); fus.userData.anime = true; scene.add(fus); fus.visible = false; BUR.push({ pts, m, vel, n, fus, t0: -99, c: new THREE.Vector3() }); }
+    const COUL = [0xff3a3a, 0x3aff6a, 0x4a8aff, 0xffd23a, 0xff5aff, 0x5affff, 0xffffff, 0xff9a2a]; let suiv = 0, kB = 0;
+    const feu = (t) => { if (t > suiv) { const b = BUR[kB++ % BUR.length]; b.t0 = t; b.c.set(FX.x + (Math.random() - .5) * 30, FX.y + 26 + Math.random() * 16, FX.z + (Math.random() - .5) * 10); b.m.color.setHex(COUL[Math.floor(Math.random() * COUL.length)]); b.v = 9 + Math.random() * 6; suiv = t + .45 + Math.random() * 1.1; }
+      for (const b of BUR) { const a2 = t - b.t0; if (a2 < 0 || a2 > 4.6) { b.pts.visible = false; b.fus.visible = false; continue; }
+        if (a2 < 1.2) { b.fus.visible = true; b.pts.visible = false; const u = a2 / 1.2; b.fus.position.set(b.c.x, FX.y + (b.c.y - FX.y) * (1 - (1 - u) * (1 - u)), b.c.z); continue; }
+        b.fus.visible = false; b.pts.visible = true; const e = a2 - 1.2, P2 = b.pts.geometry.attributes.position, r = b.v * (1 - Math.exp(-e * 1.6)) / 1.6;
+        for (let i = 0; i < b.n; i++) { const [vx, vy, vz] = b.vel[i]; P2.setXYZ(i, b.c.x + vx * r, b.c.y + vy * r - 2.2 * e * e, b.c.z + vz * r); } P2.needsUpdate = true; b.m.opacity = Math.max(0, 1 - e / 3.4); b.m.size = 1.4 - e * .2; } };
+    const a8 = L.anim; let jourV = null; L.anim = (tm) => { try { a8 && a8(tm); } catch (e) {} const t = (tm || performance.now()) / 1000, jour = !L.nuit;
+      if (jour !== jourV) { jourV = jour; for (const o of JOUR) o.visible = jour; if (jour) for (const b of BUR) { b.pts.visible = false; b.fus.visible = false; } }
+      if (jour) { for (const f of ANIM) try { f(t); } catch (e) {} } else { for (const f of ANIM.slice(-(PEU ? 3 : 6))) try { f(t); } catch (e) {} feu(t); } }; }
   /* (fluidité) tout ce qui ne bouge pas est fondu en quelques pièces */
   { scene.updateMatrixWorld(true); for (const g of scene.children.slice()) { if (!g.isGroup || g.userData.poser || g.userData.parts || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
   fusionStatique(scene, L, 0);
