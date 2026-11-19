@@ -1812,15 +1812,15 @@ function construireCorbier(A, L, scene) {
       const led = new THREE.Mesh(new THREE.SphereGeometry(.01, 6, 4), new THREE.MeshBasicMaterial({ color: 0xff2020 })); led.position.set(.03, .055, .08); cam.add(led); cam.userData.led = led; } cam.userData.anime = true;
     let k = 0, pause = 0;
     const a15 = L.anim; L.anim = (tm) => { try { a15 && a15(tm); } catch (e) {} if (!M || M.L !== L) return; const t = tm || performance.now(); let p = M.gens.get(CHEF);
-      if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(115)) || {}; p = ajouterAncien({ numero: CHEF, nom: P.nom || "Le chef de poste", tenue: P.tenue || "tshirt", couleur: P.couleur || "#6b7a3a", bas: P.bas || "#d8c49a", pieds: P.pieds || "#f4f4f2", short: true, reglage: P.reglage || null,   /* (10.138 : son propre réglage, dans les PNJ de l'administrateur) */
-          teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 115) : "images/pere-tete.png", pnj: true, sansVerre: true, x: ETAPES[0][0], z: ETAPES[0][1] }); if (!p) return; p.g.add(cam); }
-      if (cam.parent !== p.g) p.g.add(cam);
+      if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(115)) || {}; p = ajouterAncien({ numero: CHEF, nom: P.nom || "Le chef de poste", tenue: P.tenue || "tshirt", couleur: P.couleur || "#6b7a3a", bas: P.bas || "#d8c49a", pieds: P.pieds || "#f4f4f2", short: true, camescope: true, reglage: P.reglage || null,   /* (10.138 : son propre réglage, dans les PNJ de l'administrateur) */
+          teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 115) : "images/pere-tete.png", pnj: true, sansVerre: true, x: ETAPES[0][0], z: ETAPES[0][1] }); if (!p) return; }
+      p.info.danse = "camescope"; const pc = p.corps || p.g; if (cam.parent !== pc) pc.add(cam);
       // le caméscope devant l'œil, tourné là où il filme ; la petite lumière rouge clignote
-      const h = (typeof tailleBonhomme === "function" ? tailleBonhomme() : 1.75); cam.position.set(.08, h * .88, .05); cam.userData.led.visible = Math.floor(t / 500) % 2 === 0;
+      const h = (typeof tailleBonhomme === "function" ? tailleBonhomme() : 1.75) * (p.corps ? 1 / (p.corps.scale.y || 1) : 1); cam.position.set(h * .2 / 420 * 200 * .0 + h * 200 / 420 * (16 / 200), h * (420 - 100) / 420, .06);   /* (dans la main, devant l'œil, sur le panneau du bonhomme) */ cam.userData.led.visible = Math.floor(t / 500) % 2 === 0;
       const [ex, ez] = ETAPES[k], g = p.g.position, d = Math.hypot(g.x - ex, g.z - ez);
-      if (t < pause) { p.cible = null; p.chemin = []; cam.rotation.y = Math.sin(t / 1400) * .9; }   // (il s'arrête, et balaie lentement la scène)
+      if (t < pause) { p.cible = null; p.chemin = []; }   // (il s'arrête, et balaie lentement la scène)
       else if (d < 1.2) { k = (k + 1 + Math.floor(al() * 2)) % ETAPES.length; pause = t + 3000 + al() * 5000; }
-      else { if (!p.cible) viser(p, ex, ez); cam.rotation.y = Math.atan2(ex - g.x, ez - g.z) - p.g.rotation.y; } }; }
+      else { if (!p.cible) viser(p, ex, ez); } }; }
   /* (fluidité) tout ce qui ne bouge pas est fondu en quelques pièces */
   { scene.updateMatrixWorld(true); for (const g of scene.children.slice()) { if (!g.isGroup || g.userData.poser || g.userData.parts || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
   fusionStatique(scene, L, 0);
