@@ -901,7 +901,15 @@ function construireCorbier(A, L, scene) {
         add(new THREE.PlaneGeometry(7.8, 3.3), lum(mat({ map: fT, emissive: 0xffffff, emissiveMap: fT, emissiveIntensity: .2 }), .2, .7), x1 - .02, 1.65, 8.7, -Math.PI / 2); void cz; void W2;
         box(.9, .1, 7.8, mat({ color: 0x2a3a2e, roughness: .7 }), x1 - .45, 3.35, 8.7);   // (l'auvent)
         for (const tz of [6.3, 8.7, 11.1]) { const tx = x1 - 2.0; box(.75, .05, .75, mat({ color: 0x6a4a2e }), tx, .74, tz); box(.05, .72, .05, mat({ color: 0x2a2a2a }), tx, .37, tz); for (const sz of [-.55, .55]) box(.42, .45, .42, mat({ color: 0x3a2a1e }), tx, .23, tz + sz); OB.push([tx, tz, .9]); }
-        for (let z = -5.5; z <= 12.8; z += .5) OB.push([x1 + .3, z, .4]); } box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, 1.02, 4.4); box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, .2, 4.4);
+        for (let z = -5.5; z <= 12.8; z += .5) OB.push([x1 + .3, z, .4]);
+      /* (10.161) devant le restaurant : un carré de plancher, fermé d'une barrière de bois (l'entrée au milieu) */
+      { const xa = x1 - 5.2, xb = x1, za = 4.8, zb = 12.6, rd = mat({ color: 0x8a6a48, roughness: .85 });
+        const d = add(new THREE.PlaneGeometry(xb - xa, zb - za), mat({ map: deckT, roughness: .8 }), (xa + xb) / 2, .06, (za + zb) / 2); d.rotation.x = -Math.PI / 2; box(xb - xa, .12, .15, mat({ color: 0x6a3a22 }), (xa + xb) / 2, .06, zb);
+        const cote = (x0b, z0b, x1b, z1b) => { const L3 = Math.hypot(x1b - x0b, z1b - z0b), n = Math.max(1, Math.round(L3 / 1.6)), a = Math.atan2(z1b - z0b, x1b - x0b);
+          for (let k = 0; k <= n; k++) { const x = x0b + (x1b - x0b) * k / n, z = z0b + (z1b - z0b) * k / n; cyl(.07, .08, 1.0, rd, x, .5, z, 6); }
+          for (const y of [.45, .85]) box(L3, .08, .08, rd, (x0b + x1b) / 2, y, (z0b + z1b) / 2, -a);
+          for (let t = 0; t <= L3; t += .45) OB.push([x0b + (x1b - x0b) * t / L3, z0b + (z1b - z0b) * t / L3, .25]); };
+        cote(xa, za, xa, 7.8); cote(xa, 9.6, xa, zb); cote(xa, zb, xb, zb); cote(xa, za, xb - .1, za); } } box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, 1.02, 4.4); box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, .2, 4.4);
       const pT = tT(512, 192, (c, w, h) => { c.fillStyle = "#f2f0ec"; c.fillRect(0, 0, w, h); c.strokeStyle = "#7a5a3a"; c.lineWidth = 10; c.beginPath(); c.arc(80, 96, 60, 0, 7); c.stroke(); c.fillStyle = "#3a2a1e"; c.font = `italic bold 76px ${serif}`; c.fillText("Sino", 160, 110); c.fillStyle = "#3a9ad8"; c.fillText("Ze", 320, 110); c.fillStyle = "#555"; c.font = `24px ${sans}`; c.fillText("PUB   RESTAURANT", 170, 160); });
       add(new THREE.PlaneGeometry(3.4, 1.3), mat({ map: pT }), x0 + 3, 1.4, 4.47);
       { const vC = mat({ color: 0x4a6a5a, roughness: .5 }); for (let k = 0; k < 3; k++) for (let q = 0; q < 6; q++) box(.46, .04, .44, vC, x0 + 6 + k * .6, .5 + q * .12, 2.6); OB.push([x0 + 6.6, 2.6, 1.2]); } }
