@@ -1598,23 +1598,49 @@ function construireCorbier(A, L, scene) {
     // (10.132) la promenade à poney, le jour : un enfant sur le poney, l'adulte devant qui le tient par la longe ; ils font des allers-retours sur le chemin de terre
     { const G3 = new THREE.Group(); ad(G3); JOUR.push(G3); const robe = mat({ color: 0x8a5a32, roughness: .9 }), crin = mat({ color: 0x2a1a10, roughness: .9 }), selle = mat({ color: 0x5a2a1a, roughness: .6 }), tapis = mat({ color: 0xc82a3a, roughness: .8 });
       const P3 = (geo, m, x, y, z, par = G3) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; par.add(o); return o; };
-      const cps = P3(new THREE.CapsuleGeometry(.24, .62, 4, 10), robe, 0, .78, 0); cps.rotation.z = Math.PI / 2;   // le corps (l'avant vers +x)
-      const cou = P3(new THREE.CapsuleGeometry(.11, .34, 4, 8), robe, .44, 1.0, 0); cou.rotation.z = -.7; const tete = P3(new THREE.BoxGeometry(.32, .15, .15), robe, .62, 1.18, 0); tete.rotation.z = -.35;
-      P3(new THREE.BoxGeometry(.32, .08, .04), crin, .4, 1.12, 0).rotation.z = -.7; for (const sz of [-.05, .05]) P3(new THREE.ConeGeometry(.03, .1, 4), robe, .52, 1.3, sz);   // la crinière, les oreilles
-      const queue = P3(new THREE.CylinderGeometry(.03, .06, .45, 6), crin, -.5, .7, 0); queue.rotation.z = -.4;
-      P3(new THREE.BoxGeometry(.42, .04, .5), tapis, -.02, 1.02, 0); P3(new THREE.BoxGeometry(.3, .08, .34), selle, -.02, 1.07, 0);
-      const pattes = [[.3, .15], [.3, -.15], [-.3, .15], [-.3, -.15]].map(([px, pz]) => { const g = new THREE.Group(); g.position.set(px, .62, pz); G3.add(g); P3(new THREE.CylinderGeometry(.045, .04, .6, 6), robe, 0, -.3, 0, g); P3(new THREE.CylinderGeometry(.05, .05, .06, 6), crin, 0, -.6, 0, g); return g; });
-      const enf = enfant(9); enf.scale.setScalar(1); enf.position.set(-.02, 1.1 - enf.userData.hipY + .04, 0); enf.rotation.y = Math.PI / 2; G3.add(enf); enf.userData.poser("assis", 0);
+      /* (10.133) un vrai poney shetland bai : le tronc rond, le poitrail et la croupe, l'encolure épaisse, la tête au chanfrein blanc, les yeux, les naseaux, les oreilles ;
+         la crinière en mèches, le toupet, la queue fournie ; les jambes à genoux et boulets, les sabots ; la bride, la selle, les étriers */
+      const blanc = mat({ color: 0xf2ece0, roughness: .8 }), noirP = mat({ color: 0x141010, roughness: .5 }), sabot = mat({ color: 0x2a2420, roughness: .6 }), cuir = mat({ color: 0x3a2214, roughness: .6 }), fer = mat({ color: 0xb8bcc0, metalness: .7, roughness: .3 });
+      const cps = new THREE.Group(); G3.add(cps); cps.position.y = .74;
+      { const tr = P3(new THREE.SphereGeometry(.3, 18, 14), robe, 0, 0, 0, cps); tr.scale.set(1.75, .95, .85);   // le tronc
+        P3(new THREE.SphereGeometry(.26, 16, 12), robe, .34, .04, 0, cps).scale.set(1, 1.05, .9);   // le poitrail
+        P3(new THREE.SphereGeometry(.27, 16, 12), robe, -.36, .05, 0, cps).scale.set(1, 1, .95);   // la croupe
+        P3(new THREE.SphereGeometry(.22, 14, 10), mat({ color: 0x9a6a40, roughness: .9 }), 0, -.12, 0, cps).scale.set(1.9, .6, .8); }   // (le ventre, un peu plus clair)
+      // l'encolure et la tête
+      const cou = new THREE.Group(); cou.position.set(.42, .14, 0); cou.rotation.z = -.75; cps.add(cou);
+      { const c = P3(new THREE.CylinderGeometry(.11, .17, .48, 12), robe, 0, .22, 0, cou); void c;
+        for (let k = 0; k < 7; k++) { const m2 = P3(new THREE.BoxGeometry(.05, .1, .1), crin, -.12 + k * .005, .02 + k * .065, 0, cou); m2.rotation.z = .3 + (k % 2) * .25; } }   // la crinière, en mèches
+      const tete = new THREE.Group(); tete.position.set(0, .48, 0); tete.rotation.z = 1.25; cou.add(tete);
+      { P3(new THREE.SphereGeometry(.11, 14, 10), robe, 0, 0, 0, tete).scale.set(1.2, 1, .95);   // le crâne
+        const ch = P3(new THREE.CylinderGeometry(.065, .095, .26, 12), robe, .17, -.02, 0, tete); ch.rotation.z = Math.PI / 2;   // le chanfrein
+        P3(new THREE.SphereGeometry(.075, 12, 10), mat({ color: 0x5a3a28, roughness: .8 }), .31, -.03, 0, tete).scale.set(1, .9, 1.05);   // le bout du nez
+        const lis = P3(new THREE.BoxGeometry(.24, .02, .04), blanc, .17, .075, 0, tete); lis.rotation.z = -.15;   // la liste blanche
+        for (const sz of [-1, 1]) { P3(new THREE.SphereGeometry(.022, 8, 6), noirP, .03, .04, sz * .1, tete); P3(new THREE.SphereGeometry(.014, 6, 4), noirP, .35, -.02, sz * .035, tete);   // les yeux, les naseaux
+          const o = P3(new THREE.ConeGeometry(.035, .11, 6), robe, -.06, .13, sz * .05, tete); o.rotation.z = .25; o.rotation.x = sz * -.25; }   // les oreilles
+        P3(new THREE.BoxGeometry(.06, .06, .14), crin, -.02, .12, 0, tete).rotation.z = .5;   // le toupet
+        for (const [px, py, w] of [[.12, .0, .26], [.26, -.04, .02]]) { const b2 = P3(new THREE.TorusGeometry(.098, .012, 4, 16), cuir, px, py, 0, tete); b2.rotation.y = Math.PI / 2; void w; }   // la bride
+        P3(new THREE.SphereGeometry(.015, 6, 4), fer, .3, -.07, .08, tete); }
+      // la queue, fournie, en trois mèches
+      const queue = new THREE.Group(); queue.position.set(-.58, .1, 0); cps.add(queue); for (let k = 0; k < 3; k++) { const q2 = P3(new THREE.CylinderGeometry(.035, .06, .55, 6), crin, -.04, -.25, (k - 1) * .035, queue); q2.rotation.z = -.15 + (k - 1) * .08; }
+      // la selle, le tapis, les étriers
+      P3(new THREE.BoxGeometry(.46, .03, .56), tapis, -.02, .27, 0, cps); { const sl = P3(new THREE.SphereGeometry(.17, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), selle, -.02, .27, 0, cps); sl.scale.set(1.3, .45, 1.05); }
+      for (const sz of [-1, 1]) { P3(new THREE.BoxGeometry(.02, .3, .02), cuir, -.02, .1, sz * .24, cps); P3(new THREE.TorusGeometry(.04, .01, 4, 8), fer, -.02, -.07, sz * .24, cps); }
+      // les jambes : la cuisse (du corps au genou), le canon, le boulet, le sabot
+      const pattes = [[.36, .14], [.36, -.14], [-.36, .14], [-.36, -.14]].map(([px, pz], i) => { const g = new THREE.Group(); g.position.set(px, .62, pz); G3.add(g);
+        P3(new THREE.CylinderGeometry(.07, .055, .3, 8), robe, 0, -.13, 0, g); const gn = new THREE.Group(); gn.position.y = -.28; g.add(gn); P3(new THREE.SphereGeometry(.05, 8, 6), robe, 0, 0, 0, gn);
+        P3(new THREE.CylinderGeometry(.038, .036, .24, 8), i < 2 ? robe : robe, 0, -.13, 0, gn); P3(new THREE.SphereGeometry(.042, 8, 6), crin, 0, -.26, 0, gn); P3(new THREE.CylinderGeometry(.045, .055, .07, 8), sabot, .01, -.31, 0, gn); g.userData.gn = gn; return g; });
+      const enf = enfant(9); enf.scale.setScalar(1); enf.position.set(-.02, 1.09 - enf.userData.hipY + .04, 0); enf.rotation.y = Math.PI / 2; G3.add(enf); enf.userData.poser("assis", 0);
       for (const J of P(enf).jambes) { J.h.rotation.x = -.3; J.h.rotation.z = 0; J.gen.rotation.x = .5; } P(enf).jambes[0].h.rotation.z = .5; P(enf).jambes[1].h.rotation.z = -.5;   // (à califourchon)
       const adu = gens(14); adu.position.set(1.15, 0, .35); adu.rotation.y = Math.PI / 2; G3.add(adu);
       const longe = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0x3a2a1a })); G3.add(longe);
       const xa = -58, xb = 44, v = 1.0, L3 = xb - xa, st = {};
       ANIM.push((t) => { const d = (t * v) % (2 * L3), aller = d < L3, u = aller ? d : 2 * L3 - d, x = xa + u, demi = Math.min(Math.abs(u), Math.abs(L3 - u)) < 1.2, z0 = evite(st, x, 11.4, aller ? 1.6 : -1.6);
         G3.position.set(x, H(x, z0), z0); G3.rotation.y = aller ? 0 : Math.PI; if (demi) G3.rotation.y += (aller ? 1 : -1) * 0;
-        const ph = t * 6; pattes.forEach((g, i) => { g.rotation.z = Math.sin(ph + [0, Math.PI, Math.PI, 0][i]) * .35; }); cps.position.y = .78 + Math.abs(Math.sin(ph)) * .02; tete.rotation.z = -.35 + Math.sin(ph * .5) * .05; queue.rotation.x = Math.sin(t * 2) * .3;
+        const ph = t * 6; pattes.forEach((g, i) => { const w = ph + [0, Math.PI, Math.PI, 0][i]; g.rotation.z = Math.sin(w) * .32; g.userData.gn.rotation.z = (i < 2 ? -1 : 1) * Math.max(0, Math.sin(w + 1.2)) * .55; });   // (le pas : les diagonales ensemble, le genou qui plie)
+        cps.position.y = .74 + Math.abs(Math.sin(ph)) * .018; cou.rotation.z = -.75 + Math.sin(ph) * .05; queue.rotation.x = Math.sin(t * 1.7) * .25; queue.rotation.z = Math.sin(t * 1.1) * .1;
         adu.userData.poser("marche", t * 1000); const b = P(adu).bras[0]; b.e.rotation.x = -.5; b.c.rotation.x = -.3;   // (la main gauche tient la longe)
-        enf.position.y = 1.1 - enf.userData.hipY + .04 + Math.abs(Math.sin(ph)) * .03; if (Math.sin(t * .5) > .8) P(enf).bras[1].e.rotation.x = -2.6; else P(enf).bras[1].e.rotation.x = -.6;
-        G3.updateMatrixWorld(true); const h = new THREE.Vector3(); P(adu).bras[0].c.getWorldPosition(h); G3.worldToLocal(h); h.y -= .3; const pos = longe.geometry.attributes.position; pos.setXYZ(0, h.x, h.y, h.z); pos.setXYZ(1, .7, 1.12, 0); pos.needsUpdate = true; }); }
+        enf.position.y = 1.09 - enf.userData.hipY + .04 + Math.abs(Math.sin(ph)) * .03; if (Math.sin(t * .5) > .8) P(enf).bras[1].e.rotation.x = -2.6; else P(enf).bras[1].e.rotation.x = -.6;
+        G3.updateMatrixWorld(true); const h = new THREE.Vector3(); P(adu).bras[0].c.getWorldPosition(h); G3.worldToLocal(h); h.y -= .3; const pos = longe.geometry.attributes.position; pos.setXYZ(0, h.x, h.y, h.z); { const b3 = new THREE.Vector3(); tete.localToWorld(b3.set(.3, -.07, 0)); G3.worldToLocal(b3); pos.setXYZ(1, b3.x, b3.y, b3.z); } pos.needsUpdate = true; }); }
     // les promeneurs de la galerie marchande : ils vont et viennent le long des couloirs (toute la journée et le soir aussi)
     { const GW = [[-5, -5.5], [-16, -5.8], [-30, -5.8], [-40, -5.8], [-52, -6], [-58, -5], [-64, -4]]; for (let k = 0; k < (PEU ? 3 : 6); k++) { const m = ad(gens(k * 4 + 10)), v = .8 + (k % 3) * .15, tot2 = GW.reduce((a2, q, i) => i ? a2 + Math.hypot(q[0] - GW[i - 1][0], q[1] - GW[i - 1][1]) : 0, 0);
       ANIM.push((t) => { let d = (t * v + k * 9) % (2 * tot2); const ret = d > tot2; if (ret) d = 2 * tot2 - d; let i = 1; for (; i < GW.length; i++) { const l = Math.hypot(GW[i][0] - GW[i - 1][0], GW[i][1] - GW[i - 1][1]); if (d <= l) break; d -= l; } i = Math.min(i, GW.length - 1);
