@@ -8051,7 +8051,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // au milieu de la cour : le cercle vert du chantier de la nouvelle caserne (l'administrateur seul le voit)
     L.portails.push({ dans: (x, z) => x > 10 && z > 5.4 && z < 7.6, vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
-    L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "corbier", arrivee: [54.5, 15], yaw: -Math.PI / 2, violet: true, pasApo: true });   // (10.99) le cercle violet : Le Corbier, pour l'administrateur seul (le temps de le construire)
+    if (false) L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "corbier", arrivee: [54.5, 15], yaw: -Math.PI / 2, violet: true, pasApo: true });   // (10.99) le cercle violet : Le Corbier, pour l'administrateur seul (le temps de le construire)
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
   }
 
@@ -13124,7 +13124,7 @@ function busLigne(L, scene, C) {
 function choixBus(B) { if (M.choixBusEl) M.choixBusEl.remove(); const d = document.createElement("div"); M.choixBusEl = d;
   d.style.cssText = "position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:30;background:rgba(18,28,24,.94);color:#fff;border-radius:16px;padding:14px 16px;font:15px Lato,Arial,sans-serif;min-width:260px;max-width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)";
   d.innerHTML = `<div style="font-weight:700;margin-bottom:10px">🚌 Où allez-vous ?</div>`;
-  const DS = B.C.dest.concat(M.lieu !== "corbier" && estAdmin() ? [{ vers: "corbier", nom: "🚂 Le Corbier - Les Sybelles (le petit train)", arrivee: [52, 16], yawA: Math.PI / 2, train: true }] : []);   // (10.140)
+  const DS = B.C.dest.concat(M.lieu !== "corbier" && estAdmin() ? [{ vers: "corbier", nom: "🚂 Le Corbier - Les Sybelles (le petit train)", arrivee: [57, 21.2], yawA: Math.PI / 2, train: true }] : []);   // (10.140)
   for (const D of DS) { const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.nom; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#2a8a5a;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
     b.onclick = () => { d.remove(); M.choixBusEl = null; dire(M.moiNum, "🚌 J'attends le bus…"); B.appeler(D); }; d.appendChild(b); }
   const x = document.createElement("button"); x.type = "button"; x.textContent = "Annuler"; x.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:14px Lato,Arial,sans-serif;cursor:pointer"; x.onclick = () => { d.remove(); M.choixBusEl = null; }; d.appendChild(x);

@@ -1460,12 +1460,12 @@ function construireCorbier(A, L, scene) {
     for (const W of MARCH) for (const pt of W.R) pt[0] = -pt[0]; }
   /* (10.140) le petit train : il arrive de Paris (on l'a pris à un arrêt de bus), longe la rue et s'arrête au niveau de la piscine ; on l'y reprend pour rentrer.
      L'arrêt : le poteau, son panneau « Petit train — Le Corbier · Les Sybelles », les horaires */
-  { const ax = 50, az = 16.4, y = L.hauteur(ax, az), bl = mat({ color: 0xf4f4f0 }), bleu = mat({ color: 0x1f4fb0 });
-    cyl(.05, .05, 2.6, mat({ color: 0x8a8e92, metalness: .6 }), ax - 1.6, y + 1.3, az - .4, 8);
+  { const ax = 57, az = 20.4, y = L.hauteur(ax, az)   /* (10.129 : l'arrêt dans l'herbe, au pied du pré, avec son abribus) */, bl = mat({ color: 0xf4f4f0 }), bleu = mat({ color: 0x1f4fb0 });
+    cyl(.05, .05, 2.6, mat({ color: 0x8a8e92, metalness: .6 }), ax - 2.6, y + 1.3, az - .4, 8);
     const pt = tT(256, 160, (c, w, h) => { c.fillStyle = "#1f4fb0"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.fillRect(6, 6, w - 12, h - 12); c.fillStyle = "#1f4fb0"; c.font = `bold 30px ${sans}`; c.textAlign = "center"; c.fillText("🚂 PETIT TRAIN", w / 2, 50); c.font = `bold 20px ${sans}`; c.fillText("Le Corbier · Les Sybelles", w / 2, 88); c.fillStyle = "#3a3a3a"; c.font = `16px ${sans}`; c.fillText("Paris : toutes les heures", w / 2, 124); });
-    for (const r of [0, Math.PI]) add(new THREE.PlaneGeometry(.9, .56), mat({ map: pt, side: THREE.FrontSide }), ax - 1.6, y + 2.25, az - .4, r);
+    for (const r of [0, Math.PI]) add(new THREE.PlaneGeometry(.9, .56), mat({ map: pt, side: THREE.FrontSide }), ax - 2.6, y + 2.25, az - .4, r);
     void bl; void bleu;
-    busLigne(L, scene, { ax, az, voie: 18.3, sens: 1, x0: -30, x1: 96, train: true, poteau: true, suitSol: true,
+    busLigne(L, scene, { ax, az, voie: 22.2, sens: 1, x0: -30, x1: 96, train: true, suitSol: true,
       dest: [{ vers: "rue", nom: "Rue du Faubourg-Poissonnière (la caserne)", arrivee: [10, -4.7], yawA: 0 }, { vers: "grande", nom: "Rue d'Hauteville", arrivee: [-6, -154.6], yawA: Math.PI }, { vers: "rex", nom: "Bonne-Nouvelle (le Grand Rex)", arrivee: [-26, -10.2], yawA: 0 }] }); }
   /* (10.100) le carnet de chantier de l'administrateur : il pose le doigt (ou clique) sur un endroit, il écrit ce qu'il y veut ; la note reste là, numérotée,
      gardée par le serveur ; « Copier » met toutes les notes dans le presse-papier, pour les donner à Claude */
