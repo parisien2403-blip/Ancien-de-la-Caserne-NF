@@ -127,7 +127,7 @@ function construireCorbier(A, L, scene) {
     // les deux trampolines bleus
     for (const [tx, tz] of [[17, 34], [19.5, 36]]) { const y = HP(tx, tz); cyl(1.3, 1.3, .08, mat({ color: 0x1a1a1a }), tx, y + .6, tz, 20); add(new THREE.TorusGeometry(1.35, .1, 6, 24), mat({ color: 0x2a6ac8 }), tx, y + .62, tz).rotation.x = Math.PI / 2; for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; cyl(.04, .04, .6, mat({ color: 0x8a8a8a }), tx + Math.cos(a) * 1.3, y + .3, tz + Math.sin(a) * 1.3, 5); } OB.push([tx, tz, 1.5]); }
     // le grand cercle orange tracé sur l'herbe, et sa croix
-    { const cx = -6, cz = 38, y = HP(cx, cz) + .05, r = add(new THREE.RingGeometry(4.2, 4.6, 40), mat({ color: 0xe8701a, side: THREE.DoubleSide }), cx, y, cz); r.rotation.x = -Math.PI / 2; for (const ry of [0, Math.PI / 2]) { const b = box(5, .02, .3, orange, cx, y, cz); b.rotation.y = ry; } }
+    if (false) { const cx = -6, cz = 38, y = HP(cx, cz) + .05, r = add(new THREE.RingGeometry(4.2, 4.6, 40), mat({ color: 0xe8701a, side: THREE.DoubleSide }), cx, y, cz); r.rotation.x = -Math.PI / 2; for (const ry of [0, Math.PI / 2]) { const b = box(5, .02, .3, orange, cx, y, cz); b.rotation.y = ry; } }
     // le tapis roulant couvert : le tunnel blanc en demi-cercle, qui monte le long de la pente, son enclos au filet vert
     { const a0 = [-36, 44], a1 = [-70, 42.5], n = 10, blancT = mat({ color: 0xf2f4f4, roughness: .3, transparent: true, opacity: .85, side: THREE.DoubleSide });
       for (let k = 0; k < n; k++) { const t0 = k / n, t1 = (k + 1) / n, x0 = a0[0] + (a1[0] - a0[0]) * t0, z0 = a0[1] + (a1[1] - a0[1]) * t0, x1 = a0[0] + (a1[0] - a0[0]) * t1, z1 = a0[1] + (a1[1] - a0[1]) * t1, y0 = HP(x0, z0), y1 = HP(x1, z1), L2 = Math.hypot(x1 - x0, z1 - z0, y1 - y0);
