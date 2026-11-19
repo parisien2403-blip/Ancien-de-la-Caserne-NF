@@ -1632,6 +1632,12 @@ function construireCorbier(A, L, scene) {
       if (!son) { if (!cible) return; son = new Audio("sons/fete-discussions.mp3"); son.loop = true; son.volume = 0; }
       v += (cible - v) * .05; try { son.volume = Math.max(0, Math.min(1, v)); } catch (e) {} if (v > .01 && son.paused) son.play().catch(() => {}); else if (v <= .01 && !son.paused) son.pause(); };
     const veille9 = setInterval(() => { if (son && (!M || M.L !== L || M.cine)) { son.pause(); v = 0; } if (!M || (M.prets && !Object.values(M.prets).some(q => q && q.L === L) && M.L !== L)) { clearInterval(veille9); if (son) { son.pause(); son = null; } } }, 500); }   // (on quitte la station : le son s'arrête)
+  /* (10.131) dehors, en continu : des enfants qui jouent, au loin (pas trop fort) ; dans la galerie, on ne les entend plus */
+  { let son = null, v = 0; const a10 = L.anim; L.anim = (tm) => { try { a10 && a10(tm); } catch (e) {} const moi = M && M.L === L && !M.cine && M.moiNum && M.gens.get(M.moiNum);
+      let cible = 0; if (moi && !window.mxArcadeOn && !document.hidden) { const p = moi.g.position; cible = (L.premiereIci && L.premiereIci(p.x, p.z)) ? 0 : .22; }
+      if (!son) { if (!cible) return; son = new Audio("sons/corbier-enfants.mp3"); son.loop = true; son.volume = 0; }
+      v += (cible - v) * .04; try { son.volume = Math.max(0, Math.min(1, v)); } catch (e) {} if (v > .01 && son.paused) son.play().catch(() => {}); else if (v <= .01 && !son.paused) son.pause(); };
+    const veille10 = setInterval(() => { if (son && (!M || M.L !== L || M.cine)) { son.pause(); v = 0; } if (!M || (M.prets && !Object.values(M.prets).some(q => q && q.L === L) && M.L !== L)) { clearInterval(veille10); if (son) { son.pause(); son = null; } } }, 500); }
   /* (fluidité) tout ce qui ne bouge pas est fondu en quelques pièces */
   { scene.updateMatrixWorld(true); for (const g of scene.children.slice()) { if (!g.isGroup || g.userData.poser || g.userData.parts || g.userData.anime) continue; const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
   fusionStatique(scene, L, 0);
