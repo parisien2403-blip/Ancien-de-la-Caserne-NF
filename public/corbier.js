@@ -1096,7 +1096,8 @@ function construireCorbier(A, L, scene) {
     piece("B", 75.4, 80.4, -4.4, -1.6, { h: 2.7, mur: "bleu", sol: "moquette", plaf: "dalles", ext: "bois" });
     piece("B2", 77, 79, -8.6, -4.4, { h: 2.6, mur: "bleu", sol: "tole", plaf: "dalles", ext: "bois" });   // (10.134 : le petit couloir étroit de l'ascenseur)
     piece("C", 72.4, 75.4, -4.2, -1.6, { h: 2.6, mur: "sombre", sol: "moquette", plaf: "sombre", ext: "bois" });
-    piece("D", 66, 72.4, -6.6, -1.6, { h: 3.3 });
+    piece("D", 66, 72.4, -6.6, -1.6, { h: 3.3, ouv: { zmin: [[66.4, 71.8]] } });
+    piece("ARC", 66.4, 71.8, -11, -6.6, { h: 2.9, ouv: { zmax: [[66.4, 71.8]] } });   // (10.127 : la salle d'arcade, à la place du magasin de presse)
     piece("D2", 58, 66, -5.4, -2.6, { h: 2.9 });   // (10.133 : après le Yéti, le couloir tourne légèrement à droite)
     piece("E", 52, 58, -13, -2.6, { h: 3.2 });
     for (const l of GALZ) { const cx = (l.x0 + l.x1) / 2, g = GZ.find(([g0, g1]) => cx >= g0 && cx < g1); if (g) piece("P" + l.id, l.x0 + .22, l.x1 - .22, g[2], zfAt(cx), { h: 2.6, nofp: true, ouv: { zmax: [[l.x0 + .22, l.x1 - .22]] } }); }   // (10.144 : les cinq passages « Galerie marchande » de la promenade)
@@ -1225,7 +1226,32 @@ function construireCorbier(A, L, scene) {
         const fr = tex(1024, 192, (c, w, h) => { c.fillStyle = "#b8925e"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 22) { c.fillStyle = ["#c09a66", "#ad8654", "#c8a470"][(x / 22) % 3]; c.fillRect(x, 0, 21, h); c.fillStyle = "rgba(60,36,16,.4)"; c.fillRect(x + 21, 0, 1, h); }
           c.fillStyle = "#c8202a"; c.fillRect(260, 0, 560, h); c.fillStyle = "#f4f2ee"; c.save(); c.translate(300, 150); c.rotate(-.12); c.font = `bold 40px ${sans}`; c.fillText("LE", 0, 0); c.font = `900 150px ${sans}`; c.fillText("YETI", 60, 10); c.restore(); c.font = `italic 26px ${serif}`; c.fillText("crêpes · pizzeria", 560, 175); });
         R.plan(5.6, 1.0, lumi(fr, .3), 69, 2.85, .05); }
-      boutique(D_, "zmin", 66.4, 71.8, { nom: "SOUVENIRS · CADEAUX · PRESSE", fond: "#f4f2ee", coul: "#1a3a8a", motif: "souv", porte: "droite", cadre: 0x8a8e92 });   /* (10.141 : en face du Yéti, un magasin) */ { const Rg2 = repere(D2_, "zmin"); porteBlanche(Rg2, 64.6); porteBlanche(Rg2, 60.6); } extincteur(64.6, -5.2);
+      { /* (10.127) la Salle d'arcade : la baie vitrée sur le couloir, la porte de bois vitrée grande ouverte, l'enseigne ; dedans, le sol de la galerie, les fenêtres sur la montagne, les bornes */
+        const Z = -6.6, cad = mat({ color: 0x5a3418, roughness: .6 }), verreA = mat({ color: 0xdcecf2, roughness: .05, metalness: .3, transparent: true, opacity: .14, depthWrite: false });
+        box(4.2, .35, .1, cad, 68.5, .175, Z); box(5.4, .12, .1, cad, 69.1, 2.4, Z); for (const x of [66.45, 67.8, 69.15, 70.5]) box(.09, 2.4, .12, cad, x, 1.2, Z); box(.1, 2.4, .12, cad, 71.75, 1.2, Z);
+        add(new THREE.PlaneGeometry(4.05, 2.05), verreA, 68.48, 1.37, Z + .02); for (let x = 66.6; x < 70.5; x += .35) OBS.push([x, Z, .2]);
+        const ens = panneau("SALLE D'ARCADE", "#160a2a", "#ff4ad8", 1024, 96, `bold 60px ${sans}`); box(5.5, .5, .1, cad, 69.1, 2.66, Z + .2); add(new THREE.PlaneGeometry(5.4, .42), lumi(ens, .9), 69.1, 2.66, Z + .26);
+        { const dT = tex(64, 128, (c, w, h) => { c.fillStyle = "#7a4a26"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 6) { c.fillStyle = "rgba(0,0,0,.15)"; c.fillRect(x, 0, 1, h); } c.fillStyle = "#c8dce4"; c.fillRect(10, 10, w - 20, 66); c.fillStyle = "rgba(255,255,255,.4)"; c.fillRect(13, 13, 6, 60); });
+          const d = box(.05, 2.1, 1.05, mat({ map: dT, roughness: .6 }), 71.65, 1.07, Z - .55); void d; box(.04, .04, .18, mat({ color: 0xb8bcc0, metalness: .7 }), 71.6, 1.05, Z - .95); OBS.push([71.6, Z - .55, .25]); }   // (la porte grande ouverte, rabattue contre le mur)
+        // les fenêtres du fond, sur la montagne
+        const mT = tex(256, 192, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h * .6); g.addColorStop(0, "#5aa0e0"); g.addColorStop(1, "#cfe4f4"); c.fillStyle = g; c.fillRect(0, 0, w, h);
+          c.fillStyle = "#8a9aa8"; c.beginPath(); c.moveTo(0, 110); c.lineTo(50, 60); c.lineTo(90, 85); c.lineTo(150, 30); c.lineTo(205, 80); c.lineTo(256, 55); c.lineTo(256, 192); c.lineTo(0, 192); c.fill();
+          c.fillStyle = "#f6f8fa"; c.beginPath(); c.moveTo(130, 50); c.lineTo(150, 30); c.lineTo(172, 54); c.lineTo(160, 50); c.lineTo(150, 58); c.lineTo(140, 48); c.fill(); c.beginPath(); c.moveTo(38, 72); c.lineTo(50, 60); c.lineTo(63, 70); c.fill();
+          c.fillStyle = "#6a8a3a"; c.beginPath(); c.moveTo(0, 140); c.quadraticCurveTo(120, 100, 256, 130); c.lineTo(256, 192); c.lineTo(0, 192); c.fill(); c.fillStyle = "#2a4a2a"; for (let k = 0; k < 30; k++) { const x = (k * 37) % w, y = 135 + (k * 13) % 50; c.beginPath(); c.moveTo(x, y - 14); c.lineTo(x + 5, y); c.lineTo(x - 5, y); c.fill(); } });
+        for (const x of [67.8, 70.4]) { add(new THREE.PlaneGeometry(1.7, 1.3), lumi(mT, .7), x, 1.55, -10.92); box(1.8, .08, .1, blancP, x, 2.24, -10.9); box(1.8, .1, .16, blancP, x, .88, -10.88); for (const dx of [-.87, 0, .87]) box(.06, 1.3, .1, blancP, x + dx, 1.55, -10.9); }
+        // les bornes d'arcade, contre les murs (pour le décor)
+        const JEUX = [["#ffd23a", "#1a1a6a"], ["#3aff6a", "#2a0a2a"], ["#ff4a4a", "#0a1a3a"], ["#4ad8ff", "#1a0a1a"], ["#ff9a2a", "#0a2a1a"], ["#ff5aff", "#0a0a2a"]], NOMS = ["SPACE RAID", "PAC-PAC", "STREET FIGHT", "GALAXIAN", "TURBO KART", "DONKEY JUMP"];
+        const borne = (x, z, ry, k) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const [c1, c2] = JEUX[k], q = (geo, m, px, py, pz, rx = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.rotation.x = rx; g.add(o); return o; };
+          const flanc = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#141018"; c.fillRect(0, 0, w, h); c.fillStyle = c1; c.beginPath(); c.moveTo(0, 30); c.lineTo(w, 10); c.lineTo(w, 50); c.lineTo(0, 70); c.fill(); c.fillStyle = c2 === "#1a1a6a" ? "#4a6aff" : "#ffffff"; c.fillRect(8, 90, 48, 4); }), roughness: .6 }), noirB = mat({ color: 0x141018, roughness: .5 });
+          q(new THREE.BoxGeometry(.7, 1.0, .75), noirB, 0, .5, 0); for (const sx of [-.36, .36]) q(new THREE.BoxGeometry(.03, 1.85, .78), flanc, sx, .925, -.02);
+          q(new THREE.BoxGeometry(.7, .8, .4), noirB, 0, 1.4, -.2);
+          const ecran = tex(128, 128, (c, w, h) => { c.fillStyle = c2; c.fillRect(0, 0, w, h); c.fillStyle = c1; c.font = "bold 13px monospace"; c.textAlign = "center"; c.fillText(NOMS[k], w / 2, 18); for (let i = 0; i < 26; i++) { c.fillStyle = ["#ffffff", c1, "#ff4a4a", "#4aff6a"][i % 4]; c.fillRect((i * 37) % 110 + 8, 30 + (i * 23) % 80, 6, 6); } c.fillStyle = c1; c.fillRect(54, 108, 20, 8); });
+          q(new THREE.PlaneGeometry(.56, .46), lumi(ecran, 1.1), 0, 1.38, .01, -.15);
+          q(new THREE.BoxGeometry(.7, .08, .4), noirB, 0, 1.0, .2, .25); q(new THREE.CylinderGeometry(.015, .015, .1, 6), mat({ color: 0x2a2a2a }), -.15, 1.08, .22); q(new THREE.SphereGeometry(.035, 8, 6), mat({ color: 0xd82020 }), -.15, 1.13, .22);
+          for (let b = 0; b < 3; b++) q(new THREE.CylinderGeometry(.03, .03, .02, 10), mat({ color: [0xf0c020, 0x2a8ad0, 0x3ab04a][b] }), .02 + b * .09, 1.06, .22);
+          const marq = tex(256, 64, (c, w, h) => { c.fillStyle = "#0a0a12"; c.fillRect(0, 0, w, h); c.fillStyle = c1; c.font = "bold 34px Arial"; c.textAlign = "center"; c.fillText(NOMS[k], w / 2, 44); }); q(new THREE.BoxGeometry(.7, .22, .3), noirB, 0, 1.92, -.15); q(new THREE.PlaneGeometry(.66, .18), lumi(marq, 1), 0, 1.92, .005);
+          OBS.push([x, z, .5]); };
+        [[66.85, -7.9], [66.85, -8.9], [66.85, -9.9]].forEach(([x, z], k) => borne(x, z, Math.PI / 2, k)); [[71.35, -8.4], [71.35, -9.4], [71.35, -10.4]].forEach(([x, z], k) => borne(x, z, -Math.PI / 2, k + 3)); }   /* (10.141 : en face du Yéti, un magasin) */ { const Rg2 = repere(D2_, "zmin"); porteBlanche(Rg2, 64.6); porteBlanche(Rg2, 60.6); } extincteur(64.6, -5.2);
       const lg = tex(256, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = "#c83a3a"; c.lineWidth = 8; c.beginPath(); c.arc(128, 128, 100, .3, 5.6); c.stroke(); c.strokeStyle = "#8a8e92"; c.lineWidth = 5; c.beginPath(); c.arc(128, 128, 76, 2, 7.4); c.stroke(); c.fillStyle = "#5a5e62"; c.font = `bold 22px ${sans}`; c.textAlign = "center"; c.fillText("LE CORBIER", 128, 136); });
       repere(D2_, "zmin").plan(1.3, 1.3, mat({ map: lg, transparent: true, roughness: .8 }), 62.6, 1.7, .03); }
     // E : le hall ; au fond à gauche l'opticien (Trompe l'Œil), les Pains spéciaux et leurs ardoises, le salon de thé ; à droite le pilier, la grosse poubelle ; le panneau vert suspendu
