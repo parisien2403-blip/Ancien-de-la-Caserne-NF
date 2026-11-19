@@ -10,7 +10,13 @@ function construireCorbier(A, L, scene) {
   const tT = (w, h, f, rx, ry) => { const c = document.createElement("canvas"); c.width = Math.max(8, Math.round(w * ECH)); c.height = Math.max(8, Math.round(h * ECH)); const x = c.getContext("2d"); x.scale(c.width / w, c.height / h); f(x, w, h);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || 1); } return t; };
   const mat = (o) => new THREE.MeshStandardMaterial({ roughness: .85, ...o });
+  /* (10.164) un chevalet en A : deux panneaux qui se rejoignent en haut, l'affiche à l'endroit sur chaque face extérieure, le cadre sombre derrière */
+  const panA = (g, m, w, h, ec, inc) => { const dos = new THREE.MeshStandardMaterial({ color: 0x3a2a1e, roughness: .8 });
+    for (const sg of [-1, 1]) { const pv = new THREE.Group(); pv.position.set(0, 0, sg * ec); pv.rotation.x = -sg * inc; g.add(pv);
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w + .04, h + .04, .025), dos); b.position.y = h / 2 + .02; pv.add(b);
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); f.position.set(0, h / 2 + .02, sg * .014); if (sg < 0) f.rotation.y = Math.PI; pv.add(f); } };
   const add = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.receiveShadow = true; scene.add(o); return o; };
+  const deux = (o) => { o.material.side = THREE.FrontSide; const c = o.clone(); c.rotateY(Math.PI); scene.add(c); return o; };   // (10.164 : un panneau lisible des deux côtés, jamais à l'envers)
   const box = (w, h, d, m, x, y, z, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, ry);
   const cyl = (rt, rb, h, m, x, y, z, seg = 10) => add(new THREE.CylinderGeometry(rt, rb, h, seg), m, x, y, z);
   /* (10.117) l'épicéa, fait pour de vrai : une quinzaine d'étages de branches dentelées qui retombent, chaque pointe un peu plus claire, le dessous sombre,
@@ -77,7 +83,7 @@ function construireCorbier(A, L, scene) {
   /* ---------- (en face des bâtiments) le domaine skiable, d'après les photos : la piste de gravier, le talus et son muret de rochers, puis les pentes d'herbe rousse
      qui montent vers les crêtes, les bosquets de sapins ; l'office « Corbier Tourisme » sous sa pyramide, le portique rouge, la gare du télésiège des Sybelles,
      le chalet des remontées, la cabane, la tête d'un autre télésiège ; les pylônes et les sièges qui montent jusqu'en haut ; l'aire de jeux des enfants ---------- */
-  const HP = (x, z) => HP0(x, z) + DESC(x, z), HP0 = (x, z) => { if (z < 44) return z < 30 ? 0 : (z - 30) * .03; const t = Math.min(1, (z - 44) / 5), base = .42 + t * t * (3 - 2 * t) * 2.4; if (z < 49) return base;   /* (devant les immeubles : l'esplanade presque plate, puis le pré qui monte) */
+  const HP = (x, z) => HP0(x, z) + DESC(x, z), HP0 = (x, z) => { const d = Math.hypot(x + 32, z - 46), t = Math.min(1, Math.max(0, (d - 13) / 12)); return t >= 1 ? HP00(x, z) : HP00(-32, 46) + (HP00(x, z) - HP00(-32, 46)) * t * t * (3 - 2 * t); }, HP00 = (x, z) => {   /* (10.168 : le terrain aplani autour de l'office : la pente ne cache plus son entrée) */ if (z < 44) return z < 30 ? 0 : (z - 30) * .03; const t = Math.min(1, (z - 44) / 5), base = .42 + t * t * (3 - 2 * t) * 2.4; if (z < 49) return base;   /* (devant les immeubles : l'esplanade presque plate, puis le pré qui monte) */
     const d = z - 49; return base + d * .24 + Math.max(0, d - 120) * .18 + Math.sin(x * .013 + 1.2) * Math.min(1, d / 60) * 14 + Math.sin(x * .031 + z * .02) * Math.min(1, d / 40) * 5; };
   L.hautPiste = HP;
   { const g2 = new THREE.PlaneGeometry(700, 430, 90, 60); g2.rotateX(-Math.PI / 2); const p = g2.attributes.position, C = [];
@@ -159,7 +165,7 @@ function construireCorbier(A, L, scene) {
     { const a = 2.4, wx = ox + Math.sin(a) * (R0 + 5), wz = oz + Math.cos(a) * (R0 + 5), wcT = tT(64, 64, (c, w, h) => { c.fillStyle = "#6a4a32"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ee"; c.beginPath(); c.arc(32, 32, 24, 0, 7); c.fill(); c.fillStyle = "#1a1a1a"; c.font = "bold 22px Arial"; c.textAlign = "center"; c.fillText("WC", 32, 40); });
       box(2.2, 2.4, 1.8, mat({ color: 0x6a4a32, roughness: .8 }), wx, 1.2, wz, a); box(2.6, .15, 2.2, mat({ color: 0x4a4e54 }), wx, 2.5, wz, a); add(new THREE.PlaneGeometry(.9, .9), mat({ map: wcT }), wx + Math.sin(a) * .92, 1.5, wz + Math.cos(a) * .92, a); OB.push([wx, wz, 1.4]); }
     // le large anneau de planches rouge-brun, qui déborde, et son inscription
-    const aE = Math.PI, uE = 1 - aE / (Math.PI * 2);   // (10.155 : l'entrée tournée vers les bâtiments)   // (l'entrée ; le passage du miroir retourne l'angle)
+    const aE = Math.PI * .5, uE = 1 - aE / (Math.PI * 2);   // (10.168 : l'entrée à droite, vue de la promenade)   // (10.155 : l'entrée tournée vers les bâtiments)   // (l'entrée ; le passage du miroir retourne l'angle)
     const anT = tT(4096, 96, (c, w, h) => { c.fillStyle = "#7a3a22"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 12) { c.fillStyle = ["#8a4428", "#7a3a22", "#6e321e"][(y / 12) % 3]; c.fillRect(0, y, w, 11); c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(0, y + 11, w, 1); }
       for (let i = 0; i < 200; i++) { c.fillStyle = "rgba(255,220,190,.06)"; c.fillRect(Math.random() * w, Math.random() * h, 40 + Math.random() * 120, 2); }
       for (const x of [uE * w, uE * w - w]) { c.fillStyle = "#f6f4ee"; c.font = `bold 50px ${sans}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("OFFICE DE TOURISME", x + 24, h / 2 + 3);
@@ -370,7 +376,7 @@ function construireCorbier(A, L, scene) {
   const enseigne = (a, b, z, t, h = .5, y = 2.98, e = .08, j = .12) => { const cx = (a + b) / 2; box(b - a, h, e, boisF, cx, y, z + e / 2); add(new THREE.PlaneGeometry(b - a - .04, h - .04), lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: j }), j, .9), cx, y, z + e + .005); };
   const store = (a, b, z, t, coul, prof = .85, y = 2.52, hd = .3) => { const cx = (a + b) / 2, m = mat({ color: coul, roughness: .7, side: THREE.DoubleSide }), L3 = Math.hypot(prof, .3);
     const s = box(b - a, .03, L3, m, cx, y - .15, z + prof / 2); s.rotation.x = Math.atan2(.3, prof);
-    add(new THREE.PlaneGeometry(b - a, hd), lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .1, side: THREE.DoubleSide }), .1, .7), cx, y - .3 - hd / 2 + .02, z + prof); };
+    deux(add(new THREE.PlaneGeometry(b - a, hd), lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .1, side: THREE.DoubleSide }), .1, .7), cx, y - .3 - hd / 2 + .02, z + prof)); };
   const affiche = (u, w2, h2, y, z, t) => add(new THREE.PlaneGeometry(w2, h2), lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .2 }), .2, .4), u, y, z - .04);
   // les enseignes, d'après les photos
   const galT = tT(256, 96, (c, w, h) => { c.fillStyle = "#f2f0ea"; c.fillRect(0, 0, w, h); c.strokeStyle = "#8a8e92"; c.lineWidth = 2; c.strokeRect(2, 2, w - 4, h - 4); c.strokeStyle = "#5a6a7a"; c.lineWidth = 4; c.beginPath(); c.moveTo(14, 60); c.lineTo(34, 30); c.lineTo(46, 46); c.lineTo(60, 24); c.lineTo(84, 60); c.stroke();
@@ -508,7 +514,7 @@ function construireCorbier(A, L, scene) {
         const te = add(new THREE.CapsuleGeometry(.55, 1, 6, 12), orG, gx + 2.6, 7.7, gz); te.rotation.z = Math.PI / 2 - .3; for (const s2 of [-.3, .3]) { cyl(.07, .07, .6, orG, gx + 2.3, 8.4, gz + s2, 6); add(new THREE.SphereGeometry(.13, 8, 6), g(0xc8501a), gx + 2.3, 8.75, gz + s2); }
         box(2.8, 2.4, .1, g(0x2a5ab8), gx - .2, 1.6, gz - 1.2); OB.push([gx, gz, 1.8]); }
       { const aT = tT(512, 96, (c, w, h) => { c.fillStyle = "#1a7a3a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 40px ${serif}`; c.textAlign = "center"; c.fillText("Parc de loisirs   ·   Bienvenue", w / 2, 62); });
-        const ar = add(new THREE.PlaneGeometry(5, .9), mat({ map: aT, side: THREE.DoubleSide }), -78.5, 3.2, -21.6); void ar; for (const dx of [-2.5, 2.5]) box(.25, 3.4, .25, g(0x5a3a22), -78.5 + dx, 1.7, -21.6); }
+        const ar = deux(add(new THREE.PlaneGeometry(5, .9), mat({ map: aT, side: THREE.DoubleSide }), -78.5, 3.2, -21.6)); void ar; for (const dx of [-2.5, 2.5]) box(.25, 3.4, .25, g(0x5a3a22), -78.5 + dx, 1.7, -21.6); }
       // les tables blanches et leurs parasols
       for (const [tx, tz, pc] of [[-76, -18, 0xf2f2f2], [-73.5, -15, 0x8ab8e0], [-71, -18.5, 0xf2f2f2], [-68.5, -15.5, 0xe86a8a]]) { cyl(.45, .45, .04, g(0xf2f2f0, .3), tx, .76, tz, 14); cyl(.04, .04, .7, g(0xd8d8d8), tx, .4, tz, 6); for (const sg of [-1, 1]) box(.42, .5, .42, g(0xf2f2f0, .4), tx + sg * .65, .3, tz); cyl(.03, .03, 2.4, g(0xd8d8d8), tx, 1.25, tz, 5); add(new THREE.ConeGeometry(1.3, .5, 8, 1, true), mat({ color: pc, side: THREE.DoubleSide, roughness: .8 }), tx, 2.45, tz); OB.push([tx, tz, 1]); }
       // les maisonnettes des petits (vertes, rouges), le toboggan rose
@@ -643,7 +649,7 @@ function construireCorbier(A, L, scene) {
     const tables = (x0, x1, z0, z1, mC) => { let k = 0; for (let x = x0 + .9; x < x1 - .6; x += 1.8) for (let z = z0 + .9; z < z1 - .6; z += 1.7) { box(.75, .04, .75, tabB, x, .74, z); cyl(.03, .03, .72, noirP, x, .37, z, 5); for (const sg of [-1, 1]) chaiseG(x, z + sg * .55, sg < 0 ? 0 : Math.PI, mC[k++ % mC.length]); OB.push([x, z, .7]); } };
     // la véranda rouge du Yéti : le toit rouge en pente, les poteaux blancs, le vitrage, les chaises rouges et blanches dedans
     { const x0 = 67.2, x1 = 81.6, z0 = .2, z1 = 6.4; terrasse(x0, x1, z0, z1 + .2); const tr = box(x1 - x0 + .4, .05, z1 - z0 + .6, mat({ color: 0xf4f4f2, roughness: .5, transparent: true, opacity: .55, side: THREE.DoubleSide, depthWrite: false }), (x0 + x1) / 2, 2.9, (z0 + z1) / 2); tr.rotation.x = -.12;   /* (10.144 : le toit translucide, le lambrequin rouge « LE YETI », comme sur la photo) */
-      { const vT = tT(1024, 48, (c, w, h) => { c.fillStyle = "#d01c22"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 28px ${sans}`; c.textAlign = "center"; c.textBaseline = "middle"; for (let k = 0; k < 3; k++) c.fillText("LE YETI", w * (k + .5) / 3, h / 2 + 2); }); add(new THREE.PlaneGeometry(x1 - x0 + .4, .3), mat({ map: vT, side: THREE.DoubleSide }), (x0 + x1) / 2, 2.62, z1 + .32); }
+      { const vT = tT(1024, 48, (c, w, h) => { c.fillStyle = "#d01c22"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 28px ${sans}`; c.textAlign = "center"; c.textBaseline = "middle"; for (let k = 0; k < 3; k++) c.fillText("LE YETI", w * (k + .5) / 3, h / 2 + 2); }); deux(add(new THREE.PlaneGeometry(x1 - x0 + .4, .3), mat({ map: vT, side: THREE.DoubleSide }), (x0 + x1) / 2, 2.62, z1 + .32)); }
       for (let x = x0; x <= x1 + .01; x += (x1 - x0) / 4) { cyl(.07, .07, 2.6, blanc, x, 1.3, z1, 8); OB.push([x, z1, .3]); } box(x1 - x0, .14, .14, blanc, (x0 + x1) / 2, 2.6, z1);
       const vg = mat({ color: 0xdcecf0, roughness: .05, transparent: true, opacity: .25, depthWrite: false }); box(x1 - x0, 1.9, .03, vg, (x0 + x1) / 2, 1.5, z1); box(.03, 2, z1 - z0, vg, x1, 1.4, (z0 + z1) / 2);
       tables(x0, x1, z0, z1, [mat({ color: 0xd02a26 }), mat({ color: 0xf2f2f2 })]); }
@@ -724,7 +730,7 @@ function construireCorbier(A, L, scene) {
       for (const sx of [-1.32, 1.32]) box(.1, .08, 5.6, boisC, xc + sx, .06, 9.8); }   // (10.152 : une simple rampe de planches, sans barrière)
     // (10.153, d'après la photo) deux tables de ping-pong en béton, sur le gravier, le long du plancher
     { const vt = mat({ color: 0x2a6a4a, roughness: .5 }), bl = mat({ color: 0xf4f4f2 }), gr = mat({ color: 0x8a8a86, roughness: .9 }), fil = mat({ color: 0x2a2a2c, transparent: true, opacity: .7 });
-      for (const x of [LG("skiset").x0 - .5, LG("vet").x1 + 2.2]) { const z = 9.2; box(2.74, .08, 1.52, vt, x, .76, z); box(2.74, .085, .03, bl, x, .76, z + .74); box(2.74, .085, .03, bl, x, .76, z - .74); box(.03, .085, 1.52, bl, x + 1.35, .76, z); box(.03, .085, 1.52, bl, x - 1.35, .76, z); box(2.74, .086, .02, bl, x, .76, z);
+      for (const x of [LG("skiset").x0 - .5, LG("vet").x1 + 2.2, LG("pharma").x0 + 1.5, LG("patis").x0 + 1.8]) { const z = 9.2; box(2.74, .08, 1.52, vt, x, .76, z); box(2.74, .085, .03, bl, x, .76, z + .74); box(2.74, .085, .03, bl, x, .76, z - .74); box(.03, .085, 1.52, bl, x + 1.35, .76, z); box(.03, .085, 1.52, bl, x - 1.35, .76, z); box(2.74, .086, .02, bl, x, .76, z);
         box(.06, .16, 1.7, fil, x, .88, z); for (const sx of [-.9, .9]) box(.2, .72, 1.1, gr, x + sx, .36, z); OB.push([x - .9, z, 1.1], [x + .9, z, 1.1]); } }
     // le kiosque d'affichage sur son poteau, son petit toit à deux pans, devant la galerie
     { const gA = LG("galA"), kx = (gA.x0 + gA.x1) / 2 + .5, kz = zfAt(kx) + 2.4, affT = tT(128, 80, (c, w, h) => { c.fillStyle = "#3a2a1e"; c.fillRect(0, 0, w, h); for (let k = 0; k < 5; k++) { c.fillStyle = ["#f4f2ea", "#f0e0a0", "#e8f0f4"][k % 3]; c.fillRect(8 + k * 23, 10 + (k % 2) * 8, 19, 26); } });
@@ -767,7 +773,7 @@ function construireCorbier(A, L, scene) {
       for (const [px, pz] of [[XS + 1.0, z0 + 1.2], [XS + 2.6, z1 - .9], [x1 - 2.2, z0 + 1.2], [x1 - .9, cz + .6]]) { cyl(.035, .035, 3.1, noir, px, 1.55, pz, 6); add(new THREE.ConeGeometry(.3, 2.2, 8), rouge, px, 1.95, pz); OB.push([px, pz, .25]); }   // (côté salon : les grands parasols rouges, fermés)
       for (const [px, pz] of [[x0 + 1.7, z0 + 1.6], [XS - 1.6, z0 + 1.6], [x0 + 1.7, z1 - 1.6], [XS - 1.6, z1 - 1.6]]) {
         cyl(.06, .06, 3.1, noir, px, 1.55, pz, 8); const toit = add(new THREE.ConeGeometry(2.05, .45, 4, 1, true), rouge, px, 3.25, pz); toit.rotation.y = Math.PI / 4;
-        for (const [w2, d2, ox, oz] of [[3.4, .02, 0, 1.7], [3.4, .02, 0, -1.7], [.02, 3.4, 1.7, 0], [.02, 3.4, -1.7, 0]]) { const lb = add(new THREE.PlaneGeometry(2.9, .22), mat({ map: kroT, side: THREE.DoubleSide }), px + ox * .85, 2.95, pz + oz * .85, w2 > 1 ? 0 : Math.PI / 2); void d2; void lb; }
+        for (const [w2, d2, ox, oz] of [[3.4, .02, 0, 1.7], [3.4, .02, 0, -1.7], [.02, 3.4, 1.7, 0], [.02, 3.4, -1.7, 0]]) { const lb = deux(add(new THREE.PlaneGeometry(2.9, .22), mat({ map: kroT, side: THREE.DoubleSide }), px + ox * .85, 2.95, pz + oz * .85, w2 > 1 ? 0 : Math.PI / 2)); void d2; void lb; }
         OB.push([px, pz, .25]); }
       // la guirlande de guinguette, d'un poteau à l'autre
       const ampM = lum(mat({ color: 0xfff2c0, emissive: 0xffe090, emissiveIntensity: .5 }), .5, 2.2), douille = mat({ color: 0x2a6a5a });
@@ -787,7 +793,7 @@ function construireCorbier(A, L, scene) {
         if (z > z1 - .6) continue; box(.8, .05, .8, tR, x, .76, z); box(.06, .72, .06, pied, x, .4, z); for (const sg of [-1, 1]) { box(.45, .05, .45, ch, x, .48, z + sg * .62); box(.45, .45, .05, ch, x, .72, z + sg * .84); } OB.push([x, z, .7]); }
       // l'ardoise « Brasserie · Pizzas » à l'entrée, les jardinières carrées sombres
       { const aT = tT(96, 160, (c, w, h) => { c.fillStyle = "#1a1c1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ea"; c.font = `bold 13px ${sans}`; c.textAlign = "center"; c.fillText("BRASSERIE", w / 2, 24); c.fillText("PIZZAS", w / 2, 42); for (let k = 0; k < 7; k++) c.fillRect(14, 58 + k * 13, 50 + (k * 11) % 20, 3); });
-        const g = new THREE.Group(); g.position.set(x1 - .4, -HT0, z1 + 1.6); scene.add(g); for (const sg of [-1, 1]) { const b2 = new THREE.Mesh(new THREE.BoxGeometry(.6, 1.0, .03), mat({ map: aT })); b2.position.set(0, .48, sg * .17); b2.rotation.x = sg * .32; g.add(b2); } OB.push([x1 - .4, z1 + 1.6, .45]); }
+        const g = new THREE.Group(); g.position.set(x1 - .4, -HT0, z1 + 1.6); scene.add(g); panA(g, mat({ map: aT }), .6, 1.0, .17, .32); OB.push([x1 - .4, z1 + 1.6, .45]); }
       /* (10.148, d'après la photo au poney) la terrasse est surélevée : tout monte de 45 cm, sur un socle de béton ; deux marches à l'entrée ;
          devant, plus de plancher : le parvis d'enrobé gris ; au bord de la terrasse, les grands parasols rouges fermés ; côté piscine, le poteau
          « École du Ski Français · Les Roches Blanches », les flèches jaunes des sentiers, les grands bacs gris de fleurs */
@@ -799,8 +805,8 @@ function construireCorbier(A, L, scene) {
       L.solsPlus.push(sol(-48, -10, 1.8, 10.4, mat({ map: enrobe, roughness: .95 }), .045)); box(38, .12, .2, mat({ color: 0x7a3a22, roughness: .8 }), -29, .06, 1.8);   /* (10.150 : le long de la façade, le plancher reste ; l'enrobé commence après sa bordure) */
       const rgP = mat({ color: 0xd8202a, roughness: .7 }); for (const [px, pz] of [[x0 + .5, z1 + .7], [x0 + 3.2, z1 + .7], [porte[1] + 1.4, z1 + .7], [x1 - .5, z1 + .7], [x1 + .7, cz]]) { cyl(.035, .035, 3.0, noir, px, 1.5, pz, 6); const f = add(new THREE.ConeGeometry(.28, 2.1, 8), rgP, px, 1.9, pz); void f; OB.push([px, pz, .3]); }
       { const px = x0 - 2.2, pz = z1 + 1.6; cyl(.06, .06, 3.4, mat({ color: 0x9a9ea2, metalness: .5 }), px, 1.7, pz, 6);
-        add(new THREE.PlaneGeometry(1.3, .3), mat({ map: esfT, side: THREE.DoubleSide }), px, 3.0, pz + .05);
-        add(new THREE.PlaneGeometry(1.3, .26), mat({ map: txT(256, 48, "#2a2a2a", "#f4f2ea", "Les Roches Blanches", 26, `italic bold @ ${serif}`), side: THREE.DoubleSide }), px, 2.68, pz + .05); OB.push([px, pz, .2]); }
+        deux(add(new THREE.PlaneGeometry(1.3, .3), mat({ map: esfT, side: THREE.DoubleSide }), px, 3.0, pz + .05));
+        deux(add(new THREE.PlaneGeometry(1.3, .26), mat({ map: txT(256, 48, "#2a2a2a", "#f4f2ea", "Les Roches Blanches", 26, `italic bold @ ${serif}`), side: THREE.DoubleSide }), px, 2.68, pz + .05)); OB.push([px, pz, .2]); }
       { const px = x0 - 3.6, pz = z1 + 3.2, jaune = mat({ color: 0xe8c020, roughness: .6 }); cyl(.06, .06, 2.6, mat({ color: 0x8a6a4a }), px, 1.3, pz, 6); for (const [y, d] of [[2.3, 1], [2.05, -1], [1.8, 1]]) box(.7, .16, .04, jaune, px + d * .32, y, pz); OB.push([px, pz, .2]); }
       for (const [bx, bz] of [[x0 - 4.5, z1 + 5.2], [x1 + 2.6, z1 + 5.6]]) { box(2.0, .7, .9, mat({ color: 0x2a2e36, roughness: .7 }), bx, .35, bz); for (let k = 0; k < 12; k++) add(new THREE.IcosahedronGeometry(.14, 0), [mat({ color: 0x4a7a32 }), mat({ color: 0xf2f0e8 }), mat({ color: 0xe86a9a })][k % 3], bx - .8 + Math.random() * 1.6, .78, bz + (Math.random() - .5) * .6); OB.push([bx - .6, bz, .55], [bx + .6, bz, .55]); } } }
 
@@ -818,6 +824,14 @@ function construireCorbier(A, L, scene) {
   const nA = 0;
   for (let k = 0; k < Math.min(nA, TABLES.length * 2); k++) { const [x, z] = TABLES[k >> 1], s = k % 2 ? 1 : -1, m = gens(k * 5 + 2); m.position.set(x + s * .62, .5 - m.userData.hipY, z); m.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2; m.userData.poser("assis", 0); scene.add(m); ASSIS.push({ m, k }); }
   for (const [k, [x, z]] of BANCS.slice(0, 0).entries()) { const m = gens(k * 7 + 4); m.position.set(x + (k % 2 ? .4 : -.4), .49 - m.userData.hipY, z); m.userData.poser("assis", 0); scene.add(m); ASSIS.push({ m, k: k + 40 }); }
+
+  /* (10.167) sur le gravier, devant la tour : une partie de pétanque — quatre joueurs, les boules, le cochonnet ; l'un lance, les autres regardent */
+  const PET = []; { const bx = 116, bz = 11.5, acier = mat({ color: 0xb8bcc2, metalness: .85, roughness: .25 });
+    for (const [dx, dz] of [[2.2, .3], [2.6, -.4], [2.0, .8], [2.4, .1], [1.8, -.6]]) add(new THREE.SphereGeometry(.04, 10, 8), acier, bx + dx, .045, bz + dz);
+    add(new THREE.SphereGeometry(.018, 8, 6), mat({ color: 0xe8c020 }), bx + 2.3, .02, bz);
+    for (let k = 0; k < 4; k++) { const m = gens(k * 11 + 3), a = [Math.PI / 2, Math.PI / 2 + .5, Math.PI / 2 - .6, Math.PI / 2 + .9][k]; m.position.set(bx - [0, .9, .6, 1.4][k], 0, bz + [0, 1.1, -1.0, .2][k]); m.rotation.y = a; m.userData.poser("marche", 0); scene.add(m); PET.push({ m, k }); OB.push([m.position.x, m.position.z, .4]); }
+    const a5 = L.anim; L.anim = (tm) => { try { a5 && a5(tm); } catch (e) {} for (const { m, k } of PET) try { const P = m.userData.parts; if (!P) continue; m.userData.poser("marche", 0); if (k === 0) { const t = (tm / 1000) % 5, sw = t < 1.4 ? Math.sin(t / 1.4 * Math.PI) : 0; P.bras[1].e.rotation.x = -.3 - sw * 1.6; m.rotation.x = 0; }
+        else { const b = (tm / 1000 + k * 1.3) % 6; P.bras[0].e.rotation.x = b < 1.5 ? -.5 : 0; } } catch (e) {} }; }
 
   /* ---------- les limites : la promenade, le parking, le tour de la piscine, la terrasse du Yéti ---------- */
   const CASES = new Map(); for (const o of OB) { const [a, b, r] = o; for (let i = Math.floor((a - r) / 2); i <= Math.floor((a + r) / 2); i++) for (let j = Math.floor((b - r) / 2); j <= Math.floor((b + r) / 2); j++) { const k = i * 4096 + j; (CASES.get(k) || CASES.set(k, []).get(k)).push(o); } }
@@ -893,7 +907,15 @@ function construireCorbier(A, L, scene) {
       /* (10.156, d'après la photo) le coin fermé : le mur de bout du rez-de-chaussée, la balustrade découpée qui tourne sur le côté, l'escalier de bois qui monte à la terrasse le long du côté, sa rampe */
       /* (10.159, d'après la photo) le flanc du bâtiment, au bout : un mur plein, et sur ce mur un restaurant — sa vitrine, sa porte, son enseigne, ses tables dehors */
       { const Zm = -6.5, W2 = 9, cz = Zm + W2 / 2 + 2, mur = mat({ map: planches("#8a4a2c", "255,190,150"), roughness: .8 });
-        box(.4, 8.2, 10.1, mur, x1 + .2, 4.1, -.45); box(6, 3.8, 8.2, mur, x1 + 3, 1.9, 8.7); box(6.4, .3, 8.6, mat({ color: 0x4a2a18 }), x1 + 3, 3.95, 8.7);   /* (10.160 : l'aile basse du restaurant, devant le flanc ; sa façade regarde la promenade) */
+        box(.4, 8.2, 10.1, mur, x1 + .2, 4.1, -.45);
+        /* (10.167) sur ce mur, face à la promenade : le petit cinéma — son fronton lumineux « CINÉMA », ses portes, les affiches des films du vidéo-club */
+        { const zc3 = 1.5, W3 = 5.6, ci = tT(1024, 128, (c, w, h) => { c.fillStyle = "#1a1416"; c.fillRect(0, 0, w, h); c.strokeStyle = "#f0c040"; c.lineWidth = 6; c.strokeRect(6, 6, w - 12, h - 12); for (let x = 20; x < w; x += 28) { c.fillStyle = "#ffe8a0"; c.beginPath(); c.arc(x, 16, 5, 0, 7); c.fill(); c.beginPath(); c.arc(x, h - 16, 5, 0, 7); c.fill(); } c.fillStyle = "#e82a2a"; c.font = `bold 66px ${sans}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("★ CINÉMA ★", w / 2, h / 2 + 4); });
+          add(new THREE.PlaneGeometry(W3, .8), lum(mat({ map: ci, emissive: 0xffffff, emissiveMap: ci, emissiveIntensity: .45 }), .45, 1.6), x1 - .04, 3.55, zc3, -Math.PI / 2);
+          box(.12, 3.0, W3 + .2, mat({ color: 0x2a1418, roughness: .6 }), x1 - .02, 1.5, zc3);
+          const pt2 = mat({ map: tT(64, 128, (c, w, h) => { c.fillStyle = "#6a1a1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8a040"; c.fillRect(6, 6, w - 12, 4); c.fillRect(w - 12, 60, 4, 16); c.fillStyle = "#3a0a0e"; c.fillRect(8, 16, w - 16, h - 24); }), roughness: .5 });
+          for (const dz of [-.5, .5]) add(new THREE.PlaneGeometry(.95, 2.1), pt2, x1 - .1, 1.05, zc3 + dz, -Math.PI / 2);
+          const TL = new THREE.TextureLoader(); ["bttf", "gb", "grem", "lb", "hw", "re"].forEach((k, i) => { const t = TL.load(`images/videofutur/jaquette-${k}.webp`); t.colorSpace = THREE.SRGBColorSpace; const dz = (i < 3 ? -1.15 - i * .78 : 1.15 + (i - 3) * .78);
+            box(.06, 1.14, .74, mat({ color: 0xc8a040, metalness: .5, roughness: .3 }), x1 - .09, 1.6, zc3 + dz); add(new THREE.PlaneGeometry(.64, 1.0), lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .25 }), .25, .6), x1 - .13, 1.6, zc3 + dz, -Math.PI / 2); }); } box(6, 3.8, 8.2, mur, x1 + 3, 1.9, 8.7); box(6.4, .3, 8.6, mat({ color: 0x4a2a18 }), x1 + 3, 3.95, 8.7);   /* (10.160 : l'aile basse du restaurant, devant le flanc ; sa façade regarde la promenade) */
         const fT = tT(1024, 256, (c, w, h) => { c.fillStyle = "#4a2a18"; c.fillRect(0, 0, w, h); c.fillStyle = "#2a3a2e"; c.fillRect(0, 0, w, 56); c.fillStyle = "#f4e8c8"; c.font = `italic bold 40px ${serif}`; c.textAlign = "center"; c.fillText("Le Refuge · Restaurant · Grillades au feu de bois", w / 2, 40);
           for (let x = 20; x < w - 20; x += 165) { const porte = x > 400 && x < 600; const g = c.createLinearGradient(0, 70, 0, h); g.addColorStop(0, "#f0d8a8"); g.addColorStop(1, "#7a5a3a"); c.fillStyle = porte ? "#6a3a20" : g; c.fillRect(x, 72, 150, h - 80);
             if (porte) { c.fillStyle = "#c8dce4"; c.fillRect(x + 14, 86, 122, 90); } else { c.fillStyle = "rgba(60,30,15,.6)"; for (let k = 0; k < 3; k++) { c.fillRect(x + 12 + k * 46, 200, 30, 5); c.fillRect(x + 25 + k * 46, 205, 4, 40); } c.fillStyle = "rgba(255,230,180,.7)"; c.beginPath(); c.arc(x + 75, 100, 10, 0, 7); c.fill(); }
@@ -914,7 +936,7 @@ function construireCorbier(A, L, scene) {
       add(new THREE.PlaneGeometry(3.4, 1.3), mat({ map: pT }), x0 + 3, 1.4, 4.47);
       { const vC = mat({ color: 0x4a6a5a, roughness: .5 }); for (let k = 0; k < 3; k++) for (let q = 0; q < 6; q++) box(.46, .04, .44, vC, x0 + 6 + k * .6, .5 + q * .12, 2.6); OB.push([x0 + 6.6, 2.6, 1.2]); } }
     // le sol devant : les dalles ; au bout, les barrières de bois (deux lisses sur des poteaux)
-    L.solsPlus.push(sol(82.5, XF + 8, 2.5, 16.5, mat({ map: gravT, roughness: 1 }), .01), sol(XF, XF + 8, -1, 2.5, mat({ map: gravT, roughness: 1 }), .012), sol(82.5, XF, -1, 2.5, mat({ map: deckT, roughness: .8 }), .03)); box(XF - 82.5, .1, .2, boisC, (82.5 + XF) / 2, .05, 2.5);   // (10.154 : le plancher de la largeur des autres ; au-delà, le gravier)
+    L.solsPlus.push(sol(82.5, XF + 8, 2.5, 16.5, mat({ map: gravT, roughness: 1 }), .016), sol(XF, XF + 8, -1, 2.5, mat({ map: gravT, roughness: 1 }), .012), sol(82.5, XF, -1, 2.5, mat({ map: deckT, roughness: .8 }), .03)); box(XF - 82.5, .1, .2, boisC, (82.5 + XF) / 2, .05, 2.5);   // (10.154 : le plancher de la largeur des autres ; au-delà, le gravier)
     const nBar = scene.children.length, oBar = OB.length, solsB = new Set(L.solsPlus);
     const rond = mat({ color: 0x8a6a48, roughness: .85 });
     const barriere = (xa, za, xb, zb) => { const L2 = Math.hypot(xb - xa, zb - za), n = Math.max(1, Math.round(L2 / 2.2)), a = Math.atan2(zb - za, xb - xa);
@@ -1104,9 +1126,9 @@ function construireCorbier(A, L, scene) {
     // le mobilier
     const ardoise = (x, z, ry, lignes) => { const t = tex(128, 192, (c, w, h) => { c.fillStyle = "#7a5432"; c.fillRect(0, 0, w, h); c.fillStyle = "#1c211e"; c.fillRect(8, 8, w - 16, h - 16); c.fillStyle = "#f4f4ee"; c.font = `bold 16px ${serif}`; c.textAlign = "center"; c.fillText(lignes[0], w / 2, 32); c.font = `12px ${sans}`; lignes.slice(1).forEach((l, i) => c.fillText(l, w / 2, 56 + i * 18)); });
       const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const m = mat({ map: t, roughness: .9 });
-      for (const sg of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(.62, 1.0, .03), m); b.position.set(0, .48, sg * .17); b.rotation.x = sg * .32; g.add(b); } OBS.push([x, z, .45]); };
+      panA(g, m, .62, 1.0, .17, .32); OBS.push([x, z, .45]); };
     const chevalet = (x, z, ry) => { const t = tex(128, 192, (c, w, h) => { c.fillStyle = "#3a2a1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ec"; c.fillRect(10, 10, w - 20, h - 20); c.fillStyle = "#2a2a2a"; for (let k = 0; k < 9; k++) c.fillRect(18, 22 + k * 16, w - 36 - (k * 13) % 30, 4); });
-      const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const m = mat({ map: t, roughness: .8 }); for (const sg of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(.7, 1.15, .03), m); b.position.set(0, .55, sg * .2); b.rotation.x = sg * .36; g.add(b); } OBS.push([x, z, .5]); };
+      const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const m = mat({ map: t, roughness: .8 }); panA(g, m, .7, 1.15, .2, .36); OBS.push([x, z, .5]); };
     const pilier = (x, z, m = blancP, c = .42) => { box(c, 3.3, c, m, x, 1.65, z); OBS.push([x, z, c * .8]); };
     const poubelle = (x, z) => { cyl(.36, .32, .95, blancP, x, .48, z, 16); cyl(.38, .38, .08, mat({ color: 0xf0d020, roughness: .5 }), x, 1.0, z, 16); OBS.push([x, z, .5]); };
     const CARTES = tex(128, 512, (c, w, h) => { c.fillStyle = "#2a2c30"; c.fillRect(0, 0, w, h); for (let y = 4; y < h; y += 32) for (let x = 4; x < w; x += 31) { const g = c.createLinearGradient(0, y, 0, y + 26); g.addColorStop(0, ["#5a9ad8", "#7ab0e0", "#f0c070"][(x + y) % 3]); g.addColorStop(.55, ["#e8eef4", "#fff", "#d88a4a"][(x * 3 + y) % 3]); g.addColorStop(1, ["#3a7a3a", "#5a8a4a", "#7a5a3a"][(x + y * 7) % 3]); c.fillStyle = g; c.fillRect(x, y, 26, 26); c.fillStyle = "rgba(200,205,210,.8)"; c.fillRect(x - 2, y + 22, 30, 2); } });
@@ -1189,12 +1211,12 @@ function construireCorbier(A, L, scene) {
       const gv = panneau("Galerie BASSE  ↑", "#2a7a4a", "#ffffff", 512, 80, `bold 36px ${sans}`); box(.06, .3, 1.6, lumi(gv, .5), 50, 2.85, -9); for (const sz of [-.6, .6]) box(.02, .3, .02, noirP, 50, 3.1, -9 + sz); }
     /* (10.143) côté galerie, les mêmes boutiques que sur la promenade : on y entre devant, on en ressort derrière */
     { const PZ = [["H", 4, 16], ["G", 16, 30], ["F", 30, 40], ["E2", 40, 52], ["E", 52, 58], ["D2", 58, 66]];   /* (10.144) côté galerie, les vitrines des boutiques de la promenade : chacune traverse */
-      for (const l of LIGNES) { if (!l.g) continue; for (const [n, g0, g1] of PZ) { const u0 = Math.max(l.x0 + .12, g0 + .1), u1 = Math.min(l.x1 - .12, g1 - .1); if (u1 - u0 >= 1.0) boutique(Pn(n), "zmax", u0, u1, { ...l.g, porte: "milieu", traversant: true }); } } }
+      for (const l of LIGNES) { if (!l.g || l.id === "sherpa") continue; for (const [n, g0, g1] of PZ) { const u0 = Math.max(l.x0 + .12, g0 + .1), u1 = Math.min(l.x1 - .12, g1 - .1); if (u1 - u0 >= 1.0) boutique(Pn(n), "zmax", u0, u1, { ...l.g, porte: "milieu", traversant: true }); } } }
     // F : le couloir de la fresque (à gauche), le tableau ; à droite les portes de pin ; les chevalets à l'entrée
     { const F_ = Pn("F"), R = repere(F_, "zmin"), fr = tex(1024, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#b8ccdc"); g.addColorStop(1, "#e8eef2"); c.fillStyle = g; c.fillRect(0, 0, w, h);
         for (const [x0, hh, col] of [[0, 120, "#8a949e"], [180, 160, "#9aa4ae"], [420, 190, "#7a848e"], [700, 150, "#8a949e"]]) { c.fillStyle = col; c.beginPath(); c.moveTo(x0 - 80, h); c.lineTo(x0 + 120, h - hh); c.lineTo(x0 + 360, h); c.fill(); c.fillStyle = "#f6f8fa"; c.beginPath(); c.moveTo(x0 + 70, h - hh + 40); c.lineTo(x0 + 120, h - hh); c.lineTo(x0 + 175, h - hh + 45); c.fill(); }
         c.fillStyle = "#3a4a3a"; for (let i = 0; i < 90; i++) { const x = al() * w, y = h - 20 - al() * 40; c.beginPath(); c.moveTo(x, y - 18); c.lineTo(x - 6, y); c.lineTo(x + 6, y); c.fill(); } });
-      R.plan(6.6, 2.0, lumi(fr, .3), 36.4, 1.55, .03); R.boite(6.8, 2.2, .04, mat({ color: 0xf8f8f6 }), 36.4, 1.55, .01);
+      R.plan(6.6, 2.0, lumi(fr, .3), 36.4, 1.55, .07); R.boite(6.8, 2.2, .04, mat({ color: 0xf8f8f6 }), 36.4, 1.55, .025);
       const cadreT = tex(128, 96, (c, w, h) => { c.fillStyle = "#5a3a1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8d4dc"; c.fillRect(10, 10, w - 20, h - 20); c.fillStyle = "#6a7a5a"; c.fillRect(10, 50, w - 20, 36); }); R.plan(1.1, .8, lumi(cadreT, .2), 31.6, 1.7, .03);
       const Rz = repere(F_, "zmax"), pB = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#a8743e"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = "rgba(90,50,20,.25)"; c.fillRect(x, 0, 1, h); } c.fillStyle = "#c8ccd0"; c.fillRect(w - 14, 62, 8, 4); }), roughness: .7 });
       void Rz; void pB;
@@ -1209,11 +1231,13 @@ function construireCorbier(A, L, scene) {
        les étagères de pain au mur ; à droite, le salon de thé (tables, chaises) ; au fond, la porte qui donne dehors */
     { const H_ = Pn("H"), BO = Pn("BO"); void H_; const X = 4, z0 = -7.4, z1 = -3.2, cadre = mat({ color: 0x5a3418, roughness: .6 }), verre = mat({ color: 0xdcecf2, roughness: .04, metalness: .3, transparent: true, opacity: .12, depthWrite: false });
       // la façade vitrée, ses montants, son bandeau d'enseigne ; la porte dans l'angle gauche
-      add(new THREE.PlaneGeometry(z1 - z0 - 1.2, 2.3), verre, X, 1.25, (z0 + 1.2 + z1) / 2, Math.PI / 2); box(.1, .3, z1 - z0 - 1.2, cadre, X, .15, (z0 + 1.2 + z1) / 2);
-      for (let z = z0 + 1.2; z <= z1 + .01; z += (z1 - z0 - 1.2) / 3) box(.1, 2.5, .1, cadre, X, 1.25, z);
-      box(.12, .1, z1 - z0, cadre, X, 2.5, (z0 + z1) / 2); box(.1, 2.5, .1, cadre, X, 1.25, z0); box(.1, 2.5, .1, cadre, X, 1.25, z0 + 1.2);
-      porteBat(X, 1.2, z0 + .05, 0, 1, 1, 1.1, 2.3, mat({ map: tT(64, 128, (c, w, h) => { c.fillStyle = "#5a3418"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8dce4"; c.fillRect(8, 8, w - 16, h - 30); c.fillStyle = "#f4f2ea"; c.fillRect(12, 50, w - 24, 16); }), roughness: .5 }), X, z0 + .6);
-      for (let z = z0 + 1.3; z < z1; z += .4) OBS.push([X - .05, z, .25]);
+      /* (10.166 : la porte à droite ; à gauche, derrière la vitre, la vitrine des gâteaux) */
+      add(new THREE.PlaneGeometry(z1 - z0 - 1.2, 2.3), verre, X, 1.25, (z0 + z1 - 1.2) / 2, Math.PI / 2); box(.1, .3, z1 - z0 - 1.2, cadre, X, .15, (z0 + z1 - 1.2) / 2);
+      for (let z = z0; z <= z1 - 1.2 + .01; z += (z1 - z0 - 1.2) / 3) box(.1, 2.5, .1, cadre, X, 1.25, z);
+      box(.12, .1, z1 - z0, cadre, X, 2.5, (z0 + z1) / 2); box(.1, 2.5, .1, cadre, X, 1.25, z1);
+      { const vg = mat({ color: 0xdcecf2, roughness: .05, transparent: true, opacity: .22, depthWrite: false }); box(.6, .85, 2.6, mat({ color: 0x5a3418, roughness: .6 }), X - .55, .43, z0 + 1.5); box(.52, .55, 2.5, lumi(tex(512, 64, MARCH.gateau), .55), X - .55, 1.13, z0 + 1.5); box(.56, .04, 2.6, vg, X - .55, 1.42, z0 + 1.5); for (let z = z0 + .4; z < z0 + 2.8; z += .6) OBS.push([X - .55, z, .4]); }
+      porteBat(X, 1.2, z1 - .05, 0, -1, -1, 1.1, 2.3, mat({ map: tT(64, 128, (c, w, h) => { c.fillStyle = "#5a3418"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8dce4"; c.fillRect(8, 8, w - 16, h - 30); c.fillStyle = "#f4f2ea"; c.fillRect(12, 50, w - 24, 16); }), roughness: .5 }), X, z1 - .6);
+      for (let z = z0; z < z1 - 1.25; z += .4) OBS.push([X - .05, z, .25]);
       { const pm = lumi(panneau("La Panetière · Boulangerie · Pâtisserie", "#5a2a14", "#f4e2c0", 1024, 80, `italic bold 44px ${serif}`), .5); box(.06, .38, z1 - z0 - .2, pm, X + .22, 2.66, (z0 + z1) / 2); }
       // dedans : la grande vitrine réfrigérée des gâteaux, le comptoir, la caisse ; au mur, les étagères de pain
       const vit = mat({ color: 0xdcecf2, roughness: .05, transparent: true, opacity: .22, depthWrite: false });
@@ -1225,12 +1249,12 @@ function construireCorbier(A, L, scene) {
       for (const [tx, tz] of [[-.4, z1 - .7], [-2.4, z1 - .7], [-.4, z1 - 1.8], [-2.4, z1 - 1.8]]) { cyl(.32, .32, .04, mat({ color: 0xf2f0ea, roughness: .4 }), tx, .74, tz, 14); cyl(.03, .04, .72, mat({ color: 0x2a2a2c }), tx, .37, tz, 6);
         for (const sx of [-.48, .48]) { box(.36, .04, .36, mat({ color: 0x6a3a1e }), tx + sx, .46, tz); box(.04, .42, .34, mat({ color: 0x6a3a1e }), tx + sx * 1.38, .7, tz); } OBS.push([tx, tz, .65]); }
       // au fond, la porte qui donne dehors (sur la promenade)
-      { const Rb = repere(BO, "xmin"); porteBlanche(Rb, z1 - 1.0, 1.0); Rb.plan(.6, .19, lumi(panneau("🏃 SORTIE", "#1a8a3a", "#ffffff", 256, 80, `bold 36px ${sans}`), .9), z1 - 1.0, 2.35, .03); }
+      void BO;   // (10.165 : au fond, un mur plein — plus de porte)
       for (const x of [-3, 1]) box(1.2, .05, .45, neon, x, 2.87, (z0 + z1) / 2);
       boutique(H_, "zmin", 8.6, 15.6, { nom: "LA BOUTIQUE DU SKIEUR", fond: "#f2f2ee", coul: "#2a3a6a", motif: "chaussures", porte: "gauche", cadre: 0x8a8e92 });
     }
     // H2 : on longe la vitrine (à droite), la porte blanche à barre anti-panique (à gauche) ; en face, la lumière des grandes fenêtres
-    { const H2 = Pn("H2"), Rp = repere(H2, "xmin"); porteBlanche(Rp, -12.6, 1.1); Rp.boite(.95, .05, .06, mat({ color: 0xd8dcde, metalness: .6, roughness: .3 }), -12.6, 1.05, .12); Rp.boite(.06, .14, .1, mat({ color: 0x3a3c40 }), -13.1, 1.05, .1);   /* (10.136 : la porte de service à barre anti-panique, sur le mur blanc) */
+    { const H2 = Pn("H2"), Rp = repere(H2, "xmin"); void Rp;   /* (10.136 : la porte de service à barre anti-panique, sur le mur blanc) */
       Rp.boite(.9, .7, .04, mat({ color: 0x8a6a4a }), -14.6, 2.1, .02); Rp.plan(.8, .6, lumi(tex(64, 48, (c, w, h) => { c.fillStyle = "#e8eef2"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8a070"; c.fillRect(20, 20, 24, 20); }), .2), -14.6, 2.1, .05); }
     // I : le couloir des grandes fenêtres (à gauche) et leur balustrade de pin ; le pilier rouge ; le renfoncement ; au bout, l'affiche Intersport sur les lambris
     { const I_ = Pn("I"); reserve("I", "zmin", -14, 8); const R = repere(I_, "zmin"), pin2 = pinM(8);
