@@ -654,7 +654,7 @@ function construireCorbier(A, L, scene) {
     const pot = (x, z, nu) => { cyl(.7, .5, .75, potR, x, .4, z, 16); cyl(.62, .62, .04, terreM, x, .76, z, 14); cyl(.04, .05, 1.6, mat({ color: 0xd8d0c0 }), x, 1.5, z, 5);
       if (nu) for (let k = 0; k < 7; k++) { const br = cyl(.012, .02, 1.0, mat({ color: 0x8a7a6a }), x + Math.cos(k * 2.3) * .22, 2.65, z + Math.sin(k * 2.3) * .22, 4); br.rotation.set(Math.sin(k * 2.3) * .5, 0, -Math.cos(k * 2.3) * .5); }
       else for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(.5 - k * .08, 1), [vertF, mat({ color: 0x4a7a32 })][k % 2], x + (al() - .5) * .3, 2.0 + k * .32, z + (al() - .5) * .3); OB.push([x, z, .9]); };
-    pot(-30, 5.4); pot(LG("galA").x0 - 1.0, 3.6); pot(LG("galB").x0 - 1.1, 3.4); pot(LG("patis").x0 + 2.6, 3.6); pot(LG("galD").x1 + .8, 3.4, true);
+    pot(-26.6, 6.6); pot(LG("galA").x0 - 1.0, 3.6); pot(LG("galB").x0 - 1.1, 3.4); pot(LG("patis").x0 + 2.6, 3.6); pot(LG("galD").x1 + .8, 3.4, true);
     const bancF = (x) => { const z = zfAt(x); for (let k = 0; k < 3; k++) box(1.6, .05, .12, boisC, x, .46, z + .85 + k * .14); for (const sx of [-.7, .7]) box(.08, .46, .4, mat({ color: 0x3a2a1a }), x + sx, .23, z + 1); box(1.6, .3, .05, boisC, x, .72, z + .7); OB.push([x, z + 1, .9]); };
     for (const x of [LG("sherpa").x1 - 1.6, LG("skiloc").x0 + 1.7, LG("pharma").x0 + 1.4, LG("pharma").x0 + 3.9, LG("patis").x0 + 1.1]) bancF(x);
     for (const x of [LG("skiset").x0 + .8, LG("interLR").x0 + .2, LG("jack").x0 + .4]) { const z = 6.5; box(1.8, .4, .5, boisC, x, .2, z); for (let k = 0; k < 14; k++) add(new THREE.IcosahedronGeometry(.12, 0), k % 4 === 3 ? vertF : fleurR[k % 3], x - .8 + al() * 1.6, .48 + al() * .2, z + (al() - .5) * .35); OB.push([x, z, 1]); }
@@ -676,8 +676,43 @@ function construireCorbier(A, L, scene) {
     // le drapeau rouge, devant la galerie de Skiset ; les poubelles orange sur leur poteau
     { const gB = LG("galB"), fx = gB.x0 + .35, fz = zfAt(fx), p2 = cyl(.025, .025, 1.6, fer, fx, 2.3, fz + .55, 5); p2.rotation.x = .9; add(new THREE.PlaneGeometry(.45, .75), mat({ color: 0xd8202a, roughness: .7, side: THREE.DoubleSide }), fx, 2.4, fz + .95, Math.PI / 2); }
     for (const x of [LG("galA").x1 + .3, LG("interFN").x1 - .4, LG("galE").x0 + .3]) { const z = zfAt(x) + .35; cyl(.04, .04, .9, fer, x, .45, z, 5); cyl(.2, .18, .5, mat({ color: 0xd8602a, roughness: .5 }), x, .75, z + .12, 10); OB.push([x, z, .35]); }
-    // la grande terrasse de bois des Roches Blanches, qui avance sur le gravier, sa bordure brun-rouge
-    { const x0 = -43.3, x1 = -28.5, bord = mat({ color: 0x7a3a22, roughness: .8 }); L.solsPlus.push(sol(x0, x1, 7, 9.8, mat({ map: deckT, roughness: .8 }), .05)); box(x1 - x0 + .2, .14, .2, bord, (x0 + x1) / 2, .07, 9.8); for (const x of [x0, x1]) box(.2, .14, 2.8, bord, x, .07, 8.4); } }
+    /* (10.146, d'après les photos de l'été) la terrasse des Roches Blanches : le platelage de bois, fermé de grandes vitres sur poteaux noirs, les bâches rouges
+       « LES ROCHES BLANCHES » en bas des vitres, les grands parasols carrés rouges Kronenbourg, la guirlande de guinguette, les canapés gris et leurs tables basses,
+       les tables rouges et leurs chaises ; l'ardoise devant l'entrée */
+    { const x0 = -43.3, x1 = -28.5, z0 = -2.5, z1 = 6.2, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, porte = [-35.4, -32.6];
+      const noir = mat({ color: 0x1c1e20, roughness: .5, metalness: .4 }), verre = mat({ color: 0xdcecf2, roughness: .04, metalness: .3, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide }), rouge = mat({ color: 0xd8202a, roughness: .6, side: THREE.DoubleSide });
+      L.solsPlus.push(sol(x0, x1, z0, z1, mat({ map: deckT, roughness: .8 }), .06));
+      const banT = tT(1024, 96, (c, w, h) => { c.fillStyle = "#d8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `bold 40px ${sans}`; c.textAlign = "center"; c.textBaseline = "middle"; for (let k = 0; k < 3; k++) { c.fillText("LES ROCHES BLANCHES", w * (k + .5) / 3, h / 2 + 2); } });
+      const paroi = (xa, za, xb, zb, bache) => { const L2 = Math.hypot(xb - xa, zb - za), a2 = Math.atan2(zb - za, xb - xa), n = Math.max(1, Math.round(L2 / 2)), mx = (xa + xb) / 2, mz = (za + zb) / 2;
+        for (let k = 0; k <= n; k++) { const x = xa + (xb - xa) * k / n, z = za + (zb - za) * k / n; box(.08, 2.3, .08, noir, x, 1.15, z); }
+        box(L2, .06, .08, noir, mx, 2.3, mz, -a2); box(L2, .06, .08, noir, mx, 1.0, mz, -a2); add(new THREE.PlaneGeometry(L2, 2.2), verre, mx, 1.15, mz, -a2);
+        if (bache) { const t = repT(banT, Math.max(1, Math.round(L2 / 5))); add(new THREE.PlaneGeometry(L2, .62), mat({ map: t, side: THREE.DoubleSide, roughness: .7 }), mx, .55, mz, -a2); }
+        for (let k = 0; k <= Math.ceil(L2 / .5); k++) OB.push([xa + (xb - xa) * Math.min(1, k * .5 / L2), za + (zb - za) * Math.min(1, k * .5 / L2), .3]); };
+      paroi(x0, z1, porte[0], z1, true); paroi(porte[1], z1, x1, z1, true); paroi(x0, z0 + .3, x0, z1, true); paroi(x1, z0 + .3, x1, z1, true);
+      // les parasols carrés rouges, sur leur mât, leurs baleines ; « Kronenbourg » sur le lambrequin
+      const kroT = tT(512, 64, (c, w, h) => { c.fillStyle = "#c81a22"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 34px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("Kronenbourg", w / 2, h / 2 + 2); });
+      for (const [px, pz] of [[x0 + 2.6, z0 + 2.4], [cx, z0 + 2.4], [x1 - 2.6, z0 + 2.4], [x0 + 2.6, z1 - 2.3], [cx + .6, z1 - 2.3], [x1 - 2.6, z1 - 2.3]]) {
+        cyl(.06, .06, 3.1, noir, px, 1.55, pz, 8); const toit = add(new THREE.ConeGeometry(2.4, .5, 4, 1, true), rouge, px, 3.25, pz); toit.rotation.y = Math.PI / 4;
+        for (const [w2, d2, ox, oz] of [[3.4, .02, 0, 1.7], [3.4, .02, 0, -1.7], [.02, 3.4, 1.7, 0], [.02, 3.4, -1.7, 0]]) { const lb = add(new THREE.PlaneGeometry(w2 > 1 ? 3.4 : 3.4, .22), mat({ map: kroT, side: THREE.DoubleSide }), px + ox, 2.9, pz + oz, w2 > 1 ? 0 : Math.PI / 2); void d2; void lb; }
+        OB.push([px, pz, .25]); }
+      // la guirlande de guinguette, d'un poteau à l'autre
+      const ampM = lum(mat({ color: 0xfff2c0, emissive: 0xffe090, emissiveIntensity: .5 }), .5, 2.2), douille = mat({ color: 0x2a6a5a });
+      for (const zl of [z0 + .9, cz, z1 - .3]) { box(x1 - x0, .015, .015, noir, cx, 2.55, zl); for (let x = x0 + .3; x < x1; x += .55) { add(new THREE.SphereGeometry(.06, 8, 6), ampM, x, 2.45, zl); cyl(.025, .03, .07, douille, x, 2.52, zl, 6); } }
+      // les canapés gris et leurs tables basses, contre la vitre de devant et le long du côté
+      const tissu = mat({ color: 0xb8b2aa, roughness: .95 }), pied = mat({ color: 0x2a2a2c, metalness: .4 });
+      const canape = (x, z, ry, n2) => { const g = new THREE.Group(); g.position.set(x, .06, z); g.rotation.y = ry; scene.add(g);
+        for (let k = 0; k < n2; k++) { const u = (k - (n2 - 1) / 2) * .78; for (const [w2, h2, d2, y2, z2] of [[.74, .2, .7, .32, 0], [.74, .44, .18, .62, -.3]]) { const m2 = new THREE.Mesh(new THREE.BoxGeometry(w2, h2, d2), tissu); m2.position.set(u, y2, z2); g.add(m2); } }
+        const b2 = new THREE.Mesh(new THREE.BoxGeometry(n2 * .78, .2, .72), pied); b2.position.y = .12; g.add(b2); for (let k = 0; k < n2; k++) OB.push([x + Math.cos(ry) * (k - (n2 - 1) / 2) * .78, z - Math.sin(ry) * (k - (n2 - 1) / 2) * .78, .45]); };
+      const basse = (x, z) => { box(.7, .05, .7, mat({ color: 0x2c2e30, roughness: .6 }), x, .44, z); for (const [dx, dz] of [[-.3, -.3], [.3, -.3], [-.3, .3], [.3, .3]]) box(.04, .4, .04, pied, x + dx, .24, z + dz); OB.push([x, z, .45]); };
+      canape(x0 + 2.4, z1 - .55, Math.PI, 5); canape(porte[1] + 2.4, z1 - .55, Math.PI, 4); canape(x1 - 2.2, z1 - .55, Math.PI, 3); canape(x0 + .55, cz - .5, Math.PI / 2, 5);
+      for (const x of [x0 + 1.7, x0 + 3.1, porte[1] + 1.8, porte[1] + 3.2, x1 - 2.2]) basse(x, z1 - 1.5); basse(x0 + 1.5, cz - 1.0); basse(x0 + 1.5, cz + .2);
+      // les tables rouges et leurs chaises noires tressées, au fond
+      const tR = mat({ color: 0xd8304a, roughness: .5 }), ch = mat({ color: 0x2a2a2c, roughness: .8 });
+      for (let x = x0 + 3.6; x < x1 - .8; x += 1.9) for (const z of [z0 + 1.2, z0 + 2.9]) { box(.8, .05, .8, tR, x, .76, z); box(.06, .72, .06, pied, x, .4, z); for (const sg of [-1, 1]) { box(.45, .05, .45, ch, x, .48, z + sg * .62); box(.45, .45, .05, ch, x, .72, z + sg * .84); } OB.push([x, z, .7]); }
+      // l'ardoise « Brasserie · Pizzas » à l'entrée, les jardinières carrées sombres
+      { const aT = tT(96, 160, (c, w, h) => { c.fillStyle = "#1a1c1e"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ea"; c.font = `bold 13px ${sans}`; c.textAlign = "center"; c.fillText("BRASSERIE", w / 2, 24); c.fillText("PIZZAS", w / 2, 42); for (let k = 0; k < 7; k++) c.fillRect(14, 58 + k * 13, 50 + (k * 11) % 20, 3); });
+        const g = new THREE.Group(); g.position.set(-33.4, 0, z1 + 1.1); scene.add(g); for (const sg of [-1, 1]) { const b2 = new THREE.Mesh(new THREE.BoxGeometry(.6, 1.0, .03), mat({ map: aT })); b2.position.set(0, .48, sg * .17); b2.rotation.x = sg * .32; g.add(b2); } OB.push([-33.4, z1 + 1.1, .45]); }
+      for (const x of [x0 - .8, x1 + .8]) { box(.8, .6, .8, mat({ color: 0x2a2e34, roughness: .7 }), x, .3, z1 - .4); for (let k = 0; k < 8; k++) add(new THREE.IcosahedronGeometry(.14, 0), [mat({ color: 0x3a6a2a }), mat({ color: 0xe86a9a })][k % 2], x + (al() - .5) * .5, .7, z1 - .4 + (al() - .5) * .5); OB.push([x, z1 - .4, .6]); } } }
 
   /* ---------- l'arrêt du car (pour revenir à Paris) ---------- */
   L.arretCar = { x: 26, z: 13.8 };
