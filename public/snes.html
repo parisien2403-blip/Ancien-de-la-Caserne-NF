@@ -54,13 +54,20 @@
   fi.onchange = async () => { const f = fi.files && fi.files[0]; if (!f) return; if (f.size > 16 * 1024 * 1024) { msg.textContent = "Ce fichier est trop gros pour une cartouche Super Nintendo."; return; }
     const rom = { nom: f.name, data: await f.arrayBuffer() }; await ecrire(rom); lancer(rom); };
   // (10.129) d'abord, le jeu de la Super Nintendo du bar (la borne de la caserne) : on y joue directement, sans chercher de fichier
-  const MOTIF = { sf2: /street\s*fighter/i, mk2: /mortal\s*kombat/i, sunset: /sunset/i, dkc: /donkey\s*kong/i }[jeu];
+  const MOTIF = { sf2: /street|fighter|sf\s*(2|ii)/i, mk2: /mortal|kombat|\bmk\s*(2|ii)?\b/i, sunset: /sunset|riders/i, dkc: /donkey|kong|dkc/i }[jeu];
+  const norm = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_.\-]+/g, " ");
+  const jouerJeu = (j) => { const a = document.getElementById("accueil"); if (a) a.remove(); const f = document.createElement("iframe"); f.allow = "gamepad; autoplay; fullscreen"; f.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0";
+    f.src = `jeu.html?plein=1&id=${j.id}&console=${encodeURIComponent(j.console || "snes")}&titre=${encodeURIComponent(j.titre)}&nom=${encodeURIComponent(j.nom_fichier || "jeu.bin")}`; document.getElementById("jeu").appendChild(f); };
+  let TOUS = [];
   const borneBar = async () => { let moi = null; try { moi = JSON.parse(localStorage.getItem("caserne-moi")); } catch (e) {} if (!moi || !moi.token) return false;
-    const r = await fetch("/api/jeux", { headers: { Authorization: "Bearer " + moi.token } }); if (!r.ok) return false; const l = await r.json(); const L2 = (Array.isArray(l) ? l : l.jeux || []).filter(j => (j.console || "snes") === "snes" && MOTIF.test(j.titre || ""));
-    const j = L2.sort((a, b) => (/country|ii|2/i.test(b.titre) ? 1 : 0) - (/country|ii|2/i.test(a.titre) ? 1 : 0))[0]; if (!j) return false;
-    document.getElementById("accueil").remove(); const f = document.createElement("iframe"); f.allow = "gamepad; autoplay; fullscreen"; f.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0";
-    f.src = `jeu.html?plein=1&id=${j.id}&console=${encodeURIComponent(j.console || "snes")}&titre=${encodeURIComponent(j.titre)}&nom=${encodeURIComponent(j.nom_fichier || "jeu.bin")}`; document.getElementById("jeu").appendChild(f); return true; };
+    const r = await fetch("/api/jeux", { headers: { Authorization: "Bearer " + moi.token } }); if (!r.ok) return false; const l = await r.json(); TOUS = Array.isArray(l) ? l : l.jeux || [];
+    const L2 = TOUS.filter(j => MOTIF.test(norm(j.titre) + " " + norm(j.nom_fichier)));   /* (10.132 : le titre ou le nom du fichier ; la Super Nintendo d'abord) */
+    const j = L2.sort((a, b) => ((b.console || "snes") === "snes") - ((a.console || "snes") === "snes") || (/country|ii|2/i.test(b.titre) ? 1 : 0) - (/country|ii|2/i.test(a.titre) ? 1 : 0))[0]; if (!j) return false;
+    jouerJeu(j); return true; };
   borneBar().catch(() => false).then(ok => { if (ok) return;
+  if (TOUS.length) { const box = document.createElement("div"); box.style.cssText = "display:flex;flex-direction:column;gap:8px;max-height:40vh;overflow:auto;width:min(92vw,420px)"; box.insertAdjacentHTML("afterbegin", "<p style='margin:6px 0 0'>…ou un jeu de la borne du bar :</p>");
+    for (const j of TOUS) { const b = document.createElement("button"); b.className = "btn"; b.style.cssText = "background:rgba(255,255,255,.12);color:#fff;font-size:15px;padding:10px 14px;text-align:left"; b.textContent = "🎮 " + j.titre; b.onclick = () => jouerJeu(j); box.appendChild(b); }
+    document.getElementById("accueil").appendChild(box); }   // (le jeu n'a pas été trouvé : la liste des jeux du bar, pour choisir)
   lire().then(rom => { if (!rom) return; const b = document.getElementById("choisir"); b.textContent = "▶️ Jouer (" + rom.nom + ")"; b.onclick = () => lancer(rom); document.getElementById("oublier").style.display = ""; }); });
   addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("accueil")) quitter(); });
 })();

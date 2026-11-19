@@ -1544,7 +1544,7 @@ function construireCorbier(A, L, scene) {
     L.mascPos = (t) => { let d = ((t * .9) % tot + tot) % tot, i = 0; while (d > Lg[i]) { d -= Lg[i]; i++; } const A2 = W2[i], B2 = W2[(i + 1) % W2.length], u = d / Lg[i];
       return { x: -(A2[0] + (B2[0] - A2[0]) * u), z: A2[1] + (B2[1] - A2[1]) * u, ry: Math.atan2(-(B2[0] - A2[0]), B2[1] - A2[1]) }; };
     L.mascotte = G; const a7 = L.anim; L.anim = (tm) => { try { a7 && a7(tm); } catch (e) {} const v = !L.nuit; if (G.visible !== v) G.visible = v; if (!v) return;
-      const t = (tm || performance.now()) / 1000, q = L.mascPos(t), x = q.x, z = q.z; G.position.set(x, L.hauteur ? L.hauteur(x, z) : 0, z); G.rotation.y = q.ry;
+      const t = (tm || performance.now()) / 1000, q = L.mascPos(t), x = q.x, z = L.evite ? L.evite(G.userData, q.x, q.z, Math.sin(q.ry)) : q.z; G.position.set(x, L.hauteur ? L.hauteur(x, z) : 0, z); G.rotation.y = q.ry;
       const ph = t * 5.2; jambes[0].rotation.x = Math.sin(ph) * .45; jambes[1].rotation.x = -Math.sin(ph) * .45; bras[0].rotation.x = -Math.sin(ph) * .35;
       const salut = Math.sin(t * .4) > .55; bras[1].rotation.x = salut ? 0 : Math.sin(ph) * .35; bras[1].rotation.z = salut ? 2.5 + Math.sin(t * 7) * .3 : 0; T.rotation.y = Math.sin(t * .7) * .25; }; }
   /* (10.127) la station qui vit : le jour, les joueurs de ping-pong et de badminton, les enfants du manège et ceux qui suivent la mascotte, les nageurs de la piscine,
@@ -1552,6 +1552,12 @@ function construireCorbier(A, L, scene) {
   { const PEU = PETIT || MOBILE || GPU_MODESTE, JOUR = [], ANIM = [], ad = (m) => { m.userData.anime = true; scene.add(m); return m; };
     const enfant = (k) => personne3D({ enfant: true, taille: 1.05 + (k % 3) * .08, peau: PE[k % 6], ch: ["#5a3a22", "#e2c27a", "#141010", "#a5532a"][k % 4], haut: HA[(k * 3) % 8], bas: ["#26324e", "#d83a5a", "#3a3028", "#2a5ac8"][k % 4], chaussures: ["#f4f4f2", "#d83a3a", "#1a1a1a"][k % 3], coif: k % 2 ? "queue" : "court", pantalon: true });
     const H = (x, z) => L.hauteur ? L.hauteur(x, z) : 0, P = m => m.userData.parts;
+    /* (10.132) l'évitement : chacun garde sa ligne, mais s'écarte en douceur de tout ce qui barre le passage (pots, bancs, tables, lampadaires, murs) */
+    const OFF = [0, .5, -.5, 1, -1, 1.5, -1.5, 2.1, -2.1, 2.8, -2.8], evite = (st, x, z0, dx = 0) => { const ok = (z) => !L.limites || (L.limites(x, z) && L.limites(x + dx * .9, z));
+      let b = st.o || 0; if (!ok(z0 + b)) { b = st.o || 0; for (const o of OFF) if (ok(z0 + o)) { b = o; break; } } else if (Math.abs(b) > .01) { for (const o of OFF) { if (Math.abs(o) >= Math.abs(b)) break; if (ok(z0 + o) && ok(z0 + (o + b) / 2)) { b = o; break; } } }
+      st.c = (st.c ?? b) + (b - (st.c ?? b)) * .12; st.o = b; return z0 + st.c; };
+    L.evite = evite;
+    const eviteX = (st, x0, z, dz = 0) => { const ok = (x) => !L.limites || (L.limites(x, z) && L.limites(x, z + dz * .9)); let b = st.o || 0; if (!ok(x0 + b)) for (const o of OFF) if (ok(x0 + o)) { b = o; break; } st.c = (st.c ?? b) + (b - (st.c ?? b)) * .12; st.o = b; return x0 + st.c; };
     const raquette = (m, i = 1) => { const r = new THREE.Group(), c = P(m).bras[i].c; r.position.y = -m.userData.hipY * .38; c.add(r); const mm = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .25, 5), mat({ color: 0x2a2a2a })); mm.position.y = -.12; r.add(mm); const t = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .015, 12), mat({ color: 0xc8202a })); t.position.y = -.3; t.rotation.x = Math.PI / 2; r.add(t); };
     // le ping-pong : deux joueurs par table, la balle qui va et vient
     { const tabs = [LG("skiset").x0 - .5, LG("vet").x1 + 2.2, LG("pharma").x0 + 4.1, LG("patis").x0 + 6.3].slice(0, PEU ? 2 : 4);
@@ -1569,7 +1575,7 @@ function construireCorbier(A, L, scene) {
     if (L.manege) L.manege.children.filter(b => b.isGroup).slice(0, PEU ? 3 : 5).forEach((b, k) => { const m = enfant(k + 1); m.position.set(0, .2 - m.userData.hipY * .55, -.08); m.scale.setScalar(.8); m.userData.poser("assis", 0); b.add(m); m.userData.anime = true; JOUR.push(m);
       ANIM.push((t) => { m.userData.poser("assis", t * 1000); P(m).bras[k % 2].e.rotation.x = -.6 - Math.max(0, Math.sin(t * 1.3 + k)) * 1.6; }); });
     // les enfants qui suivent la mascotte, en file
-    if (L.mascPos) for (let k = 0; k < (PEU ? 2 : 4); k++) { const m = ad(enfant(k + 4)); JOUR.push(m); ANIM.push((t) => { const q = L.mascPos(t - 1.6 - k * 1.1), off = (k % 2 ? .45 : -.45); const x = q.x + Math.cos(q.ry) * off, z = q.z - Math.sin(q.ry) * off; m.position.set(x, H(x, z), z); m.rotation.y = q.ry; m.userData.poser("marche", t * 1000 * 1.25); if (Math.sin(t * .6 + k) > .7) P(m).bras[1].e.rotation.x = -2.6; }); }
+    if (L.mascPos) for (let k = 0; k < (PEU ? 2 : 4); k++) { const m = ad(enfant(k + 4)); JOUR.push(m); ANIM.push((t) => { const q = L.mascPos(t - 1.6 - k * 1.1), off = (k % 2 ? .45 : -.45); const x = q.x + Math.cos(q.ry) * off, z = evite(m.userData, x, q.z - Math.sin(q.ry) * off, Math.sin(q.ry)); m.position.set(x, H(x, z), z); m.rotation.y = q.ry; m.userData.poser("marche", t * 1000 * 1.25); if (Math.sin(t * .6 + k) > .7) P(m).bras[1].e.rotation.x = -2.6; }); }
     // les nageurs : le crawl, d'un bout à l'autre du bassin
     for (let k = 0; k < (PEU ? 2 : 4); k++) { const W3 = new THREE.Group(); ad(W3); const f = k % 2 === 1, pe = PE[(k * 2 + 1) % 6], mail = ["#1a3aa8", "#d8202a", "#1a1a1a", "#e8501a"][k];   /* (en maillot de bain : la peau nue, le slip ou le maillot une pièce, le bonnet) */
       const m = personne3D({ taille: f ? 1.66 : 1.78, peau: pe, ch: ["#2a1a12", "#e2c27a", "#141010", "#8a4a22"][k], haut: f ? mail : pe, bas: mail, chaussures: pe, coif: f ? "queue" : "court", pantalon: false, robe: false });
@@ -1587,12 +1593,32 @@ function construireCorbier(A, L, scene) {
       L.tabourets = T.filter((_, i) => !pris.includes(i)); }
     // (10.128) les promeneurs de la promenade et du chemin de terre : ils vont et viennent, chacun à son pas
     for (let k = 0; k < (PEU ? 10 : 20); k++) { const m = ad(gens(k * 5 + 2)), z0 = [4.4, 5.6, 2.4, 11.6, 4.9, 13][k % 6], v = .9 + (k % 4) * .18, xa = -60, xb = 46, L2 = xb - xa, ph = k * 23.7; JOUR.push(m);
-      ANIM.push((t) => { const d = (t * v + ph) % (2 * L2), aller = d < L2, x = aller ? xa + d : xb - (d - L2), z = z0 + Math.sin(t * .3 + k) * .35;
+      const st = {}; ANIM.push((t) => { const d = (t * v + ph) % (2 * L2), aller = d < L2, x = aller ? xa + d : xb - (d - L2), z = evite(st, x, z0 + Math.sin(t * .3 + k) * .35, aller ? 1 : -1);
         m.position.set(x, H(x, z), z); m.rotation.y = aller ? Math.PI / 2 : -Math.PI / 2; m.userData.poser("marche", t * 1000 * v); }); }
+    // (10.132) la promenade à poney, le jour : un enfant sur le poney, l'adulte devant qui le tient par la longe ; ils font des allers-retours sur le chemin de terre
+    { const G3 = new THREE.Group(); ad(G3); JOUR.push(G3); const robe = mat({ color: 0x8a5a32, roughness: .9 }), crin = mat({ color: 0x2a1a10, roughness: .9 }), selle = mat({ color: 0x5a2a1a, roughness: .6 }), tapis = mat({ color: 0xc82a3a, roughness: .8 });
+      const P3 = (geo, m, x, y, z, par = G3) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; par.add(o); return o; };
+      const cps = P3(new THREE.CapsuleGeometry(.24, .62, 4, 10), robe, 0, .78, 0); cps.rotation.z = Math.PI / 2;   // le corps (l'avant vers +x)
+      const cou = P3(new THREE.CapsuleGeometry(.11, .34, 4, 8), robe, .44, 1.0, 0); cou.rotation.z = -.7; const tete = P3(new THREE.BoxGeometry(.32, .15, .15), robe, .62, 1.18, 0); tete.rotation.z = -.35;
+      P3(new THREE.BoxGeometry(.32, .08, .04), crin, .4, 1.12, 0).rotation.z = -.7; for (const sz of [-.05, .05]) P3(new THREE.ConeGeometry(.03, .1, 4), robe, .52, 1.3, sz);   // la crinière, les oreilles
+      const queue = P3(new THREE.CylinderGeometry(.03, .06, .45, 6), crin, -.5, .7, 0); queue.rotation.z = -.4;
+      P3(new THREE.BoxGeometry(.42, .04, .5), tapis, -.02, 1.02, 0); P3(new THREE.BoxGeometry(.3, .08, .34), selle, -.02, 1.07, 0);
+      const pattes = [[.3, .15], [.3, -.15], [-.3, .15], [-.3, -.15]].map(([px, pz]) => { const g = new THREE.Group(); g.position.set(px, .62, pz); G3.add(g); P3(new THREE.CylinderGeometry(.045, .04, .6, 6), robe, 0, -.3, 0, g); P3(new THREE.CylinderGeometry(.05, .05, .06, 6), crin, 0, -.6, 0, g); return g; });
+      const enf = enfant(9); enf.scale.setScalar(1); enf.position.set(-.02, 1.1 - enf.userData.hipY + .04, 0); enf.rotation.y = Math.PI / 2; G3.add(enf); enf.userData.poser("assis", 0);
+      for (const J of P(enf).jambes) { J.h.rotation.x = -.3; J.h.rotation.z = 0; J.gen.rotation.x = .5; } P(enf).jambes[0].h.rotation.z = .5; P(enf).jambes[1].h.rotation.z = -.5;   // (à califourchon)
+      const adu = gens(14); adu.position.set(1.15, 0, .35); adu.rotation.y = Math.PI / 2; G3.add(adu);
+      const longe = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0x3a2a1a })); G3.add(longe);
+      const xa = -58, xb = 44, v = 1.0, L3 = xb - xa, st = {};
+      ANIM.push((t) => { const d = (t * v) % (2 * L3), aller = d < L3, u = aller ? d : 2 * L3 - d, x = xa + u, demi = Math.min(Math.abs(u), Math.abs(L3 - u)) < 1.2, z0 = evite(st, x, 11.4, aller ? 1.6 : -1.6);
+        G3.position.set(x, H(x, z0), z0); G3.rotation.y = aller ? 0 : Math.PI; if (demi) G3.rotation.y += (aller ? 1 : -1) * 0;
+        const ph = t * 6; pattes.forEach((g, i) => { g.rotation.z = Math.sin(ph + [0, Math.PI, Math.PI, 0][i]) * .35; }); cps.position.y = .78 + Math.abs(Math.sin(ph)) * .02; tete.rotation.z = -.35 + Math.sin(ph * .5) * .05; queue.rotation.x = Math.sin(t * 2) * .3;
+        adu.userData.poser("marche", t * 1000); const b = P(adu).bras[0]; b.e.rotation.x = -.5; b.c.rotation.x = -.3;   // (la main gauche tient la longe)
+        enf.position.y = 1.1 - enf.userData.hipY + .04 + Math.abs(Math.sin(ph)) * .03; if (Math.sin(t * .5) > .8) P(enf).bras[1].e.rotation.x = -2.6; else P(enf).bras[1].e.rotation.x = -.6;
+        G3.updateMatrixWorld(true); const h = new THREE.Vector3(); P(adu).bras[0].c.getWorldPosition(h); G3.worldToLocal(h); h.y -= .3; const pos = longe.geometry.attributes.position; pos.setXYZ(0, h.x, h.y, h.z); pos.setXYZ(1, .7, 1.12, 0); pos.needsUpdate = true; }); }
     // les promeneurs de la galerie marchande : ils vont et viennent le long des couloirs (toute la journée et le soir aussi)
     { const GW = [[-5, -5.5], [-16, -5.8], [-30, -5.8], [-40, -5.8], [-52, -6], [-58, -5], [-64, -4]]; for (let k = 0; k < (PEU ? 3 : 6); k++) { const m = ad(gens(k * 4 + 10)), v = .8 + (k % 3) * .15, tot2 = GW.reduce((a2, q, i) => i ? a2 + Math.hypot(q[0] - GW[i - 1][0], q[1] - GW[i - 1][1]) : 0, 0);
       ANIM.push((t) => { let d = (t * v + k * 9) % (2 * tot2); const ret = d > tot2; if (ret) d = 2 * tot2 - d; let i = 1; for (; i < GW.length; i++) { const l = Math.hypot(GW[i][0] - GW[i - 1][0], GW[i][1] - GW[i - 1][1]); if (d <= l) break; d -= l; } i = Math.min(i, GW.length - 1);
-        const A2 = GW[i - 1], B2 = GW[i], l = Math.hypot(B2[0] - A2[0], B2[1] - A2[1]) || 1, u = Math.min(1, d / l), off = (k % 3 - 1) * .7, x = A2[0] + (B2[0] - A2[0]) * u, z = A2[1] + (B2[1] - A2[1]) * u + off;
+        const A2 = GW[i - 1], B2 = GW[i], l = Math.hypot(B2[0] - A2[0], B2[1] - A2[1]) || 1, u = Math.min(1, d / l), off = (k % 3 - 1) * .7, x = A2[0] + (B2[0] - A2[0]) * u, z = evite(m.userData, x, A2[1] + (B2[1] - A2[1]) * u + off, ret ? -1 : 1);
         m.position.set(x, H(x, z), z); m.rotation.y = Math.atan2((B2[0] - A2[0]) * (ret ? -1 : 1), (B2[1] - A2[1]) * (ret ? -1 : 1)); m.userData.poser("marche", t * 1000); }); } }
     // le feu d'artifice : le soir, sans arrêt, au pied de la montagne derrière la scène
     const FX = { x: -34, z: 70 }; FX.y = HP(34, 70); const BUR = [];   /* (10.128 : plus gros, plus vrai — étincelles rondes et lumineuses, traînées, chrysanthèmes, saules d'or qui retombent, anneaux, crépitements) */
