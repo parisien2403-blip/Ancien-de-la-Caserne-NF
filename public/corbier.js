@@ -16,6 +16,7 @@ function construireCorbier(A, L, scene) {
     const i = new Image(); i.onload = () => { for (const x of tous) { x.dispose(); x.image = i; x.needsUpdate = true; } }; i.src = url; return t; };   /* (dispose : la photo n'a pas la taille du dessin) */
   /* (10.164) un chevalet en A : deux panneaux qui se rejoignent en haut, l'affiche à l'endroit sur chaque face extérieure, le cadre sombre derrière */
   const panA = (g, m, w, h, ec, inc) => { const dos = new THREE.MeshStandardMaterial({ color: 0x3a2a1e, roughness: .8 });
+    ec = (h + .06) * Math.sin(inc) + .015;   /* (10.127 : les pieds assez écartés pour que les deux panneaux se rejoignent en haut — un A, pas un X) */
     for (const sg of [-1, 1]) { const pv = new THREE.Group(); pv.position.set(0, 0, sg * ec); pv.rotation.x = -sg * inc; g.add(pv);
       const b = new THREE.Mesh(new THREE.BoxGeometry(w + .04, h + .04, .025), dos); b.position.y = h / 2 + .02; pv.add(b);
       const f = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); f.position.set(0, h / 2 + .02, sg * .014); if (sg < 0) f.rotation.y = Math.PI; pv.add(f); } };
@@ -73,7 +74,7 @@ function construireCorbier(A, L, scene) {
   const sol = (x0, x1, z0, z1, m, y = 0) => { const s = add(new THREE.PlaneGeometry(x1 - x0, z1 - z0), m, (x0 + x1) / 2, y, (z0 + z1) / 2); s.rotation.x = -Math.PI / 2; return s; };
   /* (10.104) la rue qui descend : depuis le petit restaurant jusqu'au bas de la piscine, au fond, la pente — trois mètres de moins au bout ; l'herbe à côté suit */
   const DESC = (x, z) => { const u = Math.min(1, Math.max(0, (-50 - x) / 33)), f = z < 21 ? 1 : z > 34 ? 0 : 1 - (z - 21) / 13; return z < 10.5 && x > -84.5 ? 0 : -3.45 * u * u * (3 - 2 * u) * f * f * (3 - 2 * f); };   /* (en bas, la rue arrive au niveau des plages de la piscine) */   // (au bout, derrière la piscine, le terrain est descendu lui aussi)
-  { const hm = mat({ map: herbeT, roughness: 1 }); L.sol = sol(-400, 400, 34, 400, hm, -.02); L.solsPlus = [sol(-400, -90, 14, 34, hm, -.02), sol(-50, 400, 14, 34, hm, -.02), sol(-400, 400, -300, -22, hm, -.02), sol(-400, -90, -22, -10, hm, -.02), sol(-84.6, 84, -22, -10, hm, -.02), sol(96, 400, -22, -10, hm, -.02), sol(84, 96, -22, -20, hm, -.02), sol(-400, -84, -10, 14, hm, -.02), sol(-50, -36.6, -10, 14, hm, -.02), sol(-35.2, 84, -10, 14, hm, -.02), sol(-36.6, -35.2, -10, -6.2, hm, -.02), sol(-36.6, -35.2, -3.6, 14, hm, -.02), sol(96, 400, -10, 14, hm, -.02), sol(84, 96, 5.6, 14, hm, -.02), sol(84, 87.6, -1, 5.6, hm, -.02), sol(92.4, 96, -1, 5.6, hm, -.02), sol(-60.5, -50, -10, 10.4, hm, -.02)]; }   /* (le trou : la piscine en contrebas) */
+  { const hm = mat({ map: herbeT, roughness: 1 }); L.sol = sol(-400, 400, 34, 400, hm, -.02); L.solsPlus = [sol(-400, -90, 14, 34, hm, -.02), sol(-50, 400, 14, 34, hm, -.02), sol(-400, 400, -300, -22, hm, -.02), sol(-400, -90, -22, -10, hm, -.02), sol(-84.6, 84, -22, -10, hm, -.02), sol(96, 400, -22, -10, hm, -.02), sol(84, 96, -22, -20, hm, -.02), sol(-400, -84, -10, 14, hm, -.02), sol(-50, -38.6, -10, 14, hm, -.02), sol(-38.6, -36.6, -10, -6.34, hm, -.02), sol(-38.6, -36.6, -3.48, 14, hm, -.02), sol(-35.2, 84, -10, 14, hm, -.02), sol(-36.6, -35.2, -10, -6.2, hm, -.02), sol(-36.6, -35.2, -3.6, 14, hm, -.02), sol(96, 400, -10, 14, hm, -.02), sol(84, 96, 5.6, 14, hm, -.02), sol(84, 87.6, -1, 5.6, hm, -.02), sol(92.4, 96, -1, 5.6, hm, -.02), sol(-60.5, -50, -10, 10.4, hm, -.02)]; }   /* (le trou : la piscine en contrebas) */
   L.solsPlus.push(sol(-48, 66, -3.6, 7, mat({ map: deckT, roughness: .8 }), .03),   /* (10.123 : le platelage clair va jusqu'au pied des façades, dans les renfoncements aussi) */ sol(-48, -36, 7, 10.4, mat({ map: deckT, roughness: .8 }), .034),   /* (10.120 : le platelage va jusqu'au bâtiment, et avance en L jusqu'à son bout) */ sol(-50, 100, 7, 16, mat({ map: terreT, roughness: 1 }), .01), sol(66, 84, 0, 8, mat({ map: dalleT, roughness: .8 }), .03));
   for (const [x0, x1] of [[-36, 66]]) box(x1 - x0, .08, .2, boisC, (x0 + x1) / 2, .04, 7); box(12, .08, .2, boisC, -42, .04, 10.4); box(.2, .08, 3.4, boisC, -36, .04, 8.7);   // (le rebord du platelage)
 
@@ -91,11 +92,11 @@ function construireCorbier(A, L, scene) {
   const HP = (x, z) => HP0(x, z) + DESC(x, z), HP0 = (x, z) => { const d = Math.hypot(x + 32, z - 46), t = Math.min(1, Math.max(0, (d - 13) / 12)); return t >= 1 ? HP00(x, z) : HP00(-32, 46) + (HP00(x, z) - HP00(-32, 46)) * t * t * (3 - 2 * t); }, HP00 = (x, z) => {   /* (10.168 : le terrain aplani autour de l'office : la pente ne cache plus son entrée) */ if (z < 44) return z < 30 ? 0 : (z - 30) * .03; const t = Math.min(1, (z - 44) / 5), base = .42 + t * t * (3 - 2 * t) * 2.4; if (z < 49) return base;   /* (devant les immeubles : l'esplanade presque plate, puis le pré qui monte) */
     const d = z - 49; return base + d * .24 + Math.max(0, d - 120) * .18 + Math.sin(x * .013 + 1.2) * Math.min(1, d / 60) * 14 + Math.sin(x * .031 + z * .02) * Math.min(1, d / 40) * 5; };
   L.hautPiste = HP;
-  { const g2 = new THREE.PlaneGeometry(700, 430, 90, 60); g2.rotateX(-Math.PI / 2); const p = g2.attributes.position, C = [];
+  { const g2 = new THREE.PlaneGeometry(700, 430, 280, 172)   /* (10.127 : des mailles de 2,5 m, le sol suit la pente : les pieds ne s'enfoncent plus) */; g2.rotateX(-Math.PI / 2); const p = g2.attributes.position, C = [];
     for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i) + 236; p.setZ(i, z - 236); p.setY(i, HP(-x, z)); const h = HP(-x, z), n = Math.sin(x * .07) * Math.sin(z * .05);
       const c2 = z < 60 ? [.36 + n * .03, .56, .22] :   /* (en face des immeubles : l'herbe verte, comme sur la photo) */ h > 40 ? [.62 + n * .05, .52, .3] : [.56 + n * .06, .54 + n * .04, .28]; C.push(...(z < 60 ? [1 + n * .06, 1, 1] : c2.map((v, k) => v * [.85, .82, .69][k] / [.43, .48, .25][k]))); }   /* (10.126 : la vraie herbe en photo ; plus haut, teintée de roux) */
     g2.setAttribute("color", new THREE.Float32BufferAttribute(C, 3)); g2.computeVertexNormals();
-    const pente = new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ vertexColors: true, map: herbeT }));   /* (l'herbe rase, roussie par l'automne) */ pente.position.set(0, .01, 236); pente.receiveShadow = true; scene.add(pente); }
+    const pente = new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ vertexColors: true, map: herbeT }));   /* (l'herbe rase, roussie par l'automne) */ pente.position.set(0, .01, 236); pente.receiveShadow = true; scene.add(pente); L.penteP = g2.attributes.position; }
   // la piste de gravier, au pied du talus ; le muret de rochers dans le talus
   L.solsPlus.push(sol(-50, 100, 30.5, 33.5, mat({ map: gravT, roughness: 1 }), .02));   // (10.119, d'après les photos : l'herbe monte depuis le bord du chemin ; plus haut, la piste de gravier)
   /* (10.119) les dalles de béton posées dans l'herbe, en marches, du chemin vers la piste du haut */
@@ -536,7 +537,7 @@ function construireCorbier(A, L, scene) {
     void n0J; void o0J;
     { const grille = (x0, x1, z0, z1, m, dy) => { const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0, Math.ceil((x1 - x0) / 1.5), Math.ceil((z1 - z0) / 1.5)); g.rotateX(-Math.PI / 2); const pp = g.attributes.position;
         for (let i = 0; i < pp.count; i++) { const x = (x0 + x1) / 2 - pp.getX(i), z = pp.getZ(i) + (z0 + z1) / 2; pp.setY(i, HP(x, z) + dy); }   /* (la grille sera retournée : chaque sommet prend la hauteur de son reflet) */ g.computeVertexNormals(); const o = add(g, m, (x0 + x1) / 2, 0, (z0 + z1) / 2); L.solsPlus.push(o); return o; };
-      grille(-90, -50, 10.6, 21.2, mat({ map: gravT, roughness: 1 }), .02); grille(-90, -50, 21.2, 34, mat({ map: herbeT, roughness: 1 }), -.02); grille(-90, -84.6, -22, 10.6, mat({ map: herbeT, roughness: 1 }), -.02); }
+      grille(-90, -50, 10.6, 13.4, mat({ map: terreT, roughness: 1 }), .02); grille(-90, -50, 13.4, 21.2, mat({ map: herbeT, roughness: 1 }), -.01);   /* (10.127 : plus de large rue grise — le chemin de terre continue, étroit, le long de la piscine ; de l'herbe à côté) */ grille(-90, -50, 21.2, 34, mat({ map: herbeT, roughness: 1 }), -.02); grille(-90, -84.6, -22, 10.6, mat({ map: herbeT, roughness: 1 }), -.02); }
     /* (10.105, d'après la photo du bas de la rue) le mur de planches sous la terrasse des jeux, sa barrière de bois en haut ; la fresque de l'espace sur la paroi au-dessus du bassin ;
        les enseignes « Igloo » et « Location ski » ; les structures gonflables sur l'eau */
     { const planchM = mat({ map: boisSombre.clone(), roughness: .85 }); planchM.map.repeat.set(8, 2); planchM.map.needsUpdate = true; const bas = HP(-85, -16);
@@ -727,6 +728,8 @@ function construireCorbier(A, L, scene) {
     pot(-26.6, 6.6); pot(LG("galA").x0 - 1.0, 3.6); pot(LG("galB").x0 - 1.1, 3.4); pot(LG("patis").x0 + 2.6, 3.6); pot(LG("galD").x1 + .8, 3.4, true);
     const bancF = (x) => { const z = zfAt(x); for (let k = 0; k < 3; k++) box(1.6, .05, .12, boisC, x, .46, z + .85 + k * .14); for (const sx of [-.7, .7]) box(.08, .46, .4, mat({ color: 0x3a2a1a }), x + sx, .23, z + 1); box(1.6, .3, .05, boisC, x, .72, z + .7); OB.push([x, z + 1, .9]); };
     for (const x of [LG("sherpa").x1 - 1.6, LG("skiloc").x0 + 1.7, LG("pharma").x0 + 1.4, LG("pharma").x0 + 3.9, LG("patis").x0 + 1.1]) bancF(x);
+    { const deja = [LG("sherpa").x1 - 1.6, LG("skiloc").x0 + 1.7, LG("pharma").x0 + 1.4, LG("pharma").x0 + 3.9, LG("patis").x0 + 1.1, -26.6, LG("galA").x0 - 1.0, LG("galB").x0 - 1.1, LG("patis").x0 + 2.6, LG("galD").x1 + .8];   /* (10.127) des bancs contre les façades, entre les portes des boutiques (pas devant les galeries) */
+      for (let i = 1; i < LIGNES.length; i++) { const A = LIGNES[i - 1], B = LIGNES[i]; if (/^gal|vitres/.test(A.id) || /^gal|vitres/.test(B.id)) continue; const x = B.x0; if (deja.some(d => Math.abs(d - x) < 2.2)) continue; bancF(x); deja.push(x); } }
     for (const x of [LG("skiset").x0 + .8, LG("interLR").x0 + .2, LG("jack").x0 + .4]) { const z = 6.5; box(1.8, .4, .5, boisC, x, .2, z); for (let k = 0; k < 14; k++) add(new THREE.IcosahedronGeometry(.12, 0), k % 4 === 3 ? vertF : fleurR[k % 3], x - .8 + al() * 1.6, .48 + al() * .2, z + (al() - .5) * .35); OB.push([x, z, 1]); }
     for (const x of [-22]) { for (const sx of [-1.4, 1.4]) { for (const sg of [-1, 1]) { const j = cyl(.06, .06, .9, rondin, x + sx, .4, 6.2, 6); j.rotation.x = sg * .5; } } for (const y of [.45, .7]) { const r = cyl(.08, .08, 3.2, rondin, x, y, 6.2, 8); r.rotation.z = Math.PI / 2; } OB.push([x - 1, 6.2, .5], [x + 1, 6.2, .5]); }
     // le chemin de planches qui traverse le gravier vers la galerie au panneau orangé, ses barrières de rondins
@@ -734,7 +737,7 @@ function construireCorbier(A, L, scene) {
       for (const sx of [-1.32, 1.32]) box(.1, .08, 5.6, boisC, xc + sx, .06, 9.8); }   // (10.152 : une simple rampe de planches, sans barrière)
     // (10.153, d'après la photo) deux tables de ping-pong en béton, sur le gravier, le long du plancher
     { const vt = mat({ color: 0x2a6a4a, roughness: .5 }), bl = mat({ color: 0xf4f4f2 }), gr = mat({ color: 0x8a8a86, roughness: .9 }), fil = mat({ color: 0x2a2a2c, transparent: true, opacity: .7 });
-      for (const x of [LG("skiset").x0 - .5, LG("vet").x1 + 2.2, LG("pharma").x0 + 1.5, LG("patis").x0 + 1.8]) { const z = 9.2; box(2.74, .08, 1.52, vt, x, .76, z); box(2.74, .085, .03, bl, x, .76, z + .74); box(2.74, .085, .03, bl, x, .76, z - .74); box(.03, .085, 1.52, bl, x + 1.35, .76, z); box(.03, .085, 1.52, bl, x - 1.35, .76, z); box(2.74, .086, .02, bl, x, .76, z);
+      for (const x of [LG("skiset").x0 - .5, LG("vet").x1 + 2.2, LG("pharma").x0 + 2.6, LG("patis").x0 + 4.8]) { const z = 9.2;   /* (10.127 : les deux du milieu, décalées : on joue sans se cogner à la rampe de planches) */ box(2.74, .08, 1.52, vt, x, .76, z); box(2.74, .085, .03, bl, x, .76, z + .74); box(2.74, .085, .03, bl, x, .76, z - .74); box(.03, .085, 1.52, bl, x + 1.35, .76, z); box(.03, .085, 1.52, bl, x - 1.35, .76, z); box(2.74, .086, .02, bl, x, .76, z);
         box(.06, .16, 1.7, fil, x, .88, z); for (const sx of [-.9, .9]) box(.2, .72, 1.1, gr, x + sx, .36, z); OB.push([x - .9, z, 1.1], [x + .9, z, 1.1]); } }
     // le kiosque d'affichage sur son poteau, son petit toit à deux pans, devant la galerie
     { const gA = LG("galA"), kx = (gA.x0 + gA.x1) / 2 + .5, kz = zfAt(kx) + 2.4, affT = tT(128, 80, (c, w, h) => { c.fillStyle = "#3a2a1e"; c.fillRect(0, 0, w, h); for (let k = 0; k < 5; k++) { c.fillStyle = ["#f4f2ea", "#f0e0a0", "#e8f0f4"][k % 3]; c.fillRect(8 + k * 23, 10 + (k % 2) * 8, 19, 26); } });
@@ -789,8 +792,8 @@ function construireCorbier(A, L, scene) {
         const b2 = new THREE.Mesh(new THREE.BoxGeometry(n2 * .78, .2, .72), pied); b2.position.y = .12; g.add(b2); for (let k = 0; k < n2; k++) OB.push([x + Math.cos(ry) * (k - (n2 - 1) / 2) * .78, z - Math.sin(ry) * (k - (n2 - 1) / 2) * .78, .45]); };
       const basse = (x, z) => { box(.7, .05, .7, mat({ color: 0x2c2e30, roughness: .6 }), x, .44, z); for (const [dx, dz] of [[-.3, -.3], [.3, -.3], [-.3, .3], [.3, .3]]) box(.04, .4, .04, pied, x + dx, .24, z + dz); OB.push([x, z, .45]); };
       // le côté salon : les canapés en L le long des vitres, les tables basses
-      canape(porte[1] + 1.9, z1 - .55, Math.PI, 4); canape(x1 - .55, cz - .3, -Math.PI / 2, 6); canape(XS + 1.6, z0 + .55, 0, 3);
-      for (const [x, z] of [[porte[1] + 1.4, z1 - 1.5], [porte[1] + 2.5, z1 - 1.5], [x1 - 1.5, cz - 1.4], [x1 - 1.5, cz + .4], [XS + 1.6, z0 + 1.5]]) basse(x, z);
+      canape(porte[1] + 1.9, z1 - .55, Math.PI, 4); canape(x1 - .55, cz - .3, -Math.PI / 2, 6); /* (10.127 : plus de canapé devant la sortie de la galerie) */
+      for (const [x, z] of [[porte[1] + 1.4, z1 - 1.5], [porte[1] + 2.5, z1 - 1.5], [x1 - 1.5, cz - 1.4], [x1 - 1.5, cz + .4]]) basse(x, z);
       // les tables rouges et leurs chaises noires tressées, au fond
       const tR = mat({ color: 0xd8304a, roughness: .5 }), ch = mat({ color: 0x2a2a2c, roughness: .8 });
       for (let x = x0 + .9; x < XS - .5; x += 1.6) for (const z of [z0 + .9, z0 + 2.7, z0 + 4.5]) {   // (le côté restaurant)
@@ -806,7 +809,7 @@ function construireCorbier(A, L, scene) {
       void oT0; const beton = mat({ color: 0x9a968e, roughness: .95 });
       box(x1 - x0 + .2, HT, z1 - z0 + .1, beton, cx, HT / 2, cz); for (let k = 0; k < 2; k++) box(porte[1] - porte[0], HT * (2 - k) / 2, .35, beton, (porte[0] + porte[1]) / 2, HT * (2 - k) / 4, z1 + .2 + k * .35);
       const enrobe = tT(256, 256, (c, w, h) => { c.fillStyle = "#6e6e6c"; c.fillRect(0, 0, w, h); for (let k = 0; k < 4000; k++) { c.fillStyle = ["#5a5a58", "#82827e", "#6a6866", "#94928c"][k % 4]; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }, 10, 4);
-      L.solsPlus.push(sol(-48, -10, 1.8, 10.4, mat({ map: enrobe, roughness: .95 }), .045)); box(38, .12, .2, mat({ color: 0x7a3a22, roughness: .8 }), -29, .06, 1.8);   /* (10.150 : le long de la façade, le plancher reste ; l'enrobé commence après sa bordure) */
+      L.solsPlus.push(sol(-48, -10, 1.8, 10.4, mat({ map: terreT, roughness: 1 }), .045)); box(38, .12, .2, mat({ color: 0x7a3a22, roughness: .8 }), -29, .06, 1.8);   /* (10.150 : le long de la façade, le plancher reste ; l'enrobé commence après sa bordure) */
       const rgP = mat({ color: 0xd8202a, roughness: .7 }); for (const [px, pz] of [[x0 + .5, z1 + .7], [x0 + 3.2, z1 + .7], [porte[1] + 1.4, z1 + .7], [x1 - .5, z1 + .7], [x1 + .7, cz]]) { cyl(.035, .035, 3.0, noir, px, 1.5, pz, 6); const f = add(new THREE.ConeGeometry(.28, 2.1, 8), rgP, px, 1.9, pz); void f; OB.push([px, pz, .3]); }
       { const px = x0 - 2.2, pz = z1 + 1.6; cyl(.06, .06, 3.4, mat({ color: 0x9a9ea2, metalness: .5 }), px, 1.7, pz, 6);
         deux(add(new THREE.PlaneGeometry(1.3, .3), mat({ map: esfT, side: THREE.DoubleSide }), px, 3.0, pz + .05));
@@ -940,7 +943,7 @@ function construireCorbier(A, L, scene) {
       add(new THREE.PlaneGeometry(3.4, 1.3), mat({ map: pT }), x0 + 3, 1.4, 4.47);
       { const vC = mat({ color: 0x4a6a5a, roughness: .5 }); for (let k = 0; k < 3; k++) for (let q = 0; q < 6; q++) box(.46, .04, .44, vC, x0 + 6 + k * .6, .5 + q * .12, 2.6); OB.push([x0 + 6.6, 2.6, 1.2]); } }
     // le sol devant : les dalles ; au bout, les barrières de bois (deux lisses sur des poteaux)
-    L.solsPlus.push(sol(82.5, XF + 8, 2.5, 16.5, mat({ map: terreT, roughness: 1 }), .016), sol(XF, XF + 8, -1, 2.5, mat({ map: terreT, roughness: 1 }), .012), sol(82.5, XF, -1, 2.5, mat({ map: deckT, roughness: .8 }), .03)); box(XF - 82.5, .1, .2, boisC, (82.5 + XF) / 2, .05, 2.5);   // (10.154 : le plancher de la largeur des autres ; au-delà, le gravier)
+    L.solsPlus.push(sol(82.5, XF + 8, 2.5, 16.5, mat({ map: terreT, roughness: 1 }), .016), sol(XF, XF + 8, -1, 2.5, mat({ map: terreT, roughness: 1 }), .012), sol(82.5, 86, -1, 2.5, mat({ map: deckT, roughness: .8 }), .03), sol(86, XF, -1, 2.5, mat({ map: terreT, roughness: 1 }), .014)); box(86 - 82.5, .1, .2, boisC, (82.5 + 86) / 2, .05, 2.5);   /* (10.127 : à partir de la tour, le plancher seulement sous les balcons ; devant, la terre) */   // (10.154 : le plancher de la largeur des autres ; au-delà, le gravier)
     const nBar = scene.children.length, oBar = OB.length, solsB = new Set(L.solsPlus);
     const rond = mat({ color: 0x8a6a48, roughness: .85 });
     const barriere = (xa, za, xb, zb) => { const L2 = Math.hypot(xb - xa, zb - za), n = Math.max(1, Math.round(L2 / 2.2)), a = Math.atan2(zb - za, xb - xa);
@@ -1248,7 +1251,7 @@ function construireCorbier(A, L, scene) {
       box(.75, .95, 2.6, mat({ color: 0x5a3418, roughness: .6 }), 1.6, .48, z0 + 2.1); box(.68, .5, 2.5, lumi(tex(512, 64, MARCH.gateau), .55), 1.6, 1.2, z0 + 2.1); box(.04, .55, 2.6, vit, 1.98, 1.22, z0 + 2.1); box(.72, .04, 2.6, vit, 1.6, 1.5, z0 + 2.1);
       box(.7, 1.0, .9, mat({ color: 0x6a4a2e }), 1.6, .5, z0 + 3.8); box(.35, .25, .3, mat({ color: 0x2a2a2c }), 1.6, 1.13, z0 + 3.8);
       for (let z = z0 + .8; z < z0 + 4.2; z += .8) OBS.push([1.6, z, .5]);
-      add(new THREE.PlaneGeometry(3.2, 2.3), lumi(tex(512, 256, MARCH.pain), .45), -5.93, 1.3, z0 + 1.8, Math.PI / 2);
+      /* (10.127 : le mur de pains retiré, il bouchait la porte) */
       // le salon de thé, à droite : les tables rondes, les chaises bistrot
       for (const [tx, tz] of [[-.4, z1 - .7], [-2.4, z1 - .7], [-.4, z1 - 1.8], [-2.4, z1 - 1.8]]) { cyl(.32, .32, .04, mat({ color: 0xf2f0ea, roughness: .4 }), tx, .74, tz, 14); cyl(.03, .04, .72, mat({ color: 0x2a2a2c }), tx, .37, tz, 6);
         for (const sx of [-.48, .48]) { box(.36, .04, .36, mat({ color: 0x6a3a1e }), tx + sx, .46, tz); box(.04, .42, .34, mat({ color: 0x6a3a1e }), tx + sx * 1.38, .7, tz); } OBS.push([tx, tz, .65]); }
@@ -1264,7 +1267,9 @@ function construireCorbier(A, L, scene) {
     { const I_ = Pn("I"); reserve("I", "zmin", -14, 8); const R = repere(I_, "zmin"), pin2 = pinM(8);
       R.boite(22, .5, .2, pin2, -3, .25, 0); R.boite(22, .4, .2, blancP, -3, 2.7, 0); R.plan(22, 2.0, mat({ color: 0xdcecf2, roughness: .05, transparent: true, opacity: .1, depthWrite: false }), -3, 1.5, .02);
       for (let u = -13.9; u < 8; u += 2.2) R.boite(.12, 2.0, .16, pin2, u, 1.5, .02); balustrade(-13.8, -19.75, 7.8, -19.75, false);
-      pilier(1.6, -17.4, mat({ color: 0xc8202a, roughness: .6 }), .5);
+      { const rouge = mat({ color: 0xc8202a, roughness: .5 }), eT = tT(128, 192, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ee"; c.fillRect(8, 8, w - 16, 26); c.fillStyle = "#c8202a"; c.font = `bold 15px ${sans}`; c.textAlign = "center"; c.fillText("EXTINCTEUR", w / 2, 27);
+          c.fillStyle = "#9aaab4"; c.fillRect(16, 44, w - 32, h - 60); c.fillStyle = "rgba(255,255,255,.35)"; c.fillRect(20, 48, 10, h - 68); c.fillStyle = "#d01c1c"; c.fillRect(46, 70, 36, 100); c.beginPath(); c.arc(64, 70, 18, Math.PI, 0); c.fill(); c.fillStyle = "#1a1a1a"; c.fillRect(58, 46, 12, 10); c.fillRect(70, 50, 22, 5); c.fillStyle = "#f4f2ee"; c.fillRect(50, 110, 28, 22); });
+        box(.55, .85, .26, rouge, 1.6, 1.35, -17.13); const fr = add(new THREE.PlaneGeometry(.53, .83), mat({ map: eT, roughness: .4 }), 1.6, 1.35, -17.265, Math.PI); void fr; }   /* (10.127 : le coffre rouge accroché au mur, l'extincteur derrière sa vitre — à la place du grand pilier) */
       { const Rz = repere(I_, "zmax"); Rz.boite(1.8, 2.5, .05, mat({ color: 0x5a5e64, roughness: .8 }), -2, 1.25, .02); }
       for (const [x, z, h] of [[-9, -24, 14], [-2, -26.5, 12], [4.5, -23.5, 11], [-13, -27, 13]]) sapin(x, z, h, melezeM); bouleau(1.5, -23, 10); bouleau(-6, -22.6, 9);
       const Rx = repere(I_, "xmin"); Rx.boite(3, 1.1, .04, pinM(2), -18.5, .55, .02);
@@ -1286,10 +1291,11 @@ function construireCorbier(A, L, scene) {
       sortie(-23.9, 2.4, -9.2, Math.PI / 2); }
     // le sas de l'École du Ski : à droite l'escalier qui descend (fermé par sa rampe), en face deux paires de portes battantes vers la galerie
     { const M_ = Pn("M"), R = repere(M_, "xmin"); reserve("M", "xmin", -6.2, -3.25); const gr = mat({ color: 0x5a5e64, roughness: .7 }), rp = mat({ color: 0xb8bcc0, metalness: .6, roughness: .3 });
-      for (let k = 0; k < 12; k++) box(1.3, .18, .2, gr, -35.85, -.09 - k * .2, -3.75 - k * .2);   // (les marches qui descendent, dans la cage)
-      { const mw = matMur("blanc", 3, 5.4), noirC = mat({ color: 0x0a0a0c, roughness: 1 }); box(.12, 5.4, 3.0, mw, -36.56, 0, -4.75); box(1.45, 5.4, .12, mw, -35.85, 0, -3.6); box(1.45, 5.4, .12, mw, -35.85, 0, -6.22);
-        box(1.4, .05, 3, noirC, -35.85, -2.7, -4.75); box(1.3, 2.4, .05, noirC, -35.85, -1.5, -6.12); box(1.4, .08, 3.0, mat({ map: T.dalles }), -35.85, 2.62, -4.75); }
-      box(.05, .05, 2.9, rp, -35.25, 1.0, -4.7); for (let z = -3.4; z > -6.2; z -= .5) box(.04, 1.0, .04, rp, -35.25, .5, z); for (let z = -3.5; z > -6.2; z -= .3) OBS.push([-35.05, z, .2]);
+      for (let k = 0; k < 12; k++) box(.24, .18, 2.5, gr, -35.36 - k * .24, -.09 - k * .2, -4.91);   // (10.127 : l'escalier face à soi, il descend tout droit devant)
+      { const mw = matMur("blanc", 3, 5.4), noirC = mat({ color: 0x0a0a0c, roughness: 1 }); box(.12, 5.4, 2.74, mw, -38.5, 0, -4.91); for (const z of [-3.54, -6.28]) box(3.3, 5.4, .12, mw, -36.85, 0, z);
+        box(3.2, .05, 2.6, noirC, -36.85, -2.7, -4.91); box(.05, 2.4, 2.5, noirC, -38.4, -1.5, -4.91); box(3.2, .08, 2.6, mat({ map: T.dalles }), -36.85, 2.62, -4.91); }
+      for (const z of [-3.66, -6.16]) { const r = box(3.4, .05, .05, rp, -36.8, -.2, z); r.rotation.z = Math.atan2(2.4, 2.88); for (let k = 0; k < 4; k++) box(.04, .95, .04, rp, -35.4 - k * .7, .48 - k * .58, z); }   // les mains courantes, de chaque côté
+      for (let z = -3.7; z > -6.2; z -= .3) OBS.push([-35.15, z, .2]);   /* (l'étage du bas n'est pas construit : on regarde l'escalier, on ne descend pas encore) */
       void R;
       const pB = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#8a5a32"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(x, 0, 1, h); } c.fillStyle = "#b8ccd4"; c.fillRect(12, 14, w - 24, 50); }), roughness: .7 });
       reserve("M", "zmin", -35.2, -32.8);
@@ -1355,7 +1361,9 @@ function construireCorbier(A, L, scene) {
   { let vu = true; const a3 = L.anim; L.anim = (tm) => { try { a3 && a3(tm); } catch (e) {} const moi = M && M.gens && M.gens.get(M.moiNum), q = moi && moi.g && moi.g.position, dd = !!(q && L.premiereIci(q.x, q.z)); if (dd === !vu) return; vu = !dd; for (const o of L.corpsGal) o.visible = vu; }; }
 
   L.limites = (x, z) => libre(x, z) && (GAL.marche(x, z) || GALZ.some(l => x > l.x0 + .4 && x < l.x1 - .4 && z > zfAt(x) - .3 && z < zfAt(x) + .8) || (x > -48 && x < -10 && z > -3.3 && z < 7.6) || (x > 82.6 && x < 108.4 && z > -.9 && z < 16.2 && !(x > 87.2 && x < 92.8 && z < 6)) || (x > 108.2 && x < 187.6 && z > -4.1 && z < 16.2) || (x > -60.2 && x < 200 && z > 7.6 && z < 140) || (x > -110 && x < -60.2 && z > 21 && z < 140) || (x > -84 && x < -50 && z >= 10.75 && z < 21) || (x > -60.2 && x < -48.2 && z > -22 && z < 7.6)  || (x > -84 && x < -60 && z > -22 && z < -10.8) || (x > -38.6 && x < 82 && z > zfAt(x) + .5 && z < 7.6) || (x > -71.5 && x < -40.5 && z > 14 && z < 16.4) || (x > -12.6 && x < -9.8 && z > .3 && z < 1.1));
-  L.hauteur = (x, z) => { const ox = -x; const gy = GAL.y(ox, z); if (gy !== null) return gy; if (ox > -42.4 && ox < -29.6 && z > -2.6 && z < 3.6) return .45; if (ox > -35.2 && ox < -33.4 && z >= 3.6 && z < 4.3) return z < 3.95 ? .34 : .17; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  return HP(ox, z); };
+  L.hauteur = (x, z) => { const ox = -x; const gy = GAL.y(ox, z); if (gy !== null) return gy; if (ox > -42.4 && ox < -29.6 && z > -2.6 && z < 3.6) return .45; if (ox > -35.2 && ox < -33.4 && z >= 3.6 && z < 4.3) return z < 3.95 ? .34 : .17; if (ox < -60.5 && z < 10.2 && z > -10) return YP;  if (z > 30 && L.penteP && Math.abs(x) < 349 && z < 450) { const P = L.penteP, nx = 280, fx0 = (x + 350) / 2.5, fz0 = (z - 21) / 2.5, ix = Math.floor(fx0), iz = Math.floor(fz0), fx = fx0 - ix, fz = fz0 - iz, h = (a, b) => P.getY((iz + b) * (nx + 1) + ix + a) + .01;   /* (10.127 : on marche sur le sol tel qu'il est dessiné, facette par facette : les pieds ne s'enfoncent plus) */
+      return fx + fz <= 1 ? h(0, 0) + (h(1, 0) - h(0, 0)) * fx + (h(0, 1) - h(0, 0)) * fz : h(1, 1) + (h(0, 1) - h(1, 1)) * (1 - fx) + (h(1, 0) - h(1, 1)) * (1 - fz); }
+    return HP(ox, z); };
   L.depart = [54.5, 15]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.zone = [-73, 98, -2, 18]; L.cam = { pos: [26, 5, 24], vise: [26, 3, 0] }; L.sansMusique = true;
 
