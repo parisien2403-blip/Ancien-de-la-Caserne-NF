@@ -40,7 +40,8 @@ function construireCorbier(A, L, scene) {
       const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(C, 3)); g.computeVertexNormals(); V.push(g); vari.push(v); }
     return { geos: V, mat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, metalness: 0 }) }; })();
   const ARB = []; L.arbres = ARB;
-  const epicea = (x, y, z, h, w = 1) => { ARB.push([-x, z, h * w * .28 + .6]);   /* (10.136 : les arbres, en coordonnées du monde : la trottinette les évite) */ const m = new THREE.Mesh(EPI.geos[(Math.abs(x * 7 + z * 13) | 0) % 4], EPI.mat); m.position.set(x, y, z); m.scale.set(h * w * (.9 + al() * .2), h, h * w * (.9 + al() * .2)); m.rotation.y = al() * 6.28; m.receiveShadow = true; scene.add(m); return m; };
+  const loinLigne = (x, z) => { const ax = 80, az = 50, bx = 80 + Math.sin(.35) * 235, bz = 50 + Math.cos(.35) * 235, vx = bx - ax, vz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * vx + (z - az) * vz) / (vx * vx + vz * vz))); return Math.hypot(x - ax - vx * t, z - az - vz * t) > 7; };   /* (10.137 : pas de sapin sous le télésiège) */
+  const epicea = (x, y, z, h, w = 1) => { if (!loinLigne(x, z)) return; ARB.push([-x, z, h * w * .28 + .6]);   /* (10.136 : les arbres, en coordonnées du monde : la trottinette les évite) */ const m = new THREE.Mesh(EPI.geos[(Math.abs(x * 7 + z * 13) | 0) % 4], EPI.mat); m.position.set(x, y, z); m.scale.set(h * w * (.9 + al() * .2), h, h * w * (.9 + al() * .2)); m.rotation.y = al() * 6.28; m.receiveShadow = true; scene.add(m); return m; };
   const NUIT = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
   /* (10.128) les portes battantes : chaque vantail tourne sur ses gonds et s'ouvre quand on approche (base, sens : avant le passage du miroir) */
   const PORTES = [], porteBat = (hx, y, hz, base, sens, dir, larg, haut, m, cx, cz) => { const g = new THREE.Group(); g.position.set(hx, y, hz); g.rotation.y = base; g.userData.anime = true;
@@ -257,11 +258,13 @@ function construireCorbier(A, L, scene) {
     for (const [w, h, d, x, y, z, m] of [[2.2, .1, .55, 0, -2.2, 0, bleu], [2.2, .6, .08, 0, -1.9, -.3, bleu], [.06, 2.2, .06, 0, -1.1, -.3, gris], [2.2, .05, .05, 0, -1.98, .62, gris], [.05, .45, .05, -.9, -1.78, .62, gris], [.05, .45, .05, .9, -1.78, .62, gris], [.05, .05, .9, -.9, -1.55, .2, gris], [.05, .05, .9, .9, -1.55, .2, gris], [2.0, .05, .05, 0, -2.6, .6, gris]]) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); SG.add(o); }
     let RIDE = null; const W = (u, cote) => { const p = T.placer(Math.max(0, Math.min(.999, u)), cote); return new THREE.Vector3(-p[0], p[1], p[2]); };
     const moiP = () => M && M.gens && M.gens.get(M.moiNum);
-    const fin = () => { RIDE = null; SG.visible = false; try { finCine(); } catch (e) { M.cine = null; } const q = moiP(); if (q) { const g0 = W(0, 1); q.g.position.set(g0.x + 1.5, L.hauteur(g0.x + 1.5, g0.z + 6), g0.z + 6); q.g.visible = true; q.cible = null; q.chemin = []; try { envoyerWS({ t: "aller", x: q.g.position.x, z: q.g.position.z }); } catch (e) {} } };
+    const fin = () => { RIDE = null; SG.visible = false; for (const c2 of T.S) c2.visible = true; try { finCine(); } catch (e) { M.cine = null; } const q = moiP(); if (q) { const g0 = W(0, 1); q.g.position.set(g0.x + 1.5, L.hauteur(g0.x + 1.5, g0.z + 6), g0.z + 6); q.g.visible = true; q.cible = null; q.chemin = []; try { envoyerWS({ t: "aller", x: q.g.position.x, z: q.g.position.z }); } catch (e) {} } };
     const monter = () => { if (RIDE || M.cine) return; RIDE = { t0: performance.now() }; SG.visible = true; const q = moiP(); if (q) { q.g.visible = false; q.cible = null; q.chemin = []; }
-      M.cine = { gel: true, fov: [72, 82], maj: () => { if (!RIDE) return; const t = (performance.now() - RIDE.t0) / 1000, up = T.tot / 6.5, down = T.tot / 13;
-        let u, cote; if (t < up) { u = t / up; cote = 1; } else if (t < up + 3) { u = .999; cote = 1; } else if (t < up + 3 + down) { u = 1 - (t - up - 3) / down; cote = -1; } else { fin(); return; }
-        const P = W(u, cote), Q = W(u + cote * .01, cote), dir = Q.clone().sub(P); dir.y = 0; dir.normalize(); SG.position.copy(P); SG.rotation.y = Math.atan2(dir.x, dir.z);
+      M.cine = { gel: true, fov: [72, 82], maj: () => { if (!RIDE) return; const t = (performance.now() - RIDE.t0) / 1000, UM = .62, up = T.tot * UM / 4.2, down = T.tot * UM / 5;   /* (10.137 : au pas d'un vrai télésiège ; on fait demi-tour un peu avant la gare du haut, avant la montagne) */
+        let u, cote; if (t < up) { u = t / up * UM; cote = 1; } else if (t < up + 3) { u = UM; cote = (t - up) < 1.5 ? 1 : -1; } else if (t < up + 3 + down) { u = UM * (1 - (t - up - 3) / down); cote = -1; } else { fin(); return; }
+        let P = W(u, cote), Q = W(u + cote * .01, cote), dir = Q.clone().sub(P); dir.y = 0; dir.normalize();
+        if (t >= up && t < up + 3) { const s2 = (t - up) / 3, e = s2 * s2 * (3 - 2 * s2), A = W(UM, 1), B = W(UM, -1), dA = W(UM + .01, 1).sub(A).setY(0).normalize(), dB = W(UM - .01, -1).sub(B).setY(0).normalize(); P = A.clone().lerp(B, e); P.addScaledVector(dA, Math.sin(e * Math.PI) * 2.5); dir = dA.clone().multiplyScalar(Math.cos(e * Math.PI)).add(A.clone().sub(B).setY(0).normalize().multiplyScalar(-Math.sin(e * Math.PI))).normalize(); void dB; }   // (le demi-tour, en douceur, autour de la poulie) P.y = Math.max(P.y, L.hauteur(P.x, P.z) + 3.6); SG.position.copy(P);
+        for (const c2 of T.S) c2.visible = c2.position.distanceTo(P) > 6;   // (les autres sièges s'effacent quand ils passent tout près : on ne les traverse plus) SG.rotation.y = Math.atan2(dir.x, dir.z);
         const eye = P.clone(); eye.y -= 1.5; eye.addScaledVector(dir, -.1); M.camera.position.copy(eye); const look = eye.clone().addScaledVector(dir, 10); look.y += cote > 0 ? -.6 : -3.4; M.camera.lookAt(look);
         const qq = moiP(); if (qq) qq.g.visible = false; } }; };
     const a0 = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0 && a0(x, z, moi); if (r) return r; if (RIDE) return null; const g0 = W(0, 1); return Math.hypot(x - g0.x, z - (g0.z + 4)) < 7 ? { type: "lieu", id: "telesiege", label: "🚡 Prendre le télésiège", faire: monter } : null; }; L.monterTelesiege = monter;
@@ -1708,10 +1711,10 @@ function construireCorbier(A, L, scene) {
       b(new THREE.BoxGeometry(.26, .07, 1.0), vert, 0, -1.02, -.6);   // le plateau, sous les pieds
       for (const sx of [-.07, .07]) b(new THREE.BoxGeometry(.1, .03, .28), noirT, sx, -.97, -.5);   // (les pieds, dessus)
       for (const z of [-1.4, .2]) { const w = b(new THREE.TorusGeometry(.31, .16, 12, 24), jaune, 0, -1.08, z, 0, 0); w.rotation.y = Math.PI / 2; b(new THREE.CylinderGeometry(.14, .14, .3, 12), alu, 0, -1.08, z, 0, Math.PI / 2); }   // (10.136) les très gros pneus jaunes, gonflés
-      const fourche = b(new THREE.CylinderGeometry(.04, .04, 1.0, 8), vert, 0, -.84, -1.0, .97); void fourche;
-      b(new THREE.CylinderGeometry(.025, .025, .62, 8), alu, 0, -.6, -.6, 0, Math.PI / 2);   // le guidon
-      for (const sx of [-.28, .28]) b(new THREE.CylinderGeometry(.032, .032, .12, 8), noirT, sx, -.6, -.6, 0, Math.PI / 2);   // les poignées
-      b(new THREE.BoxGeometry(.06, .16, .05), vert, 0, -.68, -.62); }
+      const fourche = b(new THREE.CylinderGeometry(.04, .04, 1.1, 8), vert, 0, -.75, -.97, .91); void fourche;
+      b(new THREE.CylinderGeometry(.025, .025, .62, 8), alu, 0, -.42, -.55, 0, Math.PI / 2);   // le guidon (10.137 : plus haut)
+      for (const sx of [-.28, .28]) b(new THREE.CylinderGeometry(.032, .032, .12, 8), noirT, sx, -.42, -.55, 0, Math.PI / 2);   // les poignées
+      b(new THREE.BoxGeometry(.06, .16, .05), vert, 0, -.5, -.57); }
     let MODE = "para";
     const decoller = () => { if (VOL || M.cine) return; const q = moiP(); if (q) { q.g.visible = false; q.cible = null; q.chemin = []; }
       const x0 = -6, z0 = 175, y0 = L.hauteur(x0, z0); const F0 = scene.fog ? { near: scene.fog.near, far: scene.fog.far } : null; if (scene.fog && scene.fog.far) { scene.fog.near = Math.max(scene.fog.near, 200); scene.fog.far = Math.max(scene.fog.far, 900); }   /* (10.134 : là-haut, on voit loin : la brume s'écarte) */
