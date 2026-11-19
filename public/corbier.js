@@ -1809,7 +1809,7 @@ function construireCorbier(A, L, scene) {
       // la musique et son volume
       const pres = true; if (pres) charger();   /* (10.138 : on l'entend dans toute la station ; plus loin, moins fort ; dans la galerie, en sourdine) */ if (pres && !son && liste && liste.length) piste(0);
       if (son) { const gal = L.premiereIci && L.premiereIci(p.x, p.z), c = vol * (d < 25 ? 1 : Math.max(.2, 1 - (d - 25) / 70)) * (gal ? .4 : 1); son._v = (son._v || 0) + (c - (son._v || 0)) * .08; try { son.volume = Math.max(0, Math.min(1, son._v)); } catch (e) {} if (son._v > .01 && son.paused) son.play().catch(() => {}); else if (son._v <= .01 && !son.paused) son.pause(); }
-      const vu = d < 30 && !M.cine; if (vu && !(pan && pan.isConnected)) (M.ctx.conteneur || document.body).appendChild(panneau()); else if (!vu && pan && pan.isConnected) pan.remove();
+      const vu = false;   /* (10.141 : plus de réglage du volume à l'écran) */ if (vu && !(pan && pan.isConnected)) (M.ctx.conteneur || document.body).appendChild(panneau()); else if (!vu && pan && pan.isConnected) pan.remove();
       // les projecteurs, en rythme
       const on = !!(son && !son.paused); SPOTS.forEach((S2, k) => { const c = PALS[(k + Math.floor(t / 1700)) % PALS.length]; S2.sp.color.setHex(c); S2.sp.intensity = on ? 45 : 0; S2.tete.material.emissive.setHex(on ? c : 0x222222); }); };
     const a14 = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a14 && a14(x, z, moi); if (r) return r; if (Math.abs(z - 22.4) > 1.1) return null;
