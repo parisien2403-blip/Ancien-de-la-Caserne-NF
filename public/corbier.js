@@ -571,7 +571,7 @@ function construireCorbier(A, L, scene) {
         if (k === "esf") { vitrine(a, b, Z, { soub: "rouge", portes: [[a + .7, .9]] }); box((b - a) * .5, 2.0, .06, mat({ color: 0xc41e26, roughness: .5 }), b - .12 - (b - a) * .25, 1.5, Z + .05); fond(a, b, prodT);
           for (const u of [b - 1.9, b - .9]) add(new THREE.PlaneGeometry(.62, .24), mat({ map: esfP }), u, .28, Z + .09); enseigne(a + .1, b - .1, Z, esfT, .5); }
         else if (k === "rb") { vitrine(a, b, Z, { pas: 1.0 }); fond(a, b, RBt, .25); }
-        else { vitrine(a, b, Z, { portes: a < -15 ? [[a + .9, .9], [a + 1.85, .9]] : [] }); fond(a, b, galT2, .2); } }   // (10.163 : à côté de la porte battante, plus de portes vitrées)
+        else { vitrine(a, b, Z, { portes: [] }); fond(a, b, galT2, .2); } }   // (10.163 : à côté de la porte battante, plus de portes vitrées)
       { const a = -34.3, b = -19.5, w = b - a; ["SPÉCIALITÉS\nSAVOYARDES", "PIZZERIA", "RESTAURANT", "BAR"].forEach((t, i) => enseigne(a + i * w / 4 + .35, a + (i + 1) * w / 4 - .35, Z, txT(256, 64, "#5a2c18", "#f4ece0", t, t.length > 12 ? 24 : 40, `bold @ ${sans}`), .55, 3.0, .12));
         store(a + .1, b - .1, Z, txT(1024, 48, "#5a2414", "#f4ece0", "BAR      RESTAURANT      PIZZERIA      LES ROCHES BLANCHES", 30, `bold @ ${sans}`), 0x6a2a18, .35, 2.62, .22); }
       enseigne(-9.6, -7.4, Z, galT, .5, 2.98, .05, .2); }
