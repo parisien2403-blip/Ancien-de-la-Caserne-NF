@@ -431,7 +431,7 @@ function construireCorbier(A, L, scene) {
         affiche(cx + .45, 1.2, .8, 1.5, z, locPosT); store(a + .1, b - .1, z, txT(512, 64, "#f4f4f2", "#c8202a", "VÊTEMENTS  ·  LOCATION", 30, `bold @ ${sans}`), 0xf2f2ee, .6, 2.55, .26); break; }
       case "locskis": { const z = boutiqueF(l, { soub: "blanc", portes: [[a + .55, .8]], dedans: "skis", g: G("location de skis", "#e0482a", "#ffffff") });
         affiche(cx + .3, w - 1.4, 1.5, 1.45, z, photosT); store(a + .1, b - .1, z, txT(512, 64, "#e0482a", "#ffffff", "location   de   skis", 38, `bold @ ${sans}`, { raye: 16 }), 0xe0482a, .5, 2.55, .28); break; }
-      case "quasar": { const z = boutiqueF(l, { soub: "blanc", portes: [[b - .55, .8]], dedans: "habits", papier: true, g: G("quasar · boutique", "#e0482a", "#ffffff") });
+      case "quasar": { const z = boutiqueF(l, { soub: "bois", portes: [[b - .7, .9]], dedans: "habits", pas: 1.2, g: G("quasar · boutique", "#e0482a", "#ffffff") });
         store(a + .1, b - .1, z, txT(512, 64, "#e0482a", "#ffffff", "quasar  ·  boutique", 38, `bold @ ${sans}`, { raye: 16 }), 0xe0482a, .5, 2.55, .28); break; }
       case "interLR": case "interFN": { const fn = l.id === "interFN", z = boutiqueF(l, { soub: "bleu", portes: [[fn ? a + .6 : b - .6, .85]], dedans: "skis", g: G(fn ? "INTERSPORT · FRONT DE NEIGE" : "INTERSPORT · LOCATION RENT", "#1a3a8a", "#ffffff") });
         enseigne(a + .3, b - .3, z, interT, .5); store(a + .1, b - .1, z, txT(512, 64, "#2a5ac8", "#ffffff", fn ? "FRONT DE NEIGE" : "LOCATION RENT", 34, `bold @ ${sans}`), 0x2a5ac8, .9, 2.55, .26);
@@ -439,7 +439,7 @@ function construireCorbier(A, L, scene) {
       case "pharma": { const z = boutiqueF(l, { portes: [[a + 2.6, .9]], dedans: "pharma", g: G("PHARMACIE", "#2a7a3a", "#ffffff") });   // (les vitraux verts « Pharmacie », la croix verte lumineuse, les affiches)
         enseigne(a + .15, b - .15, z, repT(pharT, Math.max(1, Math.round(w / 2.8))), .62, 2.98, .06, .25); store(a + .1, b - .1, z, txT(256, 32, "#f4f4f2", "#2a7a3a", "", 10, `@ ${sans}`, { bord: "#2a7a3a" }), 0xf2f2ee, .35, 2.5, .1);
         affiche(b - 1.0, 1.0, 1.3, 1.4, z, pharPosT); affiche(a + 1.1, 1.0, 1.1, 1.35, z, skieurT); affiche(a + 4.0, .8, 1.0, 1.35, z, interPosT);
-        const cr = lum(mat({ color: 0x1a8a3a, emissive: 0x20c050, emissiveIntensity: .5 }), .5, 1.8); box(.06, .06, .5, boisF, b - 1.9, 2.4, z + .25); box(.08, .6, .2, cr, b - 1.9, 2.25, z + .55); box(.08, .2, .6, cr, b - 1.9, 2.25, z + .55); break; }
+        const cr = lum(mat({ color: 0x1a8a3a, emissive: 0x20c050, emissiveIntensity: .5 }), .5, 1.8); box(.06, .06, 1.2, boisF, b - 1.9, 2.32, z + .6); box(.04, .3, .04, boisF, b - 1.9, 2.17, z + 1.15); box(.08, .6, .2, cr, b - 1.9, 1.72, z + 1.15); box(.08, .2, .6, cr, b - 1.9, 1.72, z + 1.15);   /* (10.127 : la croix sort du store, sur sa potence) */ break; }
       case "patis": { const z = boutiqueF(l, { portes: [[b - .7, .9]], pas: 1.4, dedans: "salon", g: G("Pâtisserie « La Gourmande » · Salon de Thé", "#3c3c3c", "#f4f0e8") });
         store(a + .1, b - .1, z, txT(1024, 64, "#3c3c3c", "#f4f0e8", "Pâtisserie « La Gourmande » Salon de Thé", 36, `italic bold @ ${serif}`), 0x3c3c3c, .5, 2.55, .28); break; }
       case "sombre": { const z = boutiqueF(l, { soub: "bois", portes: [[cx, .9]], g: G("", "#1e1e22", "#f2f2ee") }); add(new THREE.PlaneGeometry(w - .3, 1.95), mat({ color: 0x16181a, roughness: .4 }), cx, 1.5, z - .3); break; }
@@ -1091,7 +1091,7 @@ function construireCorbier(A, L, scene) {
     piece("N", -44, -34, -14.5, -7.5, { h: 3.1, ext: "bois" });   // (au bout : le hall lumineux des souvenirs et de Skiset)
     piece("M", -35.2, -32.8, -6.2, -3.25, { h: 2.6, ouv: { zmax: [[-35.2, -32.8]] } });   // (10.141 : le sas — à droite l'escalier qui descend, en face les portes battantes)
     piece("M2", -35.2, -32.8, -7.5, -6.2, { h: 2.5 });
-    piece("G3", 22.98, 25.6, -3, -.7, { h: 2.6, ouv: { xmin: [[-1.7, -.4]] } });   // (le couloir derrière la porte du mur en retour)
+    /* (10.127 : le couloir gris et sa petite porte retirés — la vitrine de Quasar à la place) */   // (le couloir derrière la porte du mur en retour)
     const inter = (a0, a1, b0, b1) => [Math.max(a0, b0), Math.min(a1, b1)];
     for (const p of P) for (const q of P) if (p !== q) {
       const add2 = (cote, iv) => { if (iv[1] - iv[0] > .3) (p.ouv[cote] = p.ouv[cote] || []).push(iv); };
@@ -1303,7 +1303,7 @@ function construireCorbier(A, L, scene) {
     }
     // le couloir derrière la porte du mur en retour (x = 23), ses deux portes battantes
     { const pB = mat({ map: tex(64, 128, (c, w, h) => { c.fillStyle = "#8a5a32"; c.fillRect(0, 0, w, h); c.fillStyle = "#b8ccd4"; c.fillRect(12, 14, w - 24, 50); }), roughness: .7 });
-      porteBat(23.05, 1.07, -1.7, 0, -1, 1, .65, 2.1, pB, 23, -1.05); porteBat(23.05, 1.07, -.4, 0, 1, -1, .65, 2.1, pB, 23, -1.05); }
+      void pB; }
     // L : le couloir étroit — à gauche la façade gris foncé aux fenêtres cadrées de rouge et son néon, à droite les vitrines de bois et l'ardoise du 1550 ; la sortie vers l'École du Ski
     { const L_ = Pn("L"), N_ = Pn("N");
       { const R = repere(L_, "zmin"); reserve("L", "zmin", -34, -24); R.boite(10, 2.7, .05, mat({ color: 0x3a4250, roughness: .7 }), -29, 1.35, .02);
