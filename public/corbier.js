@@ -654,7 +654,7 @@ function construireCorbier(A, L, scene) {
     const pot = (x, z, nu) => { cyl(.7, .5, .75, potR, x, .4, z, 16); cyl(.62, .62, .04, terreM, x, .76, z, 14); cyl(.04, .05, 1.6, mat({ color: 0xd8d0c0 }), x, 1.5, z, 5);
       if (nu) for (let k = 0; k < 7; k++) { const br = cyl(.012, .02, 1.0, mat({ color: 0x8a7a6a }), x + Math.cos(k * 2.3) * .22, 2.65, z + Math.sin(k * 2.3) * .22, 4); br.rotation.set(Math.sin(k * 2.3) * .5, 0, -Math.cos(k * 2.3) * .5); }
       else for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(.5 - k * .08, 1), [vertF, mat({ color: 0x4a7a32 })][k % 2], x + (al() - .5) * .3, 2.0 + k * .32, z + (al() - .5) * .3); OB.push([x, z, .9]); };
-    pot(-30, 5.4); pot(LG("galA").x0 - 1.0, 3.6); pot(LG("galB").x0 + 1.0, 3.2); pot(LG("patis").x0 + 2.6, 3.6); pot(LG("galD").x1 + .8, 3.4, true);
+    pot(-30, 5.4); pot(LG("galA").x0 - 1.0, 3.6); pot(LG("galB").x0 - 1.1, 3.4); pot(LG("patis").x0 + 2.6, 3.6); pot(LG("galD").x1 + .8, 3.4, true);
     const bancF = (x) => { const z = zfAt(x); for (let k = 0; k < 3; k++) box(1.6, .05, .12, boisC, x, .46, z + .85 + k * .14); for (const sx of [-.7, .7]) box(.08, .46, .4, mat({ color: 0x3a2a1a }), x + sx, .23, z + 1); box(1.6, .3, .05, boisC, x, .72, z + .7); OB.push([x, z + 1, .9]); };
     for (const x of [LG("sherpa").x1 - 1.6, LG("skiloc").x0 + 1.7, LG("pharma").x0 + 1.4, LG("pharma").x0 + 3.9, LG("patis").x0 + 1.1]) bancF(x);
     for (const x of [LG("skiset").x0 + .8, LG("interLR").x0 + .2, LG("jack").x0 + .4]) { const z = 6.5; box(1.8, .4, .5, boisC, x, .2, z); for (let k = 0; k < 14; k++) add(new THREE.IcosahedronGeometry(.12, 0), k % 4 === 3 ? vertF : fleurR[k % 3], x - .8 + al() * 1.6, .48 + al() * .2, z + (al() - .5) * .35); OB.push([x, z, 1]); }
