@@ -711,7 +711,7 @@ function construireTertre(A, L, scene) {
     ACCORD.push((tm) => { m.userData.poser("debout", tm); const o = Math.sin(tm / 330); for (let i = 0; i < 6; i++) souf[i].position.x = (-.12 + i * .048) * (1 + o * .3); gD.position.x = -.18 - o * .05; gG.position.x = .18 + o * .05; P.bras[0].e.rotation.set(-1.1, 0, -.5 - o * .12); P.bras[1].e.rotation.set(-1.1, 0, .5 + o * .12); P.tete.rotation.y = Math.sin(tm / 1500) * .3; P.bassin.rotation.y = Math.sin(tm / 700) * .08; }); }
   /* les bancs de Paris : lattes de bois vert, pieds de fonte ; quelques promeneurs s'y reposent */
   { const vertB = mat({ color: 0x2e5a3a, roughness: .55 }), fonteB = mat({ color: 0x1a1c1a, metalness: .5, roughness: .5 });
-    for (const [bx, bz, ry, assis] of [[-5.5, -9.7, 0, 1], [3.2, -9.7, 0, 0], [-6.5, 9.7, Math.PI, 1], [13.7, -3, -Math.PI / 2, 0], [-13.7, -6.6, Math.PI / 2, 1]]) { const g = new THREE.Group(); g.position.set(bx, 0, bz); g.rotation.y = ry; scene.add(g);
+    for (const [bx, bz, ry, assis] of [[-5.5, -9.7, 0, 1], [3.2, -9.7, 0, 0], [-6.5, 9.7, Math.PI, 1], [13.7, -3, -Math.PI / 2, 0], [-13.7, -6.6, Math.PI / 2, 1]]) { const g = new THREE.Group(); g.position.set(bx, 0, bz); g.rotation.y = ry; scene.add(g); if (!assis) (L.bancsM = L.bancsM || []).push(...[-.45, .45].map(sx => [bx + Math.cos(ry) * sx, bz - Math.sin(ry) * sx, ry, .46]));
       for (let l = 0; l < 3; l++) box(1.8, .04, .1, vertB, 0, .45, -.12 + l * .13, g); for (let l = 0; l < 2; l++) { const d = box(1.8, .1, .03, vertB, 0, .66 + l * .14, -.24, g); d.rotation.x = -.15; }
       for (const sx of [-.75, .75]) { box(.06, .45, .5, fonteB, sx, .23, -.05, g); box(.05, .5, .05, fonteB, sx, .72, -.23, g); box(.06, .05, .4, fonteB, sx, .62, .02, g); }
       OB.push([bx, bz, .9]);
@@ -728,7 +728,7 @@ function construireTertre(A, L, scene) {
       const pl = new THREE.Group(); pl.position.set(.04, -.34, .1); P.bras[1].c.add(pl); add(new THREE.CylinderGeometry(.18, .18, .015, 14), argM, 0, 0, 0, pl);
       add(new THREE.CylinderGeometry(.035, .028, .14, 8), verreS, -.07, .08, .02, pl); add(new THREE.CylinderGeometry(.035, .028, .14, 8), verreS, .06, .08, -.05, pl); add(new THREE.CylinderGeometry(.04, .032, .06, 8), tasseM, .02, .04, .09, pl);
       const t = TABLES[(k * 11 + 3) % TABLES.length]; m.position.set(t[0] + .8, hPl(t[0] + .8, t[1]), t[1]); m.userData.poser("debout", 0); scene.add(m);
-      SERV.push({ m, P, but: null, tab: t, pause: al() * 3, v: .85 + al() * .25, k }); } }
+      SERV.push({ m, P, pl, but: null, tab: t, pause: al() * 3, v: .85 + al() * .25, k }); } }
   /* (10.88) les terrasses pleines, partout : on tire des chaises dans toute la liste (pas seulement les premières terrasses) ; et dans chaque café, le barman, les clients */
   for (const { a, g, W } of ARD) { g.updateMatrixWorld(true); let best = null; for (const z of [1.0, .45]) for (const dx of [0, .6, -.6, 1.2, -1.2, 1.8, -1.8, 2.4, -2.4, 3, -3]) { const x = a.position.x + dx; if (Math.abs(x) > W / 2 - .35) continue; const p = g.localToWorld(a.position.clone().set(x, 0, z));
       if (TABLES.every(([tx, tz]) => (tx - p.x) ** 2 + (tz - p.z) ** 2 > .8) && CHS.every(([cx, , cz]) => (cx - p.x) ** 2 + (cz - p.z) ** 2 > .3)) { best = [x, z]; break; } if (best) break; }
@@ -815,6 +815,8 @@ function construireTertre(A, L, scene) {
     const ry = Math.atan2(dx, dz), dr = Math.atan2(Math.sin(ry - g.rotation.y), Math.cos(ry - g.rotation.y)); g.rotation.y += dr * Math.min(1, dt * 3); g.rotation.z = -dr * .25; for (const r of V.roues) r.rotation.x += v / .23; V.P.tete.rotation.y = Math.sin(tm / 2600) * .35; V.m.userData.poser("assis", 0); for (const b2 of V.P.bras) { b2.e.rotation.set(-1.25, 0, 0); b2.c.rotation.x = -.25; } };
   const BARM = []; if (GENS) { const ordre = CHS.map((c2, i) => [((i * 7919) % 104729) / 104729, c2]).sort((a, b) => a[0] - b[0]);
     for (const [, [x, y, z, ry]] of ordre.slice(0, Math.min(nTerr, Math.round(CHS.length * .6)))) { const m = gens(kT + 3); m.position.set(x, y - m.userData.hipY, z); m.rotation.y = ry; m.userData.poser("assis", 0); scene.add(m); TERR.push(m); kT++; }
+    { const pris = new Set(ordre.slice(0, Math.min(nTerr, Math.round(CHS.length * .6))).map(o => o[1]));   /* (10.144) on s'assoit où l'on veut : toutes les chaises libres des terrasses, et les bancs */
+      L.tabourets = CHS.filter(c2 => !pris.has(c2)).map(([x, y, z, ry]) => [x, z, ry, y - .04 - (L.hauteur ? L.hauteur(x, z, {}) : 0)]).concat(L.bancsM || []).slice(0, 199); L.nbTabouretsSalle = 0; }
     const nA = PETIT ? 0 : (MOBILE || GPU_MODESTE) ? 1 : 3;
     for (const [i, S2] of SALLES.entries()) { if (PETIT && i % 2) continue; const [pb, rb] = S2.bar, b = personne3D({ taille: 1.78, peau: PE[(i * 5 + 1) % 6], ch: "#141010", haut: "#f2f0ea", bas: "#141414", chaussures: "#0a0a0a", coif: i % 3 ? "court" : "chauve", pantalon: true });
       box(.38, .62, .02, mat({ color: 0xffffff, roughness: .8 }), 0, -.14, .11, b.userData.parts.bassin); b.position.copy(pb); b.rotation.y = rb; b.userData.poser("debout", 0); scene.add(b); BARM.push({ m: b, k: i });
@@ -863,7 +865,7 @@ function construireTertre(A, L, scene) {
         const dx = S2.but[0] - m.position.x, dz = S2.but[1] - m.position.z, d = Math.hypot(dx, dz);
         if (d < .1) { S2.but = null; S2.pause = 2.5 + al() * 2.5; m.rotation.y = Math.atan2(S2.tab[0] - m.position.x, S2.tab[1] - m.position.z); }
         else { const v = Math.min(d, S2.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = hPl(m.position.x, m.position.z); m.rotation.y = Math.atan2(dx, dz); if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * S2.v / 1.2); } }
-      P.bras[1].e.rotation.set(-1.15, 0, .3); P.bras[1].c.rotation.set(-1.45, 0, 0); } catch (e) { errA(e); }   // (le plateau toujours bien à plat sur la main)
+      P.bras[1].e.rotation.set(-1.15, 0, .3); P.bras[1].c.rotation.set(-1.45, 0, 0); if (S2.pl) { m.updateMatrixWorld(true); const qp = S2.pl.parent.getWorldQuaternion(new THREE.Quaternion()).invert(), qm = m.getWorldQuaternion(new THREE.Quaternion()); S2.pl.quaternion.copy(qp.multiply(qm)); } } catch (e) { errA(e); }   /* (10.144 : le plateau remis à l'endroit, à plat, quelle que soit la main) */   // (le plateau toujours bien à plat sur la main)
     try { if (c && tm - (L.tVis || 0) > 400) { L.tVis = tm; const V2 = ((MOBILE || GPU_MODESTE) ? 38 : 60) ** 2, vis = (m) => { m.visible = (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < V2; }; for (const m of TERR) vis(m); for (const B of BARM) vis(B.m); for (const W of MARCH) vis(W.m); for (const S3 of SERV) vis(S3.m); } } catch (e) { errA(e); }   // (les gens trop loin : on ne les dessine pas)
     try { for (const { m, k } of MODELES) { if (!m.visible) continue; m.userData.poser("assis", 0); const P = m.userData.parts; P.bras[1].e.rotation.set(-1.9, 0, .4); P.bras[1].c.rotation.x = -1.9; P.tete.rotation.y = Math.sin(tm / 3000 + k) * .08; } } catch (e) { errA(e); }
     try { if (!n) for (const A of ACCORD) A(tm); } catch (e) { errA(e); }

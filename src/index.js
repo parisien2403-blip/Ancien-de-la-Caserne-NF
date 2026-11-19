@@ -688,9 +688,9 @@ export class Compteur extends DurableObject {
       const s = m.s, n = v => Number.isFinite(Number(v)) ? Math.round(Number(v) * 1000) / 1000 : 0;
       a.installe = s && (s.sorte === "assis" || s.sorte === "allonge") ? { sorte: s.sorte, x: n(s.x), y: n(s.y), z: n(s.z), h: n(s.h), ry: n(s.ry) } : null; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "installe", numero: a.numero, s: a.installe }, ws);
-    } else if (m.t === "assis" && (a.lieu === "fetes" || a.lieu === "cave" || a.lieu === "corbier")) {
+    } else if (m.t === "assis" && (a.lieu === "fetes" || a.lieu === "cave" || a.lieu === "corbier" || a.lieu === "tertre")) {
       // assis sur un tabouret du bar (son numéro), ou debout (null)
-      a.assis = Number.isInteger(m.i) && m.i >= 0 && m.i < (a.lieu === "corbier" ? 200 : 20) ? m.i : null; ws.serializeAttachment(a);
+      a.assis = Number.isInteger(m.i) && m.i >= 0 && m.i < (a.lieu === "corbier" || a.lieu === "tertre" ? 200 : 20) ? m.i : null; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "assis", numero: a.numero, i: a.assis }, ws);
     } else if (m.t === "slow_demande" && a.lieu && !a.slow) {
       // une invitation à danser un slow, envoyée seulement à la personne choisie
