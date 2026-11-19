@@ -16205,7 +16205,7 @@ function chercherAction(t) {
       else if (C3.sousSol && C3.sousSol.tablePP && M.lieu === "grande" && moi.g.position.y < -2 && Math.abs(x - C3.sousSol.tablePP[0]) < 1.5 && Math.abs(z - C3.sousSol.tablePP[1]) < 2.2) a = { type: "pingpong", label: "🏓 Jouer au ping-pong" };
       else if (C3.hifi && M.lieu === "grande" && Math.abs(moi.g.position.y - C3.FL) < .6 && Math.hypot(x - C3.hifi[0], z - C3.hifi[1]) < 1.4) a = { type: "hifi", label: M.hifiOn ? "⏹ Arrêter la musique" : "▶️ Mettre la musique" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
-      else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
+      else if (i >= 0) a = { type: "asseoir", i, label: M.lieu === "corbier" ? "🪑 S'asseoir" : "🪑 S'asseoir au bar" };
       else if (M.L.appart && moi.installe) a = { type: "leverAppart", label: "🧍 Se lever" };
       else if (M.L.appart && !M.amen && siegeAppart(x, z)) a = siegeAppart(x, z);   /* (l'appartement : s'asseoir, s'allonger) */
       else if (M.L.apo) {}
