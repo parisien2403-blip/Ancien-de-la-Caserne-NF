@@ -11882,7 +11882,7 @@ function placerCamera(net) { if (M && M.rendu && M.rendu.xr.isPresenting) return
 /* ===================== (9.98) l'hiver : la neige — sur le sol, les toits des voitures, les rebords (tout ce qui est à plat), et qui tombe ; ni camion-benne, ni rollers, ni deli-delo :
    une bataille de boules de neige dans la cour sous les fenêtres de l'appartement Z, et sur la terrasse. L'administrateur l'allume (❄️), en plus du jour et de la nuit ===================== */
 let SAPIN = [10.5, -10];   // (le grand sapin de Noël : dans la cour d'honneur, à droite en regardant l'horloge)
-const NEIGE = { u: { value: 0 }, boites: { value: null }, hauts: { value: [1e4, 1e4, 1e4, 1e4, 1e4, 1e4, 1e4, 1e4] }, pts: null, lieux: new Set(["grande", "rue", "appart", "rex"]), dehors: null };   // (les boîtes : créées au premier hiver — THREE n'est pas encore chargé ici)
+const NEIGE = { u: { value: 0 }, boites: { value: null }, hauts: { value: [1e4, 1e4, 1e4, 1e4, 1e4, 1e4, 1e4, 1e4] }, pts: null, lieux: new Set(["grande", "rue", "appart", "rex", "corbier"]), dehors: null };   // (les boîtes : créées au premier hiver — THREE n'est pas encore chargé ici)
 function neigerMateriau(m) {   // le blanc de la neige sur les faces tournées vers le ciel (un seul calcul par matière ; ensuite, un simple réglage)
   if (!m || m.userData.neige || !(m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isMeshLambertMaterial)) return; m.userData.neige = true;
   const avant = m.onBeforeCompile; m.onBeforeCompile = (sh, r) => { avant && avant.call(m, sh, r); sh.uniforms.uNeige = NEIGE.u; sh.uniforms.uNeigeB = NEIGE.boites; sh.uniforms.uNeigeH = NEIGE.hauts;

@@ -50,7 +50,7 @@ function construireCorbier(A, L, scene) {
     scene.add(g); PORTES.push({ g, base, sens, cx, cz, a: 0 }); return g; };
   const serif = "Georgia, 'Times New Roman', serif", sans = "Arial, Helvetica, sans-serif";
   const fit = (c, txt, maxW, px, font) => { let p = px; c.font = font.replace("@", p + "px"); while (c.measureText(txt).width > maxW && p > 8) { p -= 2; c.font = font.replace("@", p + "px"); } };
-  const OB = [];
+  const OB = []; L.ete = []; L.hiverF = [];   /* (10.143) ce qui disparaît l'hiver ; ce qu'on fait au changement de saison */
   const SIEGE = (x, z, ry, h = .46) => { const o = new THREE.Object3D(); o.position.set(x, 0, z); o.rotation.y = ry; o.userData.siege = h; scene.add(o); };   /* (10.127 : une place où s'asseoir — suit les décalages et le miroir comme le reste) */
   const banc2 = (x, z, ry, h = .46) => { for (const s of [-.45, .45]) SIEGE(x + Math.cos(ry) * s, z - Math.sin(ry) * s, ry, h); };   // (les obstacles ronds : [x, z, rayon])
 
@@ -726,12 +726,13 @@ function construireCorbier(A, L, scene) {
   for (const [x, z, h] of [[-90, -16, 11], [-92, 20, 13]]) sapin(x, z, h, al() < .4 ? melezeM : sapinM);
   for (let k = 0; k < 14; k++) sapin(-130 + k * 18 + al() * 6, -78 - al() * 30, 14 + al() * 8);   // la forêt, derrière les tours
   /* (10.127) le terrain de badminton dans l'herbe, devant la promenade : le sable, les lignes blanches, le filet au milieu — on joue de gauche à droite */
-  { const cz = 23, sT = vraie(tT(8, 8, (c, w, h) => { c.fillStyle = "#d6c096"; c.fillRect(0, 0, w, h); }), "images/corbier-sol/sable.jpg", 2), blanc = mat({ color: 0xf4f4f0, roughness: .8 });
+  { const nBad = scene.children.length; L.badFin = () => L.ete.push(...scene.children.slice(nBad));
+    const cz = 23, sT = vraie(tT(8, 8, (c, w, h) => { c.fillStyle = "#d6c096"; c.fillRect(0, 0, w, h); }), "images/corbier-sol/sable.jpg", 2), blanc = mat({ color: 0xf4f4f0, roughness: .8 });
     L.solsPlus.push(sol(-8, 8, cz - 4.2, cz + 4.2, mat({ map: sT, roughness: 1 }), .02));
     const ligne = (w, d, x, z) => box(w, .012, d, blanc, x, .03, z);
     for (const s2 of [-1, 1]) { ligne(13.4, .05, 0, cz + s2 * 3.05); ligne(13.4, .05, 0, cz + s2 * 2.59); ligne(.05, 6.1, s2 * 6.7, cz); ligne(.05, 6.1, s2 * 5.94, cz); ligne(.05, 6.1, s2 * 1.98, cz); ligne((6.7 - 1.98), .05, s2 * (1.98 + 6.7) / 2, cz); }
     const poteau2 = mat({ color: 0x2a5a3a, metalness: .4, roughness: .5 }); for (const s2 of [-1, 1]) { cyl(.025, .03, 1.55, poteau2, 0, .78, cz + s2 * 3.1, 8); OB.push([0, cz + s2 * 3.1, .15]); }
-    box(.02, .72, 6.2, mat({ color: 0x1a1a1a, transparent: true, opacity: .45, depthWrite: false }), 0, 1.16, cz); box(.03, .05, 6.2, blanc, 0, 1.53, cz); }
+    box(.02, .72, 6.2, mat({ color: 0x1a1a1a, transparent: true, opacity: .45, depthWrite: false }), 0, 1.16, cz); box(.03, .05, 6.2, blanc, 0, 1.53, cz);  L.badFin(); }
   /* (10.111, d'après les photos de la promenade) les arbres et la végétation : les épicéas et mélèzes du talus, au bout côté Yéti et au bout côté piscine, les buissons le long des chemins */
   for (const [x, z, h] of [[-48, 24, 13], [-44, 27, 11], [-70, 28, 14], [72, 22, 12], [78, 26, 14], [86, 20, 11], [-20, 52, 12], [10, 56, 10]]) sapin(x, z, h, al() < .35 ? melezeM : sapinM);
   for (let k = 0; k < (PETIT ? 10 : 26); k++) { const x = -60 + al() * 140, z = 22 + al() * 22; if (Math.abs(x - 30) < 14 && z < 34) continue; if (Math.abs(x) < 10 && z > 17.5 && z < 29) continue; buisson(x, z, .7 + al() * .7); }
@@ -743,7 +744,7 @@ function construireCorbier(A, L, scene) {
     const pot = (x, z, nu) => { cyl(.7, .5, .75, potR, x, .4, z, 16); cyl(.62, .62, .04, terreM, x, .76, z, 14); cyl(.04, .05, 1.6, mat({ color: 0xd8d0c0 }), x, 1.5, z, 5);
       if (nu) for (let k = 0; k < 7; k++) { const br = cyl(.012, .02, 1.0, mat({ color: 0x8a7a6a }), x + Math.cos(k * 2.3) * .22, 2.65, z + Math.sin(k * 2.3) * .22, 4); br.rotation.set(Math.sin(k * 2.3) * .5, 0, -Math.cos(k * 2.3) * .5); }
       else for (let k = 0; k < 4; k++) add(new THREE.IcosahedronGeometry(.5 - k * .08, 1), [vertF, mat({ color: 0x4a7a32 })][k % 2], x + (al() - .5) * .3, 2.0 + k * .32, z + (al() - .5) * .3); OB.push([x, z, .9]); };
-    { /* (10.127, d'après la photo) entre les deux pots : le petit manège des enfants — le bassin rond bleu, l'eau, six bateaux-chiens qui tournent tous dans le même sens, la tête devant */
+    { const nMan = scene.children.length; /* (10.127, d'après la photo) entre les deux pots : le petit manège des enfants — le bassin rond bleu, l'eau, six bateaux-chiens qui tournent tous dans le même sens, la tête devant */
       const mx = (LG("galA").x0 - 1.0 + LG("galB").x0 - 1.1) / 2, mz = 3.5, R1 = 1.35, R0 = .62, bleu = mat({ color: 0x2a8ad0, roughness: .45 }), eau = mat({ color: 0x5ac8f0, roughness: .1, metalness: .1, transparent: true, opacity: .85 });
       add(new THREE.CylinderGeometry(R1, R1 + .05, .34, 40, 1, true), mat({ color: 0x2a8ad0, roughness: .45, side: THREE.DoubleSide }), mx, .2, mz); add(new THREE.CylinderGeometry(R0, R0, .38, 32, 1, true), mat({ color: 0x2a8ad0, roughness: .45, side: THREE.DoubleSide }), mx, .22, mz);
       for (const [r, y] of [[R1 + .02, .37], [R0, .41]]) { const t = add(new THREE.TorusGeometry(r, .04, 6, 40), bleu, mx, y, mz); t.rotation.x = Math.PI / 2; }
@@ -756,7 +757,7 @@ function construireCorbier(A, L, scene) {
         for (const sx of [-1, 1]) { const e = pc(new THREE.BoxGeometry(.05, .2, .1), noirM, sx * .17, .28, .2); e.rotation.z = sx * .15; pc(new THREE.BoxGeometry(.02, .04, .03), noirM, sx * .06, .36, .335); }   // les oreilles, les yeux
         pc(new THREE.BoxGeometry(.06, .05, .03), noirM, 0, .29, .34); pc(new THREE.BoxGeometry(.1, .015, .02), noirM, 0, .24, .335);   // la truffe, le sourire
         const rp = pc(new THREE.TorusGeometry(.07, .012, 4, 10), rampe, 0, .3, .04); rp.rotation.x = .4; void blancM; });
-      L.manege = G2; OB.push([mx, mz, R1 + .15]); }
+      L.manege = G2; OB.push([mx, mz, R1 + .15]); L.ete.push(...scene.children.slice(nMan)); }
     pot(-26.6, 6.6); pot(LG("galA").x0 - 1.0, 3.6); pot(LG("galB").x0 - 1.1, 3.4); pot(LG("patis").x0 + 2.6, 3.6); pot(LG("galD").x1 + .8, 3.4, true);
     const bancF = (x) => { const z = zfAt(x); for (let k = 0; k < 3; k++) box(1.6, .05, .12, boisC, x, .46, z + .85 + k * .14); for (const sx of [-.7, .7]) box(.08, .46, .4, mat({ color: 0x3a2a1a }), x + sx, .23, z + 1); box(1.6, .3, .05, boisC, x, .72, z + .7); OB.push([x, z + 1, .9]); banc2(x, z + 1, 0); };
     for (const x of [LG("sherpa").x1 - 1.6, LG("skiloc").x0 + 1.7, LG("pharma").x0 + 1.4, LG("pharma").x0 + 3.9, LG("patis").x0 + 1.1]) bancF(x);
@@ -768,9 +769,9 @@ function construireCorbier(A, L, scene) {
     { const gC = LG("galC"), xc = (gC.x0 + gC.x1) / 2; L.solsPlus.push(sol(xc - 1.3, xc + 1.3, 7, 12.6, mat({ map: deckT, roughness: .8 }), .035));
       for (const sx of [-1.32, 1.32]) box(.1, .08, 5.6, boisC, xc + sx, .06, 9.8); }   // (10.152 : une simple rampe de planches, sans barrière)
     // (10.153, d'après la photo) deux tables de ping-pong en béton, sur le gravier, le long du plancher
-    { const vt = mat({ color: 0x2a6a4a, roughness: .5 }), bl = mat({ color: 0xf4f4f2 }), gr = mat({ color: 0x8a8a86, roughness: .9 }), fil = mat({ color: 0x2a2a2c, transparent: true, opacity: .7 });
+    { const nPP = scene.children.length; L.ppFin = () => L.ete.push(...scene.children.slice(nPP)); const vt = mat({ color: 0x2a6a4a, roughness: .5 }), bl = mat({ color: 0xf4f4f2 }), gr = mat({ color: 0x8a8a86, roughness: .9 }), fil = mat({ color: 0x2a2a2c, transparent: true, opacity: .7 });
       for (const x of [LG("skiset").x0 - .5, LG("vet").x1 + 2.2, LG("pharma").x0 + 4.1, LG("patis").x0 + 6.3]) { const z = 9.2;   /* (10.127 : les deux du milieu, décalées : on joue sans se cogner à la rampe de planches) */ box(2.74, .08, 1.52, vt, x, .76, z); box(2.74, .085, .03, bl, x, .76, z + .74); box(2.74, .085, .03, bl, x, .76, z - .74); box(.03, .085, 1.52, bl, x + 1.35, .76, z); box(.03, .085, 1.52, bl, x - 1.35, .76, z); box(2.74, .086, .02, bl, x, .76, z);
-        box(.06, .16, 1.7, fil, x, .88, z); for (const sx of [-.9, .9]) box(.2, .72, 1.1, gr, x + sx, .36, z); OB.push([x - .9, z, 1.1], [x + .9, z, 1.1]); } }
+        box(.06, .16, 1.7, fil, x, .88, z); for (const sx of [-.9, .9]) box(.2, .72, 1.1, gr, x + sx, .36, z); OB.push([x - .9, z, 1.1], [x + .9, z, 1.1]); }  L.ppFin(); }
     // le kiosque d'affichage sur son poteau, son petit toit à deux pans, devant la galerie
     { const gA = LG("galA"), kx = (gA.x0 + gA.x1) / 2 + .5, kz = zfAt(kx) + 2.4, affT = tT(128, 80, (c, w, h) => { c.fillStyle = "#3a2a1e"; c.fillRect(0, 0, w, h); for (let k = 0; k < 5; k++) { c.fillStyle = ["#f4f2ea", "#f0e0a0", "#e8f0f4"][k % 3]; c.fillRect(8 + k * 23, 10 + (k % 2) * 8, 19, 26); } });
       cyl(.07, .08, 2.2, bk, kx, 1.1, kz, 6); for (let k = 0; k < 4; k++) { const a2 = k * Math.PI / 2, br = cyl(.03, .03, .8, bk, kx + Math.cos(a2) * .25, .26, kz + Math.sin(a2) * .25, 4); br.rotation.set(-Math.sin(a2) * .9, 0, Math.cos(a2) * .9); }
@@ -1568,6 +1569,7 @@ function construireCorbier(A, L, scene) {
     L.evite = evite;
     const eviteX = (st, x0, z, dz = 0) => { const ok = (x) => !L.limites || (L.limites(x, z) && L.limites(x, z + dz * .9)); let b = st.o || 0; if (!ok(x0 + b)) for (const o of OFF) if (ok(x0 + o)) { b = o; break; } st.c = (st.c ?? b) + (b - (st.c ?? b)) * .12; st.o = b; return x0 + st.c; };
     const raquette = (m, i = 1) => { const r = new THREE.Group(), c = P(m).bras[i].c; r.position.y = -m.userData.hipY * .38; c.add(r); const mm = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .25, 5), mat({ color: 0x2a2a2a })); mm.position.y = -.12; r.add(mm); const t = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .015, 12), mat({ color: 0xc8202a })); t.position.y = -.3; t.rotation.x = Math.PI / 2; r.add(t); };
+    const jPP = JOUR.length;
     // le ping-pong : deux joueurs par table, la balle qui va et vient
     { const tabs = [LG("skiset").x0 - .5, LG("vet").x1 + 2.2, LG("pharma").x0 + 4.1, LG("patis").x0 + 6.3].slice(0, PEU ? 2 : 4);
       tabs.forEach((px, i) => { const tx = -px, tz = 9.2, J = [-1, 1].map(sg => { const m = ad(gens(i * 7 + (sg > 0 ? 2 : 5))); m.position.set(tx + sg * 1.85, H(tx, tz), tz); m.rotation.y = -sg * Math.PI / 2; raquette(m); JOUR.push(m); return m; });
@@ -1580,11 +1582,13 @@ function construireCorbier(A, L, scene) {
       const vol = ad(new THREE.Mesh(new THREE.ConeGeometry(.04, .09, 8), mat({ color: 0xf8f8f4 }))); JOUR.push(vol);
       ANIM.push((t) => { const T2 = 1.6, ph = (t % (2 * T2)) / T2, dir = ph < 1 ? 1 : -1, u = ph < 1 ? ph : ph - 1; vol.position.set(-dir * 3.8 + dir * 7.6 * u, 1.9 + Math.sin(u * Math.PI) * 2.6, cz + Math.sin(t * .9) * .8); vol.rotation.z = dir * (u - .5) * 2;
         J.forEach((m, k) => { const sg = k ? 1 : -1, fr = sg === -dir ? u : 1 - u; m.userData.poser("debout", 0); const b = P(m).bras[1]; b.e.rotation.x = -1.2 - Math.max(0, 1 - fr * 4) * 1.6; b.e.rotation.z = .2; m.position.z = cz + Math.sin(t * .9) * .6; }); }); }
+    const ETEP = JOUR.slice(jPP);
     // les enfants dans les bateaux-chiens du manège
     if (L.manege) L.manege.children.filter(b => b.isGroup).slice(0, PEU ? 3 : 5).forEach((b, k) => { const m = enfant(k + 1); m.position.set(0, .2 - m.userData.hipY * .55, -.08); m.scale.setScalar(.8); m.userData.poser("assis", 0); b.add(m); m.userData.anime = true; JOUR.push(m);
       ANIM.push((t) => { m.userData.poser("assis", t * 1000); P(m).bras[k % 2].e.rotation.x = -.6 - Math.max(0, Math.sin(t * 1.3 + k)) * 1.6; }); });
     // les enfants qui suivent la mascotte, en file
     if (L.mascPos) for (let k = 0; k < (PEU ? 2 : 4); k++) { const m = ad(enfant(k + 4)); JOUR.push(m); ANIM.push((t) => { const q = L.mascPos(t - 1.6 - k * 1.1), off = (k % 2 ? .45 : -.45); const x = q.x + Math.cos(q.ry) * off, z = evite(m.userData, x, q.z - Math.sin(q.ry) * off, Math.sin(q.ry)); m.position.set(x, H(x, z), z); m.rotation.y = q.ry; m.userData.poser("marche", t * 1000 * 1.25); if (Math.sin(t * .6 + k) > .7) P(m).bras[1].e.rotation.x = -2.6; }); }
+    const jNa = JOUR.length;
     // les nageurs : le crawl, d'un bout à l'autre du bassin
     for (let k = 0; k < (PEU ? 2 : 4); k++) { const W3 = new THREE.Group(); ad(W3); const f = k % 2 === 1, pe = PE[(k * 2 + 1) % 6], mail = ["#1a3aa8", "#d8202a", "#1a1a1a", "#e8501a"][k];   /* (en maillot de bain : la peau nue, le slip ou le maillot une pièce, le bonnet) */
       const m = personne3D({ taille: f ? 1.66 : 1.78, peau: pe, ch: ["#2a1a12", "#e2c27a", "#141010", "#8a4a22"][k], haut: f ? mail : pe, bas: mail, chaussures: pe, coif: f ? "queue" : "court", pantalon: false, robe: false });
@@ -1690,8 +1694,35 @@ function construireCorbier(A, L, scene) {
         P2.needsUpdate = true; LP.needsUpdate = true; const f = Math.max(0, 1 - e / b.vie), cr = e > b.vie * .6 ? (Math.random() < .5 ? .3 : 1) : 1;   // (le crépitement, à la fin)
         b.m.opacity = f * cr; b.lm.opacity = f * .8; b.m.size = 2.6 * (b.type === "saule" ? 1 : .6 + f * .5); if (e < .4) flash = Math.max(flash, 1 - e / .4); }
       lumFeu.intensity = flash * 6; };
+
+    /* (10.143) l'hiver : les nageurs s'en vont aussi ; tout le monde met bonnet et écharpe ; des skieurs sur les télésièges, d'autres qui descendent la piste (le jour) */
+    ETEP.push(...JOUR.slice(jNa, jNa + (PEU ? 2 : 4)));
+    const HIV = [], SKI = [], cols = [0xd8202a, 0x2a5ac8, 0xf0c020, 0x1a1a1a, 0x3ab04a, 0xf2f2ee, 0xe86a2a, 0x7a3a8a];
+    const habiller = (m, k) => { const Pp = m.userData.parts; if (!Pp || m.userData.hiv) return; const T2 = m.userData.hipY * 2, c1 = cols[k % 8], c2 = cols[(k + 3) % 8];
+      const bo = new THREE.Mesh(new THREE.SphereGeometry(T2 * .068, 12, 8, 0, Math.PI * 2, 0, Math.PI * .55), new THREE.MeshStandardMaterial({ color: c1, roughness: .9 })); bo.position.y = T2 * .012; Pp.tete.add(bo);
+      const po = new THREE.Mesh(new THREE.SphereGeometry(T2 * .02, 8, 6), new THREE.MeshStandardMaterial({ color: 0xf4f4f2, roughness: 1 })); po.position.y = T2 * .07; bo.add(po);
+      const ec = new THREE.Mesh(new THREE.TorusGeometry(T2 * .04, T2 * .016, 6, 14), new THREE.MeshStandardMaterial({ color: c2, roughness: .95 })); ec.rotation.x = Math.PI / 2; ec.position.y = T2 * .31; Pp.buste.add(ec);
+      const dd = new THREE.Mesh(new THREE.CapsuleGeometry(T2 * .088, T2 * .19, 4, 10), new THREE.MeshStandardMaterial({ color: c1, roughness: .7 })); dd.position.y = T2 * .16; dd.scale.z = .78; Pp.buste.add(dd);   // (la doudoune)
+      for (const o of [bo, po, ec, dd]) o.userData.perso = true; m.userData.hiv = [bo, ec, dd]; for (const o of m.userData.hiv) o.visible = false; HIV.push(...m.userData.hiv); };
+    [...JOUR, ...DANSE].forEach((o, k) => { if (o.userData && o.userData.parts && !ETEP.includes(o)) habiller(o, k); });
+    const skis = (m) => { const Pp = m.userData.parts, sk = new THREE.MeshStandardMaterial({ color: 0xd8202a, roughness: .4 }), fer = new THREE.MeshStandardMaterial({ color: 0x9a9ea2, metalness: .7 });
+      for (const J of Pp.jambes) { const s2 = new THREE.Mesh(new THREE.BoxGeometry(.09, .02, 1.6), sk); s2.position.set(0, -m.userData.hipY + .02, .2); J.gen.add(s2); s2.position.y = -(m.userData.hipY * .5) - .02; }
+      for (const b of Pp.bras) { const bt = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, 1.15, 5), fer); bt.position.y = -m.userData.hipY * .55; b.c.add(bt); } m.traverse(o => { o.userData.perso = true; }); };
+    // sur les télésièges : des skieurs assis, qui montent (et quelques-uns qui redescendent)
+    for (const [ti, T] of TS.entries()) for (let i = 0; i < T.nS; i += (PEU ? 4 : 2)) { const c2 = T.S[i]; for (const sx of (i % 4 ? [-.45] : [-.45, .45])) { const m = gens(i * 3 + ti * 7 + (sx > 0 ? 1 : 0)); habiller(m, i + ti);
+        m.position.set(sx, -2.15 - m.userData.hipY + .02, .05); m.userData.poser("assis", 0); skis(m); m.visible = false; c2.add(m); SKI.push(m); } }
+    // ceux qui descendent la piste : du haut du pré jusqu'au front de neige, en godillant ; en bas, ils reprennent le télésiège (ils réapparaissent en haut)
+    const DESC = []; for (let k = 0; k < (PEU ? 5 : 10); k++) { const m = gens(k * 5 + 3); habiller(m, k + 2); skis(m); m.visible = false; scene.add(m); m.userData.anime = true; SKI.push(m);
+      const x0 = -30 + (k * 13) % 60, v = 6 + (k % 4) * 1.4, ph = k * 37; DESC.push((t) => { const L3 = 140, d = (t * v + ph) % L3, z = 172 - d, x = x0 + Math.sin(d * .06 + k) * 7, dx = Math.cos(d * .06 + k) * .42;
+        m.position.set(x, L.hauteur(x, z), z); m.rotation.y = Math.PI + Math.atan2(dx, 1) * 1.1; const Pp = m.userData.parts; m.userData.poser("debout", 0);
+        for (const J of Pp.jambes) { J.h.rotation.x = -.45; J.gen.rotation.x = .7; } Pp.buste.rotation.x = .35; m.rotation.z = -dx * .5;
+        for (const [i, b] of Pp.bras.entries()) { b.e.rotation.x = -.5; b.e.rotation.z = (i ? 1 : -1) * .25; } }); }
+    let saison = null;
+    const a16 = L.anim; L.anim = (tm) => { try { a16 && a16(tm); } catch (e) {} const hv = !!(M && M.hiver), nuit = !!L.nuit, cle = hv + ":" + nuit;
+      if (cle !== saison) { saison = cle; for (const o of L.ete) o.visible = !hv; for (const o of ETEP) o.visible = !hv; for (const o of HIV) o.visible = hv; for (const o of SKI) o.visible = hv && !nuit; L.hiverOn = hv; }
+      if (hv && !nuit) { const t = (tm || performance.now()) / 1000; for (const f of DESC) try { f(t); } catch (e) {} for (const m of SKI) if (m.parent !== scene) m.userData.poser("assis", t * 1000); } };
     const a8 = L.anim; let jourV = null; L.anim = (tm) => { try { a8 && a8(tm); } catch (e) {} const t = (tm || performance.now()) / 1000, jour = !L.nuit;
-      if (jour !== jourV) { jourV = jour; for (const o of JOUR) o.visible = true; for (const o of DANSE) o.visible = !jour; if (jour) { for (const b of BUR) { b.pts.visible = b.tr.visible = b.fus.visible = false; } lumFeu.intensity = 0; } }
+      if (jour !== jourV) { jourV = jour; for (const o of JOUR) o.visible = !(M && M.hiver && ETEP.includes(o)); for (const o of DANSE) o.visible = !jour; if (jour) { for (const b of BUR) { b.pts.visible = b.tr.visible = b.fus.visible = false; } lumFeu.intensity = 0; } }
       for (const f of ANIM) try { f(t); } catch (e) {} if (!jour) { for (const f of DANSEF) try { f(t); } catch (e) {} feu(t); } }; }   /* (10.138 : le même monde de jour comme de nuit ; le soir, en plus, on danse devant la scène) */
   /* (10.128) l'ambiance : le brouhaha des gens qui parlent (le même que la salle des fêtes), sur la promenade, aux terrasses et dans la galerie ; plus doux le soir, coupé à la borne d'arcade */
   if (false) { let son = null, v = 0; const a9 = L.anim; L.anim = (tm) => { try { a9 && a9(tm); } catch (e) {} const ici = M && M.L === L && !M.cine, moi = ici && M.moiNum && M.gens.get(M.moiNum);
@@ -1714,7 +1745,7 @@ function construireCorbier(A, L, scene) {
       VOILE.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(ll), new THREE.LineBasicMaterial({ color: 0x6a6a6a, transparent: true, opacity: .7 })));
       for (const sx of [-.28, .28]) { const e = new THREE.Mesh(new THREE.BoxGeometry(.035, .035, .14), new THREE.MeshStandardMaterial({ color: 0xd8202a })); e.position.set(sx, -.5, -.35); VOILE.add(e); } }   // (les élévateurs, dans les mains)
     let VOL = null, pad = null; const moiP = () => M && M.gens && M.gens.get(M.moiNum);
-    const fini = (x, z) => { TROT.visible = false; const q = moiP(); if (VOL && VOL.F0 && scene.fog) { scene.fog.near = VOL.F0.near; scene.fog.far = VOL.F0.far; } VOL = null; VOILE.visible = false; if (pad) { pad.remove(); pad = null; } try { finCine(); } catch (e) { M.cine = null; }
+    const fini = (x, z) => { TROT.visible = false; SKIV.visible = false; const q = moiP(); if (VOL && VOL.F0 && scene.fog) { scene.fog.near = VOL.F0.near; scene.fog.far = VOL.F0.far; } VOL = null; VOILE.visible = false; if (pad) { pad.remove(); pad = null; } try { finCine(); } catch (e) { M.cine = null; }
       if (q) { let bx = 24, bz = 46; for (let r = 0; r < 30 && L.limites; r += 1.5) { let ok = false; for (let a2 = 0; a2 < 6.3; a2 += .5) { const tx = x + Math.cos(a2) * r, tz = z + Math.sin(a2) * r; if (L.limites(tx, tz)) { bx = tx; bz = tz; ok = true; break; } } if (ok) break; }
         q.g.position.set(bx, L.hauteur(bx, bz), bz); q.g.visible = true; q.cible = null; q.chemin = []; try { envoyerWS({ t: "aller", x: bx, z: bz }); } catch (e) {} } };
     const TROT = new THREE.Group(); TROT.userData.anime = true; TROT.visible = false; scene.add(TROT);   /* (10.135) la trottinette de descente : verte, ses gros pneus jaunes, le guidon, les poignées */
@@ -1727,6 +1758,12 @@ function construireCorbier(A, L, scene) {
       b(new THREE.CylinderGeometry(.025, .025, .62, 8), alu, 0, -.42, -.55, 0, Math.PI / 2);   // le guidon (10.137 : plus haut)
       for (const sx of [-.28, .28]) b(new THREE.CylinderGeometry(.032, .032, .12, 8), noirT, sx, -.42, -.55, 0, Math.PI / 2);   // les poignées
       b(new THREE.BoxGeometry(.06, .16, .05), vert, 0, -.5, -.57); }
+    /* (10.143) l'hiver, la trottinette devient le ski : les spatules des skis devant soi, un bâton dans chaque main */
+    const SKIV = new THREE.Group(); SKIV.userData.anime = true; SKIV.visible = false; scene.add(SKIV);
+    { const sk = new THREE.MeshStandardMaterial({ color: 0xd8202a, roughness: .35 }), noir = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: .5 }), fer = new THREE.MeshStandardMaterial({ color: 0xb8bcc0, metalness: .8, roughness: .3 }), gant = new THREE.MeshStandardMaterial({ color: 0x2a2a2e, roughness: .8 });
+      for (const sx of [-.16, .16]) { const s2 = new THREE.Mesh(new THREE.BoxGeometry(.1, .025, 1.7), sk); s2.position.set(sx, -1.5, -.75); SKIV.add(s2); const sp = new THREE.Mesh(new THREE.BoxGeometry(.1, .025, .2), sk); sp.position.set(sx, -1.45, -1.65); sp.rotation.x = .5; SKIV.add(sp); const fx = new THREE.Mesh(new THREE.BoxGeometry(.11, .06, .25), noir); fx.position.set(sx, -1.46, -.1); SKIV.add(fx); }
+      const B = []; for (const sx of [-.32, .32]) { const g = new THREE.Group(); g.position.set(sx, -.6, -.45); SKIV.add(g); const ga = new THREE.Mesh(new THREE.SphereGeometry(.055, 10, 8), gant); g.add(ga); const ba = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 1.25, 6), fer); ba.position.set(0, -.62, 0); g.add(ba); const ro = new THREE.Mesh(new THREE.TorusGeometry(.05, .008, 4, 10), noir); ro.rotation.x = Math.PI / 2; ro.position.y = -1.15; g.add(ro); g.rotation.x = -.25; B.push(g); }
+      SKIV.userData.b = B; SKIV.traverse(o => { o.userData.perso = true; }); }   // (pas de neige sur les skis)
     let MODE = "para";
     const decoller = () => { if (VOL || M.cine) return; const q = moiP(); if (q) { q.g.visible = false; q.cible = null; q.chemin = []; }
       const x0 = -6, z0 = 175, y0 = L.hauteur(x0, z0); const F0 = scene.fog ? { near: scene.fog.near, far: scene.fog.far } : null; if (scene.fog && scene.fog.far) { scene.fog.near = Math.max(scene.fog.near, 200); scene.fog.far = Math.max(scene.fog.far, 900); }   /* (10.134 : là-haut, on voit loin : la brume s'écarte) */
@@ -1734,7 +1771,7 @@ function construireCorbier(A, L, scene) {
       pad = document.createElement("div"); pad.style.cssText = "position:fixed;left:0;right:0;bottom:22px;z-index:40;display:flex;justify-content:space-between;padding:0 18px;pointer-events:none";
       const bt = (t, f) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "pointer-events:auto;width:84px;height:84px;border-radius:50%;border:0;background:rgba(20,20,40,.55);color:#fff;font-size:30px;touch-action:none";
         b.onpointerdown = (e) => { e.preventDefault(); e.stopPropagation(); f(1); }; b.onpointerup = b.onpointercancel = b.onpointerleave = (e) => { e.stopPropagation(); f(0); }; return b; };
-      pad.appendChild(bt("◀", v => VOL && (VOL.g = v))); const mid = document.createElement("div"); mid.style.cssText = "align-self:center;color:#fff;font:600 14px Arial;text-shadow:0 1px 3px #000;text-align:center"; mid.textContent = MODE === "trott" ? "🛴 Descends jusqu'au front de neige" : "🪂 Vole jusqu'à la station"; pad.appendChild(mid); pad.appendChild(bt("▶", v => VOL && (VOL.d = v)));
+      pad.appendChild(bt("◀", v => VOL && (VOL.g = v))); const mid = document.createElement("div"); mid.style.cssText = "align-self:center;color:#fff;font:600 14px Arial;text-shadow:0 1px 3px #000;text-align:center"; mid.textContent = MODE === "trott" ? (L.hiverOn ? "⛷️ Descends jusqu'au front de neige" : "🛴 Descends jusqu'au front de neige") : "🪂 Vole jusqu'à la station"; pad.appendChild(mid); pad.appendChild(bt("▶", v => VOL && (VOL.d = v)));
       (M.ctx && M.ctx.conteneur || document.body).appendChild(pad);
       M.cine = { gel: true, fov: [72, 80], maj: () => { if (!VOL) return; const now = performance.now(), dt = Math.min(.05, (now - VOL.tp) / 1000), t = (now - VOL.t0) / 1000; VOL.tp = now;
           let st = (window.__clavierG ? 1 : 0); const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(g => g) : null, ax = gp ? gp.axes[0] || 0 : 0;
@@ -1752,7 +1789,7 @@ function construireCorbier(A, L, scene) {
           const dir = new THREE.Vector3(Math.sin(VOL.cap), 0, Math.cos(VOL.cap)), eye = new THREE.Vector3(VOL.x, VOL.y, VOL.z);
           M.camera.position.copy(eye); M.camera.up.set(Math.sin(-VOL.vir * .35) * Math.cos(VOL.cap), 1, -Math.sin(-VOL.vir * .35) * Math.sin(VOL.cap)).normalize();
           { const hh = VOL.y - L.hauteur(VOL.x, VOL.z); M.camera.lookAt(eye.clone().addScaledVector(dir, 10).add(new THREE.Vector3(0, TR ? -3.8 : course ? -1.2 : -2.2 - Math.min(4, hh / 20), 0))); } M.camera.up.set(0, 1, 0);
-          VOILE.visible = true; VOILE.position.copy(eye); VOILE.rotation.set(0, VOL.cap + Math.PI, 0); VOILE.rotateZ(VOL.vir * .25); if (TR) { VOILE.visible = false; TROT.visible = true; TROT.position.copy(eye); TROT.rotation.set(0, VOL.cap + Math.PI, 0); TROT.rotateZ(VOL.vir * .12); return; } VOILE.visible = !course || t > .8; VOILE.rotateX(course ? .2 * (1 - Math.min(1, t / 1.6)) : 0); } };
+          VOILE.visible = true; VOILE.position.copy(eye); VOILE.rotation.set(0, VOL.cap + Math.PI, 0); VOILE.rotateZ(VOL.vir * .25); if (TR) { VOILE.visible = false; const V2 = L.hiverOn ? SKIV : TROT; (L.hiverOn ? TROT : SKIV).visible = false; V2.visible = true; V2.position.copy(eye); V2.rotation.set(0, VOL.cap + Math.PI, 0); V2.rotateZ(VOL.vir * .12); if (L.hiverOn) { const k = Math.sin(t * 2.4); SKIV.userData.b[0].rotation.x = -.25 - Math.max(0, k) * .5; SKIV.userData.b[1].rotation.x = -.25 - Math.max(0, -k) * .5; } return; } VOILE.visible = !course || t > .8; VOILE.rotateX(course ? .2 * (1 - Math.min(1, t / 1.6)) : 0); } };
     };
     const kd = (e) => { if (!VOL) return; if (e.key === "ArrowLeft" || e.key === "q") VOL.kg = e.type === "keydown" ? 1 : 0; if (e.key === "ArrowRight" || e.key === "d") VOL.kd = e.type === "keydown" ? 1 : 0; };
     addEventListener("keydown", kd); addEventListener("keyup", kd);
@@ -1762,7 +1799,7 @@ function construireCorbier(A, L, scene) {
       const a12 = L.anim; L.anim = (tm) => { try { a12 && a12(tm); } catch (e) {} ring.material.opacity = .55 + Math.sin((tm || 0) / 300) * .3; }; }
     const menu = () => { if (M.cine) return; const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:30;background:rgba(18,24,40,.95);color:#fff;border-radius:16px;padding:14px 16px;font:15px Lato,Arial,sans-serif;min-width:260px;max-width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)";
       d.innerHTML = "<div style='font-weight:700;margin-bottom:10px'>🏔️ Que veux-tu faire ?</div>"; const fermer = () => { d.remove(); M.manMenu = null; };
-      for (const [t, f] of [["🪂 Parapente : s'envoler de la montagne", () => { MODE = "para"; decoller(); }], ["🚡 Télésiège : monter et redescendre", () => L.monterTelesiege && L.monterTelesiege()], ["🛴 Trottinette : descendre jusqu'au front de neige", () => { MODE = "trott"; decoller(); }]]) {
+      for (const [t, f] of [["🪂 Parapente : s'envoler de la montagne", () => { MODE = "para"; decoller(); }], ["🚡 Télésiège : monter et redescendre", () => L.monterTelesiege && L.monterTelesiege()], [L.hiverOn ? "⛷️ Ski : descendre jusqu'au front de neige" : "🛴 Trottinette : descendre jusqu'au front de neige", () => { MODE = "trott"; decoller(); }]]) {
         const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#1f6ad0;color:#fff;font:15px Lato,Arial,sans-serif;cursor:pointer"; b.onclick = () => { fermer(); f(); }; d.appendChild(b); }
       const x = document.createElement("button"); x.type = "button"; x.textContent = "Annuler"; x.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:14px Lato,Arial,sans-serif"; x.onclick = fermer; d.appendChild(x);
       (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer }; };
