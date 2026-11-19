@@ -16159,6 +16159,14 @@ function ouvrirArcade() {
     if (e.data.goonies === "score" && M && M.ctx && M.ctx.token) { fetch("/api/flipper?jeu=goonies", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ score: e.data.score }) }).catch(() => {}); return; }   // (la partie est finie : le score part au panneau des records)
     if (e.data.goonies !== "fermer") return; removeEventListener("message", fin); fermerArcade(); };
   addEventListener("message", fin); }
+function ouvrirSNES(jeu) {   /* (10.127) une borne Super Nintendo : l'émulateur en plein écran, le jeu choisi sur l'appareil */
+  if (!M) return; if (M.arcadeEl) { if (M.arcadeEl.isConnected) return; M.arcadeEl = null; }
+  const f = document.createElement("iframe"); f.src = "snes.html?jeu=" + encodeURIComponent(jeu) + "&v=" + DIAG_V; f.allow = "gamepad; autoplay; fullscreen";
+  f.style.cssText = "position:fixed;inset:0;width:100%;height:100%;border:0;z-index:5000;background:#000";
+  for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "keydown"]) f.addEventListener(ev, e => e.stopPropagation());
+  M.ctx.pleinJeu && M.ctx.pleinJeu(true); hoteFS().appendChild(f); M.arcadeEl = f; jouer("arcade"); window.mxArcadeOn = true; window.mxSilence && window.mxSilence(true); window.mxSonsMaj && window.mxSonsMaj(); setTimeout(() => { try { f.focus(); } catch (e) {} }, 200);
+  const pe = () => { if (M && M.arcadeEl === f) hoteFS().appendChild(f); else document.removeEventListener("fullscreenchange", pe); }; document.addEventListener("fullscreenchange", pe);
+  const fin = e => { if (!e.data || e.data.snes !== "fermer") return; removeEventListener("message", fin); fermerArcade(); }; addEventListener("message", fin); }
 function fermerArcade() { if (M && M.ctx.pleinJeu && !M.ctx.estFilm(M.lieu)) M.ctx.pleinJeu(false); window.mxArcadeOn = false; window.mxSilence && window.mxSilence(false); window.mxSonsMaj && window.mxSonsMaj(); if (!M || !M.arcadeEl) return; M.arcadeEl.remove(); M.arcadeEl = null; jouer(null); }
 function chercherAction(t) {
   if (!M || (M.actionT && t - M.actionT < 300)) return; M.actionT = t;
@@ -16197,7 +16205,8 @@ function chercherAction(t) {
       const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && !(M.L.tabPNJ && M.L.tabPNJ.has(k) && estNuit()) && Math.hypot(x - a2, z - b) < 1.1);
       const ot = M.L.apo && !APO.zombieFin && (M.objets || []).filter(q => q.table && !q.cache && Math.hypot(q.x - x, q.z - z) < 1.3).sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z))[0];   // (sur le comptoir du bar, monde apocalyptique)
       if (ot) a = { type: "prendre", id: ot.id, label: ot.type === "plante" ? "🌿 Prendre la plante" : "🔫 Prendre les munitions" };
-      else if (M.L.borneArcade && Math.hypot(x - M.L.borneArcade[0], z - M.L.borneArcade[1]) < 1.0) a = { type: "arcade", label: "🕹️ Jouer aux Goonies" };   // (la borne d'arcade : ouverte à tous)
+      else if (M.L.borneArcade && Math.hypot(x - M.L.borneArcade[0], z - M.L.borneArcade[1]) < 1.0) a = { type: "arcade", label: "🕹️ Jouer aux Goonies" };
+      else if (M.L.bornesSNES && M.L.bornesSNES.some(b => Math.hypot(x - b[0], z - b[1]) < 1.0)) { const b = M.L.bornesSNES.find(b => Math.hypot(x - b[0], z - b[1]) < 1.0); a = { type: "snes", jeu: b[2], label: "🕹️ Jouer à " + b[3] }; }   // (10.127 : les bornes Super Nintendo de la salle d'arcade du Corbier)   // (la borne d'arcade : ouverte à tous)
       else if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
       else if (M.L.babyfoot && Math.hypot(x - M.L.babyfoot[0], z - M.L.babyfoot[1]) < 1.5) a = { type: "babyfoot", label: "⚽ Jouer au baby-foot" };
       else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
@@ -16281,6 +16290,7 @@ export function agir() {
     if (M.L.afficheApo) M.L.afficheApo.visible = false;
     d.querySelector("button").onclick = () => { d.remove(); if (M) { M.cadranEl = null; if (M.L.afficheApo && !M.L.apo) M.L.afficheApo.visible = true; } }; }
   else if (a.type === "arcade") ouvrirArcade();
+  else if (a.type === "snes") ouvrirSNES(a.jeu);
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();

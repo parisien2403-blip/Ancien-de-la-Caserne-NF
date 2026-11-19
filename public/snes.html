@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Borne Super Nintendo</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #fff; font-family: Arial, Helvetica, sans-serif; overflow: hidden; }
+  #jeu { position: absolute; inset: 0; }
+  #accueil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; text-align: center; background: radial-gradient(circle at 50% 30%, #2a1050, #000 70%); }
+  #accueil h1 { margin: 0; font-size: 30px; letter-spacing: 2px; color: var(--c, #ffd23a); text-shadow: 0 0 12px var(--c, #ffd23a); }
+  #accueil p { margin: 0; max-width: 460px; line-height: 1.45; opacity: .85; font-size: 15px; }
+  .btn { border: 0; border-radius: 12px; padding: 14px 22px; font-size: 17px; font-weight: 700; cursor: pointer; }
+  #choisir { background: var(--c, #ffd23a); color: #111; }
+  #oublier { background: rgba(255,255,255,.12); color: #fff; font-size: 14px; padding: 10px 16px; display: none; }
+  #quitter { position: fixed; top: 10px; right: 10px; z-index: 9999; background: rgba(0,0,0,.6); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 10px; padding: 8px 14px; font-size: 15px; cursor: pointer; }
+  #msg { min-height: 20px; color: #ff8a8a; font-size: 14px; }
+</style>
+</head>
+<body>
+<button id="quitter" type="button">✕ Quitter la borne</button>
+<div id="jeu"></div>
+<div id="accueil">
+  <h1 id="titre">BORNE</h1>
+  <p>Cette borne fait tourner la Super Nintendo. Choisis le fichier du jeu qui est sur ton téléphone (.sfc, .smc ou .zip) : la borne le garde pour les fois suivantes, sur cet appareil seulement.</p>
+  <button id="choisir" class="btn" type="button">📂 Choisir le fichier du jeu</button>
+  <button id="oublier" class="btn" type="button">Changer de fichier</button>
+  <div id="msg"></div>
+  <input id="fichier" type="file" accept=".sfc,.smc,.zip,.fig,.swc" hidden>
+</div>
+<script>
+(() => {
+  const JEUX = { sf2: ["STREET FIGHTER II TURBO", "#ffd23a"], mk2: ["MORTAL KOMBAT II", "#ff4a2a"], sunset: ["SUNSET RIDERS", "#ffa42a"], dkc: ["DONKEY KONG COUNTRY", "#5aff6a"] };
+  const jeu = new URLSearchParams(location.search).get("jeu") || "sf2", [nom, coul] = JEUX[jeu] || JEUX.sf2;
+  document.documentElement.style.setProperty("--c", coul); document.getElementById("titre").textContent = nom;
+  const quitter = () => parent.postMessage({ snes: "fermer" }, "*");
+  document.getElementById("quitter").onclick = quitter;
+  // le fichier du jeu, gardé dans le navigateur (IndexedDB) : rien n'est envoyé au serveur
+  const base = () => new Promise((ok, ko) => { const r = indexedDB.open("borne-snes", 1); r.onupgradeneeded = () => r.result.createObjectStore("roms"); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); });
+  const lire = async () => { try { const db = await base(); return await new Promise(ok => { const q = db.transaction("roms").objectStore("roms").get(jeu); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); }); } catch (e) { return null; } };
+  const ecrire = async (v) => { try { const db = await base(); await new Promise(ok => { const t = db.transaction("roms", "readwrite"); v ? t.objectStore("roms").put(v, jeu) : t.objectStore("roms").delete(jeu); t.oncomplete = ok; t.onerror = ok; }); } catch (e) {} };
+  const lancer = (rom) => {
+    document.getElementById("accueil").remove();
+    const url = URL.createObjectURL(new Blob([rom.data]));
+    window.EJS_player = "#jeu"; window.EJS_core = "snes"; window.EJS_gameName = jeu; window.EJS_gameUrl = url;
+    window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/"; window.EJS_startOnLoaded = true; window.EJS_language = "fr-FR"; window.EJS_color = coul; window.EJS_backgroundColor = "#000";
+    const s = document.createElement("script"); s.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+    s.onerror = () => { document.body.insertAdjacentHTML("beforeend", "<p style='position:fixed;inset:auto 0 40% 0;text-align:center'>Impossible de charger l'émulateur (pas de connexion ?)</p>"); };
+    document.body.appendChild(s);
+  };
+  const fi = document.getElementById("fichier"), msg = document.getElementById("msg");
+  document.getElementById("choisir").onclick = () => fi.click();
+  document.getElementById("oublier").onclick = async () => { await ecrire(null); document.getElementById("oublier").style.display = "none"; document.getElementById("choisir").textContent = "📂 Choisir le fichier du jeu"; document.getElementById("choisir").onclick = () => fi.click(); };
+  fi.onchange = async () => { const f = fi.files && fi.files[0]; if (!f) return; if (f.size > 16 * 1024 * 1024) { msg.textContent = "Ce fichier est trop gros pour une cartouche Super Nintendo."; return; }
+    const rom = { nom: f.name, data: await f.arrayBuffer() }; await ecrire(rom); lancer(rom); };
+  lire().then(rom => { if (!rom) return; const b = document.getElementById("choisir"); b.textContent = "▶️ Jouer (" + rom.nom + ")"; b.onclick = () => lancer(rom); document.getElementById("oublier").style.display = ""; });
+  addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("accueil")) quitter(); });
+})();
+</script>
+</body>
+</html>
