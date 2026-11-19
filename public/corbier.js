@@ -1251,15 +1251,25 @@ function construireCorbier(A, L, scene) {
           dkc: { nom: "Donkey Kong Country", c1: "#5aff6a", fl: (c, w, h) => { c.fillStyle = "#1a5a2a"; c.fillRect(0, 0, w, h); for (let k = 0; k < 14; k++) { c.fillStyle = k % 2 ? "#2a8a3a" : "#3aa04a"; c.beginPath(); c.ellipse((k * 23) % w, (k * 41) % h, 18, 7, k, 0, 7); c.fill(); } c.fillStyle = "#8a4a1a"; c.fillRect(w / 2 - 18, 150, 36, 44); c.fillStyle = "#5a2a0a"; c.fillRect(w / 2 - 18, 160, 36, 4); c.fillRect(w / 2 - 18, 180, 36, 4); c.fillStyle = "#ffe03a"; for (let k = 0; k < 3; k++) { c.beginPath(); c.arc(w / 2 - 8 + k * 8, 70, 20, .2, 1.6); c.lineWidth = 8; c.strokeStyle = "#ffe03a"; c.stroke(); } c.save(); c.translate(w / 2, 240); c.rotate(-Math.PI / 2); titre(c, "DK", 10, 40, "#ffe03a", "#6a2a0a", 0); c.restore(); },
             mq: (c, w, h) => { c.fillStyle = "#1a4a1a"; c.fillRect(0, 0, w, h); titre(c, "DONKEY KONG COUNTRY", 44, 26, "#ffe03a", "#6a2a0a", w); } } };
         const BS = [];
-        const borne = (x, z, ry, cle) => { const T3 = TH[cle], g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); const q = (geo, m, px, py, pz, rx = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.rotation.x = rx; g.add(o); return o; };
-          const flanc = mat({ map: tex(80, 256, T3.fl), roughness: .5 }), noirB = mat({ color: 0x141018, roughness: .5 });
-          q(new THREE.BoxGeometry(.7, 1.0, .75), noirB, 0, .5, 0); for (const sx of [-.36, .36]) q(new THREE.BoxGeometry(.03, 1.85, .78), flanc, sx, .925, -.02);
-          q(new THREE.BoxGeometry(.7, .8, .4), noirB, 0, 1.4, -.2); q(new THREE.PlaneGeometry(.66, .5), flanc, 0, .5, .38);
-          const ecran = tex(160, 128, (c, w, h) => { c.fillStyle = "#06061a"; c.fillRect(0, 0, w, h); T3.mq(c, w, 60); c.fillStyle = "#ffffff"; c.font = "bold 12px monospace"; c.textAlign = "center"; c.fillText("PRESS START", w / 2, 100); c.fillText("SUPER NINTENDO", w / 2, 118); });
-          q(new THREE.PlaneGeometry(.56, .46), lumi(ecran, 1.1), 0, 1.38, .01, -.15);
-          q(new THREE.BoxGeometry(.7, .08, .4), noirB, 0, 1.0, .2, .25); q(new THREE.CylinderGeometry(.015, .015, .1, 6), mat({ color: 0x2a2a2a }), -.15, 1.08, .22); q(new THREE.SphereGeometry(.035, 8, 6), mat({ color: 0xd82020 }), -.15, 1.13, .22);
-          for (let b = 0; b < 4; b++) q(new THREE.CylinderGeometry(.03, .03, .02, 10), mat({ color: [0xd8202a, 0xf0c020, 0x2a8ad0, 0x3ab04a][b] }), .02 + (b % 2) * .09, 1.06, .17 + Math.floor(b / 2) * .09);
-          const marq = tex(512, 64, T3.mq); q(new THREE.BoxGeometry(.7, .22, .3), noirB, 0, 1.92, -.15); q(new THREE.PlaneGeometry(.68, .2), lumi(marq, 1), 0, 1.92, .005);
+        const borne = (x, z, ry, cle) => { const T3 = TH[cle], g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry + Math.PI / 2; scene.add(g); g.userData.anime = true;   /* (10.127 : le même meuble que la borne des Goonies du bar, habillé des jaquettes du jeu) */
+          const tl = new THREE.TextureLoader(), tx = f => { const t = tl.load("images/arcade/" + cle + "-" + f + ".jpg?v=1"); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+          chargerGLB("goonies/img/borne3d.glb?v=1b").then(sc => { if (!sc) return; const m = sc.clone(true); m.scale.setScalar(.01); m.updateMatrixWorld(true);
+            const b = new THREE.Box3().setFromObject(m), c = b.getCenter(new THREE.Vector3()); m.position.set(-c.x, -b.min.y, -c.z); m.updateMatrixWorld(true);
+            const plan = (o, axe) => { const geo = o.geometry.clone(), pos = geo.attributes.position, v = new THREE.Vector3(), pts = [], bb = new THREE.Box3();
+              for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); pts.push(v.clone()); bb.expandByPoint(v); }
+              const uv = new Float32Array(pos.count * 2), sz = bb.getSize(new THREE.Vector3()), cz = (bb.min.z + bb.max.z) / 2;
+              pts.forEach((q, i) => { let u = axe === "x" ? (q.x - bb.min.x) / sz.x : (bb.max.z - q.z) / sz.z; if (axe === "x" && cz < 0) u = 1 - u; uv[i * 2] = u; uv[i * 2 + 1] = (q.y - bb.min.y) / sz.y; });
+              geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); o.geometry = geo; };
+            const mt = (map, l) => new THREE.MeshStandardMaterial({ map, roughness: .45, emissive: l ? 0xffffff : 0, emissiveMap: l ? map : null, emissiveIntensity: l || 0 }), cote = tx("cote"), noir = new THREE.MeshStandardMaterial({ color: 0x15100c, roughness: .55 });
+            m.traverse(o => { if (!o.isMesh) return; const n = o.name;
+              if (/lateral/i.test(n)) { plan(o, "x"); o.material = mt(cote); }
+              else if (/crt_screen/i.test(n)) { plan(o, "z"); o.material = mt(tx("ecran"), 1.05); }
+              else if (/logo_haut/i.test(n)) { plan(o, "z"); o.material = mt(tx("fronton"), 1.1); }
+              else if (/bas_avant/i.test(n)) { plan(o, "z"); o.material = mt(tx("bas")); }
+              else if (/vitre/i.test(n)) o.material = new THREE.MeshStandardMaterial({ color: 0x223040, transparent: true, opacity: .14, roughness: .05, metalness: .3, depthWrite: false });
+              else if (/jooysticks_Mat25|Haut_parleurs/i.test(n)) o.material = new THREE.MeshStandardMaterial({ color: 0xc81e1e, roughness: .35 });
+              else if (/dessus|arriere|dessous|tiroir|oblique/i.test(n)) o.material = noir; });
+            g.add(m); });
           OBS.push([x, z, .5]); BS.push([x + Math.sin(ry) * .85, z + Math.cos(ry) * .85, cle, T3.nom]); };
         borne(66.85, -8.0, Math.PI / 2, "sf2"); borne(66.85, -9.6, Math.PI / 2, "mk2"); borne(71.35, -8.7, -Math.PI / 2, "sunset"); borne(71.35, -10.2, -Math.PI / 2, "dkc");
         L.bornesSNES = BS.map(([x, z, k, n]) => [-x, z, k, n]); }   // (les coordonnées du monde : x retourné par le miroir)   /* (10.141 : en face du Yéti, un magasin) */ { const Rg2 = repere(D2_, "zmin"); porteBlanche(Rg2, 64.6); porteBlanche(Rg2, 60.6); } extincteur(64.6, -5.2);
