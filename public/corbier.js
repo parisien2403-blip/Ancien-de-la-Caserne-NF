@@ -39,7 +39,8 @@ function construireCorbier(A, L, scene) {
       { const yt = 1.04; for (let k = 0; k < 6; k++) { const a0 = k / 6 * Math.PI * 2, a1 = (k + 1) / 6 * Math.PI * 2, rr = .03; tri([Math.cos(a0) * rr, yt - .1, Math.sin(a0) * rr], [Math.cos(a1) * rr, yt - .1, Math.sin(a1) * rr], [0, yt + .02, 0], [.1, .22, .1], [.1, .22, .1], [.18, .34, .15]); } }
       const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(C, 3)); g.computeVertexNormals(); V.push(g); vari.push(v); }
     return { geos: V, mat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, metalness: 0 }) }; })();
-  const epicea = (x, y, z, h, w = 1) => { const m = new THREE.Mesh(EPI.geos[(Math.abs(x * 7 + z * 13) | 0) % 4], EPI.mat); m.position.set(x, y, z); m.scale.set(h * w * (.9 + al() * .2), h, h * w * (.9 + al() * .2)); m.rotation.y = al() * 6.28; m.receiveShadow = true; scene.add(m); return m; };
+  const ARB = []; L.arbres = ARB;
+  const epicea = (x, y, z, h, w = 1) => { ARB.push([-x, z, h * w * .28 + .6]);   /* (10.136 : les arbres, en coordonnées du monde : la trottinette les évite) */ const m = new THREE.Mesh(EPI.geos[(Math.abs(x * 7 + z * 13) | 0) % 4], EPI.mat); m.position.set(x, y, z); m.scale.set(h * w * (.9 + al() * .2), h, h * w * (.9 + al() * .2)); m.rotation.y = al() * 6.28; m.receiveShadow = true; scene.add(m); return m; };
   const NUIT = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
   /* (10.128) les portes battantes : chaque vantail tourne sur ses gonds et s'ouvre quand on approche (base, sens : avant le passage du miroir) */
   const PORTES = [], porteBat = (hx, y, hz, base, sens, dir, larg, haut, m, cx, cz) => { const g = new THREE.Group(); g.position.set(hx, y, hz); g.rotation.y = base; g.userData.anime = true;
@@ -150,7 +151,7 @@ function construireCorbier(A, L, scene) {
     // les petits bancs le long du chemin (ceux de la photo)
     for (const [bx, bz, ry] of [[12, 27.5, 0], [40, 32, -.4], [2, 33, .2]]) { const g = new THREE.Group(); g.position.set(bx, HP(bx, bz), bz); g.rotation.y = ry; scene.add(g); for (let k = 0; k < 3; k++) { const l = new THREE.Mesh(new THREE.BoxGeometry(1.6, .05, .12), boisC); l.position.set(0, .45, -.14 + k * .14); g.add(l); } for (const sx of [-.7, .7]) { const l = new THREE.Mesh(new THREE.BoxGeometry(.08, .45, .45), mat({ color: 0x2a2a2a })); l.position.set(sx, .22, 0); g.add(l); } OB.push([bx, bz, .9]); } }
   // les bosquets de sapins sur les pentes
-  { const sapM = mat({ color: 0x24402a, roughness: .9 }); for (const [cx, cz, n] of [[-60, 150, 40], [-20, 170, 30], [70, 210, 30], [-140, 120, 26], [130, 130, 22], [20, 90, 8]]) for (let k = 0; k < (PETIT ? n / 3 : n); k++) { const x = cx + (al() - .5) * 50, z = cz + (al() - .5) * 40, h = 8 + al() * 7; epicea(x, HP(x, z) - .3, z, h); } void sapM; }
+  { const sapM = mat({ color: 0x24402a, roughness: .9 }); for (const [cx, cz, n] of [[-60, 150, 40], [-20, 170, 30], [70, 210, 30], [-140, 120, 26], [130, 130, 22], [20, 90, 8]]) for (let k = 0; k < (PETIT ? n / 3 : n); k++) { const x = cx + (al() - .5) * 50, z = cz + (al() - .5) * 40, h = 8 + al() * 7; if (Math.abs(x - 6) < 9 && z > 110) continue; epicea(x, HP(x, z) - .3, z, h); }   /* (10.136 : le couloir du départ, sans sapins) */ void sapM; }
   // l'office du tourisme : la rotonde sous sa grande pyramide de poutres rouges et blanches, le chapeau blanc
   /* (10.114, d'après la photo) l'office de tourisme : la rotonde de plain-pied tout en vitrages, ceinte d'un large anneau de planches rouge-brun qui déborde
      (« OFFICE DE TOURISME » en lettres blanches) ; les trois grandes jambes en triangle, rouge-brun dehors et blanches dedans, posées sur leurs socles de béton,
@@ -1704,16 +1705,16 @@ function construireCorbier(A, L, scene) {
     const TROT = new THREE.Group(); TROT.userData.anime = true; TROT.visible = false; scene.add(TROT);   /* (10.135) la trottinette de descente : verte, ses gros pneus jaunes, le guidon, les poignées */
     { const vert = new THREE.MeshStandardMaterial({ color: 0x2aa84a, roughness: .45, metalness: .2 }), jaune = new THREE.MeshStandardMaterial({ color: 0xf0c820, roughness: .7 }), noirT = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: .6 }), alu = new THREE.MeshStandardMaterial({ color: 0xc8ccd0, metalness: .7, roughness: .3 });
       const b = (geo, m, x, y, z, rx = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, 0, rz); TROT.add(o); return o; };
-      b(new THREE.BoxGeometry(.24, .06, 1.0), vert, 0, -1.25, -.55);   // le plateau, sous les pieds
-      for (const sx of [-.07, .07]) b(new THREE.BoxGeometry(.1, .03, .28), noirT, sx, -1.21, -.45);   // (les pieds, dessus)
-      for (const z of [-1.25, .05]) { const w = b(new THREE.TorusGeometry(.2, .09, 10, 20), jaune, 0, -1.33, z, 0, 0); w.rotation.y = Math.PI / 2; b(new THREE.CylinderGeometry(.08, .08, .14, 10), alu, 0, -1.33, z, 0, Math.PI / 2); }   // les gros pneus jaunes
-      const fourche = b(new THREE.CylinderGeometry(.035, .035, 1.0, 8), vert, 0, -.97, -.92, .73); void fourche;
+      b(new THREE.BoxGeometry(.26, .07, 1.0), vert, 0, -1.02, -.6);   // le plateau, sous les pieds
+      for (const sx of [-.07, .07]) b(new THREE.BoxGeometry(.1, .03, .28), noirT, sx, -.97, -.5);   // (les pieds, dessus)
+      for (const z of [-1.4, .2]) { const w = b(new THREE.TorusGeometry(.31, .16, 12, 24), jaune, 0, -1.08, z, 0, 0); w.rotation.y = Math.PI / 2; b(new THREE.CylinderGeometry(.14, .14, .3, 12), alu, 0, -1.08, z, 0, Math.PI / 2); }   // (10.136) les très gros pneus jaunes, gonflés
+      const fourche = b(new THREE.CylinderGeometry(.04, .04, 1.0, 8), vert, 0, -.84, -1.0, .97); void fourche;
       b(new THREE.CylinderGeometry(.025, .025, .62, 8), alu, 0, -.6, -.6, 0, Math.PI / 2);   // le guidon
       for (const sx of [-.28, .28]) b(new THREE.CylinderGeometry(.032, .032, .12, 8), noirT, sx, -.6, -.6, 0, Math.PI / 2);   // les poignées
       b(new THREE.BoxGeometry(.06, .16, .05), vert, 0, -.68, -.62); }
     let MODE = "para";
     const decoller = () => { if (VOL || M.cine) return; const q = moiP(); if (q) { q.g.visible = false; q.cible = null; q.chemin = []; }
-      const x0 = MODE === "trott" ? 4 : -6, z0 = MODE === "trott" ? 150 : 175, y0 = L.hauteur(x0, z0); const F0 = scene.fog ? { near: scene.fog.near, far: scene.fog.far } : null; if (scene.fog && scene.fog.far) { scene.fog.near = Math.max(scene.fog.near, 200); scene.fog.far = Math.max(scene.fog.far, 900); }   /* (10.134 : là-haut, on voit loin : la brume s'écarte) */
+      const x0 = -6, z0 = 175, y0 = L.hauteur(x0, z0); const F0 = scene.fog ? { near: scene.fog.near, far: scene.fog.far } : null; if (scene.fog && scene.fog.far) { scene.fog.near = Math.max(scene.fog.near, 200); scene.fog.far = Math.max(scene.fog.far, 900); }   /* (10.134 : là-haut, on voit loin : la brume s'écarte) */
       VOL = { F0, x: x0, z: z0, y: y0 + 1.7, cap: Math.PI, vir: 0, t0: performance.now(), tp: performance.now(), g: 0, d: 0 };
       pad = document.createElement("div"); pad.style.cssText = "position:fixed;left:0;right:0;bottom:22px;z-index:40;display:flex;justify-content:space-between;padding:0 18px;pointer-events:none";
       const bt = (t, f) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "pointer-events:auto;width:84px;height:84px;border-radius:50%;border:0;background:rgba(20,20,40,.55);color:#fff;font-size:30px;touch-action:none";
@@ -1722,9 +1723,10 @@ function construireCorbier(A, L, scene) {
       (M.ctx && M.ctx.conteneur || document.body).appendChild(pad);
       M.cine = { gel: true, fov: [72, 80], maj: () => { if (!VOL) return; const now = performance.now(), dt = Math.min(.05, (now - VOL.tp) / 1000), t = (now - VOL.t0) / 1000; VOL.tp = now;
           let st = (window.__clavierG ? 1 : 0); const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(g => g) : null, ax = gp ? gp.axes[0] || 0 : 0;
-          const tour = (VOL.d - VOL.g) + (VOL.kd || 0) - (VOL.kg || 0) + (Math.abs(ax) > .2 ? ax : 0); void st;
+          let evit = 0; if (MODE === "trott" && L.arbres) { const fx = VOL.x + Math.sin(VOL.cap) * 5, fz = VOL.z + Math.cos(VOL.cap) * 5; for (const [ax2, az2, rr] of L.arbres) { const dx = ax2 - fx, dz = az2 - fz, d2 = Math.hypot(dx, dz); if (d2 < rr + 4) { const cote = Math.cos(VOL.cap) * dx - Math.sin(VOL.cap) * dz; evit += (cote > 0 ? -1 : 1) * (1 - d2 / (rr + 4)) * 3; } } }   // (on contourne les sapins)
+          const tour = (VOL.d - VOL.g) + (VOL.kd || 0) - (VOL.kg || 0) + (Math.abs(ax) > .2 ? ax : 0) + evit; void st;
           VOL.vir += (tour * .9 - VOL.vir) * Math.min(1, dt * 2.5); VOL.cap -= VOL.vir * dt * .55;   // (on tourne, en s'inclinant)
-          const TR = MODE === "trott", course = !TR && t < 2.2, v = TR ? Math.min(9, 1 + t * 2) : course ? 2 + t * 3.5 : 11, sol = L.hauteur(VOL.x, VOL.z);
+          const TR = MODE === "trott", course = !TR && t < 2.2, v = TR ? Math.min(12, 1 + t * 2) : course ? 2 + t * 3.5 : 11, sol = L.hauteur(VOL.x, VOL.z);
           VOL.x += Math.sin(VOL.cap) * v * dt; VOL.z += Math.cos(VOL.cap) * v * dt;
           if (TR) { VOL.y = L.hauteur(VOL.x, VOL.z) + 1.55 + Math.sin(t * 9) * .015; if (VOL.z < 16) { fini(VOL.x, 16); return; } }
           else if (course) VOL.y = L.hauteur(VOL.x, VOL.z) + 1.7 + Math.max(0, t - 1.6) * 1.2;
