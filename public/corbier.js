@@ -252,7 +252,7 @@ function construireCorbier(A, L, scene) {
      Au-dessus des vitrines, le bandeau des fenêtres sombres ; partout les montants de bois, les soubassements à losanges, les portes vitrées.
      Chaque boutique traverse jusqu'à la galerie : une vitrine sur la promenade, l'autre dans la galerie. */
   const KB = 76 / 29.1;
-  const FAC = [[1.2, "esf"], [3.6, "rb"], [2, "sherpa"], [1, "galA"], [1.3, "skiloc"], [1, "skiset"], [.9, "vet"], [.8, "galB"], [1, "locskis"], [1, "quasar"], [1, "interLR"], [1, "interFN"], [.9, "galC"],
+  const FAC = [[4.8, "vitres"], [2, "sherpa"], [1, "galA"], [1.3, "skiloc"], [1, "skiset"], [.9, "vet"], [.8, "galB"], [1, "locskis"], [1, "quasar"], [1, "interLR"], [1, "interFN"], [.9, "galC"],
     [2.2, "pharma"], [2, "patis"], [.9, "galD"], [1, "sombre"], [1, "lampes"], [.8, "jack"], [2.5, "pico"], [1, "sport2000"], [1, "galE"]];
   const LIGNES = []; { let x = -10; for (const [b, id] of FAC) { LIGNES.push({ id, x0: x, x1: x + b * KB, o: { pergola: id === "pico" } }); x += b * KB; } }
   const LG = (id) => LIGNES.find(l => l.id === id);
@@ -350,12 +350,7 @@ function construireCorbier(A, L, scene) {
     if (l.id.startsWith("gal")) { galerie(l, { orange: l.id === "galC", caisse: l.id === "galD" }); continue; }
     const G = (nom, fond, coul) => ({ nom, fond, coul, motif: "souv", police: `bold 46px ${sans}` });
     switch (l.id) {
-      case "esf": { const z = boutiqueF(l, { soub: "rouge", portes: [[a + .7, .9]], dedans: "rayons" });   // (le panneau rouge plein, la porte vitrée, les plaques ESF, l'enseigne blanche)
-        box(w * .5, 2.0, .06, mat({ color: 0xc41e26, roughness: .5 }), b - .12 - w * .25, 1.5, z + .05); enseigne(a + .05, b - .05, z, esfT, .5);
-        for (const u of [b - w * .38, b - w * .14]) add(new THREE.PlaneGeometry(.62, .24), mat({ map: esfP }), u, .28, z + .09); break; }
-      case "rb": { const z = boutiqueF(l, { portes: [[b - .6, .95], [a + 3.5, .95]], pas: 1.0, dedans: "tables" });   // (les quatre enseignes brunes entre les consoles, le lambrequin)
-        ["SPÉCIALITÉS\nSAVOYARDES", "PIZZERIA", "RESTAURANT", "BAR"].forEach((t, i) => enseigne(a + i * w / 4 + .28, a + (i + 1) * w / 4 - .28, z, txT(256, 64, "#5a2c18", "#f4ece0", t, t.length > 12 ? 24 : 40, `bold @ ${sans}`), .52, 3.0, .12));
-        store(a + .1, b - .1, z, txT(1024, 48, "#5a2414", "#f4ece0", "BAR      RESTAURANT      PIZZERIA      LES ROCHES BLANCHES", 30, `bold @ ${sans}`), 0x6a2a18, .35, 2.55, .22); break; }
+      case "vitres": { boutiqueF(l, { portes: [[a + 1.2, .9], [a + 2.1, .9], [b - 1.6, .9]], pas: 1.05, dedans: "rayons" }); break; }   /* (10.145 : après les Roches Blanches, les vitrines de bois de la galerie, d'après la photo) */
       case "sherpa": { const z = boutiqueF(l, { portes: [[a + .7, .9], [a + 1.62, .9]], dedans: "rayons", g: G("SHERPA · Supermarché", "#f4f4f2", "#1a4a9a") }); enseigne(b - 1.7, b - .35, z, sherpaT, .42); break; }
       case "skiloc": { const z = boutiqueF(l, { soub: "bois", dedans: "skis", g: G("SKISET · LOCATION DE SKI", "#f2f2ee", "#c8202a") });   // (fermée : les planches claires)
         add(new THREE.PlaneGeometry(w - .3, 1.95), mat({ map: repT(planchesT, Math.max(1, Math.round(w / 1.4))), roughness: .8 }), cx, 1.5, z + .07); store(a + .1, b - .1, z, skisetBande("LOCATION DE SKI  ·  SKI RENTAL"), 0xf2f2ee, .6, 2.55, .26); break; }
@@ -505,17 +500,22 @@ function construireCorbier(A, L, scene) {
     { const corps = scene.children[n0E]; scene.remove(corps); const H = 3.4 + 3 * 2.8, zc = -3.2 - 6.6;   /* (10.128 : le corps de l'École du Ski, ouvert au rez-de-chaussée : le passage de la galerie) */
       const bx = (x0, x1, z0, z1, y0 = 0, y1 = H) => box(x1 - x0, y1 - y0, z1 - z0, facS, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);   /* (10.132 : découpé autour du hall final de la galerie et de la porte) */
       bx(-39, -36.25, -15.2, -3.2); bx(-23.35, -14.05, -15.2, -3.2); bx(-11.75, -1, -15.2, -3.2); bx(-14.05, -11.75, -15.2, -7.6); bx(-14.05, -11.75, -7.6, -3.2, 2.7); bx(-36.25, -23.35, -15.2, -13.25); bx(-36.25, -27.6, -3.95, -3.2); bx(-36.25, -23.35, -13.25, -3.2, 3.25); bx(-27.6, -23.35, -3.95, -3.2, 2.6); void zc; }   /* (10.108 : collé à la longue résidence — plus d'espace entre les deux) */
-    const esf = tT(512, 96, (c, w, h) => { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8202a"; c.beginPath(); c.arc(40, 48, 30, 0, 7); c.fill(); c.fillStyle = "#1a3a8a"; c.font = `italic bold 40px ${sans}`; c.fillText("ÉCOLE DU SKI FRANÇAIS", 82, 60); });
-    const s = add(new THREE.PlaneGeometry(9, 1.7), lum(mat({ map: esf, emissive: 0xffffff, emissiveMap: esf, emissiveIntensity: .1 }), .1, .8), -26, 4.9, -1.9); void s;
-    const ours = tT(768, 96, (c, w, h) => { c.fillStyle = "#c8202a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = `italic bold 30px ${serif}`; c.fillText("Bar - Restaurant", 18, 60); c.font = `italic bold 40px ${serif}`; c.fillText("La Fontaine de l'Ours", 290, 62); });
-    add(new THREE.PlaneGeometry(10, 1.1), lum(mat({ map: ours, emissive: 0xffffff, emissiveMap: ours, emissiveIntensity: .12 }), .12, .9), -25, 3.05, -2.15);   /* (10.142 : remontée au-dessus de la porte) */
-    const bas = tT(512, 160, (c, w, h) => { c.fillStyle = "#4a2a18"; c.fillRect(0, 0, w, h); for (let k = 0; k < 5; k++) { c.fillStyle = "#e8d8b0"; c.fillRect(10 + k * 100, 20, 88, h - 34); c.fillStyle = "rgba(90,50,30,.5)"; c.fillRect(30 + k * 100, h - 60, 50, 6); } });
-    { const b1 = bas.clone(), b2 = bas.clone(); b1.repeat.set(12.7 / 38, 1); b2.repeat.set(22.7 / 38, 1); b2.offset.set(15.3 / 38, 0); b1.needsUpdate = b2.needsUpdate = true;   /* (la façade crème, coupée par la porte battante) */
-      add(new THREE.PlaneGeometry(12.7, 1.9), lum(mat({ map: b1, emissive: 0xffffff, emissiveMap: b1, emissiveIntensity: .1 }), .1, .7), -32.65, .95, -3.18);
-      { const b3 = bas.clone(), b4 = bas.clone(); b3.repeat.set(9.65 / 38, 1); b3.offset.set(15.3 / 38, 0); b4.repeat.set(10.25 / 38, 1); b4.offset.set(27.75 / 38, 0); b3.needsUpdate = b4.needsUpdate = true;
-        add(new THREE.PlaneGeometry(9.65, 1.9), lum(mat({ map: b3, emissive: 0xffffff, emissiveMap: b3, emissiveIntensity: .1 }), .1, .7), -18.875, .95, -3.18);
-        add(new THREE.PlaneGeometry(10.25, 1.9), lum(mat({ map: b4, emissive: 0xffffff, emissiveMap: b4, emissiveIntensity: .1 }), .1, .7), -6.125, .95, -3.18); void b2; }
-      const cadre = mat({ color: 0x5a3018, roughness: .7 }), boisP = mat({ map: tT(64, 128, (c, w, h) => { c.fillStyle = "#8a5a32"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(x, 0, 1, h); } c.strokeStyle = "#5a3418"; c.lineWidth = 4; c.strokeRect(8, 10, w - 16, 50); c.strokeRect(8, 70, w - 16, 48); c.fillStyle = "#b8ccd4"; c.fillRect(14, 16, w - 28, 38); }), roughness: .7 });
+    /* (10.145, d'après la photo du 461 promenade du Front de Neige) le rez-de-chaussée : côté piscine l'ESF (le grand panneau rouge, la porte vitrée, les plaques esf),
+       puis le bar-restaurant-pizzeria Les Roches Blanches (ses quatre enseignes brunes entre les consoles, le lambrequin, les chaises retournées derrière les vitres),
+       puis la galerie marchande : les portes et les vitrines de bois, son panneau « Galerie marchande · Shopping Mall » */
+    { const Z = -3.2, fond = (a, b, t, j2 = .3) => add(new THREE.PlaneGeometry(b - a - .2, 2.0), lum(mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: j2 }), j2, .5), (a + b) / 2, 1.5, Z - .7);
+      const RBt = tT(256, 128, (c, w, h) => { c.fillStyle = "#3a2a20"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(255,220,170,.25)"; c.fillRect(0, 0, w, 30); for (let x = 12; x < w; x += 40) { c.fillStyle = "#8a5a32"; c.fillRect(x, 50, 26, 6); for (let k = 0; k < 4; k++) c.fillRect(x + 2 + k * 7, 56, 3, 40); c.fillRect(x, 96, 26, 4); } });
+      const galT2 = tT(256, 128, (c, w, h) => { c.fillStyle = "#4a3e36"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(255,240,210,.35)"; c.fillRect(0, 0, w, 40); c.fillStyle = "#6a5446"; c.fillRect(0, 96, w, 32); });
+      const sec = [[-39, -34.3, "esf"], [-34.3, -26.35, "rb"], [-23.65, -19.5, "rb"], [-19.5, -14.2, "gal"], [-11.6, -1.1, "gal"]];
+      for (const [a, b, k] of sec) { poteau(a, Z); poteau(b, Z); bandeau(a, b, Z);
+        if (k === "esf") { vitrine(a, b, Z, { soub: "rouge", portes: [[a + .7, .9]] }); box((b - a) * .5, 2.0, .06, mat({ color: 0xc41e26, roughness: .5 }), b - .12 - (b - a) * .25, 1.5, Z + .05); fond(a, b, prodT);
+          for (const u of [b - 1.9, b - .9]) add(new THREE.PlaneGeometry(.62, .24), mat({ map: esfP }), u, .28, Z + .09); enseigne(a + .1, b - .1, Z, esfT, .5); }
+        else if (k === "rb") { vitrine(a, b, Z, { pas: 1.0 }); fond(a, b, RBt, .25); }
+        else { vitrine(a, b, Z, { portes: [[a + .9, .9], [a + 1.85, .9]] }); fond(a, b, galT2, .2); } }
+      { const a = -34.3, b = -19.5, w = b - a; ["SPÉCIALITÉS\nSAVOYARDES", "PIZZERIA", "RESTAURANT", "BAR"].forEach((t, i) => enseigne(a + i * w / 4 + .35, a + (i + 1) * w / 4 - .35, Z, txT(256, 64, "#5a2c18", "#f4ece0", t, t.length > 12 ? 24 : 40, `bold @ ${sans}`), .55, 3.0, .12));
+        store(a + .1, b - .1, Z, txT(1024, 48, "#5a2414", "#f4ece0", "BAR      RESTAURANT      PIZZERIA      LES ROCHES BLANCHES", 30, `bold @ ${sans}`), 0x6a2a18, .35, 2.62, .22); }
+      enseigne(-9.6, -7.4, Z, galT, .5, 2.98, .05, .2); }
+    { const cadre = mat({ color: 0x5a3018, roughness: .7 }), boisP = mat({ map: tT(64, 128, (c, w, h) => { c.fillStyle = "#8a5a32"; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(x, 0, 1, h); } c.strokeStyle = "#5a3418"; c.lineWidth = 4; c.strokeRect(8, 10, w - 16, 50); c.strokeRect(8, 70, w - 16, 48); c.fillStyle = "#b8ccd4"; c.fillRect(14, 16, w - 28, 38); }), roughness: .7 });
       for (const sx of [-1.35, 1.35]) box(.15, 2.3, .22, cadre, -25 + sx, 1.15, -3.1); box(2.85, .18, .22, cadre, -25, 2.35, -3.1);
       porteBat(-26.25, 1.08, -3.12, Math.PI / 2, -1, 1, 1.25, 2.15, boisP, -25, -3.1); for (const sx of [-1.25, 1.25]) box(.15, 2.3, .22, cadre, -12.9 + sx, 1.15, -3.1); box(2.65, .18, .22, cadre, -12.9, 2.35, -3.1);
       porteBat(-14.0, 1.08, -3.12, Math.PI / 2, -1, 1, 1.1, 2.15, boisP, -12.9, -3.1); porteBat(-11.8, 1.08, -3.12, Math.PI / 2, 1, -1, 1.1, 2.15, boisP, -12.9, -3.1);   /* (10.141 : la seconde double porte battante, au centre de la façade) */ porteBat(-23.75, 1.08, -3.12, Math.PI / 2, 1, -1, 1.25, 2.15, boisP, -25, -3.1); }
@@ -677,7 +677,7 @@ function construireCorbier(A, L, scene) {
     { const gB = LG("galB"), fx = gB.x0 + .35, fz = zfAt(fx), p2 = cyl(.025, .025, 1.6, fer, fx, 2.3, fz + .55, 5); p2.rotation.x = .9; add(new THREE.PlaneGeometry(.45, .75), mat({ color: 0xd8202a, roughness: .7, side: THREE.DoubleSide }), fx, 2.4, fz + .95, Math.PI / 2); }
     for (const x of [LG("galA").x1 + .3, LG("interFN").x1 - .4, LG("galE").x0 + .3]) { const z = zfAt(x) + .35; cyl(.04, .04, .9, fer, x, .45, z, 5); cyl(.2, .18, .5, mat({ color: 0xd8602a, roughness: .5 }), x, .75, z + .12, 10); OB.push([x, z, .35]); }
     // la grande terrasse de bois des Roches Blanches, qui avance sur le gravier, sa bordure brun-rouge
-    { const r = LG("rb"), x0 = r.x0 + .4, x1 = r.x1 - .3, bord = mat({ color: 0x7a3a22, roughness: .8 }); L.solsPlus.push(sol(x0, x1, 7, 9.8, mat({ map: deckT, roughness: .8 }), .05)); box(x1 - x0 + .2, .14, .2, bord, (x0 + x1) / 2, .07, 9.8); for (const x of [x0, x1]) box(.2, .14, 2.8, bord, x, .07, 8.4); } }
+    { const x0 = -43.3, x1 = -28.5, bord = mat({ color: 0x7a3a22, roughness: .8 }); L.solsPlus.push(sol(x0, x1, 7, 9.8, mat({ map: deckT, roughness: .8 }), .05)); box(x1 - x0 + .2, .14, .2, bord, (x0 + x1) / 2, .07, 9.8); for (const x of [x0, x1]) box(.2, .14, 2.8, bord, x, .07, 8.4); } }
 
   /* ---------- l'arrêt du car (pour revenir à Paris) ---------- */
   L.arretCar = { x: 26, z: 13.8 };
