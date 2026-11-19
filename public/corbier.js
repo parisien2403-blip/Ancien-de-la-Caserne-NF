@@ -750,7 +750,7 @@ function construireCorbier(A, L, scene) {
       const paroi = (xa, za, xb, zb, bache) => { const L2 = Math.hypot(xb - xa, zb - za), a2 = Math.atan2(zb - za, xb - xa), n = Math.max(1, Math.round(L2 / 2)), mx = (xa + xb) / 2, mz = (za + zb) / 2;
         for (let k = 0; k <= n; k++) { const x = xa + (xb - xa) * k / n, z = za + (zb - za) * k / n; box(.08, 1.6, .08, noir, x, .8, z); }
         box(L2, .06, .08, noir, mx, 1.6, mz, -a2); box(L2, .06, .08, noir, mx, .9, mz, -a2); add(new THREE.PlaneGeometry(L2, 1.5), verre, mx, .8, mz, -a2);
-        if (bache) { const t = repT(banT, Math.max(1, Math.round(L2 / 5))); add(new THREE.PlaneGeometry(L2, .55), mat({ map: t, side: THREE.DoubleSide, roughness: .7 }), mx, .45, mz, -a2); }
+        if (bache) { const t = repT(banT, Math.max(1, Math.round(L2 / 5))); const bm = mat({ map: t, roughness: .7 }); for (const r of [0, Math.PI]) add(new THREE.PlaneGeometry(L2, .55), bm, mx, .45, mz, -a2 + r); }
         for (let k = 0; k <= Math.ceil(L2 / .5); k++) OB.push([xa + (xb - xa) * Math.min(1, k * .5 / L2), za + (zb - za) * Math.min(1, k * .5 / L2), .3]); };
       paroi(x0, z1, porte[0], z1, true); paroi(x0, z0 + .3, x0, z1, true);
       /* (10.149, d'après la photo) côté salon, vers le Sherpa : pas de vitres, mais les paravents de toile rouge sur leurs piquets, et la grande bâche au logo des Roches Blanches */
@@ -759,7 +759,7 @@ function construireCorbier(A, L, scene) {
       const toile = mat({ color: 0xd8503a, roughness: .9, side: THREE.DoubleSide }), alu = mat({ color: 0xc8ccd0, metalness: .6, roughness: .4 });
       const paravent = (xa, za, xb, zb, logo) => { const L2 = Math.hypot(xb - xa, zb - za), a2 = Math.atan2(zb - za, xb - xa), n = Math.max(1, Math.round(L2 / 1.4));
         for (let k = 0; k <= n; k++) cyl(.025, .025, 1.05, alu, xa + (xb - xa) * k / n, .52, za + (zb - za) * k / n, 5);
-        add(new THREE.PlaneGeometry(L2, .85), logo ? mat({ map: logoT, side: THREE.DoubleSide, roughness: .8 }) : toile, (xa + xb) / 2, .55, (za + zb) / 2, -a2);
+        if (logo) { const lm = mat({ map: logoT, roughness: .8 }); for (const r of [0, Math.PI]) add(new THREE.PlaneGeometry(L2, .85), lm, (xa + xb) / 2, .55, (za + zb) / 2, -a2 + r); } else add(new THREE.PlaneGeometry(L2, .85), toile, (xa + xb) / 2, .55, (za + zb) / 2, -a2);   // (10.162 : la bâche lisible des deux côtés, jamais à l'envers)
         for (let k = 0; k <= Math.ceil(L2 / .5); k++) OB.push([xa + (xb - xa) * Math.min(1, k * .5 / L2), za + (zb - za) * Math.min(1, k * .5 / L2), .3]); };
       paravent(porte[1], z1, porte[1] + 2.6, z1, false); paravent(porte[1] + 2.6, z1, x1 - .6, z1, true); paravent(x1 - .6, z1, x1, z1 - .6, false); paravent(x1, z1 - .6, x1, z0 + .3, false); paroi(XS, z0 + .3, XS, -.2, false); paroi(XS, 1.4, XS, z1, false);   // (la paroi de verre du milieu, son passage)
       // les parasols carrés rouges, sur leur mât, leurs baleines ; « Kronenbourg » sur le lambrequin
