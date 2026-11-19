@@ -69,9 +69,9 @@ function construireCorbier(A, L, scene) {
   /* ---------- les montagnes de la Maurienne tout autour : les crêtes, les pentes d'herbe, les rochers ; quelques sommets plus hauts ---------- */
   { const geo = new THREE.BufferGeometry(), P = [], C = [], N = 160;
     const crete = (R0, H0, k, teinte) => { for (let i = 0; i < N; i++) { const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2, h = (a) => H0 * (.55 + .45 * Math.abs(Math.sin(a * 3 + k)) + .25 * Math.sin(a * 11 + k * 2) + .12 * Math.sin(a * 29)), r = (a) => R0 * (1 + .08 * Math.sin(a * 5 + k));
-        const p0 = [Math.cos(a0) * r(a0), h(a0), Math.sin(a0) * r(a0)], p1 = [Math.cos(a1) * r(a1), h(a1), Math.sin(a1) * r(a1)], b0 = [Math.cos(a0) * r(a0) * .62, -30, Math.sin(a0) * r(a0) * .62], b1 = [Math.cos(a1) * r(a1) * .62, -30, Math.sin(a1) * r(a1) * .62];
+        const p0 = [Math.cos(a0) * r(a0), h(a0), Math.sin(a0) * r(a0)], p1 = [Math.cos(a1) * r(a1), h(a1), Math.sin(a1) * r(a1)], b0 = [Math.cos(a0) * r(a0) * .9, -30, Math.sin(a0) * r(a0) * .9], b1 = [Math.cos(a1) * r(a1) * .9, -30, Math.sin(a1) * r(a1) * .9];   /* (10.156 : le pied des montagnes plus loin : plus de mur vert au bout de la promenade) */
         for (const p of [b0, p0, p1, b0, p1, b1]) { P.push(...p); const top = p[1] > 0, roc = p[1] > H0 * .78; const col = roc ? [.4, .37, .34] : top ? teinte : [.2, .3, .14]; C.push(...col); } } };
-    crete(270, 120, 1.2, [.34, .32, .24]); crete(200, 70, 3.7, [.26, .34, .16]);
+    crete(300, 130, 1.2, [.34, .32, .24]); crete(240, 80, 3.7, [.26, .34, .16]);
     geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3)); geo.computeVertexNormals();
     const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, fog: false, flatShading: true })); m.position.set(0, -15, 40); m.frustumCulled = false; scene.add(m); }
   /* ---------- (en face des bâtiments) le domaine skiable, d'après les photos : la piste de gravier, le talus et son muret de rochers, puis les pentes d'herbe rousse
@@ -886,7 +886,14 @@ function construireCorbier(A, L, scene) {
       add(new THREE.PlaneGeometry(W, 3), vitreN, cx, 6.6, -1.58); box(W + .3, .9, 2.2, orange, cx, 8.65, -1.3);
       // la terrasse de planches, sa balustrade, l'enseigne « Le Sinoze, pub restaurant »
       const d = add(new THREE.PlaneGeometry(W, 6), mat({ map: deckT, roughness: .8 }), cx, .12, 1.4); d.rotation.x = -Math.PI / 2;
-      for (let x = x0; x < x1; x += .3) box(.22, .9, .04, mat({ color: 0x6a4a32 }), x, .55, 4.4); box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, 1.02, 4.4); box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, .2, 4.4);
+      for (let x = x0; x < x1; x += .3) box(.22, .9, .04, mat({ color: 0x6a4a32 }), x, .55, 4.4);
+      /* (10.156, d'après la photo) le coin fermé : le mur de bout du rez-de-chaussée, la balustrade découpée qui tourne sur le côté, l'escalier de bois qui monte à la terrasse le long du côté, sa rampe */
+      { const bal = mat({ map: tT(64, 128, (c, w, h) => { c.fillStyle = "#5a3a26"; c.fillRect(0, 0, w, h); c.clearRect(0, 0, 0, 0); c.fillStyle = "#3a2416"; c.beginPath(); c.moveTo(w / 2, 30); c.lineTo(w / 2 + 10, 60); c.lineTo(w / 2, 90); c.lineTo(w / 2 - 10, 60); c.fill(); c.fillStyle = "rgba(255,220,180,.12)"; c.fillRect(4, 0, 4, h); }), roughness: .8 });
+        box(.3, 3.3, 3.2, orange, x1 - .15, 1.65, -3.1); box(.3, 3.6, 1.2, orange, x1 - .15, 1.8, -1.0);
+        for (let z = -.4; z < 4.4; z += .3) box(.04, .9, .22, bal, x1, .55, z); box(.12, .1, 4.9, mat({ color: 0x5a3a26 }), x1, 1.02, 2.0); box(.12, .1, 4.9, mat({ color: 0x5a3a26 }), x1, .2, 2.0);
+        for (let k = 0; k < 4; k++) box(1.1, .12, .35, mat({ color: 0x6a4a32 }), x1 + .7, .06 + k * .0, 3.6 - k * .35);
+        const rp = box(.08, .08, 2.2, mat({ color: 0x6a4a32 }), x1 + 1.3, .95, 2.6); rp.rotation.x = -.25; for (const z of [1.6, 3.6]) box(.08, 1.0, .08, mat({ color: 0x6a4a32 }), x1 + 1.3, .5, z);
+        OB.push([x1, -.2, .3], [x1, 1, .3], [x1, 2.2, .3], [x1, 3.4, .3], [x1, 4.4, .3]); } box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, 1.02, 4.4); box(W, .1, .12, mat({ color: 0x5a3a26 }), cx, .2, 4.4);
       const pT = tT(512, 192, (c, w, h) => { c.fillStyle = "#f2f0ec"; c.fillRect(0, 0, w, h); c.strokeStyle = "#7a5a3a"; c.lineWidth = 10; c.beginPath(); c.arc(80, 96, 60, 0, 7); c.stroke(); c.fillStyle = "#3a2a1e"; c.font = `italic bold 76px ${serif}`; c.fillText("Sino", 160, 110); c.fillStyle = "#3a9ad8"; c.fillText("Ze", 320, 110); c.fillStyle = "#555"; c.font = `24px ${sans}`; c.fillText("PUB   RESTAURANT", 170, 160); });
       add(new THREE.PlaneGeometry(3.4, 1.3), mat({ map: pT }), x0 + 3, 1.4, 4.47);
       { const vC = mat({ color: 0x4a6a5a, roughness: .5 }); for (let k = 0; k < 3; k++) for (let q = 0; q < 6; q++) box(.46, .04, .44, vC, x0 + 6 + k * .6, .5 + q * .12, 2.6); OB.push([x0 + 6.6, 2.6, 1.2]); } }
