@@ -145,31 +145,68 @@ function construireCorbier(A, L, scene) {
      les jardinières de géraniums, le panneau du plan, le banc, sur sa butte d'herbe */
   { const n0 = scene.children.length, ox = -32, oz = 46, R0 = 7.5, H = 3.2, bois = mat({ color: 0x8a3a24, roughness: .6 }), blanc2 = mat({ color: 0xf2f0ea, roughness: .5 }), beton = mat({ color: 0xc8c2b6, roughness: .85 }), alu = mat({ color: 0xd8dce0, metalness: .8, roughness: .25 });
     add(new THREE.CylinderGeometry(R0 + 2, R0 + 3.5, 1, 32), mat({ color: 0x5a7a32, roughness: 1 }), ox, -.4, oz);   // la butte d'herbe
-    cyl(R0, R0, H, mat({ color: 0x3a4248, roughness: .2, metalness: .3 }), ox, H / 2, oz, 32);   // le vitrage, tout autour
-    for (let k = 0; k < 20; k++) { const a = k / 20 * Math.PI * 2; cyl(.06, .06, H, mat({ color: 0x3a3a3a, metalness: .5 }), ox + Math.sin(a) * (R0 + .03), H / 2, oz + Math.cos(a) * (R0 + .03), 5); }   // les montants
-    cyl(R0 - .2, R0 - .2, .3, mat({ color: 0x2a2a2a }), ox, H + .15, oz, 32);   // le toit plat
+    /* (10.151, d'après les photos) le vitrage : de grandes vitres claires sur montants gris, l'intérieur éclairé, les affiches et les dépliants collés derrière ; le soubassement */
+    const vitT = tT(4096, 256, (c, w, h) => { c.fillStyle = "#3a3e42"; c.fillRect(0, 0, w, h); const n = 28, pw = w / n;
+      for (let k = 0; k < n; k++) { const x = k * pw; const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#c8d8e0"); g.addColorStop(.5, "#e8e2d0"); g.addColorStop(1, "#a89a84"); c.fillStyle = g; c.fillRect(x + 6, 6, pw - 12, h - 40);
+        for (let i = 0; i < 5; i++) { if ((k * 7 + i * 3) % 4 === 0) continue; const px = x + 14 + (i % 3) * (pw / 3 - 6), py = 40 + (i / 3 | 0) * 70 + (k % 3) * 8; c.fillStyle = "#f4f2ea"; c.fillRect(px, py, pw / 4, 52); c.fillStyle = ["#6a8ab0", "#c8a070", "#8aa070", "#d8b040", "#b86a5a"][(k + i) % 5]; c.fillRect(px + 3, py + 3, pw / 4 - 6, 26); c.fillStyle = "#8a8a8a"; c.fillRect(px + 4, py + 34, pw / 4 - 10, 3); c.fillRect(px + 4, py + 41, pw / 6, 3); }
+        c.fillStyle = "rgba(255,255,255,.22)"; c.beginPath(); c.moveTo(x + 6, 6); c.lineTo(x + pw * .45, 6); c.lineTo(x + 6, h * .6); c.fill(); c.fillStyle = "#6a6e72"; c.fillRect(x, 0, 6, h); }
+      c.fillStyle = "#8a8a86"; c.fillRect(0, h - 34, w, 34); c.fillStyle = "#5a5a58"; c.fillRect(0, h - 36, w, 3); });
+    cyl(R0, R0, H, lum(mat({ map: vitT, emissive: 0xffffff, emissiveMap: vitT, emissiveIntensity: .25, roughness: .15, metalness: .2 }), .25, .8), ox, H / 2, oz, 56);   // le vitrage, tout autour
+    cyl(R0 - .25, R0 - .25, .05, lum(mat({ color: 0xfff6e8, emissive: 0xfff2dc, emissiveIntensity: .4 }), .4, .9), ox, H - .1, oz, 32);   // (le plafond éclairé, dedans)
+    cyl(R0 - .2, R0 - .2, .3, mat({ color: 0x5a4a3e, roughness: .9 }), ox, H + .15, oz, 32);   // le toit plat, brun
+    for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; box(2.7, .14, .14, mat({ color: 0xece6da }), ox + Math.sin(a) * (R0 + 1.2), H + .2, oz + Math.cos(a) * (R0 + 1.2), a + Math.PI / 2); }   // (les consoles qui tiennent l'anneau, décollé du toit)
+    { const dT = tT(1024, 32, (c, w, h) => { c.fillStyle = "#e8e2d4"; c.fillRect(0, 0, w, h); c.fillStyle = "#1a1a1a"; for (let x = 0; x < w; x += 32) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 16, 4); c.lineTo(x + 32, h); c.fill(); } }, 3, 1); add(new THREE.CylinderGeometry(R0 + .05, R0 + .05, .35, 56, 1, true), mat({ map: dT }), ox, .2, oz); }
+    { const a = 2.4, wx = ox + Math.sin(a) * (R0 + 5), wz = oz + Math.cos(a) * (R0 + 5), wcT = tT(64, 64, (c, w, h) => { c.fillStyle = "#6a4a32"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ee"; c.beginPath(); c.arc(32, 32, 24, 0, 7); c.fill(); c.fillStyle = "#1a1a1a"; c.font = "bold 22px Arial"; c.textAlign = "center"; c.fillText("WC", 32, 40); });
+      box(2.2, 2.4, 1.8, mat({ color: 0x6a4a32, roughness: .8 }), wx, 1.2, wz, a); box(2.6, .15, 2.2, mat({ color: 0x4a4e54 }), wx, 2.5, wz, a); add(new THREE.PlaneGeometry(.9, .9), mat({ map: wcT }), wx + Math.sin(a) * .92, 1.5, wz + Math.cos(a) * .92, a); OB.push([wx, wz, 1.4]); }
     // le large anneau de planches rouge-brun, qui déborde, et son inscription
-    const anT = tT(2048, 128, (c, w, h) => { c.fillStyle = "#7a3220"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) { c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(0, y, w, 2); c.fillStyle = "rgba(255,200,170,.08)"; c.fillRect(0, y + 3, w, 6); }
-      c.fillStyle = "#fff"; c.font = `bold 78px ${sans}`; c.textAlign = "center"; for (const x of [w / 6, w / 2, w * 5 / 6]) { c.fillText("OFFICE DE TOURISME", x + 30, 94); c.fillStyle = "#1a5ab8"; c.fillRect(x - 380, 40, 48, 48); c.fillStyle = "#fff"; } });
-    const an = add(new THREE.CylinderGeometry(R0 + 2.4, R0 + 2.6, 1.4, 64, 1, true), mat({ map: anT, side: THREE.DoubleSide, roughness: .6 }), ox, H + .5, oz); void an;
+    const aE = Math.PI * .1, uE = 1 - aE / (Math.PI * 2);   // (l'entrée ; le passage du miroir retourne l'angle)
+    const anT = tT(4096, 96, (c, w, h) => { c.fillStyle = "#7a3a22"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 12) { c.fillStyle = ["#8a4428", "#7a3a22", "#6e321e"][(y / 12) % 3]; c.fillRect(0, y, w, 11); c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(0, y + 11, w, 1); }
+      for (let i = 0; i < 200; i++) { c.fillStyle = "rgba(255,220,190,.06)"; c.fillRect(Math.random() * w, Math.random() * h, 40 + Math.random() * 120, 2); }
+      for (const x of [uE * w, uE * w - w]) { c.fillStyle = "#f6f4ee"; c.font = `bold 50px ${sans}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("OFFICE DE TOURISME", x + 24, h / 2 + 3);
+      c.save(); c.translate(x - 290, h / 2); c.rotate(Math.PI / 4); c.fillStyle = "#f6f4ee"; c.fillRect(-17, -17, 34, 34); c.fillStyle = "#c8202a"; c.fillRect(-13, -13, 13, 26); c.fillStyle = "#1a4a9a"; c.fillRect(0, -13, 13, 26); c.restore(); } });
+    add(new THREE.CylinderGeometry(R0 + 2.4, R0 + 2.6, 1.3, 96, 1, true), mat({ map: anT, roughness: .6 }), ox, H + .5, oz);
+    add(new THREE.CylinderGeometry(R0 + 2.38, R0 + 2.58, 1.3, 96, 1, true), mat({ color: 0x5a2a18, side: THREE.BackSide, roughness: .7 }), ox, H + .5, oz);   // (le dedans de l'anneau)
+    add(new THREE.RingGeometry(R0 + .4, R0 + 2.6, 64), mat({ color: 0xece6da, side: THREE.DoubleSide }), ox, H + 1.15, oz).rotation.x = -Math.PI / 2;   // (le dessus, blanc)
+    { const a = -.6, cx2 = ox + Math.sin(a) * (R0 - 1.5), cz2 = oz + Math.cos(a) * (R0 - 1.5); box(1.2, 1.6, 1.0, mat({ color: 0x9a9a96, roughness: .7 }), cx2, H + 1.1, cz2); box(1.4, .12, 1.2, mat({ color: 0x5a5a58 }), cx2, H + 1.95, cz2); }   // (le caisson technique, sur le toit)
     add(new THREE.RingGeometry(R0 - .2, R0 + 2.4, 64), mat({ color: 0x5a2416, side: THREE.DoubleSide }), ox, H - .2, oz).rotation.x = -Math.PI / 2;   // le dessous de l'anneau
     // la porte d'entrée, sous son petit auvent
-    { const a = Math.PI * .1, dx = Math.sin(a) * R0, dz = Math.cos(a) * R0; box(3.2, 2.6, .5, mat({ color: 0x7a3220 }), ox + dx * 1.04, 2.8, oz + dz * 1.04, a); box(2.4, 2.3, .1, mat({ color: 0x4a6878, roughness: .1, metalness: .3 }), ox + dx * 1.08, 1.2, oz + dz * 1.08, a);
+    { const a = Math.PI * .1, dx = Math.sin(a) * R0, dz = Math.cos(a) * R0, ux = Math.sin(a), uz = Math.cos(a), P = (d, s2, y) => [ox + ux * (R0 + d) + uz * s2, y, oz + uz * (R0 + d) - ux * s2], brun = mat({ color: 0x7a3a22, roughness: .6 });
+      const sasT = tT(512, 256, (c, w, h) => { c.fillStyle = "#e8e4dc"; c.fillRect(0, 0, w, h); c.fillStyle = "#3a3e42"; c.fillRect(0, 0, w, h);
+        for (const [x0, w0, porte] of [[8, 150, 0], [176, 160, 1], [354, 150, 0]]) { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#d8e4ea"); g.addColorStop(1, "#8a9aa4"); c.fillStyle = g; c.fillRect(x0, 10, w0, h - 16);
+          if (porte) { c.fillStyle = "#2a2e32"; c.fillRect(x0 + w0 / 2 - 2, 10, 4, h - 16); c.fillStyle = "#f4f2ea"; c.fillRect(x0 + 30, 26, w0 - 60, 30); c.fillStyle = "#2a5ab8"; c.font = "bold 16px Arial"; c.textAlign = "center"; c.fillText("le Corbier", x0 + w0 / 2, 47); }
+          else for (let i = 0; i < 6; i++) { c.fillStyle = ["#f4f2ea", "#e8c040", "#2a5ab8", "#c83a3a"][i % 4]; c.fillRect(x0 + 10 + (i % 2) * 70, 24 + (i / 2 | 0) * 70, 60, 60); } } });
+      { const [x, , z] = P(.8, 0, 0); box(4.4, .35, 1.8, brun, x, H - .1, z, a); box(4.2, 2.9, .06, lum(mat({ map: sasT, emissive: 0xffffff, emissiveMap: sasT, emissiveIntensity: .25, roughness: .2 }), .25, .7), ...P(1.66, 0, 1.45), a); }
+      for (const s2 of [-2.1, 2.1]) { const [x, , z] = P(.8, s2, 0); box(.15, 3.0, 1.8, brun, x, 1.5, z, a); }
+      { const [x, , z] = P(1.72, 0, 0); add(new THREE.PlaneGeometry(.9, .22), mat({ color: 0xf4f2ea }), x, 3.1, z, a); }
+      // l'escalier de béton, les rampes inox et leur main courante de bois, les jardinières de géraniums
+      for (let k = 0; k < 6; k++) { const [x, , z] = P(2.0 + k * .38, 0, 0); box(2.8, .2, .4, beton, x, .1 + (5 - k) * .2, z, a); }
+      const inox = mat({ color: 0xc8ccd0, metalness: .75, roughness: .3 }), mc = mat({ color: 0xa06a3a, roughness: .6 });
+      for (const s2 of [-1.45, 1.45]) { for (const d of [1.9, 2.9, 4.1]) { const [x, , z] = P(d, s2, 0); cyl(.03, .03, 1.0, inox, x, (4.3 - d) * .5 + .3, z, 5); }
+        const [x, , z] = P(3.0, s2, 0); const r = box(.07, .06, 2.4, mc, x, 1.4, z, a); r.rotation.x = .48; const g2 = box(.03, .8, 2.3, mat({ color: 0xc8ccd0, metalness: .5, transparent: true, opacity: .4 }), x, .95, z, a); g2.rotation.x = .48;
+        for (let k = 0; k < 6; k++) add(new THREE.IcosahedronGeometry(.17, 0), mat({ color: [0xe02a3a, 0xf08090, 0x3a6a2a][k % 3] }), ...P(1.85, s2 * 1.15 + (k % 2) * .15, 1.6 + (k % 3) * .1)); }
+      void dx; void dz; }
+    if (false) { const a = Math.PI * .1, dx = Math.sin(a) * R0, dz = Math.cos(a) * R0;
       // l'escalier, les rampes inox, la main courante de bois
       for (let k = 0; k < 7; k++) { const t = 1.1 + k * .32; box(2.6, .16, .4, beton, ox + dx * (1 + t / R0 * 1), .9 - k * .16, oz + dz * (1 + t / R0), a); }
       for (const sg of [-1, 1]) { const ex = Math.cos(a) * 1.4 * sg, ez = -Math.sin(a) * 1.4 * sg; const r = box(.06, .06, 2.6, mat({ color: 0xa06a3a }), ox + dx * 1.22 + ex, 1.4, oz + dz * 1.22 + ez, a); r.rotation.x = .3; box(.04, 1, 2.4, mat({ color: 0xc8ccd0, metalness: .7, transparent: true, opacity: .6 }), ox + dx * 1.22 + ex, .9, oz + dz * 1.22 + ez, a);
         for (let k = 0; k < 6; k++) add(new THREE.IcosahedronGeometry(.18, 0), mat({ color: [0xe02a3a, 0xf08090, 0xffffff][k % 3] }), ox + dx * 1.12 + ex * 1.1 + (k % 2) * .2, 1.7 + (k % 3) * .12, oz + dz * 1.12 + ez * 1.1); } }
     // les trois grandes jambes en triangle : rouge-brun dehors, blanches dedans, sur leurs socles de béton
     const top = new THREE.Vector3(ox, 21, oz); for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2 + .9, A = new THREE.Vector3(ox + Math.sin(a) * (R0 + 4.2), 0, oz + Math.cos(a) * (R0 + 4.2)), d = top.clone().sub(A), L2 = d.length(), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize());
-      for (const [m, w, off] of [[bois, .9, 0], [blanc2, .5, .55]]) { const o = add(new THREE.BoxGeometry(w, L2, .7), m, 0, 0, 0); o.quaternion.copy(q); o.position.copy(A).addScaledVector(d, .5); const n = new THREE.Vector3(-Math.sin(a), 0, -Math.cos(a)).multiplyScalar(off); o.position.add(n); }
+      if (k === 2) { const B = new THREE.Vector3(ox + Math.sin(a) * (R0 + 1.2), 0, oz + Math.cos(a) * (R0 + 1.2)), d2 = top.clone().sub(B), q2 = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d2.clone().normalize());   /* (10.152, d'après la webcam : le troisième pied est un mât blanc, presque droit) */
+        const o = add(new THREE.CylinderGeometry(.32, .38, d2.length(), 16), mat({ color: 0xeceae4, roughness: .45, metalness: .2 }), 0, 0, 0); o.quaternion.copy(q2); o.position.copy(B).addScaledVector(d2, .5); cyl(.6, .7, .5, beton, B.x, .25, B.z, 12); OB.push([B.x, B.z, .7]); continue; }
+      for (const [m, w, off] of [[bois, .7, 0], [blanc2, .42, .42]]) { const o = add(new THREE.BoxGeometry(w, L2, .55), m, 0, 0, 0); o.quaternion.copy(q); o.position.copy(A).addScaledVector(d, .5); const n = new THREE.Vector3(-Math.sin(a), 0, -Math.cos(a)).multiplyScalar(off); o.position.add(n); }
       const so = box(2.2, 1.6, 1.4, beton, A.x, .8, A.z); so.rotation.y = a; OB.push([A.x, A.z, 1.4]); }
     // le cône d'aluminium et son disque, tout en haut ; la nappe de câbles jusqu'à l'anneau
-    add(new THREE.ConeGeometry(2.4, 4.6, 24), alu, ox, 24, oz); cyl(2.6, 2.6, .5, alu, ox, 21.4, oz, 24); cyl(2.2, 2.2, .25, mat({ color: 0x9a9ea2 }), ox, 21.05, oz, 24);
+    add(new THREE.ConeGeometry(2.4, 4.6, 24), mat({ color: 0xeceae4, roughness: .4, metalness: .3 }), ox, 24, oz); cyl(2.6, 2.6, .5, alu, ox, 21.4, oz, 24); cyl(2.2, 2.2, .25, mat({ color: 0x9a9ea2 }), ox, 21.05, oz, 24);
     for (let k = 0; k < 36; k++) { const a = k / 36 * Math.PI * 2, A = new THREE.Vector3(ox + Math.sin(a) * 2, 21, oz + Math.cos(a) * 2), B = new THREE.Vector3(ox + Math.sin(a) * (R0 + .5), H + 1.2, oz + Math.cos(a) * (R0 + .5)), d = B.clone().sub(A), o = add(new THREE.CylinderGeometry(.018, .018, d.length(), 3), mat({ color: 0xd0d4d8, metalness: .6 }), 0, 0, 0); o.position.copy(A).addScaledVector(d, .5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); }
     // devant : le panneau du plan sur ses deux poteaux, le banc, la petite borne jaune
     { const a = Math.PI * -.15, fx = ox + Math.sin(a) * (R0 + 2.5), fz = oz + Math.cos(a) * (R0 + 2.5); const plT = tT(256, 160, (c, w, h) => { c.fillStyle = "#f2efe6"; c.fillRect(0, 0, w, h); c.fillStyle = "#8aa070"; c.fillRect(14, 30, w - 90, h - 44); c.strokeStyle = "#c8202a"; c.lineWidth = 3; for (let k = 0; k < 6; k++) { c.beginPath(); c.moveTo(20 + k * 20, 40); c.lineTo(60 + k * 14, h - 20); c.stroke(); } c.fillStyle = "#c8202a"; c.fillRect(w - 70, 30, 56, 20); c.fillStyle = "#2a2a2a"; c.font = "bold 12px Arial"; c.fillText("ESPACE TRAIL", 20, 22); });
       box(2.4, 1.6, .08, mat({ map: plT }), fx, 1.6, fz, a); for (const sg of [-1, 1]) box(.12, 2.4, .12, mat({ color: 0x6a4a2a }), fx + Math.cos(a) * 1.25 * sg, 1.2, fz - Math.sin(a) * 1.25 * sg);
       box(1.8, .08, .45, mat({ color: 0x6a3a22 }), fx + 1.8, .45, fz + 1.4, a); box(1.8, .3, .06, mat({ color: 0x6a3a22 }), fx + 1.8, .75, fz + 1.2, a); OB.push([fx, fz, 1.4]); }
+    { const a = Math.PI * -.32, lx = ox + Math.sin(a) * (R0 + 4.2), lz = oz + Math.cos(a) * (R0 + 4.2), vt = mat({ color: 0x6a9a7a, roughness: .45, metalness: .4 }); cyl(.07, .1, 4.6, vt, lx, 2.3, lz, 8);
+      for (const s2 of [-1, 1]) { cyl(.22, .1, .5, lum(mat({ color: 0xf2f0e0, emissive: 0xffe0a0, emissiveIntensity: .05, transparent: true, opacity: .9 }), .05, 2.4), lx + s2 * .9, 4.1, lz, 4); const b2 = add(new THREE.TorusGeometry(.45, .04, 6, 12, Math.PI * .9), vt, lx + s2 * .45, 4.4, lz); b2.rotation.z = s2 > 0 ? 0 : Math.PI; }
+      const jt = tT(64, 64, (c, w, h) => { c.fillStyle = "#f0c020"; c.beginPath(); c.moveTo(32, 4); c.lineTo(60, 58); c.lineTo(4, 58); c.closePath(); c.fill(); c.strokeStyle = "#c82020"; c.lineWidth = 5; c.stroke(); c.fillStyle = "#1a1a1a"; c.font = "bold 26px Arial"; c.textAlign = "center"; c.fillText("✕", 32, 50); });
+      add(new THREE.PlaneGeometry(.7, .7), mat({ map: jt, transparent: true, side: THREE.DoubleSide }), lx, 2.0, lz + .12); OB.push([lx, lz, .3]); }
     OB.push([ox, oz, R0 + 2]); const yb = HP(ox, oz); for (const o of scene.children.slice(n0)) o.position.y += yb; }
   // (l'aire de jeux, les bacs de fleurs du pré : retirés)
   // le portique rouge des Sybelles et ses tourniquets blancs
@@ -198,7 +235,23 @@ function construireCorbier(A, L, scene) {
       c.userData.anime = true; scene.add(c); S.push(c); }
     const placer = (u, cote) => { let d = u * tot, k = 0; while (k < L2.length - 1 && d > L2[k]) { d -= L2[k]; k++; } const f = Math.min(1, d / L2[k]), A = line[k], B = line[k + 1]; return [A[0] + (B[0] - A[0]) * f + cosd * cote * 2.2, A[1] + (B[1] - A[1]) * f, A[2] + (B[2] - A[2]) * f - sind * cote * 2.2]; };
     TS.push({ S, placer, tot, dir, nS }); };
-  telesiege(80, 50, .35, 320, true); telesiege(58, 52, .1, 240, false); telesiege(-15, 54, -.1, 200, false);
+  telesiege(80, 50, .35, 235, true); telesiege(58, 52, .1, 240, false); telesiege(-15, 54, -.1, 200, false);
+  /* (10.153) on prend le télésiège des Sybelles : à la gare, « Prendre le télésiège » ; on s'assoit, le siège monte toute la ligne au-dessus des pentes,
+     à la première personne (le siège, la barre, les skis… devant soi), fait le tour de la poulie là-haut et redescend ; on se retrouve à la gare */
+  { const T = TS[0], gris = mat({ color: 0x9a9ea2, metalness: .6, roughness: .4 }), bleu = mat({ color: 0x2a3a5a, roughness: .5 });
+    const SG = new THREE.Group(); SG.userData.anime = true; SG.visible = false; scene.add(SG);
+    for (const [w, h, d, x, y, z, m] of [[2.2, .1, .55, 0, -2.2, 0, bleu], [2.2, .6, .08, 0, -1.9, -.3, bleu], [.06, 2.2, .06, 0, -1.1, -.3, gris], [2.2, .05, .05, 0, -1.98, .62, gris], [.05, .45, .05, -.9, -1.78, .62, gris], [.05, .45, .05, .9, -1.78, .62, gris], [.05, .05, .9, -.9, -1.55, .2, gris], [.05, .05, .9, .9, -1.55, .2, gris], [2.0, .05, .05, 0, -2.6, .6, gris]]) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); SG.add(o); }
+    let RIDE = null; const W = (u, cote) => { const p = T.placer(Math.max(0, Math.min(.999, u)), cote); return new THREE.Vector3(-p[0], p[1], p[2]); };
+    const moiP = () => M && M.gens && M.gens.get(M.moiNum);
+    const fin = () => { RIDE = null; SG.visible = false; try { finCine(); } catch (e) { M.cine = null; } const q = moiP(); if (q) { const g0 = W(0, 1); q.g.position.set(g0.x + 1.5, L.hauteur(g0.x + 1.5, g0.z + 6), g0.z + 6); q.g.visible = true; q.cible = null; q.chemin = []; try { envoyerWS({ t: "aller", x: q.g.position.x, z: q.g.position.z }); } catch (e) {} } };
+    const monter = () => { if (RIDE || M.cine) return; RIDE = { t0: performance.now() }; SG.visible = true; const q = moiP(); if (q) { q.g.visible = false; q.cible = null; q.chemin = []; }
+      M.cine = { gel: true, fov: [72, 82], maj: () => { if (!RIDE) return; const t = (performance.now() - RIDE.t0) / 1000, up = T.tot / 6.5, down = T.tot / 13;
+        let u, cote; if (t < up) { u = t / up; cote = 1; } else if (t < up + 3) { u = .999; cote = 1; } else if (t < up + 3 + down) { u = 1 - (t - up - 3) / down; cote = -1; } else { fin(); return; }
+        const P = W(u, cote), Q = W(u + cote * .01, cote), dir = Q.clone().sub(P); dir.y = 0; dir.normalize(); SG.position.copy(P); SG.rotation.y = Math.atan2(dir.x, dir.z);
+        const eye = P.clone(); eye.y -= 1.5; eye.addScaledVector(dir, -.1); M.camera.position.copy(eye); const look = eye.clone().addScaledVector(dir, 10); look.y += cote > 0 ? -.6 : -3.4; M.camera.lookAt(look);
+        const qq = moiP(); if (qq) qq.g.visible = false; } }; };
+    const a0 = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0 && a0(x, z, moi); if (r) return r; if (RIDE) return null; const g0 = W(0, 1); return Math.hypot(x - g0.x, z - (g0.z + 4)) < 7 ? { type: "lieu", id: "telesiege", label: "🚡 Prendre le télésiège", faire: monter } : null; };
+    L.quitterTelesiege = fin; }
   // le chalet des remontées : le bardage de bois, le toit de tôle grise, les fenêtres, l'escalier
   { const cx = 91, cz = 52, y = HP(cx, cz); box(9, 3.4, 6, facR, cx, y + 1.7, cz); const r1 = box(5.4, .15, 7, mat({ color: 0x5a6068, metalness: .4, roughness: .5 }), cx - 2.3, y + 4.4, cz); r1.rotation.z = .55; const r2 = box(5.4, .15, 7, mat({ color: 0x5a6068, metalness: .4, roughness: .5 }), cx + 2.3, y + 4.4, cz); r2.rotation.z = -.55;
     for (let k = 0; k < 5; k++) box(1, 1.3, .06, mat({ color: 0x2a3a40, roughness: .2 }), cx - 3.4 + k * 1.7, y + 1.8, cz - 3.02); box(.9, .5, .06, mat({ color: 0x1a5aa8 }), cx + 1, y + 2.9, cz - 3.05); OB.push([cx, cz, 5]); }
@@ -661,7 +714,11 @@ function construireCorbier(A, L, scene) {
     for (const x of [-22]) { for (const sx of [-1.4, 1.4]) { for (const sg of [-1, 1]) { const j = cyl(.06, .06, .9, rondin, x + sx, .4, 6.2, 6); j.rotation.x = sg * .5; } } for (const y of [.45, .7]) { const r = cyl(.08, .08, 3.2, rondin, x, y, 6.2, 8); r.rotation.z = Math.PI / 2; } OB.push([x - 1, 6.2, .5], [x + 1, 6.2, .5]); }
     // le chemin de planches qui traverse le gravier vers la galerie au panneau orangé, ses barrières de rondins
     { const gC = LG("galC"), xc = (gC.x0 + gC.x1) / 2; L.solsPlus.push(sol(xc - 1.3, xc + 1.3, 7, 12.6, mat({ map: deckT, roughness: .8 }), .035));
-      for (const sx of [-1.45, 1.45]) { for (const z of [8.2, 10.3, 12.4]) { cyl(.09, .1, .9, rondin, xc + sx, .45, z, 7); OB.push([xc + sx, z, .2]); } for (const y of [.45, .8]) { const r = cyl(.07, .07, 4.3, rondin, xc + sx, y, 10.3, 7); r.rotation.x = Math.PI / 2; } } }
+      for (const sx of [-1.32, 1.32]) box(.1, .08, 5.6, boisC, xc + sx, .06, 9.8); }   // (10.152 : une simple rampe de planches, sans barrière)
+    // (10.153, d'après la photo) deux tables de ping-pong en béton, sur le gravier, le long du plancher
+    { const vt = mat({ color: 0x2a6a4a, roughness: .5 }), bl = mat({ color: 0xf4f4f2 }), gr = mat({ color: 0x8a8a86, roughness: .9 }), fil = mat({ color: 0x2a2a2c, transparent: true, opacity: .7 });
+      for (const x of [LG("skiset").x0 - .5, LG("vet").x1 + 2.2]) { const z = 9.2; box(2.74, .08, 1.52, vt, x, .76, z); box(2.74, .085, .03, bl, x, .76, z + .74); box(2.74, .085, .03, bl, x, .76, z - .74); box(.03, .085, 1.52, bl, x + 1.35, .76, z); box(.03, .085, 1.52, bl, x - 1.35, .76, z); box(2.74, .086, .02, bl, x, .76, z);
+        box(.06, .16, 1.7, fil, x, .88, z); for (const sx of [-.9, .9]) box(.2, .72, 1.1, gr, x + sx, .36, z); OB.push([x - .9, z, 1.1], [x + .9, z, 1.1]); } }
     // le kiosque d'affichage sur son poteau, son petit toit à deux pans, devant la galerie
     { const gA = LG("galA"), kx = (gA.x0 + gA.x1) / 2 + .5, kz = zfAt(kx) + 2.4, affT = tT(128, 80, (c, w, h) => { c.fillStyle = "#3a2a1e"; c.fillRect(0, 0, w, h); for (let k = 0; k < 5; k++) { c.fillStyle = ["#f4f2ea", "#f0e0a0", "#e8f0f4"][k % 3]; c.fillRect(8 + k * 23, 10 + (k % 2) * 8, 19, 26); } });
       cyl(.07, .08, 2.2, bk, kx, 1.1, kz, 6); for (let k = 0; k < 4; k++) { const a2 = k * Math.PI / 2, br = cyl(.03, .03, .8, bk, kx + Math.cos(a2) * .25, .26, kz + Math.sin(a2) * .25, 4); br.rotation.set(-Math.sin(a2) * .9, 0, Math.cos(a2) * .9); }
