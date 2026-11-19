@@ -15406,7 +15406,7 @@ function videoDJ(c) { let v = M.videoDJ;
 const MAN = { prec: [], allerT: 0, tirT: 0, mire: null, bouge: false, vu: false, t: 0 };
 /* la VR (Meta Quest…) : un bouton « Casque VR » quand le navigateur sait l'ouvrir. Dans le casque, on voit par les yeux du personnage ;
    les deux manettes Touch font comme une manette de jeu : joystick gauche pour marcher (dans la direction où l'on regarde), joystick droit pour pivoter,
-   A agir, B passer, gâchette droite tirer, gâchette gauche la lampe, X danser, Y la carte. */
+   A agir, B passer, gâchette droite tirer, gâchette gauche la lampe, X danser, Y la carte ; le joystick gauche enfoncé : le micro (10.136). */
 function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupported) return;
   rendu.xr.enabled = true; rendu.xr.setReferenceSpaceType("local-floor");
   navigator.xr.isSessionSupported("immersive-vr").then(ok => { if (!ok || !M || M.rendu !== rendu) return;
@@ -15637,6 +15637,9 @@ function manette() {
   { const intro = document.getElementById("mxApoIntro"); if (intro && !intro.hidden) { if (appui(0)) document.getElementById("mxApoOui").click(); if (appui(1)) document.getElementById("mxApoNon").click(); fin(); return; } }
   const enRE = estApo(M.lieu) && !estSH(M.lieu);   // (à Resident Evil : ni relief, ni vue à la première personne)
   if (appui(9) && !enRE) relief(!M.relief);
+  /* (10.136) dans le casque, on ne peut pas toucher le bouton 🎙️ de la page : on appuie sur le joystick gauche (on l'enfonce) pour allumer ou couper le micro */
+  if (appui(10) && M.vr && M.rendu.xr.isPresenting) { const bm = document.getElementById("mxMicro"); if (bm && !bm.disabled) { const on = !bm.classList.contains("on"); bm.click();
+    setTimeout(() => { const ok = bm.classList.contains("on"); dire(M.moiNum, ok ? "🎙️ Micro allumé (joystick gauche enfoncé pour couper)" : on ? "🎙️ Le micro n'a pas pu s'allumer : autorise-le avant d'entrer dans le casque" : "🎙️ Micro coupé"); }, 1500); } }
   if (appui(8) && !enRE) premiere(!M.premiere);
   if (appui(1)) { if (M.passerBtn) M.passerBtn.click(); else if (Number.isInteger(moi.info.assis)) { M.action = { type: "lever" }; agir(); } else if (moi.info.danse) { danser(false); bulle("🛑 Fin de la danse", 1500); } }
   // S.O.S. Fantômes : la mire (joysticks), la gâchette tient le faisceau ; sans toucher aux joysticks, la mire glisse vers le monstre
