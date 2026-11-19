@@ -1546,7 +1546,7 @@ function construireCorbier(A, L, scene) {
     const W2 = [[-28, 5], [10, 5.4], [40, 5], [60, 5.4], [62, 12.5], [30, 13.2], [-10, 12.6], [-30, 12.8]], Lg = W2.map((q, i) => Math.hypot(W2[(i + 1) % W2.length][0] - q[0], W2[(i + 1) % W2.length][1] - q[1])), tot = Lg.reduce((a2, b2) => a2 + b2, 0);
     L.mascPos = (t) => { let d = ((t * .9) % tot + tot) % tot, i = 0; while (d > Lg[i]) { d -= Lg[i]; i++; } const A2 = W2[i], B2 = W2[(i + 1) % W2.length], u = d / Lg[i];
       return { x: -(A2[0] + (B2[0] - A2[0]) * u), z: A2[1] + (B2[1] - A2[1]) * u, ry: Math.atan2(-(B2[0] - A2[0]), B2[1] - A2[1]) }; };
-    L.mascotte = G; const a7 = L.anim; L.anim = (tm) => { try { a7 && a7(tm); } catch (e) {} const v = !L.nuit; if (G.visible !== v) G.visible = v; if (!v) return;
+    L.mascotte = G; const a7 = L.anim; L.anim = (tm) => { try { a7 && a7(tm); } catch (e) {} if (!G.visible) G.visible = true;
       const t = (tm || performance.now()) / 1000, q = L.mascPos(t), x = q.x, z = L.evite ? L.evite(G.userData, q.x, q.z, Math.sin(q.ry)) : q.z; G.position.set(x, L.hauteur ? L.hauteur(x, z) : 0, z); G.rotation.y = q.ry;
       const ph = t * 5.2; jambes[0].rotation.x = Math.sin(ph) * .45; jambes[1].rotation.x = -Math.sin(ph) * .45; bras[0].rotation.x = -Math.sin(ph) * .35;
       const salut = Math.sin(t * .4) > .55; bras[1].rotation.x = salut ? 0 : Math.sin(ph) * .35; bras[1].rotation.z = salut ? 2.5 + Math.sin(t * 7) * .3 : 0; T.rotation.y = Math.sin(t * .7) * .25; }; }
@@ -1649,6 +1649,12 @@ function construireCorbier(A, L, scene) {
       ANIM.push((t) => { let d = (t * v + k * 9) % (2 * tot2); const ret = d > tot2; if (ret) d = 2 * tot2 - d; let i = 1; for (; i < GW.length; i++) { const l = Math.hypot(GW[i][0] - GW[i - 1][0], GW[i][1] - GW[i - 1][1]); if (d <= l) break; d -= l; } i = Math.min(i, GW.length - 1);
         const A2 = GW[i - 1], B2 = GW[i], l = Math.hypot(B2[0] - A2[0], B2[1] - A2[1]) || 1, u = Math.min(1, d / l), off = (k % 3 - 1) * .7, x = A2[0] + (B2[0] - A2[0]) * u, z = evite(m.userData, x, A2[1] + (B2[1] - A2[1]) * u + off, ret ? -1 : 1);
         m.position.set(x, H(x, z), z); m.rotation.y = Math.atan2((B2[0] - A2[0]) * (ret ? -1 : 1), (B2[1] - A2[1]) * (ret ? -1 : 1)); m.userData.poser("marche", t * 1000); }); } }
+    // (10.138) le soir, devant la scène : on danse
+    const DANSE = [], DANSEF = [];
+    for (let k = 0; k < (PEU ? 6 : 12); k++) { const m = ad(gens(k * 3 + 7)), a0 = k * 2.399, rr = 1.2 + (k % 4) * .8, cx = -32 + Math.cos(a0) * rr * 1.6, cz = 19.6 - Math.abs(Math.sin(a0)) * rr; m.position.set(cx, L.hauteur ? L.hauteur(cx, cz) : 0, cz); m.rotation.y = 0; m.visible = false; DANSE.push(m);
+      DANSEF.push((t) => { const ph = t * 4.2 + k, P2 = P(m); m.userData.poser("debout", 0); m.position.y = (L.hauteur ? L.hauteur(cx, cz) : 0) + Math.abs(Math.sin(ph)) * .12; m.rotation.y = Math.sin(t * .7 + k) * .5;
+        const st = k % 3; P2.bras.forEach((b, i) => { const sg = i ? 1 : -1; if (st === 0) { b.e.rotation.x = -2.8 + Math.sin(ph + i) * .3; b.e.rotation.z = sg * .3; } else if (st === 1) { b.e.rotation.x = -1.2 + Math.sin(ph + i * Math.PI) * .7; b.c.rotation.x = -1.3; } else { b.e.rotation.z = sg * (.6 + Math.sin(ph) * .5); b.e.rotation.x = -.4; } });
+        P2.jambes.forEach((J, i) => { J.h.rotation.x = Math.sin(ph + i * Math.PI) * .25; }); P2.bassin.rotation.y = Math.sin(ph * .5) * .3; }); }
     // le feu d'artifice : le soir, sans arrêt, au pied de la montagne derrière la scène
     const FX = { x: -34, z: 70 }; FX.y = HP(34, 70); const BUR = [];   /* (10.128 : plus gros, plus vrai — étincelles rondes et lumineuses, traînées, chrysanthèmes, saules d'or qui retombent, anneaux, crépitements) */
     const etin = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.18, "rgba(255,255,255,.9)"); g.addColorStop(.45, "rgba(255,255,255,.25)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); return t; })();
@@ -1679,8 +1685,8 @@ function construireCorbier(A, L, scene) {
         b.m.opacity = f * cr; b.lm.opacity = f * .8; b.m.size = 2.6 * (b.type === "saule" ? 1 : .6 + f * .5); if (e < .4) flash = Math.max(flash, 1 - e / .4); }
       lumFeu.intensity = flash * 6; };
     const a8 = L.anim; let jourV = null; L.anim = (tm) => { try { a8 && a8(tm); } catch (e) {} const t = (tm || performance.now()) / 1000, jour = !L.nuit;
-      if (jour !== jourV) { jourV = jour; for (const o of JOUR) o.visible = jour; if (jour) { for (const b of BUR) { b.pts.visible = b.tr.visible = b.fus.visible = false; } lumFeu.intensity = 0; } }
-      if (jour) { for (const f of ANIM) try { f(t); } catch (e) {} } else { for (const f of ANIM.slice(-(PEU ? 3 : 6))) try { f(t); } catch (e) {} feu(t); } }; }
+      if (jour !== jourV) { jourV = jour; for (const o of JOUR) o.visible = true; for (const o of DANSE) o.visible = !jour; if (jour) { for (const b of BUR) { b.pts.visible = b.tr.visible = b.fus.visible = false; } lumFeu.intensity = 0; } }
+      for (const f of ANIM) try { f(t); } catch (e) {} if (!jour) { for (const f of DANSEF) try { f(t); } catch (e) {} feu(t); } }; }   /* (10.138 : le même monde de jour comme de nuit ; le soir, en plus, on danse devant la scène) */
   /* (10.128) l'ambiance : le brouhaha des gens qui parlent (le même que la salle des fêtes), sur la promenade, aux terrasses et dans la galerie ; plus doux le soir, coupé à la borne d'arcade */
   if (false) { let son = null, v = 0; const a9 = L.anim; L.anim = (tm) => { try { a9 && a9(tm); } catch (e) {} const ici = M && M.L === L && !M.cine, moi = ici && M.moiNum && M.gens.get(M.moiNum);
       let cible = 0; if (moi && !window.mxArcadeOn && !document.hidden) { const p = moi.g.position, dz = p.z < 16 ? 0 : p.z - 16; cible = Math.max(0, Math.min(1, 1 - dz / 14)) * (L.nuit ? .35 : .6) * (M.barVol ?? 1); }
@@ -1796,8 +1802,8 @@ function construireCorbier(A, L, scene) {
         g.info.danse = place === "batterie" ? "batterie" : "guitare"; g.info.enMusique = !!(son && !son.paused);
         if (place !== "batterie") { const k = place === "basse" ? 0 : 2.1, s2 = t / 1000; g.g.position.x = pos[0] + (g.info.enMusique ? Math.sin(s2 * .55 + k) * .35 : 0); g.g.position.z = pos[1] + (g.info.enMusique ? Math.sin(s2 * .4 + k * 1.7) * .25 : 0); } }
       // la musique et son volume
-      const pres = d < 45; if (pres) charger(); if (pres && !son && liste && liste.length) piste(0);
-      if (son) { const c = pres ? vol * Math.max(0, Math.min(1, (45 - d) / 30)) : 0; son._v = (son._v || 0) + (c - (son._v || 0)) * .08; try { son.volume = Math.max(0, Math.min(1, son._v)); } catch (e) {} if (son._v > .01 && son.paused && !M.cine) son.play().catch(() => {}); else if ((son._v <= .01 || M.cine) && !son.paused) son.pause(); }
+      const pres = true; if (pres) charger();   /* (10.138 : on l'entend dans toute la station ; plus loin, moins fort ; dans la galerie, en sourdine) */ if (pres && !son && liste && liste.length) piste(0);
+      if (son) { const gal = L.premiereIci && L.premiereIci(p.x, p.z), c = vol * (d < 25 ? 1 : Math.max(.2, 1 - (d - 25) / 70)) * (gal ? .4 : 1); son._v = (son._v || 0) + (c - (son._v || 0)) * .08; try { son.volume = Math.max(0, Math.min(1, son._v)); } catch (e) {} if (son._v > .01 && son.paused && !M.cine) son.play().catch(() => {}); else if ((son._v <= .01 || M.cine) && !son.paused) son.pause(); }
       const vu = d < 30 && !M.cine; if (vu && !(pan && pan.isConnected)) (M.ctx.conteneur || document.body).appendChild(panneau()); else if (!vu && pan && pan.isConnected) pan.remove();
       // les projecteurs, en rythme
       const on = !!(son && !son.paused); SPOTS.forEach((S2, k) => { const c = PALS[(k + Math.floor(t / 1700)) % PALS.length]; S2.sp.color.setHex(c); S2.sp.intensity = on ? 45 : 0; S2.tete.material.emissive.setHex(on ? c : 0x222222); }); };

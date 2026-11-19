@@ -65,6 +65,7 @@ const PNJ_DEFAUT = {
   1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
   3: { nom: "Mr Miner", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636" },
   114: { nom: "Docteur Loomis", tenue: "loomis", couleur: "#c9b07a", bas: "#5a3a22", pieds: "#3a2414" },   // (Halloween)
+  115: { nom: "Le chef de poste", tenue: "tshirt", couleur: "#6b7a3a", bas: "#d8c49a", pieds: "#f4f4f2" },   // (10.138 : le chef de poste en vacances, au Corbier)
   112: { nom: "Le serveur Paulo", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636", pieds: "#1a1a1a" }, 113: { nom: "Le serveur Momo", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636", pieds: "#1a1a1a" },   // (les serveurs du mess)
   95: { nom: "Saïd", tenue: "eboueur", couleur: "#1f7a3a", bas: "#1f7a3a", pieds: "#1a1a1a" }, 96: { nom: "Julien", tenue: "eboueur", couleur: "#1f7a3a", bas: "#1f7a3a", pieds: "#1a1a1a" },   // (les éboueurs de la cour)
   98: { nom: "Le monsieur au chien", tenue: "tshirt", couleur: "#2f5fae", bas: "#3a3a40", pieds: "#2a1a12" },   // (rue des Messageries)
