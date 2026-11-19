@@ -732,7 +732,7 @@ function construireCorbier(A, L, scene) {
       void oT0; const beton = mat({ color: 0x9a968e, roughness: .95 });
       box(x1 - x0 + .2, HT, z1 - z0 + .1, beton, cx, HT / 2, cz); for (let k = 0; k < 2; k++) box(porte[1] - porte[0], HT * (2 - k) / 2, .35, beton, (porte[0] + porte[1]) / 2, HT * (2 - k) / 4, z1 + .2 + k * .35);
       const enrobe = tT(256, 256, (c, w, h) => { c.fillStyle = "#6e6e6c"; c.fillRect(0, 0, w, h); for (let k = 0; k < 4000; k++) { c.fillStyle = ["#5a5a58", "#82827e", "#6a6866", "#94928c"][k % 4]; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }, 10, 4);
-      L.solsPlus.push(sol(-48, -10, -3.2, 10.4, mat({ map: enrobe, roughness: .95 }), .045));
+      L.solsPlus.push(sol(-48, -10, 1.8, 10.4, mat({ map: enrobe, roughness: .95 }), .045)); box(38, .12, .2, mat({ color: 0x7a3a22, roughness: .8 }), -29, .06, 1.8);   /* (10.150 : le long de la façade, le plancher reste ; l'enrobé commence après sa bordure) */
       const rgP = mat({ color: 0xd8202a, roughness: .7 }); for (const [px, pz] of [[x0 + .5, z1 + .7], [x0 + 3.2, z1 + .7], [porte[1] + 1.4, z1 + .7], [x1 - .5, z1 + .7], [x1 + .7, cz]]) { cyl(.035, .035, 3.0, noir, px, 1.5, pz, 6); const f = add(new THREE.ConeGeometry(.28, 2.1, 8), rgP, px, 1.9, pz); void f; OB.push([px, pz, .3]); }
       { const px = x0 - 2.2, pz = z1 + 1.6; cyl(.06, .06, 3.4, mat({ color: 0x9a9ea2, metalness: .5 }), px, 1.7, pz, 6);
         add(new THREE.PlaneGeometry(1.3, .3), mat({ map: esfT, side: THREE.DoubleSide }), px, 3.0, pz + .05);
