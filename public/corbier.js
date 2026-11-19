@@ -714,9 +714,16 @@ function construireCorbier(A, L, scene) {
   // (10.124 : les quatre bouleaux du bout retirés : à leur place, l'escalier et la passerelle)
   for (const [x, z, h] of [[-90, -16, 11], [-92, 20, 13]]) sapin(x, z, h, al() < .4 ? melezeM : sapinM);
   for (let k = 0; k < 14; k++) sapin(-130 + k * 18 + al() * 6, -78 - al() * 30, 14 + al() * 8);   // la forêt, derrière les tours
+  /* (10.127) le terrain de badminton dans l'herbe, devant la promenade : le sable, les lignes blanches, le filet au milieu — on joue de gauche à droite */
+  { const cz = 23, sT = vraie(tT(8, 8, (c, w, h) => { c.fillStyle = "#d6c096"; c.fillRect(0, 0, w, h); }), "images/corbier-sol/sable.jpg", 2), blanc = mat({ color: 0xf4f4f0, roughness: .8 });
+    L.solsPlus.push(sol(-8, 8, cz - 4.2, cz + 4.2, mat({ map: sT, roughness: 1 }), .02));
+    const ligne = (w, d, x, z) => box(w, .012, d, blanc, x, .03, z);
+    for (const s2 of [-1, 1]) { ligne(13.4, .05, 0, cz + s2 * 3.05); ligne(13.4, .05, 0, cz + s2 * 2.59); ligne(.05, 6.1, s2 * 6.7, cz); ligne(.05, 6.1, s2 * 5.94, cz); ligne(.05, 6.1, s2 * 1.98, cz); ligne((6.7 - 1.98), .05, s2 * (1.98 + 6.7) / 2, cz); }
+    const poteau2 = mat({ color: 0x2a5a3a, metalness: .4, roughness: .5 }); for (const s2 of [-1, 1]) { cyl(.025, .03, 1.55, poteau2, 0, .78, cz + s2 * 3.1, 8); OB.push([0, cz + s2 * 3.1, .15]); }
+    box(.02, .72, 6.2, mat({ color: 0x1a1a1a, transparent: true, opacity: .45, depthWrite: false }), 0, 1.16, cz); box(.03, .05, 6.2, blanc, 0, 1.53, cz); }
   /* (10.111, d'après les photos de la promenade) les arbres et la végétation : les épicéas et mélèzes du talus, au bout côté Yéti et au bout côté piscine, les buissons le long des chemins */
   for (const [x, z, h] of [[-48, 24, 13], [-44, 27, 11], [-62, 20, 14], [72, 22, 12], [78, 26, 14], [86, 20, 11], [-20, 52, 12], [10, 56, 10]]) sapin(x, z, h, al() < .35 ? melezeM : sapinM);
-  for (let k = 0; k < (PETIT ? 10 : 26); k++) { const x = -60 + al() * 140, z = 22 + al() * 22; if (Math.abs(x - 30) < 14 && z < 34) continue; buisson(x, z, .7 + al() * .7); }
+  for (let k = 0; k < (PETIT ? 10 : 26); k++) { const x = -60 + al() * 140, z = 22 + al() * 22; if (Math.abs(x - 30) < 14 && z < 34) continue; if (Math.abs(x) < 10 && z > 17.5 && z < 29) continue; buisson(x, z, .7 + al() * .7); }
   /* (10.144, d'après les photos) le mobilier de la promenade : les gros pots rouges et leur petit arbre, les bancs de bois contre les vitrines, les jardinières de géraniums roses,
      le kiosque d'affichage sur son poteau devant la galerie, le panneau Skiset à flèche et les quads bâchés, le drapeau rouge, les poubelles, le chemin de planches et ses barrières de rondins,
      la grande terrasse de bois des Roches Blanches et sa bordure */
