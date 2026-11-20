@@ -66,6 +66,13 @@ function construireNotreDame(A, L, scene) {
   sol(-XS, XS, -31, -25.6, trottM, .02); sol(-XS, XS, -30.5, -26, routeM, .03); for (const z of [-30.5, -26]) box(XS * 2, .14, .25, quaiM, 0, .07, z);
   { const pm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), lig); void pm; for (let x = -XS; x < XS; x += 6) box(3, .01, .12, lig, x, .04, -28.25); }
   sol(-XS, XS, -232, -31, paveM, .01); sol(-62, 62, -215, -31, parvisM, .015);
+  /* (les trottoirs, surélevés, et leurs bordures de granit : le long du parapet, sous les boîtes des bouquinistes ; le long des immeubles, sous les terrasses et les devantures ;
+     dans la rue du Petit-Pont ; devant les immeubles de l'île et ceux qui bordent le parvis) */
+  const TROT = .15, TR = [], bordM = mat({ color: 0x9a968e, roughness: .8 });
+  const trottoir = (x0, x1, z0, z1, bords) => { TR.push([x0, x1, z0, z1]); sol(x0, x1, z0, z1, trottM, TROT); for (const b of bords) { const lz = b === "z0" || b === "z1", c = { x0, x1, z0, z1 }[b]; box(lz ? x1 - x0 : .3, TROT + .03, lz ? .3 : z1 - z0, bordM, lz ? (x0 + x1) / 2 : c + (b === "x0" ? .15 : -.15), (TROT + .03) / 2, lz ? c + (b === "z0" ? .15 : -.15) : (z0 + z1) / 2); } };
+  trottoir(-XS, ESC[0] - .6, 25.6, 28.4, ["z1", "x1"]); trottoir(ESC[1] + .6, PP[0], 25.6, 28.4, ["z1", "x0", "x1"]); trottoir(PP[1], XS, 25.6, 28.4, ["z1", "x0"]);
+  trottoir(-XS, PP[0] - 4, 41.4, 46, ["z0"]); trottoir(PP[0] - 4, PP[0], 41.4, 130, ["x1", "z0"]); trottoir(PP[1], PP[1] + 4, 41.4, 130, ["x0", "z0"]); trottoir(PP[1] + 4, XS, 41.4, 46, ["z0"]);
+  trottoir(-XS, -61, -32.2, -30.5, ["z1", "x1"]); trottoir(61, XS, -32.2, -30.5, ["z1", "x0"]); trottoir(-62.2, -59, -131, -44, ["x1", "z0", "z1"]); trottoir(59, 62.2, -131, -44, ["x0", "z0", "z1"]);
   // sur le parvis, le tracé des anciennes rues, en pierre claire
   for (const [a, b, c, d] of [[-44, -22, -64, -40], [-14, 12, -60, -44], [22, 46, -64, -38], [-50, -30, -150, -100]]) { box(b - a, .015, .22, lig, (a + b) / 2, .03, c); box(b - a, .015, .22, lig, (a + b) / 2, .03, d); box(.22, .015, d - c, lig, a, .03, (c + d) / 2); box(.22, .015, d - c, lig, b, .03, (c + d) / 2); }
 
@@ -80,29 +87,63 @@ function construireNotreDame(A, L, scene) {
     if (assis) (L.tabourets = L.tabourets || []).push([x + Math.cos(ry) * -.45, z - Math.sin(ry) * -.45, ry, .46], [x + Math.cos(ry) * .45, z - Math.sin(ry) * .45, ry, .46]); };
   L.nbTabouretsSalle = 0;
 
-  /* ---------- les kiosques des bouquinistes : la caisse verte, le toit d'ardoise, les rayons de livres, les gravures et les affiches ---------- */
-  { const vert = mat({ color: 0x1f4a32, roughness: .6 }), vertC = mat({ color: 0x2a5a3e, roughness: .6 }), ardoise = mat({ color: 0x5a6068, roughness: .5, metalness: .2 }), bois = mat({ color: 0x6a4a2a, roughness: .8 });
+  /* ---------- (d'après les photos) les boîtes des bouquinistes, posées sur le parapet : la caisse vert wagon, le couvercle levé peint en dedans (rouge ou vert pâle),
+     l'auvent et ses tringles de fer, les livres debout dans la caisse, la tablette dépliée et ses livres à plat, les gravures sous pochette, le présentoir de magnets,
+     un chevalet sur le pavé ; et les boîtes fermées, cadenassées, taguées ---------- */
+  { const vert = mat({ color: 0x2c5a40, roughness: .55, metalness: .25 }), vertF = mat({ color: 0x1f4630, roughness: .6, metalness: .25 }), fer = mat({ color: 0x161616, metalness: .6, roughness: .4 }), bois = mat({ color: 0x8a6a42, roughness: .8 });
+    const dedans = [mat({ color: 0xb8402c, roughness: .7 }), mat({ color: 0x8ea890, roughness: .7 }), mat({ color: 0xd8d2c0, roughness: .7 })];
     const affT = [0, 1, 2, 3].map(k => tT(128, 96, (c, w, h) => { c.fillStyle = ["#f2ead2", "#e8dcc0", "#efe6d0", "#e4d8bc"][k]; c.fillRect(0, 0, w, h); for (let i = 0; i < 6; i++) { const x = 6 + (i % 3) * 40, y = 6 + Math.floor(i / 3) * 44; c.fillStyle = ["#c83a2a", "#2a5a9a", "#d8a020", "#3a3a3a", "#6a8a4a", "#8a3a6a"][(i + k) % 6]; c.fillRect(x, y, 34, 38); c.fillStyle = "rgba(255,255,255,.6)"; c.fillRect(x + 4, y + 4, 26, 10); c.fillStyle = "#1a1a1a"; c.font = "bold 7px Georgia"; c.fillText(["PARIS", "1900", "SEINE", "MOULIN", "ROMAN", "AFFICHE"][(i + k * 2) % 6], x + 5, y + 12); } }));
-    const affM = affT.map(t => mat({ map: t, roughness: .9 }));
-    const gravT = tT(64, 80, (c, w, h) => { c.fillStyle = "#efe6cc"; c.fillRect(0, 0, w, h); c.strokeStyle = "#3a3024"; c.lineWidth = 3; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = "#6a5a40"; c.beginPath(); c.moveTo(10, 60); c.lineTo(20, 30); c.lineTo(30, 44); c.lineTo(42, 22); c.lineTo(54, 60); c.fill(); }), gravM = mat({ map: gravT, roughness: .9 });
-    const LIV = [], cols = [0xc83a2a, 0x2a5aa8, 0xe8d8b0, 0x2a7a4a, 0xd8a020, 0x7a2a6a, 0xf2f0ea, 0x3a2a1a, 0xc86a2a, 0x8a6a4a];
-    const kiosque = (x, z, ry) => { const T = new THREE.Matrix4().makeRotationY(ry).setPosition(x, 0, z), k = (x * 7 | 0) & 3;
-      const P = (w, h, d, m, px, py, pz, rx = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(px, py, pz); o.rotation.x = rx; o.applyMatrix4(T); o.castShadow = true; scene.add(o); return o; };
-      P(2.7, 2.2, .08, vert, 0, 1.1, -.76); for (const sx of [-1.33, 1.33]) P(.08, 2.2, 1.56, vert, sx, 1.1, 0);
-      P(2.66, .85, 1.1, vertC, 0, .43, .2); P(2.5, .04, 1.0, affM[k], 0, .9, .22, -.18);   // (le comptoir, ses bacs de gravures)
-      P(3.0, .07, 2.1, ardoise, 0, 2.32, .1, .14); P(3.0, .2, .06, vert, 0, 2.15, 1.12);   // (le toit d'ardoise, son lambrequin)
-      for (let r = 0; r < 3; r++) { P(2.5, .04, .3, bois, 0, 1.12 + r * .36, -.58); for (let i = 0; i < 26; i++) if (al() < .9) LIV.push([new THREE.Vector3(-1.2 + i * .094, 1.25 + r * .36, -.55).applyMatrix4(T), ry, cols[(i * 3 + r + k) % 10]]); }
-      for (const sx of [-1, 1]) { P(.62, .8, .02, al() < .5 ? gravM : affM[(k + 1) & 3], sx * 1.0, 1.72, .78); }   // (les gravures pendues devant)
-      const c = new THREE.Vector3(0, 0, 0).applyMatrix4(T); OBS.push([c.x - 1.4, c.x + 1.4, c.z - .85, c.z + .85]); };
-    // la rangée le long du parapet, ouverte vers les immeubles : des groupes de quatre, une allée entre
-    const KX = []; for (let x = -XS + 8; x < XS - 6;) { for (let i = 0; i < 4; i++) KX.push(x + i * 2.85); x += 4 * 2.85 + 7; }
-    for (const x of KX) { if (!horsPont(x, 5) || (x > ESC[0] - 3 && x < ESC[1] + 3)) continue; kiosque(x, 27.6, 0); }
-    // et quelques-uns devant les immeubles, ouverts vers la Seine
-    for (const x of [-118, -115.2, -84, -81.2, 52, 54.8, 86, 88.8]) kiosque(x, 42.6, Math.PI);
-    if (LIV.length) { const im = new THREE.InstancedMesh(new THREE.BoxGeometry(.06, .26, .2), mat({ roughness: .7 }), LIV.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), co = new THREE.Color(), un = new THREE.Vector3(1, 1, 1);
-      LIV.forEach(([p, ry, c], i) => { q.setFromEuler(e.set(0, ry, (i % 7 === 0) ? .2 : 0)); m4.compose(p, q, un); im.setMatrixAt(i, m4); im.setColorAt(i, co.setHex(c)); }); im.instanceMatrix.needsUpdate = true; scene.add(im); }
-    // les bancs dans les allées, entre les kiosques ; d'autres au bas-port, face à l'eau
-    for (let i = 3; i < KX.length - 1; i += 4) { const x = KX[i] + 3.5 + 1.42; if (!horsPont(x, 5) || (x > ESC[0] - 3 && x < ESC[1] + 3)) continue; banc(x, 27.4, 0); }
+    const gravT = [0, 1, 2].map(k => tT(64, 84, (c, w, h) => { c.fillStyle = "#efe6cc"; c.fillRect(0, 0, w, h); c.strokeStyle = "#3a3024"; c.lineWidth = 2; c.strokeRect(5, 5, w - 10, h - 10); c.strokeStyle = "#5a4a34"; c.lineWidth = 1; if (k === 0) { c.beginPath(); c.moveTo(12, 64); c.lineTo(24, 26); c.lineTo(32, 44); c.lineTo(44, 20); c.lineTo(54, 64); c.stroke(); } else if (k === 1) { c.strokeRect(18, 30, 28, 34); c.beginPath(); c.moveTo(14, 30); c.lineTo(32, 14); c.lineTo(50, 30); c.stroke(); } else { c.beginPath(); c.arc(32, 36, 14, 0, 7); c.stroke(); c.fillStyle = "#6a5a40"; c.fillRect(14, 60, 36, 3); }
+      c.fillStyle = "rgba(255,255,255,.18)"; c.fillRect(0, 0, w, h * .3); }));
+    const affM = affT.map(t => mat({ map: t, roughness: .5 })), gravM = gravT.map(t => mat({ map: t, roughness: .4 }));
+    const magT = tT(64, 112, (c, w, h) => { c.fillStyle = "#e8e4dc"; c.fillRect(0, 0, w, h); for (let y = 4; y < h - 8; y += 12) for (let x = 4; x < w - 8; x += 12) { c.fillStyle = ["#e04a2a", "#2a6ad8", "#f2c020", "#2aa84a", "#d82a8a", "#1a1a1a", "#f2f2f2"][((x * 3 + y * 7) / 4 | 0) % 7]; c.fillRect(x, y, 10, 10); c.fillStyle = "rgba(255,255,255,.4)"; c.fillRect(x + 1, y + 1, 4, 3); } }), magM = mat({ map: magT, roughness: .5 });
+    const tagT = tT(128, 48, (c, w, h) => { c.clearRect(0, 0, w, h); c.lineWidth = 4; c.lineCap = "round"; for (const [col, x0] of [["#e8e8e8", 10], ["#c8d8f0", 60]]) { c.strokeStyle = col; c.beginPath(); c.moveTo(x0, 34); for (let i = 0; i < 6; i++) c.quadraticCurveTo(x0 + i * 7 + 4, 6 + (i % 2) * 30, x0 + i * 7 + 8, 24); c.stroke(); } }), tagM = new THREE.MeshStandardMaterial({ map: tagT, transparent: true, alphaTest: .3, roughness: .6 });
+    const journT = [0, 1, 2].map(k => tT(96, 128, (c, w, h) => { c.fillStyle = "#ece2c6"; c.fillRect(0, 0, w, h); c.fillStyle = "#2a2018"; c.font = `bold 11px ${serif}`; c.textAlign = "center"; c.fillText(["Le Petit Journal", "Le Petit Parisien", "Le Petit Journal"][k], w / 2, 14); c.fillRect(6, 18, w - 12, 1);
+      const g = c.createLinearGradient(0, 24, 0, h - 10); g.addColorStop(0, ["#c8b896", "#a8b8c0", "#d8c0a0"][k]); g.addColorStop(1, ["#8a6a4a", "#5a6a5a", "#a8603a"][k]); c.fillStyle = g; c.fillRect(8, 24, w - 16, h - 36);
+      for (let i = 0; i < 9; i++) { c.fillStyle = ["#3a2a1a", "#a82a1a", "#2a3a6a", "#e8d8b0"][i % 4]; const x = 12 + (i * 23) % (w - 30), y = 50 + (i * 17) % 50; c.fillRect(x, y, 5, 14); c.beginPath(); c.arc(x + 2.5, y - 3, 3, 0, 7); c.fill(); } c.fillStyle = "rgba(255,255,255,.2)"; c.fillRect(0, 0, w * .3, h); }));
+    const journM = journT.map(t => mat({ map: t, roughness: .45 }));
+    const cpT = tT(64, 160, (c, w, h) => { c.fillStyle = "#b8201a"; c.fillRect(0, 0, w, h); for (let y = 4; y < h - 10; y += 19) for (let x = 3; x < w - 10; x += 20) { c.fillStyle = ["#f2c84a", "#4a8ad8", "#e86a3a", "#7ac85a", "#f2f0e6", "#d84a8a", "#3a3a8a"][((x + y * 3) / 7 | 0) % 7]; c.fillRect(x, y, 18, 16); c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(x + 3, y + 9, 12, 3); } }), cpM = mat({ map: cpT, roughness: .5 }), rougeF = mat({ color: 0xb02018, metalness: .4, roughness: .5 }), drapR = mat({ color: 0xb8442a, roughness: .95 });
+    const dosT = tT(32, 64, (c, w, h) => { c.fillStyle = "#ffffff"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(0, 10, w, 3); c.fillRect(0, h - 14, w, 3); c.fillStyle = "rgba(255,240,200,.7)"; c.fillRect(8, 20, 16, 20); });
+    const couvT = tT(48, 64, (c, w, h) => { c.fillStyle = "#ffffff"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(0,0,0,.28)"; c.fillRect(6, 8, w - 12, 10); c.fillStyle = "rgba(255,255,255,.75)"; c.fillRect(10, 26, w - 20, 26); c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(8, 56, w - 16, 3); });
+    const DOS = [], PLAT = [], cols = [0xc83a2a, 0x2a5aa8, 0xe8d8b0, 0x2a7a4a, 0xd8a020, 0x7a2a6a, 0xf2f0ea, 0x3a2a1a, 0xc86a2a, 0x8a6a4a, 0xe86a8a, 0x4a8ac8];
+    const Y0 = 1.12;   // (le dessus du parapet)
+    const boite = (x, zc, ry, ouverte, k) => { const T = new THREE.Matrix4().makeRotationY(ry).setPosition(x, 0, zc), q0 = new THREE.Quaternion().setFromRotationMatrix(T);
+      const P = (w, h, d, m, px, py, pz, rx = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(px, py, pz); o.rotation.x = rx; o.applyMatrix4(T); scene.add(o); return o; };
+      const Q = (w, h, m, px, py, pz, rx = 0) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.position.set(px, py, pz); o.rotation.x = rx; o.applyMatrix4(T); scene.add(o); return o; };
+      const livre = (L2, px, py, pz, sx, sy, sz, rx = 0, rz = 0) => { const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, 0, rz)).premultiply(q0); L2.push([new THREE.Vector3(px, py, pz).applyMatrix4(T), q, new THREE.Vector3(sx, sy, sz), cols[(al() * cols.length) | 0]]); };
+      P(2.0, .62, .78, vert, 0, Y0 + .31, 0); P(2.04, .06, .82, vertF, 0, Y0 + .03, 0); for (const sx of [-.995, .995]) P(.03, .62, .8, vertF, sx, Y0 + .31, 0);
+      if (!ouverte) { P(2.04, .05, .82, vertF, 0, Y0 + .645, 0); P(.08, .1, .04, fer, .4, Y0 + .55, .41); if (k % 3 === 0) Q(1.4, .4, tagM, -.1, Y0 + .32, .395); return; }
+      const din = dedans[k % 3];
+      // le couvercle levé (le dos peint) et l'auvent, ses tringles
+      P(2.0, .95, .03, vert, 0, Y0 + 1.1, -.4); Q(1.96, .92, din, 0, Y0 + 1.1, -.38);
+      P(2.06, .03, 1.15, vert, 0, Y0 + 1.62, .14, -.22); Q(2.0, 1.1, din, 0, Y0 + 1.6, .14, Math.PI / 2 - .22);
+      for (const sx of [-.97, .97]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 1.05, 5), fer); r.position.set(sx, Y0 + 1.12, .55); r.rotation.x = -.15; r.applyMatrix4(T); scene.add(r); }
+      // les livres debout dans la caisse, trois rangées
+      for (const [zr, n] of [[-.25, 22], [0, 22], [.24, 20]]) for (let i = 0; i < n; i++) livre(DOS, -.94 + i * (1.88 / n), Y0 + .6, zr, .07 + al() * .03, .22 + al() * .08, .17, 0, (al() - .5) * .12);
+      // la tablette dépliée et ses livres à plat, ses équerres
+      P(2.0, .03, .55, bois, 0, Y0 + .48, .66); for (const sx of [-.9, .9]) { const e = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .62, 5), fer); e.position.set(sx, Y0 + .25, .6); e.rotation.x = .8; e.applyMatrix4(T); scene.add(e); }
+      for (let i = 0; i < 10; i++) for (let j = 0; j < 2; j++) if (al() < .9) livre(PLAT, -.9 + i * .2, Y0 + .63 + j * .05, .78 - j * .26, .18, .25, .025, -.32, 0);   // (les livres présentés de face, couverture vers le passant)
+      for (let i = 0; i < 9; i++) if (al() < .85) livre(PLAT, -.9 + i * .22, Y0 + .9, .02, .18, .25, .025, -.2, 0);
+      for (let i = 0; i < 4; i++) { Q(.44, .62, journM[(k + i) % 3], -.72 + i * .48, Y0 + .1, .43); P(.05, .03, .03, fer, -.72 + i * .48, Y0 + .4, .44); }   // (les vieux journaux pendus devant, sous pochette)
+      // les gravures et affiches sous pochette, sur le dos peint ; d'autres pendues à l'auvent
+      for (let i = 0; i < 3; i++) Q(.42, .56, al() < .6 ? gravM[(k + i) % 3] : affM[(k + i) & 3], -.62 + i * .62, Y0 + 1.2, -.365);
+      for (let i = 0; i < 4; i++) if (al() < .85) { Q(.4, .52, (i + k) % 2 ? gravM[(k + i) % 3] : affM[(k + i) & 3], -.72 + i * .48, Y0 + 1.2, .74); P(.05, .03, .03, fer, -.72 + i * .48, Y0 + 1.47, .745); }   // (les gravures sous pochette, pincées à l'auvent)
+      // parfois le présentoir de magnets, parfois un chevalet sur le pavé
+      if (k % 4 === 1) { for (const sx of [-.3, .3]) P(.025, 1.9, .025, rougeF, .75 + sx, .95, 1.15); P(.62, .025, .025, rougeF, .75, 1.9, 1.15); Q(.58, 1.45, cpM, .75, 1.12, 1.16); P(.3, .04, .3, rougeF, .75, .17, 1.15);   // (le tourniquet de cartes postales)
+        const c2 = new THREE.Vector3(.75, 0, 1.15).applyMatrix4(T); OBS.push([c2.x - .35, c2.x + .35, c2.z - .3, c2.z + .3]); }
+      if (k % 6 === 3) { P(.04, .3, .48, fer, 1.12, Y0 + .3, .5); Q(.48, .9, magM, 1.12, Y0 + .7, .5).rotation.y += Math.PI / 2; }
+      if (k % 5 === 2) { for (const [lx, lz, r] of [[-.25, 1.45, .12], [.25, 1.45, .12], [0, 1.75, -.25]]) { const l = new THREE.Mesh(new THREE.BoxGeometry(.04, 1.5, .04), bois); l.position.set(lx, .72, lz); l.rotation.x = r; l.applyMatrix4(T); scene.add(l); }
+        P(.72, .62, .03, bois, 0, 1.15, 1.36, -.32); P(.74, .64, .02, drapR, 0, 1.15, 1.38, -.32); for (let i = 0; i < 3; i++) livre(PLAT, -.22 + i * .22, 1.2, 1.41, .18, .25, .025, -.32, 0);   /* (le présentoir de bois au tissu rouge) */ const c = new THREE.Vector3(0, 0, 1.55).applyMatrix4(T); OBS.push([c.x - .4, c.x + .4, c.z - .35, c.z + .35]); }
+      const c = new THREE.Vector3(0, 0, .7).applyMatrix4(T); OBS.push([c.x - 1.05, c.x + 1.05, c.z - .5, c.z + .5]); };
+    // les rangées sur le parapet de la rive gauche (ouvertes vers le quai) et, plus clairsemées, sur celui de l'île
+    const GAPS = []; let kb = 0;
+    for (const [zc, ry, pas] of [[25.3, 0, 1], [-25.3, Math.PI, PEU ? 3 : 2]]) for (let x = -XS + 6, g = 0; x < XS - 4; g++) { const n = 7 + (g % 3);
+      for (let i = 0; i < n; i++, x += 2.06) { if (!horsPont(x, 2.5) || (zc > 0 && x > ESC[0] - 1.5 && x < ESC[1] + 1.5) || (zc < 0 && x > RAMPE_C[1] - 5.5 && x < RAMPE_C[1] + 1.5)) continue; if (g % pas) continue; boite(x, zc, ry, al() < (zc > 0 ? .72 : .55), kb++); }
+      if (zc > 0) GAPS.push(x + 2.5); x += 5; }
+    const inst = (L2, geo, m) => { if (!L2.length) return; const im = new THREE.InstancedMesh(geo, m, L2.length), m4 = new THREE.Matrix4(), co = new THREE.Color(); L2.forEach(([p, q, s, c], i) => { m4.compose(p, q, s); im.setMatrixAt(i, m4); im.setColorAt(i, co.setHex(c)); }); im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; scene.add(im); };
+    inst(DOS, new THREE.BoxGeometry(1, 1, 1), mat({ map: dosT, roughness: .7 })); inst(PLAT, new THREE.BoxGeometry(1, 1, 1), mat({ map: couvT, roughness: .6 }));
+    // les bancs dans les allées, entre les rangées ; d'autres au bas-port, face à l'eau
+    for (const x of GAPS) { if (!horsPont(x, 5) || (x > ESC[0] - 3 && x < ESC[1] + 3) || x > XS - 4) continue; banc(x, 27.2, 0, TROT); }
     for (const x of [-120, -95, -70, -25, 20, 95, 120]) banc(x, 21.9, Math.PI, YB, false);
     for (const x of [-120, -90, -60, -20, 20, 50, 80, 110, 140]) { if (horsPont(x, 3)) reverbere(x, 30.6); }
     for (const x of [-140, -100, -66, -24, 18, 40, 70, 100, 130]) platane(x, 30.2, x === -24 || x === 18 ? 1.25 : 1);
@@ -145,17 +186,31 @@ function construireNotreDame(A, L, scene) {
   IM.def("store", ub, mat({ roughness: .85 })); IM.def("peint", ub, mat({ roughness: .55 })); IM.def("bois", ub, mat({ color: 0x6a4426, roughness: .7 }));
   IM.def("vitrine", new THREE.PlaneGeometry(1, 1), mat({ map: vitrineT, emissive: 0xffe0b0, emissiveMap: vitrineT, emissiveIntensity: .22, roughness: .3 }));
   IM.def("lumiere", new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffd48a }));
+  IM.def("int", ub, mat({ roughness: .8, emissive: 0xffe6c0, emissiveIntensity: .16 })); IM.def("rond", new THREE.CylinderGeometry(1, 1, 1, 12), mat({ roughness: .5, metalness: .4 })); IM.def("lampe", new THREE.SphereGeometry(1, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffe2a8 }));
+  IM.def("verre", new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ color: 0xc8dae2, transparent: true, opacity: .16, roughness: .05, metalness: .5, depthWrite: false }));
   const LARG = { long: 30, angle: 18, std: 21 };
   const immeuble = (x, z, rot, W = 18, nE = 5, terrasse = true, type = null, coin = 0) => { const k = kI++, [nom, coul, cafe] = ENS[k % ENS.length], te = teintes[k % teintes.length];
-    const T = new THREE.Matrix4().makeRotationY(rot).setPosition(x, 0, z), P = (kk, ...a) => IM.P(kk, T, ...a), HR = 4.4, HE = 3.15, H = HR + nE * HE, D = 12;
+    const T = new THREE.Matrix4().makeRotationY(rot).setPosition(x, TROT, z), P = (kk, ...a) => IM.P(kk, T, ...a), HR = 4.4, HE = 3.15, H = HR + nE * HE, D = 12;
     const mesh = (g, m, px, py, pz) => { const o = new THREE.Mesh(g, m); o.position.set(px, py, pz); o.applyMatrix4(T); o.receiveShadow = true; scene.add(o); return o; };
-    { const g = uvBox(new THREE.BoxGeometry(W, H, D), W, H, D, 4); mesh(g, MURM[te] || (MURM[te] = mat({ map: murT, color: te, roughness: .9 })), 0, H / 2, -D / 2); }
+    const MM = MURM[te] || (MURM[te] = mat({ map: murT, color: te, roughness: .9 })), PR = 3.2;   // (PR : la profondeur des boutiques)
+    { const Hh = H - HR, g = uvBox(new THREE.BoxGeometry(W, Hh, D), W, Hh, D, 4); mesh(g, MM, 0, HR + Hh / 2, -D / 2); }
+    { const DB = D - PR, g = uvBox(new THREE.BoxGeometry(W, HR, DB), W, HR, DB, 4); mesh(g, MM, 0, HR / 2, -PR - DB / 2); }
     const n = Math.max(3, Math.round(W / 2.75)), pas = W / n, xs = [...Array(n)].map((_, i) => -W / 2 + pas * (i + .5)), porte = type === "long" ? Math.floor(n / 2) : -1, sc = cafe ? 0x8a1c1c : 0x2a4a38, pc = cafe ? 0x5a1414 : 0x23382c;
     // le rez-de-chaussée : les bossages, les boutiques, leurs stores, la porte cochère
-    for (let j = 0; j < 8; j++) P("pierre", 0, .3 + j * .52, .05, W, .44, .1, 0, te);
+    // les trumeaux de pierre entre les boutiques, leurs bossages
+    for (let i = 0; i <= n; i++) { const xb = -W / 2 + i * pas, x0 = Math.max(-W / 2, xb - .45), x1 = Math.min(W / 2, xb + .45); mesh(uvBox(new THREE.BoxGeometry(x1 - x0, HR, PR), x1 - x0, HR, PR, 4), MM, (x0 + x1) / 2, HR / 2, -PR / 2); for (let j = 0; j < 8; j++) P("pierre", (x0 + x1) / 2, .3 + j * .52, .05, x1 - x0, .44, .1, 0, te); }
     xs.forEach((xc, i) => { const w = pas - .9;
+      if (i === porte) mesh(new THREE.BoxGeometry(w, HR, PR), MM, xc, HR / 2, -PR / 2 - .02); else mesh(new THREE.BoxGeometry(w, HR - 3.3, PR), MM, xc, (HR + 3.3) / 2, -PR / 2);
       if (i === porte) { P("bois", xc, 1.9, .1, 2.3, 3.8, .1); for (const s of [-1, 1]) { P("pierre", xc + s * 1.35, 2.0, .16, .4, 4.0, .22, 0, te); for (let j = 0; j < 4; j++) P("bois", xc + s * .6, .7 + j * .9, .17, .8, .7, .04, 0, 0x5a3a20); } P("pierre", xc, 4.05, .17, 3.1, .35, .26, 0, te); P("pierre", xc, 4.0, .3, .45, .7, .2, 0, te); return; }
-      P("vitrine", xc, 1.8, .13, w, 2.7, 1); for (const s of [-1, 1]) P("peint", xc + s * (w / 2 + .09), 1.8, .16, .18, 3.1, .12, 0, pc); P("peint", xc, .2, .16, w + .36, .4, .14, 0, pc); P("peint", xc, 3.5, .2, w + .45, .55, .16, 0, pc);
+      // l'intérieur de la boutique, en profondeur : le plancher, le plafond, les murs, le fond ; le café (son comptoir, ses tables) ou la librairie (ses rayonnages, sa table de livres) ; la vitre
+      P("int", xc, .03, -PR / 2, w, .04, PR, 0, cafe ? 0x5a3420 : 0x7a5a3a); P("int", xc, 3.28, -PR / 2, w, .04, PR, 0, 0xf2e6cc); for (const s of [-1, 1]) P("int", xc + s * (w / 2 - .02), 1.65, -PR / 2, .04, 3.3, PR, 0, cafe ? 0xc89a6a : 0xe8dcc0);
+      P("vitrine", xc, 1.65, -PR + .02, w, 3.3, 1); P("lampe", xc, 3.05, -PR / 2, .22, .22, .22);
+      if (cafe) { P("int", xc, .55, -PR + .55, w * .75, 1.1, .5, 0, 0x5a2a18); P("int", xc, 1.12, -PR + .55, w * .8, .05, .62, 0, 0xb8b8b0);
+        for (const tx of [-w / 4, w / 4]) { P("rond", xc + tx, .74, -1.2, .34, .04, .34, 0, 0x2a2a2a); P("rond", xc + tx, .37, -1.2, .03, .72, .03, 0, 0x2a2a2a); for (const s of [-1, 1]) { P("int", xc + tx + s * .5, .46, -1.2, .4, .05, .4, 0, 0xb8925a); P("int", xc + tx + s * .7, .7, -1.2, .04, .45, .4, 0, 0xb8925a); } } }
+      else { for (const s of [-1, 1]) P("vitrine", xc + s * (w / 2 - .06), 1.5, -PR / 2, PR - .2, 2.6, 1, 0, null, -s * Math.PI / 2); P("int", xc, .42, -1.4, w * .5, .84, .9, 0, 0x5a3a20);
+        for (let b = 0; b < 8; b++) P("store", xc - w * .22 + (b % 4) * w * .14, .87, -1.65 + ((b / 4) | 0) * .45, .2, .04, .27, -.1, [0xc83a2a, 0x2a5aa8, 0xe8d8b0, 0x2a7a4a, 0xd8a020, 0x7a2a6a][(b + i) % 6]); }
+      P("verre", xc, 1.75, .05, w, 3.0, 1);
+      for (const s of [-1, 1]) P("peint", xc + s * (w / 2 + .09), 1.8, .16, .18, 3.1, .12, 0, pc); P("peint", xc, .2, .16, w + .36, .4, .14, 0, pc); P("peint", xc, 3.5, .2, w + .45, .55, .16, 0, pc);
       for (let j = 1; j < 3; j++) P("peint", xc - w / 2 + j * w / 3, 1.8, .15, .06, 2.7, .05, 0, pc);
       P("store", xc, 3.15, .95, w + .2, .05, 1.8, .34, sc); P("store", xc, 2.68, 1.8, w + .2, .32, .03, 0, sc); });
     { const j = xs.findIndex((_, i) => i !== porte), xc = xs[j]; const st = tT(512, 64, (c, w, h) => { c.fillStyle = "#" + new THREE.Color(pc).getHexString(); c.fillRect(0, 0, w, h); c.strokeStyle = "#c8a85a"; c.lineWidth = 3; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = "#f2e6c8"; c.font = `bold 34px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(nom, w / 2, h / 2 + 2); });
@@ -183,9 +238,9 @@ function construireNotreDame(A, L, scene) {
     // le dôme d'angle
     if (coin) { const dx = coin * (W / 2 - 2.6); P("pierre", dx, H + 2.6, -2.6, 4.6, 1.4, 4.6, 0, te); const dm = mesh(new THREE.SphereGeometry(2.3, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2), zincM, dx, H + 3.3, -2.6); dm.scale.y = 1.25;
       P("pierre", dx, H + 6.4, -2.6, .8, .9, .8, 0, te); P("zinc", dx, H + 7.0, -2.6, .3, .9, .3); for (const a of [0, 1, 2, 3]) P("vitre", dx + Math.sin(a * Math.PI / 2) * 2.31, H + 2.6, -2.6 + Math.cos(a * Math.PI / 2) * 2.31, .9, 1.0, 1, 0, null, a * Math.PI / 2); }
-    if (cafe && terrasse) { for (const lx of [-5.2, -1.7, 1.8, 5.3]) { if (Math.abs(lx) > W / 2 - 1) continue; const p = new THREE.Vector3(lx, 0, 2.6).applyMatrix4(T); cyl(.38, .38, .04, tableM, p.x, .74, p.z, 14); cyl(.03, .03, .72, tableM, p.x, .37, p.z, 6); OBS.push([p.x - .4, p.x + .4, p.z - .4, p.z + .4]);
+    if (cafe && terrasse) { for (const lx of [-5.2, -1.7, 1.8, 5.3]) { if (Math.abs(lx) > W / 2 - 1) continue; const p = new THREE.Vector3(lx, 0, 2.6).applyMatrix4(T); cyl(.38, .38, .04, tableM, p.x, .74 + TROT, p.z, 14); cyl(.03, .03, .72, tableM, p.x, .37 + TROT, p.z, 6); OBS.push([p.x - .4, p.x + .4, p.z - .4, p.z + .4]);
         for (const sx of [-.7, .7]) { const c = new THREE.Vector3(lx + sx, 0, 2.6).applyMatrix4(T), cap = Math.atan2(p.x - c.x, p.z - c.z), dx = Math.sin(cap), dz = Math.cos(cap);
-          box(.42, .05, .42, chaiseM, c.x, .46, c.z, cap); box(.42, .45, .04, chaiseM, c.x - dx * .2, .7, c.z - dz * .2, cap); cyl(.02, .02, .46, tableM, c.x, .23, c.z, 5);
+          box(.42, .05, .42, chaiseM, c.x, .46 + TROT, c.z, cap); box(.42, .45, .04, chaiseM, c.x - dx * .2, .7 + TROT, c.z - dz * .2, cap); cyl(.02, .02, .46, tableM, c.x, .23 + TROT, c.z, 5);
           (L.tabourets = L.tabourets || []).push([c.x, c.z, cap, .46]); } } } };
   // le quai, rive gauche : la rangée face à la Seine, coupée par la rue du Petit-Pont
   // une rangée de façades photographiées, en alternant l'immeuble d'angle et le long immeuble ; (x, z) avancent le long de la rangée
@@ -447,6 +502,7 @@ function construireNotreDame(A, L, scene) {
   const enEsc = (x, z) => x > ESC[0] && x < ESC[1] && z > 22.4 && z < 31;
   const libreObs = (x, z) => !(x > -21 && x < 19 && z < -68.4 && z > -208);
   L.hauteur = (x, z, p) => { if (enEsc(x, z)) return YB * Math.min(1, (31 - z) / 8.5);
+    for (const [a, b, c, d] of TR) if (x >= a && x <= b && z >= c && z <= d) return TROT;   // (sur le trottoir)
     if (enRampe(x, z)) { const u = (RAMPE_C[1] - x) / (RAMPE_C[1] - RAMPE_C[0]); return u < .25 ? 0 : YB * (u - .25) / .75; }
     const pont = x > PP[0] && x < PP[1]; if (Math.abs(z) < 22.5 && Math.abs(z) > 18) return pont && !(p && p.g && p.g.position.y < -2) ? 0 : YB; return 0; };   /* (sous le pont, au bord de l'eau, on reste en bas) */
   L.limites = (x, z) => { if (x < -XS + 2 || x > XS - 2) return false;
