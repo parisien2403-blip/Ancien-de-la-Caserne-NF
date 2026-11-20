@@ -550,17 +550,49 @@ function construireNotreDame(A, L, scene) {
       baies(MF, -13.4); baies(MF, 13.4); baies(MSp, 0); baies(MSm, 0);
       for (const M of [MSp, MSm]) { plein(1.0, 6, vitrM, 0, 24, .03, M); anneau(1.0, 6, .3, .4, 0, 24, .4, pierreF, M); for (const s of [-1, 1]) { fbox(s * 6.3 - .5, s * 6.3 + .5, 0, 61, 0, .8, murF, M); } }
       // (10.149, d'après les photos) les chimères de la galerie, accroupies, ailes repliées, sur la balustrade : aux angles des tours, au-dessus de la grande galerie ; et au sommet des tours
-      const chim = (u, v, w, ry, s = 1, M = MF, k = 0) => { const G2 = new THREE.Group(); G2.position.set(u, v, w); G2.rotation.y = ry; G2.scale.setScalar(s); const pm = pierreF, A3 = (geo, x, y, z, rx = 0, sx = 1, sy = 1, sz = 1, rz = 0) => { const o = new THREE.Mesh(geo, pm); o.position.set(x, y, z); o.rotation.set(rx, 0, rz); o.scale.set(sx, sy, sz); G2.add(o); return o; };
-        A3(new THREE.SphereGeometry(.42, 10, 8), 0, .55, 0, 0, 1, 1.25, .9); A3(new THREE.SphereGeometry(.3, 10, 8), 0, 1.2, .18, 0, 1, 1.05, 1.1);   // (le corps voûté, la tête)
-        if (k % 3 === 1) A3(new THREE.ConeGeometry(.12, .6, 8), 0, 1.15, .65, Math.PI / 2); else { A3(new THREE.BoxGeometry(.32, .14, .3), 0, 1.08, .42); for (const s2 of [-1, 1]) A3(new THREE.ConeGeometry(.06, .3, 6), s2 * .15, 1.48, .1, -.3, 1, 1, 1, s2 * .4); }   // (le bec, ou la gueule et les cornes)
-        for (const s2 of [-1, 1]) { A3(new THREE.BoxGeometry(.06, .9, .55), s2 * .38, .75, -.25, .25, 1, 1, 1, s2 * .2); A3(new THREE.CylinderGeometry(.07, .09, .5, 6), s2 * .2, .35, .3, .5); A3(new THREE.CylinderGeometry(.06, .07, .55, 6), s2 * .2, .8, .38, -.9); }   // (les ailes, les pattes, les bras qui tiennent la tête)
-        A3(new THREE.BoxGeometry(.7, .12, .8), 0, .03, .1); G2.updateMatrix(); G2.matrix.premultiply(M); G2.matrix.decompose(G2.position, G2.quaternion, G2.scale); scene.add(G2); };
-      let kc = 0; for (const u of [-19.6, -7.3, 7.3, 19.6]) chim(u, 42.75, .55, u < 0 ? -.4 : .4, 1.1, MF, kc++);
-      for (const c of [-13.4, 13.4]) for (const du of [-6.2, 6.2]) chim(c + du, 61.65, .5, du < 0 ? -.5 : .5, 1.0, MF, kc++);
-      for (const M of [MSp, MSm]) for (const du of [-6.2, 6.2]) chim(du, 61.65, .5, du < 0 ? -.5 : .5, 1.0, M, kc++);
+      /* (10.155, d'après tes photos) les chimères sculptées, en vrai volume : la stryge pensive (ailes repliées, cornes, le menton dans les mains, la langue tirée),
+         l'oiseau de proie au long bec, aux ailes de plumes, le lion-chien accroupi la gueule ouverte, le pélican au bec crochu ; la pierre grise tachée */
+      const pierreC = mat({ map: pierreFinT, color: 0xbab2a0, roughness: .95, emissive: 0xff9a40, emissiveIntensity: 0 }); NUIT.push([pierreC, 0, .12]);
+      const chim = (u, v, w, ry, s = 1, M = MF, k = 0) => { const G2 = new THREE.Group(); G2.position.set(u, v, w); G2.rotation.y = ry; G2.scale.setScalar(s);
+        const O = (geo, x, y, z, rx = 0, ry2 = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, pierreC); o.position.set(x, y, z); o.rotation.set(rx, ry2, rz); o.scale.set(sx, sy, sz); G2.add(o); return o; };
+        const cap = (r, l) => new THREE.CapsuleGeometry(r, l, 6, 12), sph = (r) => new THREE.SphereGeometry(r, 16, 12), cone = (r, h) => new THREE.ConeGeometry(r, h, 10);
+        const aile = (sx) => { for (let i = 0; i < 6; i++) O(new THREE.BoxGeometry(.05, .62 - i * .06, .2), sx * (.33 + i * .01), .9 - i * .02, -.18 - i * .11, -.35 - i * .05, 0, sx * .18); for (let i = 0; i < 4; i++) O(cap(.035, .5 - i * .08), sx * .36, .62 - i * .05, -.2 - i * .14, .9, 0, sx * .2); };   // (l'aile repliée : ses plumes ou sa membrane, ses côtes)
+        O(new THREE.BoxGeometry(.9, .14, .85), 0, .07, .05);   // (le socle de la balustrade)
+        const t = k % 3;
+        if (t === 0) {   // la stryge : assise, voûtée, les coudes sur les genoux, le menton dans les mains, les cornes, la langue
+          O(sph(.34), 0, .58, -.05, .3, 0, 0, 1, 1.15, .85); O(sph(.27), 0, .98, .05, .5, 0, 0, 1, 1, .9);   // (le bassin, le dos voûté)
+          for (const sx of [-1, 1]) { O(cap(.1, .32), sx * .18, .45, .2, -1.3); O(cap(.08, .3), sx * .2, .3, .38, .2); O(sph(.08), sx * .2, .14, .45, 0, 0, 0, 1, .6, 1.4);   // (les cuisses, les jambes, les pieds griffus)
+            O(cap(.07, .3), sx * .17, .8, .32, -.4); O(cap(.06, .26), sx * .1, 1.05, .43, .4, 0, sx * .2); O(sph(.07), sx * .08, 1.2, .47); }   // (les bras, les mains sous le menton)
+          O(sph(.2), 0, 1.33, .38, 0, 0, 0, .95, 1.05, 1); O(sph(.12), 0, 1.27, .55, 0, 0, 0, 1, .8, 1.1); O(new THREE.BoxGeometry(.06, .02, .12), 0, 1.18, .58, .4);   // (la tête, le museau, la langue)
+          for (const sx of [-1, 1]) { O(cone(.05, .32), sx * .12, 1.55, .32, -.3, 0, sx * .45); O(sph(.035), sx * .08, 1.36, .52); O(cone(.05, .12), sx * .18, 1.42, .35, 0, 0, sx * 1.1); }   // (les cornes, les yeux, les oreilles)
+          aile(-1); aile(1); }
+        else if (t === 1) {   // l'oiseau de proie : dressé, le long bec, les ailes de plumes, les serres
+          O(cap(.28, .5), 0, .7, -.05, .25, 0, 0, 1, 1, .9); O(sph(.22), 0, 1.22, .08); O(cone(.07, .5), 0, 1.15, .4, Math.PI / 2 + .45);   // (le corps, la tête, le bec)
+          for (const sx of [-1, 1]) { O(sph(.035), sx * .12, 1.28, .2); for (let j = 0; j < 3; j++) O(cone(.025, .14), sx * .14 + (j - 1) * .05, .17, .32, Math.PI / 2); O(cap(.06, .25), sx * .14, .32, .2); }   // (les yeux, les serres)
+          for (let i = 0; i < 5; i++) O(new THREE.BoxGeometry(.32 - i * .04, .06, .05), 0, .55 + i * .12, .26 - i * .01, .2);   // (les plumes du poitrail)
+          aile(-1); aile(1); O(new THREE.BoxGeometry(.25, .05, .4), 0, .32, -.45, -.5); }
+        else if (t === 2) {   // le lion-chien accroupi, la gueule ouverte, une patte sur la balustrade
+          O(sph(.34), 0, .45, -.18, 0, 0, 0, 1, .9, 1.25); O(sph(.27), 0, .72, .18, -.3, 0, 0, 1, 1.1, 1);   // (l'arrière-train, le poitrail)
+          for (const sx of [-1, 1]) { O(cap(.08, .4), sx * .18, .38, .35, .1); O(sph(.08), sx * .18, .16, .42, 0, 0, 0, 1, .6, 1.3); O(cap(.1, .25), sx * .25, .32, -.25, 1.2); }
+          O(sph(.21), 0, 1.02, .38, 0, 0, 0, 1, .95, 1.1); O(new THREE.BoxGeometry(.24, .08, .28), 0, .92, .55, .25); O(new THREE.BoxGeometry(.22, .06, .26), 0, .82, .52, -.15);   // (la tête, les mâchoires ouvertes)
+          for (const sx of [-1, 1]) { O(cone(.07, .2), sx * .14, 1.22, .32, 0, 0, sx * .5); O(sph(.035), sx * .09, 1.08, .55); }
+          O(cap(.05, .5), 0, .25, -.55, 1.2); O(new THREE.TorusGeometry(.22, .06, 6, 12, Math.PI), 0, .98, .28, 0, Math.PI / 2, 0); }   // (la queue, la crinière)
+        else {   // le pélican, le long bec crochu posé sur la poitrine, les ailes ouvertes à demi
+          O(cap(.3, .4), 0, .65, -.05, .15); O(cap(.06, .45), 0, 1.15, .15, -.7); O(sph(.13), 0, 1.4, .3); O(cap(.05, .55), 0, 1.15, .62, .45, 0, 0, 1, 1, 1.4); O(sph(.05), 0, .88, .74);   // (le corps, le long cou, la tête, le bec et son crochet)
+          for (const sx of [-1, 1]) O(cap(.07, .2), sx * .15, .25, .15);
+          aile(-1); aile(1); }
+        G2.updateMatrix(); G2.matrix.premultiply(M); G2.matrix.decompose(G2.position, G2.quaternion, G2.scale); scene.add(G2); };
+      let kc = 0; for (const u of [-19.6, -7.3, 7.3, 19.6]) chim(u, 42.75, .55, u < 0 ? -.4 : .4, 1.35, MF, kc++); for (const u of [-16.6, -10.2, 10.2, 16.6]) chim(u, 42.75, .5, (u < 0 ? -1 : 1) * .2, 1.25, MF, kc++);
+      for (const c of [-13.4, 13.4]) for (const du of [-6.2, 6.2]) chim(c + du, 61.65, .5, du < 0 ? -.5 : .5, 1.25, MF, kc++);
+      for (const M of [MSp, MSm]) for (const du of [-6.2, 6.2]) chim(du, 61.65, .5, du < 0 ? -.5 : .5, 1.25, M, kc++);
       // les gargouilles des tours : longues, penchées en avant, la gueule ouverte, qui crachent l'eau de pluie loin des murs
-      const garg = (u, v, w, M = MF) => { const G2 = new THREE.Group(); G2.position.set(u, v, w); const A3 = (geo, x, y, z, rx = 0, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, pierreF); o.position.set(x, y, z); o.rotation.set(rx, 0, 0); o.scale.set(sx, sy, sz); G2.add(o); return o; };
-        A3(new THREE.CylinderGeometry(.16, .26, 2.2, 8), 0, 0, 1.0, Math.PI / 2 + .2); A3(new THREE.SphereGeometry(.24, 8, 6), 0, -.24, 2.15, 0, 1, 1, 1.4); A3(new THREE.BoxGeometry(.18, .08, .3), 0, -.36, 2.3); for (const s2 of [-1, 1]) A3(new THREE.BoxGeometry(.05, .3, .7), s2 * .2, .14, .7, -.3);
+      const garg = (u, v, w, M = MF, k = 0) => { const G2 = new THREE.Group(); G2.position.set(u, v, w); const O = (geo, x, y, z, rx = 0, ry2 = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, pierreC); o.position.set(x, y, z); o.rotation.set(rx, ry2, rz); o.scale.set(sx, sy, sz); G2.add(o); return o; };
+        // (la gargouille-gouttière : la bête allongée qui jaillit du mur, le corps penché, les pattes griffues agrippées, la gueule ouverte qui crache l'eau loin)
+        O(new THREE.CapsuleGeometry(.2, 1.4, 6, 12), 0, -.05, .9, Math.PI / 2 + .25, 0, 0, 1, 1, .9);   // (le corps)
+        for (let i = 0; i < 5; i++) O(new THREE.ConeGeometry(.05, .14, 6), 0, .14 - i * .04, .4 + i * .3, -.6);   // (l'échine)
+        for (const sx of [-1, 1]) { O(new THREE.CapsuleGeometry(.06, .35, 4, 8), sx * .17, -.18, .5, .9); O(new THREE.CapsuleGeometry(.06, .3, 4, 8), sx * .17, -.24, 1.3, .3); O(new THREE.BoxGeometry(.03, .35, .5), sx * .2, .1, .7, -.3, 0, sx * .5); }   // (les pattes, les ailes plaquées)
+        O(new THREE.SphereGeometry(.2, 14, 10), 0, -.3, 1.75, 0, 0, 0, .9, .85, 1.3); O(new THREE.BoxGeometry(.2, .06, .32), 0, -.36, 1.98, .35); O(new THREE.BoxGeometry(.17, .05, .28), 0, -.44, 1.93, -.15);   // (la tête, les mâchoires)
+        for (const sx of [-1, 1]) { O(new THREE.ConeGeometry(.04, .2, 6), sx * .1, -.12, 1.68, -.6, 0, sx * .4); O(new THREE.SphereGeometry(.03, 6, 4), sx * .08, -.24, 1.9); }
         G2.updateMatrix(); G2.matrix.premultiply(M); G2.matrix.decompose(G2.position, G2.quaternion, G2.scale); scene.add(G2); };
       for (const c of [-13.4, 13.4]) for (const du of [-6.5, 6.5]) for (const v of [41.6, 59.8]) garg(c + du, v, .4);
       for (const M of [MSp, MSm]) for (const du of [-6.5, 6.5]) for (const v of [41.6, 59.8]) garg(du, v, .5, M);
