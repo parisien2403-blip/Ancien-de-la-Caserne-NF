@@ -56,7 +56,7 @@ function construireNotreDame(A, L, scene) {
   const PP = [-10, 8], horsPont = (x, m = 2) => !(x > PP[0] - m && x < PP[1] + m);
   const ESC = [-52, -36], RAMPE_C = [30, 46];   const MX = -70, MZ = 44.15, HX0 = MX - 2.75, HX1 = MX + 2.5, HZ0 = 42.3, HZ1 = 46.0;   // (10.148 : la trémie du métro, contre les immeubles)
    const ESCE = 2.6;   // (l'entrée de l'escalier, en haut, à l'est)   // (le grand escalier de la rive gauche ; la rampe de l'île)
-  const OBS = [], VEND = [], AMB = [];
+  const OBS = [], VEND = [], AMB = [], LAMPES = [];
   const contourne = (p) => { const dx = p.x + 57, dz = p.z + 54, d = Math.hypot(dx, dz); if (d < 4.1) { p.x = -57 + dx / (d || 1) * 4.1; p.z = -54 + dz / (d || 1) * 4.1; } };   // (10.153 : personne ne traverse la fontaine — on en fait le tour)   // (ce qu'on ne traverse pas : les kiosques, les tables, les troncs…)
   const lig = mat({ color: 0xe2dccc, roughness: .9 });
   for (const s of [1, -1]) {
@@ -109,7 +109,7 @@ function construireNotreDame(A, L, scene) {
     const cx = x, cy = 8.2 * k, R0 = 2.8 * k; for (let i = 0; i < 16; i++) { const t = i / 16, ph = Math.acos(1 - 1.6 * t), th = i * 2.4, px = cx + Math.sin(ph) * Math.cos(th) * R0, pz = z + Math.sin(ph) * Math.sin(th) * R0, py = cy + Math.cos(ph) * R0 * .75, s = (2.3 + al() * .8) * k, m = feuilM[py > cy + .6 * k ? 2 : py < cy - .5 * k ? 1 : 0];
       for (const r of [0, Math.PI / 3, -Math.PI / 3]) { const q = add(new THREE.PlaneGeometry(s, s), m, px, py, pz, th + r); q.rotation.x = (al() - .5) * .6; } } OBS.push([x - .45, x + .45, z - .45, z + .45]); };
   const reverbere = (x, z, y = 0) => { cyl(.06, .11, 4.2, fonteR, x, y + 2.1, z, 8); cyl(.13, .13, .5, fonteR, x, y + .25, z, 8); const lan = new THREE.Mesh(new THREE.CylinderGeometry(.2, .12, .5, 6), new THREE.MeshStandardMaterial({ color: 0xf2e6c4, emissive: 0xffd590, emissiveIntensity: .05 })); lan.position.set(x, y + 4.5, z); scene.add(lan); NUIT.push([lan.material, .05, 1.2]);
-    cyl(.22, .05, .18, fonteR, x, y + 4.82, z, 6); const l = new THREE.PointLight(0xffd08a, 14, 14, 1.5); l.position.set(x, y + 4.3, z); l.visible = false; scene.add(l); L.nuitObjets.push(l); OBS.push([x - .2, x + .2, z - .2, z + .2]); };
+    cyl(.22, .05, .18, fonteR, x, y + 4.82, z, 6); LAMPES.push([x, y + 4.3, z]);   /* (10.156 : plus une lumière par réverbère — un petit lot de lumières suit le joueur) */ OBS.push([x - .2, x + .2, z - .2, z + .2]); };
   const banc = (x, z, ry, y = 0, assis = true) => { const v = mat({ color: 0x2e5a3a }), T = new THREE.Matrix4().makeRotationY(ry).setPosition(x, y, z), P = (w, h, d, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(px, py, pz); o.applyMatrix4(T); scene.add(o); };
     for (let l = 0; l < 3; l++) P(1.8, .04, .1, v, 0, .45, -.12 + l * .13); P(1.8, .3, .04, v, 0, .7, -.22); for (const sx of [-.75, .75]) P(.06, .45, .45, fonteR, sx, .22, -.03);
     if (assis) (L.tabourets = L.tabourets || []).push([x + Math.cos(ry) * -.45, z - Math.sin(ry) * -.45, ry, .46], [x + Math.cos(ry) * .45, z - Math.sin(ry) * .45, ry, .46]); };
@@ -364,7 +364,7 @@ function construireNotreDame(A, L, scene) {
     // les lampadaires à deux lanternes
     const lanV = mat({ color: 0xfff0d0, emissive: 0xffd890, emissiveIntensity: .1 }); NUIT.push([lanV, .1, 1.8]);
     for (const [x, z] of [[-41, -48], [-41, -60], [-73, -48], [-73, -60]]) { cyl(.07, .14, 4.4, fonteV, x, 2.2, z, 10); cyl(.18, .18, .5, fonteV, x, .25, z, 10); box(1.3, .06, .06, fonteV, x, 4.3, z);
-      for (const s of [-1, 1]) { const l = add(new THREE.CylinderGeometry(.2, .13, .48, 8), lanV, x + s * .62, 4.05, z); void l; cyl(.24, .05, .18, fonteV, x + s * .62, 4.36, z, 8); } const pl = new THREE.PointLight(0xffd08a, 14, 14, 1.5); pl.position.set(x, 3.9, z); pl.visible = false; scene.add(pl); L.nuitObjets.push(pl); OBS.push([x - .2, x + .2, z - .2, z + .2]); }
+      for (const s of [-1, 1]) { const l = add(new THREE.CylinderGeometry(.2, .13, .48, 8), lanV, x + s * .62, 4.05, z); void l; cyl(.24, .05, .18, fonteV, x + s * .62, 4.36, z, 8); } LAMPES.push([x, 3.9, z]); OBS.push([x - .2, x + .2, z - .2, z + .2]); }
     // les jardinières, les jeunes arbres, les petits buis
     for (const [x, z] of [[-39, -54], [-75, -54]]) { box(1.4, .6, 1.4, pierreFt, x, .3, z); platane(x, z, .55); }
     for (const [x, z] of [[-40, -46.4], [-52, -46.4], [-40, -61.6], [-52, -61.6]]) { box(1.0, .5, .5, mat({ color: 0x5a3a26 }), x, .25, z); add(new THREE.ConeGeometry(.3, .9, 8), mat({ color: 0x2e5a24, roughness: 1 }), x, .95, z); }
@@ -385,7 +385,7 @@ function construireNotreDame(A, L, scene) {
       const neM = new THREE.MeshStandardMaterial({ map: neT, transparent: true, alphaTest: .4, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: neT, emissiveIntensity: .15, roughness: .6 }); NUIT.push([neM, .15, 1.6]);
       const ne = new THREE.Mesh(new THREE.PlaneGeometry(16, 10), neM); ne.position.set(-46.5, Y + 5.2, ZS); scene.add(ne);
       for (let x = -54; x <= -39; x += 2.5) { box(.12, 9, .12, fonteV, x, Y + 4.5, ZS - .6); } for (const y of [Y + 1, Y + 4.5, Y + 8]) box(16, .1, .1, fonteV, -46.5, y, ZS - .6); for (let x = -54; x < -39; x += 2.5) { const d = box(.08, 3.8, .08, fonteV, x + 1.25, Y + 2.75, ZS - .6); d.rotation.z = .6; }
-      const lum = new THREE.PointLight(0xff5a3a, 0, 30, 1.6); lum.position.set(-46.5, Y + 4, ZS + 4); scene.add(lum); NUIT.push([{ set emissiveIntensity(v) { lum.intensity = v > .5 ? 60 : 0; } }, 0, 1]); } }
+      void Y; } }
   for (const [kk, im] of IM.fin()) if (kk === "lumiere") { im.visible = false; L.nuitObjets.push(im); }
   /* (10.148) la bouche de métro Saint-Michel – Notre-Dame, comme celle des Abbesses à Montmartre : la marquise d'Hector Guimard (l'éventail de verre, les nervures et les piliers de fonte verte,
      le cartouche « METROPOLITAIN »), la rambarde à écussons, les marches qui descendent sous le trottoir, les globes, le panneau bleu ; on y entre à l'est, dans le sens de la marche */
@@ -845,8 +845,8 @@ function construireNotreDame(A, L, scene) {
           const v = Math.min(d, C.v * dt); g.position.x += dx / d * v; g.position.z += dz / d * v; contourne(g.position); g.position.y = L.hauteur(g.position.x, g.position.z); g.rotation.y = Math.atan2(dx, dz); g.userData.poser("marche", tm * C.v / 1.2); }); } }
     // (10.154) le jongleur du parvis : la marinière, le chapeau melon posé par terre avec quelques pièces ; trois balles, rouge, bleue et jaune, en cascade
     { const jx = 8, jz = -45, m = personne3D({ taille: 1.74, peau: "#e8c4a0", ch: "#3a2a1a", haut: "#f2f2f0", bas: "#1a1a2a", chaussures: "#1a1a1a", coif: "court", pantalon: true }); m.position.set(jx, 0, jz); m.rotation.y = 0; m.userData.poser("debout", 0); m.userData.anime = true; scene.add(m);
-      const P = m.userData.parts; for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.155, .155, .035, 12), mat({ color: 0x1a2a6a })); r.position.y = -.05 - i * .09; P.buste.add(r); }   // (les rayures de la marinière)
-      const ch = new THREE.Group(); ch.position.set(jx + .2, .02, jz + 1.1); scene.add(ch); { const n = mat({ color: 0x1a1a1a, roughness: .6 }); const b = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .02, 16), n); ch.add(b); const c2 = new THREE.Mesh(new THREE.SphereGeometry(.15, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), n); c2.rotation.x = Math.PI; c2.position.y = .1; ch.add(c2); for (let i = 0; i < 4; i++) { const p2 = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .005, 8), mat({ color: 0xd8b860, metalness: .8, roughness: .3 })); p2.position.set((i - 1.5) * .04, .03, (i % 2) * .03); ch.add(p2); } }
+      const P = m.userData.parts;
+      const ch = new THREE.Group(); ch.position.set(jx + .2, .02, jz + 1.1); scene.add(ch); { const n = mat({ color: 0x1a1a1a, roughness: .6 }); const b = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .02, 16), n); ch.add(b); const c2 = new THREE.Mesh(new THREE.SphereGeometry(.15, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), n); c2.rotation.x = Math.PI; c2.position.y = .17; ch.add(c2); for (let i = 0; i < 4; i++) { const p2 = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .005, 8), mat({ color: 0xd8b860, metalness: .8, roughness: .3 })); p2.position.set((i - 1.5) * .04, .03, (i % 2) * .03); ch.add(p2); } }
       OBS.push([jx - .45, jx + .45, jz - .45, jz + .45], [jx - .1, jx + .5, jz + .8, jz + 1.4]);
       const B3 = [0xd8202a, 0x2a5ad8, 0xf2c820].map(c => { const s = new THREE.Mesh(new THREE.SphereGeometry(.06, 12, 10), mat({ color: c, roughness: .4 })); scene.add(s); return s; });
       AMB.push((tm) => { const t = tm / 1000 * 1.15; for (let i = 0; i < 3; i++) { const u = (t + i / 3) % 1, aller = u < .5, v = aller ? u / .5 : (u - .5) / .5, xa = aller ? -.22 : .22, xb = aller ? .22 : -.22, h = aller ? .85 : .7;
@@ -946,7 +946,7 @@ function construireNotreDame(A, L, scene) {
     for (const dx of [-17, -6, 6, 17]) spot(FAC.x + dx, .4, FAC.z + 3.2, FAC.x + dx * .9, 40, FAC.z + .5, 0xffb060, 900, .38, 70);
     spot(FAC.x, 3, -30, FAC.x, 32, FAC.z, 0xffd8a0, 380, .42, 120);
     for (const sx of [-1, 1]) spot(FAC.x + sx * 30, 1, FAC.z + 10, FAC.x + sx * 8, 25, FAC.z, 0xffa850, 300, .45, 60);
-    NUIT.push([{ set emissiveIntensity(v) { for (const [s, i] of SP) s.intensity = v * i; } }, 0, 1]); }
+    NUIT.push([{ set emissiveIntensity(v) { for (const [s, i] of SP) { s.intensity = v * i; s.visible = v > .5; } } }, 0, 1]); for (const [s] of SP) s.visible = false; }
 
   /* ---------- (10.146) au loin, pour fermer la vue : la Seine qui continue et ses quais, un pont de pierre à chaque bout, les immeubles parisiens qui se prolongent ;
      derrière, les toits de Paris en plusieurs plans ; au sud, le dôme du Panthéon ; au nord, la tour Saint-Jacques ---------- */
@@ -998,9 +998,9 @@ function construireNotreDame(A, L, scene) {
     const a12 = L.anim; L.anim = (tm) => { try { a12 && a12(tm); } catch (e) {} if (M && M.L === L && scene.fog && scene.fog.far < 290) { scene.fog.near = 120; scene.fog.far = 295; } }; }
   /* (10.147) le jour, ici, c'est la fin d'après-midi (d'après la photo) : le ciel bleu qui passe au rose puis à l'orange vers l'horizon, les nuages roses, les traînées d'avion ;
      le soleil bas et doré qui chauffe les façades ; la brume rosée au loin ; la Seine qui prend les reflets du couchant */
-  { const cielT = tT(512, 512, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#4f86c8"); g.addColorStop(.28, "#8aa8d8"); g.addColorStop(.5, "#d8b0c4"); g.addColorStop(.68, "#f2b090"); g.addColorStop(.84, "#f8a868"); g.addColorStop(1, "#ffd59a"); c.fillStyle = g; c.fillRect(0, 0, w, h);
-      for (let i = 0; i < 70; i++) { const x = al() * w, y = 40 + al() * h * .55, rw = 40 + al() * 140, rh = 4 + al() * 10; const gg = c.createRadialGradient(x, y, 1, x, y, rw); gg.addColorStop(0, `rgba(255,${200 + (al() * 40) | 0},${190 + (al() * 40) | 0},${.18 + al() * .22})`); gg.addColorStop(1, "rgba(255,220,210,0)"); c.fillStyle = gg; c.beginPath(); c.ellipse(x, y, rw, rh, -.15 + al() * .1, 0, 7); c.fill(); }
-      c.strokeStyle = "rgba(255,255,255,.55)"; c.lineWidth = 2; c.beginPath(); c.moveTo(w * .25, h * .05); c.lineTo(w * .62, h * .36); c.stroke(); c.lineWidth = 1.2; c.beginPath(); c.moveTo(w * .1, h * .2); c.lineTo(w * .45, h * .3); c.stroke(); });
+  { const cielT = tT(1024, 512, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#3a6ab0"); g.addColorStop(.18, "#5a8ac8"); g.addColorStop(.32, "#8aa8d8"); g.addColorStop(.40, "#d8b0c4"); g.addColorStop(.45, "#f2b090"); g.addColorStop(.49, "#f8a868"); g.addColorStop(.5, "#ffd59a"); g.addColorStop(1, "#e8b890"); c.fillStyle = g; c.fillRect(0, 0, w, h);
+      for (let i = 0; i < 90; i++) { const x = al() * w, y = h * (.33 + al() * .15), rw = 30 + al() * 110, rh = 3 + al() * 8; for (const dx of [-w, 0, w]) { const gg = c.createRadialGradient(x + dx, y, 1, x + dx, y, rw); gg.addColorStop(0, `rgba(255,${210 + (al() * 30) | 0},${200 + (al() * 30) | 0},${.18 + al() * .22})`); gg.addColorStop(1, "rgba(255,220,210,0)"); c.fillStyle = gg; c.beginPath(); c.ellipse(x + dx, y, rw, rh, 0, 0, 7); c.fill(); } } });   /* (10.157 : un vrai ciel tout autour, accroché au monde — l'orangé à l'horizon, le bleu au zénith ; plus de traînées d'avion) */
+    cielT.mapping = THREE.EquirectangularReflectionMapping;
     const cielC = new THREE.Color(0xf0b892), lum = { s: null, h: null }; let jourV = null;
     const a13 = L.anim; L.anim = (tm) => { try { a13 && a13(tm); } catch (e) {} if (!M || M.L !== L) return; const n = !!L.nuit;
       if (!lum.s) for (const o of scene.children) { if (o.isDirectionalLight && !lum.s) lum.s = o; if (o.isHemisphereLight && !lum.h) lum.h = o; }
@@ -1017,8 +1017,12 @@ function construireNotreDame(A, L, scene) {
   // (10.146) ce que le doigt touche pour aller quelque part : le quai, l'île et le parvis, le pont, les deux bas-ports (des sols invisibles, à chaque niveau)
   { const inv = new THREE.MeshBasicMaterial({ visible: false }), pl = (x0, x1, z0, z1, y) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), inv); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); scene.add(m); m.updateMatrixWorld(true); return m; };
     L.sol = pl(-XS, XS, 22.5, 140, .02); L.solsPlus = [pl(-XS, XS, -232, -22.5, .02), pl(PP[0], PP[1], -22.5, 22.5, .03), pl(-XS, XS, 18, 22.5, YB + .02), pl(-XS, XS, -22.5, -18, YB + .02)]; }
+  /* (10.156, fluidité) la nuit, seulement quelques lumières de réverbère, toujours les plus proches de la caméra (une lumière par réverbère, c'était des dizaines : tout ramait) */
+  { const N = (MOBILE || GPU_MODESTE) ? 5 : 8, POOL = []; for (let i = 0; i < N; i++) { const l = new THREE.PointLight(0xffd08a, 14, 15, 1.5); l.visible = false; scene.add(l); L.nuitObjets.push(l); POOL.push(l); }
+    let fr = 0; const a15 = L.anim; L.anim = (tm) => { try { a15 && a15(tm); } catch (e) {} if (!M || M.L !== L || !M.camera || fr++ % 20) return; const c = M.camera.position;
+      const tri = LAMPES.map(p => [p, (p[0] - c.x) ** 2 + (p[2] - c.z) ** 2]).sort((u, w) => u[1] - w[1]); POOL.forEach((l, i) => { const p = tri[i] && tri[i][0]; if (p) l.position.set(p[0], p[1], p[2]); }); }; }
   /* (10.154, fluidité) les gens loin de la caméra ne sont plus dessinés ; les ombres portées, coupées (beaucoup trop de décor à ombrer) */
-  { const PERS = []; scene.traverse(o => { if (o.userData && o.userData.parts) PERS.push(o); }); let f = 0, ombres = null; const R2 = (MOBILE || GPU_MODESTE ? 45 : 70) ** 2, v = new THREE.Vector3();
+  { const PERS = []; scene.traverse(o => { if (o.userData && o.userData.parts) PERS.push(o); }); let f = 0, ombres = null; const R2 = (MOBILE || GPU_MODESTE ? 35 : 50) ** 2, v = new THREE.Vector3();
     const a14 = L.anim; L.anim = (tm) => { try { a14 && a14(tm); } catch (e) {} if (!M || M.L !== L || !M.camera) return; if (!ombres) { ombres = []; scene.traverse(o => { if (o.isLight && o.castShadow) { o.castShadow = false; ombres.push(o); } }); }
       if (f++ % 8) return; const c = M.camera.position; for (const o of PERS) { o.getWorldPosition(v); o.visible = (v.x - c.x) ** 2 + (v.z - c.z) ** 2 < R2; } };
     quitterLieu.add(() => { if (ombres) for (const o of ombres) o.castShadow = true; ombres = null; }); }
