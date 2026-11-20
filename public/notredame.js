@@ -1270,9 +1270,14 @@ function construireNotreDame(A, L, scene) {
       if (!lum.s) for (const o of scene.children) { if (o.isDirectionalLight && !lum.s) lum.s = o; if (o.isHemisphereLight && !lum.h) lum.h = o; }
       if (!n) { if (scene.background !== cielT) scene.background = cielT; if (scene.fog) scene.fog.color.copy(cielC);
         if (lum.s) { lum.s.color.setHex(0xffb878); lum.s.intensity = 2.4; lum.s.position.set(-46, 20, 26); } if (lum.h) { lum.h.color.setHex(0xffd8c0); lum.h.groundColor.setHex(0x7a5a5a); lum.h.intensity = 1.05; } }
-      if (n) { if (!lum.nuitT) { lum.nuitT = tT(1024, 512, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#040814"); g.addColorStop(.42, "#0e1a3a"); g.addColorStop(.5, "#1e2a4e"); g.addColorStop(1, "#141a2a"); c.fillStyle = g; c.fillRect(0, 0, w, h);
-          for (let i = 0; i < 700; i++) { const y = Math.pow(al(), 1.4) * h * .48, r = al() < .08 ? 1.6 : .8; c.fillStyle = `rgba(255,255,${230 + (al() * 25) | 0},${.4 + al() * .6})`; c.beginPath(); c.arc(al() * w, y, r, 0, 7); c.fill(); } }); lum.nuitT.mapping = THREE.EquirectangularReflectionMapping; }
-        if (scene.background !== lum.nuitT) scene.background = lum.nuitT; }   /* (10.160 : les étoiles restent à leur place dans le ciel) */
+      if (n) { if (!lum.nuitT) { lum.nuitT = tT(2048, 1024, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#040814"); g.addColorStop(.42, "#0e1a3a"); g.addColorStop(.5, "#1e2a4e"); g.addColorStop(1, "#141a2a"); c.fillStyle = g; c.fillRect(0, 0, w, h);
+          for (let i = 0; i < 900; i++) { const x = al() * w, y = Math.pow(al(), 1.3) * h * .47, b = al(), r = b < .06 ? 2.2 : b < .25 ? 1.3 : .7;   /* (des points brillants, avec leur petit halo) */
+            const gg = c.createRadialGradient(x, y, 0, x, y, r * 3); gg.addColorStop(0, `rgba(255,255,${235 + (al() * 20) | 0},1)`); gg.addColorStop(.35, `rgba(220,230,255,${.35 + b * .3})`); gg.addColorStop(1, "rgba(200,210,255,0)"); c.fillStyle = gg; c.fillRect(x - r * 3, y - r * 3, r * 6, r * 6); } }); lum.nuitT.mapping = THREE.EquirectangularReflectionMapping; }
+        if (scene.background !== lum.nuitT) scene.background = lum.nuitT;
+        if (!lum.spr) { lum.spr = scene.children.filter(s => s.isSprite); lum.lune = lum.spr.find(s => Math.abs(s.position.x - 23.5) < .1 && Math.abs(s.position.y - 29) < .1); }
+        for (const s of lum.spr) if (s !== lum.lune) s.visible = false;   /* (10.160 : la nuit, plus de nuages en carrés flous) */
+        if (lum.lune) { lum.lune.position.set(-110, 95, 170); lum.lune.scale.set(44, 44, 1); lum.lune.material.fog = false; lum.lune.renderOrder = -1; } }   /* (la lune, loin dans le ciel, derrière la rive gauche ; plus devant la cathédrale) */
+      else if (lum.spr) for (const s of lum.spr) if (s !== lum.lune) s.visible = true;   /* (10.160 : les étoiles restent à leur place dans le ciel) */
       if (n !== jourV) { jourV = n; if (!n) { EAU.u.ciel.value.setHex(0xe8b8a4); EAU.u.soleil.value.set(-.8, .3, .4).normalize(); EAU.u.clair.value.setHex(0x6a7468); } } }; }
   /* (10.158) les cloches de Notre-Dame, à l'heure vraie : à chaque demi-heure, un coup ; à l'heure pleine, autant de coups que l'heure ; le bourdon grave, qui résonne longtemps */
   { let ac = null, der = -1; const cloche = (t0, f) => { const g = ac.createGain(); g.connect(ac.destination); const v = .22 * (M.volumeGeneral ?? 1); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(v, t0 + .01); g.gain.exponentialRampToValueAtTime(.0005, t0 + 6.5);
