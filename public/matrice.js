@@ -7650,7 +7650,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "rex") construireRex(A, L, scene);
   if (id === "jouffroy") construireJouffroy(A, L, scene);
   if (id === "tertre") MD.montmartre.construireTertre(A, L, scene);
-  if (id === "corbier") MD.corbier.construireCorbier(A, L, scene);   // (10.99 : Le Corbier, la station de ski de Savoie)   // (Montmartre : son propre fichier, chargé la première fois qu'on y va)
+  if (id === "corbier") MD.corbier.construireCorbier(A, L, scene);
+  if (id === "notredame") MD.notredame.construireNotreDame(A, L, scene);   // (10.145 : Notre-Dame et les quais de Seine)   // (10.99 : Le Corbier, la station de ski de Savoie)   // (Montmartre : son propre fichier, chargé la première fois qu'on y va)
 
   if (id === "grande") {
     /* La cour d'honneur (d'après les photos) :
@@ -13222,9 +13223,11 @@ function choixBus(B) { if (M.choixBusEl) M.choixBusEl.remove(); const d = docume
    les banquettes bleues, les barres inox, les néons), au milieu des voyageurs ; le quai de départ, le tunnel, ses lampes qui défilent, le quai d'arrivée, et l'on ressort là-haut */
 const METRO_STATIONS = { rex: { nom: "Bonne Nouvelle", ligne: "8 · 9", lieu: "rex", arrivee: [-66.6, 9.8], yaw: -Math.PI / 2, libelle: "Bonne Nouvelle — les Grands Boulevards, le Grand Rex" },
   tertre: { nom: "Abbesses", ligne: "12", lieu: "tertre", arrivee: [-83, 35.3], yaw: Math.PI, libelle: "Abbesses — Montmartre, la place du Tertre" },
+  notredame: { nom: "Saint-Michel – Notre-Dame", ligne: "4 · RER B C", lieu: "notredame", arrivee: [-128, 38.5], yaw: 0, libelle: "Saint-Michel – Notre-Dame — les quais de Seine, Notre-Dame", admin: true },
   corbier: { nom: "Le Corbier", lieu: "corbier", arrivee: [-26, 13.8], yaw: Math.PI, libelle: "🚌 Le Corbier — en car, jusqu'à la station (Savoie)", car: true } };
 function metroProche(x, z) { if (!M || !M.L || M.L.apo || M.L.sh) return false; if (M.lieu === "rex") return [[-70.5, 9.8], [-43.6, -10.4]].some(([a, b]) => Math.hypot(x - a, z - b) < 3.4);
   if (M.lieu === "tertre" && M.L.metroAbbesses) return Math.hypot(x - M.L.metroAbbesses.x, z - M.L.metroAbbesses.z) < 3;
+  if (M.lieu === "notredame" && M.L.metroND) return Math.hypot(x - M.L.metroND.x, z - M.L.metroND.z) < 3;
   return false; }
 /* (10.99) le car : de Paris au Corbier, ou du Corbier à Paris — l'écran noir, la route de montagne qui défile en mots, et l'on y est */
 function voyageCar(dep, arr) { if (!M || M.cine) return; const n = voile("background:#000;opacity:0;transition:opacity .9s;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#f2ead8;font:600 20px Lato,Arial,sans-serif;text-align:center;padding:20px");
@@ -13235,7 +13238,7 @@ function voyageCar(dep, arr) { if (!M || M.cine) return; const n = voile("backgr
 function choixMetro() { if (M.choixBusEl) M.choixBusEl.remove(); const d = document.createElement("div"); M.choixBusEl = d; const ici = METRO_STATIONS[M.lieu];
   d.style.cssText = "position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:30;background:rgba(14,22,44,.95);color:#fff;border-radius:16px;padding:14px 16px;font:15px Lato,Arial,sans-serif;min-width:260px;max-width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)";
   d.innerHTML = `<div style="font-weight:700;margin-bottom:4px">${ici && ici.car ? "🚌 Arrêt du car — " : "🚇 Métro "}${ici ? ici.nom : ""}</div><div style="font-size:13px;opacity:.75;margin-bottom:8px">Où allez-vous ?</div>`;
-  for (const [k, D] of Object.entries(METRO_STATIONS)) { if (k === M.lieu || D.car) continue;   /* (le car du Corbier : fermé tant que l'administrateur y travaille — on y va par le cercle violet) */ const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.libelle; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#1f4aa8;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
+  for (const [k, D] of Object.entries(METRO_STATIONS)) { if (k === M.lieu || D.car || (D.admin && !estAdmin())) continue;   /* (10.145 : Notre-Dame, l'administrateur seul pendant la construction) */   /* (le car du Corbier : fermé tant que l'administrateur y travaille — on y va par le cercle violet) */ const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.libelle; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#1f4aa8;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
     b.onclick = () => { d.remove(); M.choixBusEl = null; M.manMenu = null; if (D.car || (ici && ici.car)) voyageCar(ici || METRO_STATIONS.rex, D); else cineMetro(ici || METRO_STATIONS.rex, D); }; d.appendChild(b); }
   const x = document.createElement("button"); x.type = "button"; x.textContent = "Annuler"; x.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:14px Lato,Arial,sans-serif;cursor:pointer"; x.onclick = () => { d.remove(); M.choixBusEl = null; M.manMenu = null; }; d.appendChild(x);
   (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer: () => { d.remove(); M.choixBusEl = null; M.manMenu = null; } }; }
@@ -17870,7 +17873,7 @@ function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ct
 /* Les mondes des films ont chacun leur fichier (kingston.js pour Gremlins, santacarla.js pour Génération perdue…) : on le charge la première fois
    qu'on va dans l'un de ses lieux (pas avant : l'appli s'ouvre plus vite), et on l'exécute ici même (eval direct), pour qu'il se serve de tout
    ce que la matrice a (M, THREE, voile, sonBruit…) sans rien changer à son code. MD[monde] : ce que le fichier rend (ses points d'entrée). */
-const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id), montmartre: id => id === "tertre", corbier: id => id === "corbier" };
+const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id), montmartre: id => id === "tertre", corbier: id => id === "corbier", notredame: id => id === "notredame" };
 function chargerMonde(nom) { if (MD[nom]) return Promise.resolve(MD[nom]);
   return MD_P[nom] = MD_P[nom] || fetch(nom + ".js?v=" + (new URL(import.meta.url).searchParams.get("v") || DIAG_V))   /* (la version du site : chaque mise à jour recharge les mondes) */.then(r => { if (!r.ok) throw new Error(nom + ".js : " + r.status); return r.text(); })
     .then(src => (MD[nom] = eval(src + "\n//# sourceURL=" + nom + ".js"))).catch(e => { MD_P[nom] = null; throw e; }); }
