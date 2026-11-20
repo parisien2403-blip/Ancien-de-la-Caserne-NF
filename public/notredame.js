@@ -56,7 +56,8 @@ function construireNotreDame(A, L, scene) {
   const PP = [-10, 8], horsPont = (x, m = 2) => !(x > PP[0] - m && x < PP[1] + m);
   const ESC = [-52, -36], RAMPE_C = [30, 46];   const MX = -70, MZ = 44.15, HX0 = MX - 2.75, HX1 = MX + 2.5, HZ0 = 42.3, HZ1 = 46.0;   // (10.148 : la trémie du métro, contre les immeubles)
    const ESCE = 2.6;   // (l'entrée de l'escalier, en haut, à l'est)   // (le grand escalier de la rive gauche ; la rampe de l'île)
-  const OBS = [], VEND = [], AMB = [];   // (ce qu'on ne traverse pas : les kiosques, les tables, les troncs…)
+  const OBS = [], VEND = [], AMB = [];
+  const contourne = (p) => { const dx = p.x + 57, dz = p.z + 54, d = Math.hypot(dx, dz); if (d < 4.1) { p.x = -57 + dx / (d || 1) * 4.1; p.z = -54 + dz / (d || 1) * 4.1; } };   // (10.153 : personne ne traverse la fontaine — on en fait le tour)   // (ce qu'on ne traverse pas : les kiosques, les tables, les troncs…)
   const lig = mat({ color: 0xe2dccc, roughness: .9 });
   for (const s of [1, -1]) {
     sol(-XS, XS, s > 0 ? 18 : -22.5, s > 0 ? 22.5 : -18, paveB, YB);
@@ -359,8 +360,7 @@ function construireNotreDame(A, L, scene) {
         for (let j = 0; j < 7; j++) { const u = j / 6, d = .95 + u * 1.3, y = 1.1 - u * u * .35 + u * .1; const g2 = add(new THREE.SphereGeometry(.05 - u * .02, 6, 4), nappe, PX + cx * d, y, PZ + cz * d); void g2; } }
       AMB.push((tm) => { eauT2.offset.set((tm / 9000) % 1, (tm / 13000) % 1); });
       OBS.push([PX - 3.7, PX + 3.7, PZ - 3.7, PZ + 3.7]); }
-    // les bornes autour
-    for (let i = 0; i < 10; i++) { const an = i / 10 * Math.PI * 2; cyl(.08, .1, .8, fonteV, PX + Math.cos(an) * 4.5, .4, PZ + Math.sin(an) * 4.5, 8); add(new THREE.SphereGeometry(.1, 8, 6), fonteV, PX + Math.cos(an) * 4.5, .82, PZ + Math.sin(an) * 4.5); }
+    /* (10.153 : les bornes noires autour de la fontaine, retirées) */
     // les lampadaires à deux lanternes
     const lanV = mat({ color: 0xfff0d0, emissive: 0xffd890, emissiveIntensity: .1 }); NUIT.push([lanV, .1, 1.8]);
     for (const [x, z] of [[-41, -48], [-41, -60], [-73, -48], [-73, -60]]) { cyl(.07, .14, 4.4, fonteV, x, 2.2, z, 10); cyl(.18, .18, .5, fonteV, x, .25, z, 10); box(1.3, .06, .06, fonteV, x, 4.3, z);
@@ -759,7 +759,7 @@ function construireNotreDame(A, L, scene) {
   const gens = (k) => { const f = k % 2 === 1; return personne3D({ taille: f ? 1.64 : 1.76, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a"][k % 5], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#5a6a7a"][k % 4], chaussures: ["#1a1a1a", "#e8e8e8"][k % 2], coif: f ? (k % 3 ? "long" : "carre") : k % 4 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0 }); };
   { const R = [[[-140, 28.0], [140, 28.0]], [[140, 27.8], [-140, 27.8]], [[-140, 40.0], [140, 40.0]], [[140, 40.4], [-140, 40.4]], [[-140, 20.4], [58, 20.4]], [[58, 21.2], [-140, 21.2]], [[94, 20.6], [140, 20.6]],
       [[-37.3, 30], [-37.3, 23.8], [-50.5, 23.8], [-50.5, 21], [-120, 21], [-50.5, 21], [-50.5, 23.8], [-37.3, 23.8]], [[-12.4, 70], [-12.4, 28.6], [-8.8, 24], [-8.8, -33], [-30, -56], [28, -56], [6.8, -33], [6.8, 24], [10.5, 28.6], [10.5, 70]],
-      [[-28, -40], [26, -40]], [[-30, -48], [-62, -48], [-72, -54], [-62, -60.5], [-45, -60.5], [-30, -55]], [[-44, -59], [-70, -50], [-58, -47.5], [-48, -52]], [[-140, -31.3], [140, -31.3]], [[-26, -75], [-26, -190], [-23, -190], [-23, -75]], [[24, -75], [24, -190], [21.5, -190], [21.5, -75]], [[-29, -62], [27, -62]], [[-27.6, -45], [-27.6, -130], [-27.6, -45]], [[25.6, -130], [25.6, -45], [25.6, -130]], [[-20, -36], [18, -66], [-16, -64], [14, -38]], [[0, -34], [0, -66], [12, -50], [-12, -50]], [[-24, -55], [22, -45], [-6, -40], [8, -62]], [[10, -36], [-18, -48], [6, -58], [20, -66]]];
+      [[-28, -40], [26, -40]], [[-30, -48], [-62, -48], [-72, -54], [-62, -60.5], [-45, -60.5], [-30, -55]], [[-44, -59], [-62, -60.5], [-71, -52], [-58, -47.5], [-48, -52]], [[-140, -31.3], [140, -31.3]], [[-26, -75], [-26, -190], [-23, -190], [-23, -75]], [[24, -75], [24, -190], [21.5, -190], [21.5, -75]], [[-29, -62], [27, -62]], [[-27.6, -45], [-27.6, -130], [-27.6, -45]], [[25.6, -130], [25.6, -45], [25.6, -130]], [[-20, -36], [18, -66], [-16, -64], [14, -38]], [[0, -34], [0, -66], [12, -50], [-12, -50]], [[-24, -55], [22, -45], [-6, -40], [8, -62]], [[10, -36], [-18, -48], [6, -58], [20, -66]]];
     for (let k = 0, n = PEU ? 24 : 62; k < n; k++) { const Rr = R[k % R.length], m = gens(k), i0 = (k * 3) % Rr.length, a = Rr[i0], b = Rr[(i0 + 1) % Rr.length], u = ((k * 37) % 100) / 100; m.position.set(a[0] + (b[0] - a[0]) * u, 0, a[1] + (b[1] - a[1]) * u); m.userData.poser("marche", 0); m.userData.anime = true; scene.add(m);
       MARCH.push({ m, R: Rr, i: (i0 + 1) % Rr.length, v: .9 + (k % 5) * .12 }); }
     for (let k = 0; k < (PEU ? 4 : 9); k++) { const m = gens(k + 40), x = -12 + (k % 3) * 9 + al() * 3, z = -40 - Math.floor(k / 3) * 5; m.position.set(x, 0, z); m.rotation.y = Math.PI + (al() - .5) * .6; m.userData.anime = true; scene.add(m); m.userData.poser("debout", 0);
@@ -802,7 +802,7 @@ function construireNotreDame(A, L, scene) {
           const p0 = C.pts[0]; if (!p0) { if (C.etat === "va") { const s = C.siege.s; g.position.set(s[0], TROT + .48 - g.userData.hipY, s[1]); g.rotation.y = s[2]; g.userData.poser("assis", 0); C.etat = "assis"; C.fin = tm + 15000 + al() * 30000; return; }
             const libres = SG.filter(q => !q.pris); if (libres.length && al() < .7) { const q = libres[(al() * libres.length) | 0]; q.pris = true; C.siege = q; C.etat = "va"; C.pts = [abord(q.s), [q.s[0], q.s[1]]]; } else C.pts = [auHasard()]; return; }
           const dx = p0[0] - g.position.x, dz = p0[1] - g.position.z, d = Math.hypot(dx, dz); if (d < .25) { C.pts.shift(); return; }
-          const v = Math.min(d, C.v * dt); g.position.x += dx / d * v; g.position.z += dz / d * v; g.position.y = L.hauteur(g.position.x, g.position.z); g.rotation.y = Math.atan2(dx, dz); g.userData.poser("marche", tm * C.v / 1.2); }); } }
+          const v = Math.min(d, C.v * dt); g.position.x += dx / d * v; g.position.z += dz / d * v; contourne(g.position); g.position.y = L.hauteur(g.position.x, g.position.z); g.rotation.y = Math.atan2(dx, dz); g.userData.poser("marche", tm * C.v / 1.2); }); } }
     // l'accordéoniste
     { const ax = -31, az = 28.9, m = personne3D({ taille: 1.74, peau: "#d8a888", ch: "#8a8a8a", haut: "#3a3028", bas: "#2a2a30", chaussures: "#2a1a14", coif: "court", pantalon: true }); m.position.set(ax, TROT, az); m.rotation.y = Math.PI * .1; m.userData.poser("debout", 0); m.userData.anime = true; scene.add(m);
       const P = m.userData.parts, b = (w, h, d, mm, x, y, z, par) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mm); o.position.set(x, y, z); par.add(o); return o; };
@@ -888,7 +888,7 @@ function construireNotreDame(A, L, scene) {
         const zA = (x, z) => z > 30.2 && z < 38.2 && ((x > -14.2 && x < -10.8) || (x > 8.8 && x < 12.2)), zB = (x, z) => (x > PP[0] && x < PP[1] && ((z > 25.6 && z < 30.0) || (z > 38.7 && z < 41.7))) || (z > -30.5 && z < -27.6 && ((x > -10.2 && x < -7.4) || (x > 5.4 && x < 8.2)));
         const bloque = (FEUX.pA !== "vert" && zA(nx, nz) && !zA(m.position.x, m.position.z)) || (FEUX.pB !== "vert" && zB(nx, nz) && !zB(m.position.x, m.position.z));
         if (bloque) { if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("debout", tm); continue; } }   /* (le petit bonhomme est rouge : on attend) */
-      m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur(m.position.x, m.position.z, { g: m }); m.rotation.y = Math.atan2(dx, dz);
+      m.position.x += dx / d * v; m.position.z += dz / d * v; contourne(m.position); m.position.y = L.hauteur(m.position.x, m.position.z, { g: m }); m.rotation.y = Math.atan2(dx, dz);
       if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * W.v / 1.2); } catch (e) {} };
   // le soir : la cathédrale illuminée par des projecteurs, les quais à la lueur des réverbères
   { const proj = new THREE.SpotLight(0xffe2b0, 0, 140, .5, .6, 1); proj.position.set(FAC.x, 4, -33); proj.target.position.set(FAC.x, 30, FAC.z); scene.add(proj); scene.add(proj.target); NUIT.push([{ set emissiveIntensity(v) { proj.intensity = v * 1800; } }, 0, 1]); }
