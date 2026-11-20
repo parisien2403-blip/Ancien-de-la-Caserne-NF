@@ -754,7 +754,7 @@ function construireNotreDame(A, L, scene) {
     if (z > -82.8) return Math.abs(u) < 6.4 && libre();   // (le narthex)
     if (z > -187.6) return x > -15.8 && x < 13.8 && libre();
     return Math.hypot(u, z + 188) < 6.2 && libre(); };
-  AMB.push(() => { const p = M && M.moiNum && M.gens.get(M.moiNum); L.dedans = !!(p && p.g.position.z < -71 && p.g.position.z > -200 && Math.abs(p.g.position.x - CXI) < 17); });
+  AMB.push(() => { const p = M && M.moiNum && M.gens.get(M.moiNum); L.dedans = !!(p && !L.enHaut && p.g.position.z < -71 && p.g.position.z > -200 && Math.abs(p.g.position.x - CXI) < 17); });
   const FAC = { x: -1, z: -69 };   // (le milieu de la façade, après le quart de tour)
   // le parvis : la statue de Charlemagne à cheval, le point zéro
   /* (10.150, d'après les photos) Charlemagne et ses leudes : le haut socle de pierre, sa corniche moulurée et sa frise ; le bronze vert-de-gris ; le cheval au pas, encolure arquée, crinière, une antérieure levée ;
