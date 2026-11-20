@@ -57,7 +57,7 @@ function construireNotreDame(A, L, scene) {
   const ESC = [-52, -36], RAMPE_C = [30, 46];   const MX = -70, MZ = 44.15, HX0 = MX - 2.75, HX1 = MX + 2.5, HZ0 = 42.3, HZ1 = 46.0;   // (10.148 : la trémie du métro, contre les immeubles)
    const ESCE = 2.6;   // (l'entrée de l'escalier, en haut, à l'est)   // (le grand escalier de la rive gauche ; la rampe de l'île)
   const OBS = [], VEND = [], AMB = [], LAMPES = [];
-  const contourne = (p) => { const dx = p.x + 57, dz = p.z + 54, d = Math.hypot(dx, dz); if (d < 4.1) { p.x = -57 + dx / (d || 1) * 4.1; p.z = -54 + dz / (d || 1) * 4.1; } };   // (10.153 : personne ne traverse la fontaine — on en fait le tour)   // (ce qu'on ne traverse pas : les kiosques, les tables, les troncs…)
+  const contourne = (p, tx, tz, v = .05) => { const dx = p.x + 57, dz = p.z + 54, d = Math.hypot(dx, dz) || 1; if (d >= 4.3) return; let ux = -dz / d, uz = dx / d; if (tx != null && ux * (tx - p.x) + uz * (tz - p.z) < 0) { ux = -ux; uz = -uz; } p.x += ux * v * 1.5; p.z += uz * v * 1.5; const d2 = Math.hypot(p.x + 57, p.z + 54) || 1; if (d2 < 4.15) { p.x = -57 + (p.x + 57) / d2 * 4.15; p.z = -54 + (p.z + 54) / d2 * 4.15; } };   /* (10.157 : on longe la fontaine pour en faire le tour, au lieu de rester bloqué devant) */   // (10.153 : personne ne traverse la fontaine — on en fait le tour)   // (ce qu'on ne traverse pas : les kiosques, les tables, les troncs…)
   const lig = mat({ color: 0xe2dccc, roughness: .9 });
   for (const s of [1, -1]) {
     sol(-XS, XS, s > 0 ? 18 : -22.5, s > 0 ? 22.5 : -18, paveB, YB);
@@ -842,7 +842,7 @@ function construireNotreDame(A, L, scene) {
           const p0 = C.pts[0]; if (!p0) { if (C.etat === "va") { const s = C.siege.s; g.position.set(s[0], TROT + .48 - g.userData.hipY, s[1]); g.rotation.y = s[2]; g.userData.poser("assis", 0); C.etat = "assis"; C.fin = tm + 15000 + al() * 30000; return; }
             const libres = SG.filter(q => !q.pris); if (libres.length && al() < .7) { const q = libres[(al() * libres.length) | 0]; q.pris = true; C.siege = q; C.etat = "va"; C.pts = [abord(q.s), [q.s[0], q.s[1]]]; } else C.pts = [auHasard()]; return; }
           const dx = p0[0] - g.position.x, dz = p0[1] - g.position.z, d = Math.hypot(dx, dz); if (d < .25) { C.pts.shift(); return; }
-          const v = Math.min(d, C.v * dt); g.position.x += dx / d * v; g.position.z += dz / d * v; contourne(g.position); g.position.y = L.hauteur(g.position.x, g.position.z); g.rotation.y = Math.atan2(dx, dz); g.userData.poser("marche", tm * C.v / 1.2); }); } }
+          const v = Math.min(d, C.v * dt); g.position.x += dx / d * v; g.position.z += dz / d * v; contourne(g.position, p0[0], p0[1], v); g.position.y = L.hauteur(g.position.x, g.position.z); g.rotation.y = Math.atan2(dx, dz); g.userData.poser("marche", tm * C.v / 1.2); }); } }
     // (10.154) le jongleur du parvis : la marinière, le chapeau melon posé par terre avec quelques pièces ; trois balles, rouge, bleue et jaune, en cascade
     { const jx = 8, jz = -45, m = personne3D({ taille: 1.74, peau: "#e8c4a0", ch: "#3a2a1a", haut: "#f2f2f0", bas: "#1a1a2a", chaussures: "#1a1a1a", coif: "court", pantalon: true }); m.position.set(jx, 0, jz); m.rotation.y = 0; m.userData.poser("debout", 0); m.userData.anime = true; scene.add(m);
       const P = m.userData.parts;
@@ -937,7 +937,7 @@ function construireNotreDame(A, L, scene) {
         const zA = (x, z) => z > 30.2 && z < 38.2 && ((x > -14.2 && x < -10.8) || (x > 8.8 && x < 12.2)), zB = (x, z) => (x > PP[0] && x < PP[1] && ((z > 25.6 && z < 30.0) || (z > 38.7 && z < 41.7))) || (z > -30.5 && z < -27.6 && ((x > -10.2 && x < -7.4) || (x > 5.4 && x < 8.2)));
         const bloque = (FEUX.pA !== "vert" && zA(nx, nz) && !zA(m.position.x, m.position.z)) || (FEUX.pB !== "vert" && zB(nx, nz) && !zB(m.position.x, m.position.z));
         if (bloque) { if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("debout", tm); continue; } }   /* (le petit bonhomme est rouge : on attend) */
-      m.position.x += dx / d * v; m.position.z += dz / d * v; contourne(m.position); m.position.y = L.hauteur(m.position.x, m.position.z, { g: m }); m.rotation.y = Math.atan2(dx, dz);
+      m.position.x += dx / d * v; m.position.z += dz / d * v; contourne(m.position, tx, tz, v); m.position.y = L.hauteur(m.position.x, m.position.z, { g: m }); m.rotation.y = Math.atan2(dx, dz);
       if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * W.v / 1.2); } catch (e) {} };
   // le soir : la cathédrale illuminée par des projecteurs, les quais à la lueur des réverbères
   { /* (10.154) la mise en lumière, comme sur les photos de nuit : des projecteurs au pied de la façade, dorés, qui l'éclairent en rasant de bas en haut (les reliefs, les ombres des portails,

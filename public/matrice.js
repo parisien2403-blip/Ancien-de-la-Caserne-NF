@@ -11688,7 +11688,12 @@ function petitTrain(scene, x, z, rot) { const g = new THREE.Group(); g.position.
     for (const px of [-1.4, -.2, 1.0]) b(.5, .08, 1.5, m({ color: 0x2a4a8a }), x0 + px - .3 + .2, .95, 0);   // (les banquettes)
     b(.5, .08, .1, noir, x0 + 1.6, .55, 0); }
   g.userData.train = true; return g; }
-function busCaserne(scene, modele, x, z, rot) {
+/* (10.157) les lignes, comme sur le réseau parisien : le numéro de bus de chaque arrêt, ses couleurs ; les lignes de métro de chaque station */
+const LIGNES_BUS = { rue: ["39", "Faubourg-Poissonnière", "#2a8a5a"], grande: ["48", "Hauteville", "#c8202a"], rex: ["20", "Bonne-Nouvelle", "#3a6ab0"], notredame: ["47", "Notre-Dame", "#8a2a7a"], corbier: ["S1", "Le Corbier", "#f08a1a"] };
+const LIGNES_METRO = { rex: [["8", "#e19bdf", "#000"], ["9", "#b6bd00", "#000"]], tertre: [["12", "#007852", "#fff"]], notredame: [["4", "#a0006e", "#fff"], ["B", "#5091cb", "#fff"], ["C", "#f3d311", "#000"]], corbier: [["Car 61", "#f08a1a", "#fff"]] };
+const pastille = (t, fond, txt, rond) => `<span style="display:inline-block;min-width:26px;padding:2px 6px;margin-right:9px;border-radius:${rond ? "50%" : "5px"};background:${fond};color:${txt};font:800 14px Arial,sans-serif;text-align:center;vertical-align:middle">${t}</span>`;
+let GIROU = null;   // (le numéro et la destination à afficher sur le prochain bus fabriqué)
+function busCaserne(scene, modele, x, z, rot) { const giro = GIROU; GIROU = null;
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
   const gn = modele === "gendarmerie", L = gn ? 10.6 : 11, W = 2.5, H = gn ? 3.05 : 2.95, Y0 = .35, P = 60;
   const add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
@@ -11715,8 +11720,8 @@ function busCaserne(scene, modele, x, z, rot) {
       for (const [a0, a1] of fenetres) { rect(a0 - .05, a1 + .05, 1.47, H - .43, "#b4642c"); rect(a0, a1, 1.52, H - .48, "#3b4650"); }   // les vitres, cerclées d'orange
       for (const [a0, a1] of portes) { rect(a0, a1, Y0 + .1, H - .43, "#1d2a24"); rect(a0 + .05, (a0 + a1) / 2 - .03, Y0 + .15, H - .5, "#3b4650"); rect((a0 + a1) / 2 + .03, a1 - .05, Y0 + .15, H - .5, "#3b4650"); }
       rect(5.1 - (droit ? 0 : 0), 7.6, .85, 1.38, "#f6f6f2"); rect(5.15, 7.55, .9, 1.33, "#c81e24"); txt("LINGE CLAIR PUR", 6.35, 1.2, 14, "#fff");   // la publicité
-      rect(4.6, 8.0, 1.42, 1.5, "#e8a02a"); txt("M. Joinville — Créteil-Préfecture", 6.3, 1.43, 9, "#3a1c08");
-      txt("106-A", L - 2.9, 2.35, 16, "#f0e8c0"); txt("6000", L - .9, 1.36, 13, "#222");
+      rect(4.6, 8.0, 1.42, 1.5, "#e8a02a"); txt(giro ? giro[0] + " — " + giro[1] : "M. Joinville — Créteil-Préfecture", 6.3, 1.43, 9, "#3a1c08");
+      txt(giro ? giro[0] : "106-A", L - 2.9, 2.35, 16, "#f0e8c0"); txt("6000", L - .9, 1.36, 13, "#222");
       c.fillStyle = vert; c.beginPath(); c.arc(X(1.8), Yy(1.2), 9, 0, 7); c.lineWidth = 3; c.strokeStyle = vert; c.stroke(); txt("RATP", 2.3, 1.16, 10, vert, droit ? "left" : "right");
       for (let k = 0; k < 8; k++) rect(.15, .65, .65 + k * .07, .68 + k * .07, "#555");   // la grille du moteur
     } });
@@ -11725,7 +11730,7 @@ function busCaserne(scene, modele, x, z, rot) {
         c.strokeStyle = "#111"; c.lineWidth = 3; c.beginPath(); c.moveTo(30, Yy(1.35)); c.lineTo(w / 2, Yy(1.8)); c.moveTo(w - 30, Yy(1.35)); c.lineTo(w / 2 + 6, Yy(1.8)); c.stroke();
         for (let k = -1; k < 12; k++) { c.fillStyle = k % 2 ? "#fff" : "#c81e24"; c.beginPath(); const x0 = 10 + k * 13; c.moveTo(x0, Yy(.82)); c.lineTo(x0 + 13, Yy(.82)); c.lineTo(x0 + 26, Yy(1.15)); c.lineTo(x0 + 13, Yy(1.15)); c.fill(); }   // les chevrons
         c.fillStyle = "#e9eef2"; c.fillRect(14, Yy(.72), 26, 10); c.fillRect(w - 40, Yy(.72), 26, 10); c.fillStyle = "#f4f4f4"; c.fillRect(w / 2 - 22, Yy(.62), 44, 10); }
-    else { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#16191c"; c.fillRect(0, 0, w, Yy(H - .35)); c.fillStyle = "#e9d27a"; c.font = "bold 13px Arial"; c.textAlign = "center"; c.fillText("106-A  Joinville", w / 2, Yy(H - .15));
+    else { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#16191c"; c.fillRect(0, 0, w, Yy(H - .35)); c.fillStyle = "#e9d27a"; c.font = "bold 13px Arial"; c.textAlign = "center"; c.fillText(giro ? (giro[0] + "  " + giro[1]).toUpperCase() : "106-A  Joinville", w / 2, Yy(H - .15));
         c.fillStyle = "#1e2c3a"; c.fillRect(6, Yy(H - .4), w - 12, Yy(1.2) - Yy(H - .4)); c.fillStyle = vertF; c.fillRect(0, Yy(.85), w, Yy(Y0) - Yy(.85)); c.fillStyle = vert; c.fillRect(0, Yy(1.0), w, 6);
         c.fillStyle = "#222"; c.fillRect(w / 2 - 30, Yy(1.15), 60, 20); c.strokeStyle = "#c8c8c8"; c.lineWidth = 2; c.beginPath(); c.moveTo(w / 2, Yy(1.13)); c.lineTo(w / 2 + 7, Yy(1.0)); c.lineTo(w / 2, Yy(.88)); c.lineTo(w / 2 - 7, Yy(1.0)); c.closePath(); c.stroke();   // le losange Renault
         c.fillStyle = "#e9eef2"; c.fillRect(10, Yy(.95), 22, 10); c.fillRect(w - 32, Yy(.95), 22, 10); c.fillStyle = "#f4f4f4"; c.fillRect(w / 2 - 22, Yy(.62), 44, 10); } });
@@ -13195,7 +13200,7 @@ function busLigne(L, scene, C) {
   const creer = (x) => { const cc = L.circH || L.circR; if (cc) for (let i = cc.enRoute.length - 1; i >= 0; i--) { const o = cc.enRoute[i]; if (Math.abs(o.g.position.x - x) < 13 && Math.abs(o.g.position.z - C.voie) < 2) { scene.remove(o.g); cc.enRoute.splice(i, 1); } }   // (pas de voiture « dans » le bus quand il apparaît)
     B.train = !!(C.train || (B.dest && B.dest.train));
     if (B.train) { B.g = petitTrain(scene, x, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0; B.g.userData.pass = []; }
-    else { B.g = busCaserne(scene, "ratp", x, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0 - .12; B.g.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m) m.side = THREE.FrontSide; });
+    else { { const v = B.phase === "amene" ? M.lieu : (B.dest && B.dest.vers), lg = LIGNES_BUS[v]; GIROU = lg ? [lg[0], lg[1]] : null; } B.g = busCaserne(scene, "ratp", x, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0 - .12; B.g.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m) m.side = THREE.FrontSide; });
       B.g.userData.int = interieurBus(B.g); passagers(); }
     B.x = x; B.v = 9; (L.obstRue = L.obstRue || []).push(obst); };
   const fin = () => { if (B.g) { scene.remove(B.g); B.g = null; } L.obstRue = (L.obstRue || []).filter(o => o !== obst); B.phase = "rien"; };
@@ -13225,7 +13230,7 @@ function choixBus(B) { if (M.choixBusEl) M.choixBusEl.remove(); const d = docume
   d.style.cssText = "position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:30;background:rgba(18,28,24,.94);color:#fff;border-radius:16px;padding:14px 16px;font:15px Lato,Arial,sans-serif;min-width:260px;max-width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)";
   d.innerHTML = `<div style="font-weight:700;margin-bottom:10px">🚌 Où allez-vous ?</div>`;
   const DS = B.C.dest.concat(M.lieu !== "corbier" ? [{ vers: "corbier", nom: "🚂 Le Corbier - Les Sybelles (le petit train)", arrivee: [60.5, 19.4], yawA: Math.PI / 2, train: true }] : []).concat(M.lieu !== "notredame" && estAdmin() ? [{ vers: "notredame", nom: "🛠️ Notre-Dame — le parvis (en construction)", arrivee: [30, -31.8], yawA: Math.PI }] : []);   // (10.140)   // (10.145 : Notre-Dame, réservé à l'administrateur pendant la construction)
-  for (const D of DS) { const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.nom; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#2a8a5a;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
+  for (const D of DS) { const b = document.createElement("button"); b.type = "button"; const lg = LIGNES_BUS[D.vers] || ["?", "", "#888"]; b.innerHTML = pastille(lg[0], lg[2], "#fff") + `<span style="vertical-align:middle">${D.nom.replace(/^[^A-Za-zÀ-ÿ]+/, "")}</span>`; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:9px 12px;border:0;border-radius:10px;background:#fff;color:#1a3a8a;font:700 15px Lato,Arial,sans-serif;cursor:pointer";   /* (10.157 : comme sur le réseau RATP : fond blanc, lettres bleues, le numéro de la ligne devant) */
     b.onclick = () => { d.remove(); M.choixBusEl = null; dire(M.moiNum, "🚌 J'attends le bus…"); B.appeler(D); }; d.appendChild(b); }
   const x = document.createElement("button"); x.type = "button"; x.textContent = "Annuler"; x.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:14px Lato,Arial,sans-serif;cursor:pointer"; x.onclick = () => { d.remove(); M.choixBusEl = null; }; d.appendChild(x);
   (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer: () => { d.remove(); M.choixBusEl = null; M.manMenu = null; } };   // (10.15 : à la manette — la croix ou le joystick choisit, A valide, B annule)
@@ -13249,7 +13254,7 @@ function voyageCar(dep, arr) { if (!M || M.cine) return; const n = voile("backgr
 function choixMetro() { if (M.choixBusEl) M.choixBusEl.remove(); const d = document.createElement("div"); M.choixBusEl = d; const ici = METRO_STATIONS[M.lieu];
   d.style.cssText = "position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:30;background:rgba(14,22,44,.95);color:#fff;border-radius:16px;padding:14px 16px;font:15px Lato,Arial,sans-serif;min-width:260px;max-width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)";
   d.innerHTML = `<div style="font-weight:700;margin-bottom:4px">${ici && ici.car ? "🚌 Arrêt du car — " : "🚇 Métro "}${ici ? ici.nom : ""}</div><div style="font-size:13px;opacity:.75;margin-bottom:8px">Où allez-vous ?</div>`;
-  for (const [k, D] of Object.entries(METRO_STATIONS)) { if (k === M.lieu || D.car || (D.admin && !estAdmin())) continue;   /* (10.145 : Notre-Dame, l'administrateur seul pendant la construction) */   /* (le car du Corbier : fermé tant que l'administrateur y travaille — on y va par le cercle violet) */ const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.libelle; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#1f4aa8;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
+  for (const [k, D] of Object.entries(METRO_STATIONS)) { if (k === M.lieu || D.car || (D.admin && !estAdmin())) continue;   /* (10.145 : Notre-Dame, l'administrateur seul pendant la construction) */   /* (le car du Corbier : fermé tant que l'administrateur y travaille — on y va par le cercle violet) */ const b = document.createElement("button"); b.type = "button"; b.innerHTML = (LIGNES_METRO[k] || []).map(([t, f, c]) => pastille(t, f, c, t.length < 3)).join("") + `<span style="vertical-align:middle">${D.libelle.replace(/^[^A-Za-zÀ-ÿ]+/, "")}</span>`; b.dataset.metro = 1; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:9px 12px;border:0;border-radius:10px;background:#0e1f4a;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
     b.onclick = () => { d.remove(); M.choixBusEl = null; M.manMenu = null; if (D.car || (ici && ici.car)) voyageCar(ici || METRO_STATIONS.rex, D); else cineMetro(ici || METRO_STATIONS.rex, D); }; d.appendChild(b); }
   const x = document.createElement("button"); x.type = "button"; x.textContent = "Annuler"; x.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:14px Lato,Arial,sans-serif;cursor:pointer"; x.onclick = () => { d.remove(); M.choixBusEl = null; M.manMenu = null; }; d.appendChild(x);
   (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer: () => { d.remove(); M.choixBusEl = null; M.manMenu = null; } }; }
