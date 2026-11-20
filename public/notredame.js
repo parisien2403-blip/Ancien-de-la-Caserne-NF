@@ -174,7 +174,7 @@ function construireNotreDame(A, L, scene) {
   const teintes = ["#dccaa6", "#d6c39e", "#e2d2b2", "#d2bf98", "#dac8a8"];   /* (la pierre de taille chaude des images) */
   const ENS = [["CAFÉ LE PETIT PONT", "#8a1a1a", 1], ["SHAKESPEARE AND COMPANY", "#1e4a2a", 0], ["BRASSERIE NOTRE-DAME", "#8a1a1a", 1], ["LIBRAIRIE ANCIENNE", "#1e4a3a", 0], ["CAFÉ DE LA SEINE", "#7a1a1a", 1], ["GALERIE D'ESTAMPES", "#2e4a3a", 0], ["LE BISTROT DU PARVIS", "#8a2a1a", 1], ["SOUVENIRS DE PARIS", "#1a4a3a", 0], ["AUX TOURS DE NOTRE-DAME", "#8a1a1a", 1], ["PAPETERIE", "#2a4a3a", 0]];
   const storeR = mat({ color: 0xa82424, roughness: .8 }), storeV = mat({ color: 0x2a4a3a, roughness: .8 }), tableM = mat({ color: 0x2a2a2a, metalness: .4, roughness: .5 }), chaiseM = mat({ color: 0xb8925a, roughness: .7 });
-  let kI = 0;
+  let kI = 0; const TERR = [];
   /* ---------- (d'après les images, construits en relief) les immeubles de pierre de taille : les bossages du rez-de-chaussée, les boutiques et leurs stores,
      la porte cochère ; les fenêtres et leurs encadrements, les frontons, les corniches, les balcons filants de fer forgé, les balconnets ; la corniche à denticules ;
      le toit de zinc à la Mansart, ses lucarnes, les souches de cheminée en brique et leurs pots ; le dôme d'angle ---------- */
@@ -201,7 +201,7 @@ function construireNotreDame(A, L, scene) {
   IM.def("zinc", ub, mat({ color: 0x8c96a2, roughness: .45, metalness: .35 })); IM.def("brique", ub, mat({ color: 0xa65a3e, roughness: .9 })); IM.def("pot", new THREE.CylinderGeometry(.5, .6, 1, 8), mat({ color: 0xc0623e, roughness: .8 }));
   IM.def("store", ub, mat({ roughness: .85 })); IM.def("peint", ub, mat({ roughness: .55 })); IM.def("bois", ub, mat({ color: 0x6a4426, roughness: .7 }));
   IM.def("vitrine", new THREE.PlaneGeometry(1, 1), mat({ map: vitrineT, emissive: 0xffe0b0, emissiveMap: vitrineT, emissiveIntensity: .22, roughness: .3 }));
-  IM.def("lumiere", new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffd48a }));
+  IM.def("lumiere", new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffd48a })); IM.def("fleur", new THREE.IcosahedronGeometry(1, 0), mat({ roughness: .8 })); IM.def("jardin", ub, mat({ color: 0x3a5a2a, roughness: .9 }));
   IM.def("int", ub, mat({ roughness: .8, emissive: 0xffe6c0, emissiveIntensity: .16 })); IM.def("rond", new THREE.CylinderGeometry(1, 1, 1, 12), mat({ roughness: .5, metalness: .4 })); IM.def("lampe", new THREE.SphereGeometry(1, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffe2a8 }));
   IM.def("verre", new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ color: 0xc8dae2, transparent: true, opacity: .16, roughness: .05, metalness: .5, depthWrite: false }));
   const LARG = { long: 30, angle: 18, std: 21 };
@@ -244,7 +244,8 @@ function construireNotreDame(A, L, scene) {
         if (e === 0 || e === 2) { P("pierre", xc, yc + 1.2, .1, 1.62, .16, .2, 0, te); if ((i + e) % 2 === 0 || e === 0) P("fronton", xc, yc + 1.28, .1, 1.75, .44, .22, 0, te); else P("pierre", xc, yc + 1.42, .12, 1.7, .14, .26, 0, te); }
         else if (e === 1) { P("pierre", xc, yc + 1.22, .14, 1.72, .14, .3, 0, te); for (const s of [-1, 1]) P("pierre", xc + s * .78, yc + 1.06, .14, .14, .32, .24, 0, te); }
         else P("pierre", xc, yc + 1.17, .08, 1.48, .2, .14, 0, te);
-        if (!filant) { P("pierre", xc, yc - .98, .22, 1.36, .08, .34, 0, te); P("fer", xc, yc - .56, .38, 1.3, .84, 1); } }); }
+        if (!filant) { P("pierre", xc, yc - .98, .22, 1.36, .08, .34, 0, te); P("fer", xc, yc - .56, .38, 1.3, .84, 1); }
+        if (al() < (filant ? .25 : .35)) { const zj = filant ? .75 : .3; P("jardin", xc, yc - .86, zj, 1.0, .2, .2, 0, 0x8a4a2a); for (let f = 0; f < 6; f++) P(f % 3 === 2 ? "jardin" : "fleur", xc - .4 + f * .16, yc - .7 + (f % 2) * .06, zj + .02, .1, .09, .1, 0, f % 3 === 2 ? 0x3a6a2a : [0xd8203a, 0xe8487a, 0xd83a2a, 0xf06a8a][(f + i + e) % 4]); } }); }   // (les géraniums aux balcons)
     // la corniche à denticules
     P("pierre", 0, H - .15, .3, W + .5, .42, .7, 0, te); P("pierre", 0, H + .12, .46, W + .7, .14, .96, 0, te); for (let xd = -W / 2 + .1; xd < W / 2; xd += .5) P("pierre", xd, H - .48, .22, .2, .18, .26, 0, te);
     // le toit de zinc à la Mansart, ses lucarnes, les souches de cheminée
@@ -257,7 +258,7 @@ function construireNotreDame(A, L, scene) {
     if (cafe && terrasse) { for (const lx of [-5.2, -1.7, 1.8, 5.3]) { if (Math.abs(lx) > W / 2 - 1) continue; const p = new THREE.Vector3(lx, 0, 2.6).applyMatrix4(T); cyl(.38, .38, .04, tableM, p.x, .74 + TROT, p.z, 14); cyl(.03, .03, .72, tableM, p.x, .37 + TROT, p.z, 6); OBS.push([p.x - .4, p.x + .4, p.z - .4, p.z + .4]);
         for (const sx of [-.7, .7]) { const c = new THREE.Vector3(lx + sx, 0, 2.6).applyMatrix4(T), cap = Math.atan2(p.x - c.x, p.z - c.z), dx = Math.sin(cap), dz = Math.cos(cap);
           box(.42, .05, .42, chaiseM, c.x, .46 + TROT, c.z, cap); box(.42, .45, .04, chaiseM, c.x - dx * .2, .7 + TROT, c.z - dz * .2, cap); cyl(.02, .02, .46, tableM, c.x, .23 + TROT, c.z, 5);
-          (L.tabourets = L.tabourets || []).push([c.x, c.z, cap, .46]); } } } };
+          (L.tabourets = L.tabourets || []).push([c.x, c.z, cap, .46]); TERR.push([c.x, c.z, cap]); } } } };
   // le quai, rive gauche : la rangée face à la Seine, coupée par la rue du Petit-Pont
   // une rangée de façades photographiées, en alternant l'immeuble d'angle et le long immeuble ; (x, z) avancent le long de la rangée
   const rangee = (x0, z0, dx, dz, lim, rot, types, terr = true) => { let s = 0, i = 0; const cs = Math.sign(-(dx * Math.cos(rot) - dz * Math.sin(rot))) || 1; while (s < lim) { const t = types[i % types.length], w = LARG[t], c = s + w / 2; immeuble(x0 + dx * c, z0 + dz * c, rot, w, 5, terr, t, i === 0 && t === "angle" ? cs : 0); s += w; i++; } };
@@ -491,15 +492,57 @@ function construireNotreDame(A, L, scene) {
     for (const [g, z, v, y, lg, ar] of [[bateauMouche(28, 5, false), -3.2, 3.6, YE + .45, 24, -14], [bateauMouche(26, 5, true), 3.2, -3.0, YE + .45, 22, -13], [vedette(), 11.5, 9, YE + .25, 14, -1.8], [taxi(0x2a2a30), -11.8, -7, YE + .35, 16, -3.3]]) {
       g.userData.ye = y - YE; sillage(g, lg, lg * .35, ar); g.userData.anime = true; scene.add(g); BAT.push({ g, z, v, y, x0: al() * 300 }); } }
 
-  /* ---------- les voitures : par la rue du Petit-Pont et le pont, jusqu'au quai de l'île ---------- */
-  const VOIT = [];
-  { const coul = [0xc8c4bc, 0x8a1a1a, 0x1a3a6a, 0x2a2a2c, 0xe8e4da, 0x4a5a3a, 0xb8a040, 0x6a6e74];
-    const voiture = (k) => { const g = new THREE.Group(), m = mat({ color: coul[k % coul.length], roughness: .35, metalness: .4 }), b = (w, h, d, mm, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mm); o.position.set(x, y, z); g.add(o); };
-      b(1.75, .62, 4.1, m, 0, .55, 0); b(1.6, .55, 2.1, m, 0, 1.1, -.25); b(1.62, .4, 2.0, noirB, 0, 1.12, -.25); for (const [x, z] of [[-.8, 1.3], [.8, 1.3], [-.8, -1.3], [.8, -1.3]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.32, .32, .22, 10), noirB); r.rotation.z = Math.PI / 2; r.position.set(x, .32, z); g.add(r); }
-      b(1.5, .1, .05, mat({ color: 0xfff4d0, emissive: 0xfff0c0, emissiveIntensity: .4 }), 0, .62, 2.06); b(1.5, .1, .05, mat({ color: 0xa81a1a, emissive: 0x801010, emissiveIntensity: .4 }), 0, .62, -2.06); scene.add(g); return g; };
-    const CH = [[[1.6, 138], [1.6, -27.1], [152, -27.1]], [[-152, -27.1], [-3.6, -27.1], [-3.6, 138]]];
-    CH.forEach((P, j) => { let lg = 0; const seg = []; for (let i = 1; i < P.length; i++) { const d = Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); seg.push([lg, d, P[i - 1], P[i]]); lg += d; }
-      for (let k = 0; k < (PEU ? 2 : 4); k++) VOIT.push({ g: voiture(j * 4 + k), seg, lg, s: k * lg / 4 + j * 17, v: 8 + k % 2 * 1.5 }); }); }
+  /* ---------- (10.147) les voitures des années 80 : la R5, la 205, la 2CV, la 4L, la BX, le taxi parisien (une 505 et son lumineux) — profils de carrosserie, vitres,
+     montants, pare-chocs, phares, feux, plaques (blanche devant, jaune derrière), rétroviseurs, roues et enjoliveurs ; par la rue du Petit-Pont, le pont, le quai de l'île ---------- */
+  const VOIT = [], FEUX = { phase: "vert", pv: "rouge" };
+  { const COUL = [0xc8102e, 0xf2f0ea, 0xd8c9a3, 0x1f4e8c, 0x2e6b3a, 0x8a8f96, 0xe2b11f, 0x6b1e2b, 0x3a3a3a, 0x9fc2d8, 0xd95f1e, 0x4b3a6b];
+    const vitreV = mat({ color: 0x24303a, roughness: .08, metalness: .5 }), noirV = mat({ color: 0x161616, roughness: .7 }), chromeV = mat({ color: 0xd8dadd, metalness: .85, roughness: .2 }), plB = mat({ color: 0xf2f2ee }), plJ = mat({ color: 0xf0c828 });
+    const phV = mat({ color: 0xfff6d8, emissive: 0xfff0c0, emissiveIntensity: .25 }), feuV = mat({ color: 0xb8102a, emissive: 0x900010, emissiveIntensity: .3 }), orV = mat({ color: 0xf0a020, emissive: 0xa06000, emissiveIntensity: .2 });
+    NUIT.push([phV, .25, 1.4], [feuV, .3, 1.1]);
+    const pneu = new THREE.CylinderGeometry(.3, .3, .19, 16), enjo = new THREE.CylinderGeometry(.18, .18, .2, 12);
+    // les profils (x : vers l'avant ; y : la hauteur) — la carrosserie, puis la verrière
+    const MOD = {
+      r5: { c: [[-1.75, .32], [-1.76, .95], [-1.63, 1.38], [.32, 1.4], [.95, .96], [1.7, .86], [1.76, .5], [1.74, .32]], v: [[-1.62, .98], [-1.52, 1.33], [.3, 1.34], [.86, .98]], l: 1.56, ro: [1.12, -1.15], rond: false },
+      p205: { c: [[-1.85, .32], [-1.86, .92], [-1.7, 1.37], [.22, 1.4], [.98, .94], [1.8, .8], [1.86, .48], [1.84, .32]], v: [[-1.72, .96], [-1.6, 1.33], [.2, 1.35], [.88, .96]], l: 1.58, ro: [1.2, -1.22], rond: false },
+      deuche: { c: [[-1.92, .4], [-1.94, .86], [-1.75, 1.18], [-1.25, 1.5], [-.6, 1.6], [.25, 1.6], [.55, 1.12], [1.35, 1.0], [1.78, .82], [1.92, .58], [1.9, .4]], v: [[-1.5, 1.2], [-1.1, 1.47], [.2, 1.52], [.45, 1.12]], l: 1.48, ro: [1.2, -1.15], rond: true },
+      r4: { c: [[-1.83, .34], [-1.84, 1.42], [.32, 1.48], [.7, 1.0], [1.78, .94], [1.84, .55], [1.82, .34]], v: [[-1.74, 1.0], [-1.72, 1.38], [.28, 1.42], [.62, 1.0]], l: 1.5, ro: [1.15, -1.2], rond: true },
+      bx: { c: [[-2.1, .32], [-2.14, .92], [-1.4, 1.36], [.15, 1.4], [1.0, .95], [2.12, .8], [2.18, .45], [2.15, .32]], v: [[-1.9, .96], [-1.32, 1.32], [.12, 1.35], [.9, .96]], l: 1.66, ro: [1.4, -1.35], rond: false },
+      taxi: { c: [[-2.3, .32], [-2.32, .95], [-1.65, 1.0], [-1.05, 1.42], [.38, 1.44], [1.02, 1.0], [2.25, .9], [2.32, .5], [2.3, .32]], v: [[-1.55, 1.02], [-1.0, 1.38], [.35, 1.4], [.92, 1.02]], l: 1.7, ro: [1.45, -1.4], rond: false } };
+    const extr = (pts, w, m, bev) => { const s = new THREE.Shape(); s.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) s.lineTo(p[0], p[1]); s.closePath();
+      const g = new THREE.ExtrudeGeometry(s, { depth: w, bevelEnabled: !!bev, bevelThickness: .05, bevelSize: .05, bevelSegments: 2 }); g.translate(0, 0, -w / 2); g.rotateY(-Math.PI / 2); return new THREE.Mesh(g, m); };   // (l'avant vers +z, comme les promeneurs)
+    const voiture = (type, k) => { const D = MOD[type], g = new THREE.Group(), cM = type === "taxi" ? mat({ color: [0x2a2a2c, 0xe8e4da, 0x1f2a4a][k % 3], roughness: .35, metalness: .35 }) : mat({ color: COUL[(k * 5 + 3) % COUL.length], roughness: .4, metalness: .25 }), W = D.l, b = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
+      g.add(extr(D.c, W - .1, cM, true)); g.add(extr(D.v, W - .02, vitreV));
+      { const xm = (D.v[0][0] + D.v[3][0]) / 2; b(W - .01, .45, .1, cM, 0, 1.15, xm * -1 * 0 + xm); }   // le montant du milieu
+      const xa = D.c[D.c.length - 2][0], xr = D.c[1][0];   // (l'avant, l'arrière)
+      for (const [zz, s] of [[xa + .04, 1], [xr - .04, -1]]) { b(W + .04, .16, .14, D.rond ? chromeV : noirV, 0, .42, zz); b(.5, .11, .02, s > 0 ? plB : plJ, 0, .58, zz + s * .08); }   // les pare-chocs, les plaques
+      for (const sx of [-1, 1]) { if (D.rond) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.1, .1, .06, 12), phV); p.rotation.x = Math.PI / 2; p.position.set(sx * W * .32, .72, xa); g.add(p); } else b(.36, .14, .05, phV, sx * W * .3, .66, xa + .01);
+        b(.24, .16, .05, feuV, sx * (W / 2 - .2), .7, xr - .01); b(.08, .06, .05, orV, sx * (W / 2 - .06), .62, xa + .01); b(.08, .07, .14, noirV, sx * (W / 2 + .05), 1.0, (D.v[3][0] + .1)); }   // phares, feux, clignotants, rétroviseurs
+      if (!D.rond) b(W * .5, .12, .04, noirV, 0, .62, xa + .02);   // la calandre
+      for (const zz of D.ro) for (const sx of [-1, 1]) { const r = new THREE.Mesh(pneu, noirV); r.rotation.z = Math.PI / 2; r.position.set(sx * (W / 2 - .08), .3, zz); g.add(r); const e = new THREE.Mesh(enjo, chromeV); e.rotation.z = Math.PI / 2; e.position.copy(r.position); e.position.x += sx * .01; g.add(e); }
+      if (type === "taxi") { b(.62, .16, .22, mat({ color: 0xf2f2ee, emissive: 0xfff2c0, emissiveIntensity: .3 }), 0, 1.53, -.2); }   // le lumineux « TAXI PARISIEN »
+      scene.add(g); return g; };
+    const CH = [{ P: [[1.6, 138], [1.6, -27.1], [152, -27.1]], stops: [[1.6, 43], [1.6, -24.2]] }, { P: [[-152, -27.1], [-3.6, -27.1], [-3.6, 138]], stops: [[-12.5, -27.1], [-3.6, 24.4]] }];
+    const TYPES = ["r5", "p205", "deuche", "r4", "bx", "taxi", "p205", "r5"];
+    CH.forEach((C, j) => { let lg = 0; const seg = []; for (let i = 1; i < C.P.length; i++) { const d = Math.hypot(C.P[i][0] - C.P[i - 1][0], C.P[i][1] - C.P[i - 1][1]); seg.push([lg, d, C.P[i - 1], C.P[i]]); lg += d; }
+      const sAt = ([x, z]) => { for (const [l0, d, a, b] of seg) { const u = ((x - a[0]) * (b[0] - a[0]) + (z - a[1]) * (b[1] - a[1])) / (d * d); if (u >= -.01 && u <= 1.01 && Math.hypot(a[0] + (b[0] - a[0]) * u - x, a[1] + (b[1] - a[1]) * u - z) < .5) return l0 + u * d; } return -1; };
+      const stops = C.stops.map(sAt), n = PEU ? 3 : 5; for (let k = 0; k < n; k++) VOIT.push({ g: voiture(TYPES[(k + j * 3) % TYPES.length], k + j * 5), seg, lg, stops, s: k * lg / n + j * 11, v: 0, vmax: 8 + (k % 3), ch: j }); }); }
+  /* ---------- les feux tricolores (à la parisienne : le mât vert sombre, le boîtier noir et sa visière) et les feux des piétons ; les passages cloutés ---------- */
+  { const mt = mat({ color: 0x24302a, metalness: .5, roughness: .5 }), noirF = mat({ color: 0x141414, roughness: .6 });
+    const R = mat({ color: 0x3a0a0a, emissive: 0xff2010, emissiveIntensity: 0 }), O = mat({ color: 0x3a2a0a, emissive: 0xff9a10, emissiveIntensity: 0 }), V = mat({ color: 0x0a3a1a, emissive: 0x20ff60, emissiveIntensity: 0 });
+    const pT = (vert) => tT(32, 32, (c, w, h) => { c.fillStyle = "#111"; c.fillRect(0, 0, w, h); c.fillStyle = vert ? "#ffffff" : "#ffffff"; c.beginPath(); c.arc(16, 7, 3.4, 0, 7); c.fill(); if (vert) { c.fillRect(13, 11, 6, 9); c.fillRect(10, 19, 4, 10); c.fillRect(18, 19, 4, 10); c.fillRect(8, 12, 4, 6); c.fillRect(20, 12, 4, 6); } else { c.fillRect(12, 11, 8, 10); c.fillRect(12, 20, 3, 9); c.fillRect(17, 20, 3, 9); } });
+    const PR = mat({ color: 0x220808, emissive: 0xff2a1a, emissiveMap: pT(false), map: pT(false), emissiveIntensity: 0 }), PV = mat({ color: 0x082208, emissive: 0x30ff70, emissiveMap: pT(true), map: pT(true), emissiveIntensity: 0 });
+    L.feuxM = { R, O, V, PR, PV };
+    const feu = (x, z, ry) => { const T = new THREE.Matrix4().makeRotationY(ry).setPosition(x, TROT, z), A2 = (geo, m, px, py, pz, rx = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.rotation.x = rx; o.applyMatrix4(T); scene.add(o); };
+      A2(new THREE.CylinderGeometry(.06, .08, 3.0, 8), mt, 0, 1.5, 0); A2(new THREE.BoxGeometry(.32, .95, .26), noirF, 0, 2.75, .12);
+      [[R, 3.04], [O, 2.75], [V, 2.46]].forEach(([m, y]) => { A2(new THREE.CircleGeometry(.1, 16), m, 0, y, .26); A2(new THREE.BoxGeometry(.26, .03, .14), noirF, 0, y + .12, .3, .3); });
+      A2(new THREE.BoxGeometry(.26, .5, .2), noirF, 0, 1.75, .1); A2(new THREE.PlaneGeometry(.2, .2), PR, 0, 1.87, .205); A2(new THREE.PlaneGeometry(.2, .2), PV, 0, 1.63, .205); OBS.push([x - .15, x + .15, z - .15, z + .15]); };
+    feu(8.7, 43.4, 0); feu(-10.7, 24.0, Math.PI); feu(8.5, -23.9, 0); feu(-12.8, -25.7, -Math.PI / 2);   // (devant chaque voie, à droite)
+    feu(-10.7, 42.6, 0); feu(8.7, 25.0, Math.PI); feu(-10.4, -31.2, Math.PI / 2); feu(9.8, -31.2, -Math.PI / 2);   // (pour les piétons, de l'autre côté)
+    // les passages cloutés : sur le quai, à travers la rue du Petit-Pont ; sur l'île, à travers la chaussée du quai
+    const bl = mat({ color: 0xf0eee6, roughness: .7 });
+    for (const zc of [31.6, 35.5, 39.8]) for (let x = PP[0] + 2.9; x < PP[1] - 2.5; x += 1.0) box(.5, .012, 2.8, bl, x, .04, zc);
+    for (const xc of [-8.6, 6.6]) for (let z = -30.1; z < -26.2; z += 1.0) box(2.8, .012, .5, bl, xc, .04, z);
+    box(PP[1] - PP[0] - 4.8, .012, .3, bl, (PP[0] + PP[1]) / 2 - .5, .04, 42.6); box(PP[1] - PP[0] - 4.8, .012, .3, bl, (PP[0] + PP[1]) / 2 + .5, .04, 25.0); }   // (les lignes d'arrêt)
 
   /* ---------- du monde : les promeneurs sur le quai, au bord de l'eau, sur le pont et le parvis ; des touristes qui photographient la cathédrale ---------- */
   const MARCH = [], PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
@@ -513,6 +556,29 @@ function construireNotreDame(A, L, scene) {
       const P = m.userData.parts; P.bras[1].e.rotation.x = -1.6; P.bras[1].c.rotation.x = -1.1; P.bras[0].e.rotation.x = -1.4; P.bras[0].c.rotation.x = -1.2; P.tete.rotation.x = -.2;   // (ils photographient la cathédrale)
       const ap = new THREE.Mesh(new THREE.BoxGeometry(.14, .09, .05), mat({ color: 0x1a1a1a })); ap.position.y = -m.userData.hipY * .36; P.bras[1].c.add(ap); } }
 
+  /* ---------- (10.147) l'ambiance, comme à Montmartre : des gens attablés aux terrasses, l'accordéoniste du quai et son étui ouvert, le peintre à son chevalet face à la Seine, les pigeons sur les pavés ---------- */
+  const AMB = [];
+  { for (let i = 0; i < TERR.length; i++) { if ((i * 7) % 10 > 4 || AMB.length > (PEU ? 14 : 34)) continue; const [x, z, cap] = TERR[i], m = gens(i + 60); m.position.set(x, TROT + .48 - m.userData.hipY, z); m.rotation.y = cap; m.userData.poser("assis", 0); m.userData.anime = true; scene.add(m); AMB.push((tm) => { const P = m.userData.parts; P.tete.rotation.y = Math.sin(tm / 1700 + i) * .35; P.bras[(i % 2)].e.rotation.x = -.6 - Math.max(0, Math.sin(tm / 2300 + i * 2)) * .7; }); }
+    // l'accordéoniste
+    { const ax = -24, az = 28.9, m = personne3D({ taille: 1.74, peau: "#d8a888", ch: "#8a8a8a", haut: "#3a3028", bas: "#2a2a30", chaussures: "#2a1a14", coif: "court", pantalon: true }); m.position.set(ax, TROT, az); m.rotation.y = Math.PI * .1; m.userData.poser("debout", 0); m.userData.anime = true; scene.add(m);
+      const P = m.userData.parts, b = (w, h, d, mm, x, y, z, par) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mm); o.position.set(x, y, z); par.add(o); return o; };
+      const cas = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .06, 14), mat({ color: 0x2a2a30 })); cas.position.set(0, .1, 0); P.tete.add(cas); b(.24, .02, .1, mat({ color: 0x2a2a30 }), 0, .07, .12, P.tete);
+      const ac = new THREE.Group(); ac.position.set(0, .2, .2); P.buste.add(ac); const rouge = mat({ color: 0xa8141c, roughness: .35, metalness: .2 }), nacre = mat({ color: 0xf2efe6, roughness: .3 }), noirA = mat({ color: 0x141414 });
+      const gD = b(.08, .32, .2, rouge, -.18, 0, 0, ac), gG = b(.08, .32, .2, rouge, .18, 0, 0, ac); for (let t = 0; t < 7; t++) b(.012, .3, .02, nacre, -.21, -.12 + t * .04, .1, ac);
+      const souf = []; for (let i = 0; i < 6; i++) souf.push(b(.045, .3, .19, i % 2 ? noirA : mat({ color: 0xe8e2d6 }), -.12 + i * .048, 0, 0, ac));
+      box(.7, .1, .35, mat({ color: 0x3a2a1e }), ax + .9, TROT + .05, az + .5); for (let i = 0; i < 5; i++) cyl(.02, .02, .005, mat({ color: 0xd8b860, metalness: .8, roughness: .3 }), ax + .7 + i * .1, TROT + .11, az + .45 + (i % 2) * .05, 8);
+      OBS.push([ax - .4, ax + .4, az - .4, az + .4], [ax + .5, ax + 1.3, az + .3, az + .7]);
+      AMB.push((tm) => { m.userData.poser("debout", tm); const o = Math.sin(tm / 330); for (let i = 0; i < 6; i++) souf[i].position.x = (-.12 + i * .048) * (1 + o * .3); gD.position.x = -.18 - o * .05; gG.position.x = .18 + o * .05; P.bras[0].e.rotation.set(-1.1, 0, -.5 - o * .12); P.bras[1].e.rotation.set(-1.1, 0, .5 + o * .12); P.tete.rotation.y = Math.sin(tm / 1500) * .3; P.bassin.rotation.y = Math.sin(tm / 700) * .08; }); }
+    // le peintre, face à la Seine et à Notre-Dame
+    { const px = 30, pz = 27.6, m = gens(77); m.position.set(px, TROT, pz); m.rotation.y = Math.PI + .5; m.userData.poser("debout", 0); m.userData.anime = true; scene.add(m); const P = m.userData.parts; P.bras[1].e.rotation.x = -1.2;
+      const bo = mat({ color: 0x8a6a42 }); for (const [lx, lz, r] of [[-.3, -.7, .15], [.3, -.7, .15], [0, -.35, -.3]]) { const l = new THREE.Mesh(new THREE.BoxGeometry(.04, 1.6, .04), bo); l.position.set(px - .5 + lx, TROT + .78, pz + lz); l.rotation.x = r; scene.add(l); }
+      const tl = tT(96, 72, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#f2b890"); g.addColorStop(.6, "#e8c8a8"); g.addColorStop(1, "#5a7a6a"); c.fillStyle = g; c.fillRect(0, 0, w, h); c.fillStyle = "#c8b8a0"; c.fillRect(38, 14, 8, 34); c.fillRect(52, 14, 8, 34); c.fillRect(36, 30, 26, 18); c.fillStyle = "#3a4a5a"; c.fillRect(0, 50, w, 4); });
+      const cv = new THREE.Mesh(new THREE.BoxGeometry(.7, .55, .03), mat({ map: tl, roughness: .8 })); cv.position.set(px - .5, TROT + 1.35, pz - .78); cv.rotation.y = Math.PI; cv.rotation.x = .12; scene.add(cv); OBS.push([px - 1, px + .3, pz - 1.1, pz + .4]);
+      AMB.push((tm) => { P.bras[1].c.rotation.x = -1.0 + Math.sin(tm / 400) * .25; P.tete.rotation.y = Math.sin(tm / 2600) * .4; }); }
+    // les pigeons
+    { const gris = mat({ color: 0x8a8e96, roughness: .8 }), PIG = []; for (const [cx, cz] of [[-60, 35], [-5, -45], [20, 38], [-30, -60], [45, -40]]) for (let k = 0; k < 7; k++) { const g = new THREE.Group(); g.position.set(cx + (al() - .5) * 4, .02, cz + (al() - .5) * 4); g.rotation.y = al() * 6.3; scene.add(g);
+        const c = new THREE.Mesh(new THREE.SphereGeometry(.11, 8, 6), gris); c.scale.set(.8, .75, 1.3); c.position.y = .13; g.add(c); const t = new THREE.Mesh(new THREE.SphereGeometry(.06, 8, 6), gris); t.position.set(0, .22, .12); g.add(t); PIG.push([g, t, al() * 10]); }
+      AMB.push((tm) => { for (const [g, t, o] of PIG) { const p = Math.max(0, Math.sin(tm / 260 + o * 3)); t.position.y = .22 - p * .1; t.position.z = .12 + p * .05; if (Math.sin(tm / 3000 + o) > .97) g.rotation.y += .02; } }); } }
   /* ---------- là où l'on marche, la hauteur du sol ---------- */
   const enRampe = (x, z) => x > RAMPE_C[0] && x < RAMPE_C[1] && z < -22.5 && z > -25.1;
   const enEsc = (x, z) => x > ESC[0] && x < ESC[1] && z > 22.4 && z < 25.25;
@@ -543,12 +609,21 @@ function construireNotreDame(A, L, scene) {
   const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const t = tm / 1000;
     eauT.offset.x = (t * .012) % 1; EAU.u.t.value = t % 10000;
-    if (n !== EAU.nuit) { EAU.nuit = n; EAU.u.ciel.value.setHex(n ? 0x16203a : 0xa8c0c0); EAU.u.clair.value.setHex(n ? 0x1a2a30 : 0x587a62); EAU.u.profond.value.setHex(n ? 0x0c1618 : 0x24403a); EAU.u.soleil.value.set(n ? .3 : -.45, n ? .55 : .75, n ? -.6 : .35).normalize(); EAU.u.eclat.value = n ? .08 : 1; }
+    if (n !== EAU.nuit) { EAU.nuit = n; EAU.u.ciel.value.setHex(n ? 0x16203a : 0xe8b8a4); EAU.u.clair.value.setHex(n ? 0x1a2a30 : 0x6a7468); EAU.u.profond.value.setHex(n ? 0x0c1618 : 0x24403a); EAU.u.soleil.value.set(n ? .3 : -.8, n ? .55 : .3, n ? -.6 : .4).normalize(); EAU.u.eclat.value = n ? .08 : 1; }
     for (const B of BAT) { const Lg = XS * 2 + 80, d = ((B.x0 + t * Math.abs(B.v)) % Lg), x = B.v > 0 ? -XS - 40 + d : XS + 40 - d; B.g.position.set(x, B.y + Math.sin(t * 1.3 + B.x0) * .05, B.z); B.g.rotation.y = B.v > 0 ? 0 : Math.PI; B.g.rotation.x = Math.sin(t * .9 + B.x0) * .01; }
-    for (const V of VOIT) { V.s = (V.s + V.v * dt) % V.lg; const [l0, d, a, b] = V.seg.find(([l0, d]) => V.s < l0 + d) || V.seg[V.seg.length - 1], u = Math.min(1, (V.s - l0) / d); V.g.position.set(a[0] + (b[0] - a[0]) * u, .03, a[1] + (b[1] - a[1]) * u); V.g.rotation.y = Math.atan2(b[0] - a[0], b[1] - a[1]); }
+    // les feux : 0-14 s vert pour les voitures, 14-17 orange, 17-30 rouge (les piétons traversent de 18 à 28)
+    { const cy = t % 30, ph = cy < 14 ? "vert" : cy < 17 ? "orange" : "rouge", pv = cy > 18 && cy < 28 ? "vert" : "rouge"; FEUX.phase = ph; FEUX.pv = pv; const F = L.feuxM;
+      if (F && (ph !== FEUX.ph0 || pv !== FEUX.pv0)) { FEUX.ph0 = ph; FEUX.pv0 = pv; F.R.emissiveIntensity = ph === "rouge" ? 2.2 : 0; F.O.emissiveIntensity = ph === "orange" ? 2.2 : 0; F.V.emissiveIntensity = ph === "vert" ? 2.2 : 0; F.PR.emissiveIntensity = pv === "rouge" ? 1.8 : 0; F.PV.emissiveIntensity = pv === "vert" ? 1.8 : 0; } }
+    for (const V of VOIT) { let cible = V.vmax;
+      for (const W of VOIT) if (W !== V && W.ch === V.ch) { const gap = (W.s - V.s + V.lg) % V.lg; if (gap > 0 && gap < 14) cible = Math.min(cible, Math.max(0, (gap - 6.5) * 1.4)); }   // (on garde ses distances)
+      if (FEUX.phase !== "vert") for (const st of V.stops) { const d = st - V.s; if (d > -.2 && d < 26 && !(FEUX.phase === "orange" && d < 4)) cible = Math.min(cible, Math.max(0, (d - .6) * 1.1)); }   // (au feu rouge, on s'arrête à la ligne)
+      V.v += (cible - V.v) * Math.min(1, dt * (cible < V.v ? 3 : 1.2)); V.s = (V.s + V.v * dt) % V.lg; const [l0, d, a, b] = V.seg.find(([l0, d]) => V.s < l0 + d) || V.seg[V.seg.length - 1], u = Math.min(1, (V.s - l0) / d); V.g.position.set(a[0] + (b[0] - a[0]) * u, .03, a[1] + (b[1] - a[1]) * u); V.g.rotation.y = Math.atan2(b[0] - a[0], b[1] - a[1]); }
     const c = M && M.camera && M.camera.position, R2 = ((MOBILE || GPU_MODESTE) ? 40 : 70) ** 2;
+    for (const f of AMB) try { f(tm); } catch (e) {}
     for (const W of MARCH) try { const m = W.m, [tx, tz] = W.R[W.i], dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
-      if (d < .3) { W.i = (W.i + 1) % W.R.length; continue; } const v = Math.min(d, W.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur(m.position.x, m.position.z, { g: m }); m.rotation.y = Math.atan2(dx, dz);
+      if (d < .3) { W.i = (W.i + 1) % W.R.length; continue; } const v = Math.min(d, W.v * dt);
+      { const nx = m.position.x + dx / d * Math.max(v, .6), nz = m.position.z + dz / d * Math.max(v, .6), dans = (x, z) => (x > PP[0] + 2.4 && x < PP[1] - 2.4 && z > 28.4 && z < 41.4) || (x > -13 && x < 10 && z > -30.5 && z < -26);
+        if (FEUX.pv !== "vert" && dans(nx, nz) && !dans(m.position.x, m.position.z)) { if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("debout", tm); continue; } }   // (le petit bonhomme est rouge : on attend) m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur(m.position.x, m.position.z, { g: m }); m.rotation.y = Math.atan2(dx, dz);
       if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * W.v / 1.2); } catch (e) {} };
   // le soir : la cathédrale illuminée par des projecteurs, les quais à la lueur des réverbères
   { const proj = new THREE.SpotLight(0xffe2b0, 0, 140, .5, .6, 1); proj.position.set(FAC.x, 4, -33); proj.target.position.set(FAC.x, 30, FAC.z); scene.add(proj); scene.add(proj.target); NUIT.push([{ set emissiveIntensity(v) { proj.intensity = v * 1800; } }, 0, 1]); }
@@ -601,6 +676,17 @@ function construireNotreDame(A, L, scene) {
       box(11, 1.2, 11, ts, X, 52.6, Z); }
     // (on voit plus loin : la brume s'écarte, sur cette carte)
     const a12 = L.anim; L.anim = (tm) => { try { a12 && a12(tm); } catch (e) {} if (M && M.L === L && scene.fog && scene.fog.far < 290) { scene.fog.near = 120; scene.fog.far = 295; } }; }
+  /* (10.147) le jour, ici, c'est la fin d'après-midi (d'après la photo) : le ciel bleu qui passe au rose puis à l'orange vers l'horizon, les nuages roses, les traînées d'avion ;
+     le soleil bas et doré qui chauffe les façades ; la brume rosée au loin ; la Seine qui prend les reflets du couchant */
+  { const cielT = tT(512, 512, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#4f86c8"); g.addColorStop(.28, "#8aa8d8"); g.addColorStop(.5, "#d8b0c4"); g.addColorStop(.68, "#f2b090"); g.addColorStop(.84, "#f8a868"); g.addColorStop(1, "#ffd59a"); c.fillStyle = g; c.fillRect(0, 0, w, h);
+      for (let i = 0; i < 70; i++) { const x = al() * w, y = 40 + al() * h * .55, rw = 40 + al() * 140, rh = 4 + al() * 10; const gg = c.createRadialGradient(x, y, 1, x, y, rw); gg.addColorStop(0, `rgba(255,${200 + (al() * 40) | 0},${190 + (al() * 40) | 0},${.18 + al() * .22})`); gg.addColorStop(1, "rgba(255,220,210,0)"); c.fillStyle = gg; c.beginPath(); c.ellipse(x, y, rw, rh, -.15 + al() * .1, 0, 7); c.fill(); }
+      c.strokeStyle = "rgba(255,255,255,.55)"; c.lineWidth = 2; c.beginPath(); c.moveTo(w * .25, h * .05); c.lineTo(w * .62, h * .36); c.stroke(); c.lineWidth = 1.2; c.beginPath(); c.moveTo(w * .1, h * .2); c.lineTo(w * .45, h * .3); c.stroke(); });
+    const cielC = new THREE.Color(0xf0b892), lum = { s: null, h: null }; let jourV = null;
+    const a13 = L.anim; L.anim = (tm) => { try { a13 && a13(tm); } catch (e) {} if (!M || M.L !== L) return; const n = !!L.nuit;
+      if (!lum.s) for (const o of scene.children) { if (o.isDirectionalLight && !lum.s) lum.s = o; if (o.isHemisphereLight && !lum.h) lum.h = o; }
+      if (!n) { if (scene.background !== cielT) scene.background = cielT; if (scene.fog) scene.fog.color.copy(cielC);
+        if (lum.s) { lum.s.color.setHex(0xffb878); lum.s.intensity = 2.4; lum.s.position.set(-46, 20, 26); } if (lum.h) { lum.h.color.setHex(0xffd8c0); lum.h.groundColor.setHex(0x7a5a5a); lum.h.intensity = 1.05; } }
+      if (n !== jourV) { jourV = n; if (!n) { EAU.u.ciel.value.setHex(0xe8b8a4); EAU.u.soleil.value.set(-.8, .3, .4).normalize(); EAU.u.clair.value.setHex(0x6a7468); } } }; }
   /* (10.146) la musique du quartier, en continu, pas trop fort : la valse d'Amélie ; coupée quand on quitte la carte */
   { let son = null, v = 0; const a11 = L.anim; L.anim = (tm) => { try { a11 && a11(tm); } catch (e) {} const moi = M && M.L === L && !M.cine && M.moiNum && M.gens.get(M.moiNum);
       const cible = moi && !window.mxArcadeOn && !document.hidden ? .35 * (M.barVol ?? 1) : 0;
