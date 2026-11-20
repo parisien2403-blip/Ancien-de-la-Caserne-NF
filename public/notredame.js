@@ -34,7 +34,22 @@ function construireNotreDame(A, L, scene) {
 
   /* ---------- la Seine : l'eau verte et mouvante, les reflets ---------- */
   const eauT = tT(256, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#3e5a52"); g.addColorStop(1, "#2e4a46"); c.fillStyle = g; c.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { c.strokeStyle = `rgba(${al() < .5 ? "190,215,205" : "20,40,36"},${.08 + al() * .14})`; c.lineWidth = 1 + al() * 1.5; c.beginPath(); const x = al() * w, y = al() * h; c.moveTo(x, y); c.quadraticCurveTo(x + 12, y - 3, x + 26 + al() * 20, y); c.stroke(); } }, 30, 8);
-  const eau = sol(-XS, XS, -18, 18, mat({ map: eauT, roughness: .15, metalness: .3, color: 0xb8d0c8 }), YE); eau.userData.anime = true; L.sol = eau;
+  /* (10.147) l'eau de la Seine : une surface vivante — des vaguelettes croisées qui bougent, le reflet du ciel qui grandit vers l'horizon (Fresnel), la profondeur verte sous les pieds,
+     les éclats du soleil (de la lune, le soir), un clapotis d'écume le long des murs des quais */
+  const EAU = { u: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { t: { value: 0 }, profond: { value: new THREE.Color(0x24403a) }, clair: { value: new THREE.Color(0x587a62) }, ciel: { value: new THREE.Color(0xa8c0c0) }, soleil: { value: new THREE.Vector3(-.45, .75, .35).normalize() }, eclat: { value: 1 } }]) };
+  const eauM = new THREE.ShaderMaterial({ uniforms: EAU.u, fog: true,
+    vertexShader: `varying vec3 vW; #include <fog_pars_vertex>
+      void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition; #include <fog_vertex> }`.replace(/#include <(\w+)>/g, "\n#include <$1>\n"),
+    fragmentShader: `uniform float t; uniform vec3 profond, clair, ciel, soleil; uniform float eclat; varying vec3 vW; #include <fog_pars_fragment>
+      float h(vec2 p) { float s = 0.0; s += sin(dot(p, vec2(.31, .07)) * 1.0 + t * 1.3) * .5; s += sin(dot(p, vec2(-.13, .41)) * 1.3 + t * 1.7) * .35; s += sin(dot(p, vec2(.53, -.29)) * 2.1 + t * 2.3) * .2; s += sin(dot(p, vec2(.9, .6)) * 3.7 - t * 2.9) * .1; s += sin(dot(p, vec2(-1.7, 1.1)) * 5.3 + t * 3.7) * .05; return s; }
+      void main() { vec2 p = vW.xz + vec2(t * .9, 0.0); float e = .08; float dx = (h(p + vec2(e, 0.)) - h(p - vec2(e, 0.))) / (2. * e), dz = (h(p + vec2(0., e)) - h(p - vec2(0., e))) / (2. * e);
+        vec3 n = normalize(vec3(-dx * .22, 1.0, -dz * .22)); vec3 v = normalize(cameraPosition - vW); float fr = .04 + .62 * pow(1.0 - max(dot(n, v), 0.0), 4.0);
+        float pr = clamp(length(cameraPosition.xz - vW.xz) / 60.0, 0.0, 1.0); vec3 base = mix(clair, profond, pr * .7 + .3 * (.5 + .5 * h(p * .4)));
+        float bord = smoothstep(16.6, 17.95, abs(vW.z)); float ecume = bord * (.35 + .35 * sin(vW.x * 1.7 + t * 2.0) * sin(vW.x * .6 - t * 1.3));
+        vec3 r = reflect(-v, n); float sp = pow(max(dot(r, soleil), 0.0), 180.0) * 2.2 * eclat + pow(max(dot(r, soleil), 0.0), 18.0) * .12 * eclat;
+        vec3 c = mix(base, ciel * .92, fr) + vec3(1.0, .96, .86) * sp + vec3(.85, .9, .88) * ecume * .5;
+        gl_FragColor = vec4(c, 1.0); #include <fog_fragment> }`.replace(/#include <(\w+)>/g, "\n#include <$1>\n") });
+  const eau = sol(-XS, XS, -18, 18, eauM, YE); eau.userData.anime = true; L.eau = eau;
 
   /* ---------- (d'après les images : le quartier exact) rive gauche, le grand quai pavé, ses kiosques de bouquinistes, l'escalier qui descend au bas-port ;
      le pont de pierre à arches, ses demi-lunes et ses réverbères, qui mène tout droit au parvis ; la façade de Notre-Dame face au pont ---------- */
@@ -527,7 +542,8 @@ function construireNotreDame(A, L, scene) {
   let nV = null, tp = 0;
   const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const t = tm / 1000;
-    eauT.offset.x = (t * .012) % 1; eauT.offset.y = Math.sin(t * .2) * .02;
+    eauT.offset.x = (t * .012) % 1; EAU.u.t.value = t % 10000;
+    if (n !== EAU.nuit) { EAU.nuit = n; EAU.u.ciel.value.setHex(n ? 0x16203a : 0xa8c0c0); EAU.u.clair.value.setHex(n ? 0x1a2a30 : 0x587a62); EAU.u.profond.value.setHex(n ? 0x0c1618 : 0x24403a); EAU.u.soleil.value.set(n ? .3 : -.45, n ? .55 : .75, n ? -.6 : .35).normalize(); EAU.u.eclat.value = n ? .08 : 1; }
     for (const B of BAT) { const Lg = XS * 2 + 80, d = ((B.x0 + t * Math.abs(B.v)) % Lg), x = B.v > 0 ? -XS - 40 + d : XS + 40 - d; B.g.position.set(x, B.y + Math.sin(t * 1.3 + B.x0) * .05, B.z); B.g.rotation.y = B.v > 0 ? 0 : Math.PI; B.g.rotation.x = Math.sin(t * .9 + B.x0) * .01; }
     for (const V of VOIT) { V.s = (V.s + V.v * dt) % V.lg; const [l0, d, a, b] = V.seg.find(([l0, d]) => V.s < l0 + d) || V.seg[V.seg.length - 1], u = Math.min(1, (V.s - l0) / d); V.g.position.set(a[0] + (b[0] - a[0]) * u, .03, a[1] + (b[1] - a[1]) * u); V.g.rotation.y = Math.atan2(b[0] - a[0], b[1] - a[1]); }
     const c = M && M.camera && M.camera.position, R2 = ((MOBILE || GPU_MODESTE) ? 40 : 70) ** 2;
@@ -556,7 +572,7 @@ function construireNotreDame(A, L, scene) {
     const rang = (x0, x1, z, rot, H0, saut) => { let k = 0; for (let x = x0; x < x1;) { const W = 16 + ((k * 7) % 4) * 3; if (!saut || !saut(x + W / 2)) loin(x + W / 2, z, rot, W, H0 + ((k * 5) % 3) * 2.2, k); x += W; k++; } };
     // la Seine, les bas-ports, les murs et les parapets, les quais, au-delà des deux bouts
     for (const [a, b] of [[-330, -XS], [XS, 330]]) { const cx = (a + b) / 2, L2 = b - a;
-      sol(a, b, -18, 18, mat({ map: eauT, roughness: .15, metalness: .3, color: 0xb8d0c8 }), YE);
+      sol(a, b, -18, 18, eauM, YE);
       for (const s of [1, -1]) { sol(a, b, s > 0 ? 18 : -22.5, s > 0 ? 22.5 : -18, paveB, YB); box(L2, YB - YE + .2, .6, murM, cx, (YB + YE) / 2, s * 18); box(L2, -YB, 2.8, murM, cx, YB / 2, s * 23.9); box(L2, 1, .55, quaiM, cx, .5, s * 25.3); box(L2, .12, .8, quaiM, cx, 1.06, s * 25.3); }
       sol(a, b, 25.6, 46, paveM, .02); sol(a, b, -32, -25.6, trottM, .02); sol(a, b, 46, 300, paveM, .005); sol(a, b, -300, -32, paveM, .005);
       for (let x = a + 6; x < b; x += 18) platane(x, 30.2, 1); }
