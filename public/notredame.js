@@ -331,7 +331,7 @@ function construireNotreDame(A, L, scene) {
   immeuble(-1, 134, Math.PI, 30, 5, false, "long");
   // l'île : les immeubles du quai, face à la Seine ; ceux qui bordent le parvis, à droite et à gauche
   DPROF = 7.5; rangee(-37, -32, -1, 0, XS - 34, 0, ["angle", "std", "long"], false); DPROF = 12;   /* (10.153 : moins profonds, pour laisser la place aux boutiques de la petite place, derrière) */ rangee(35, -32, 1, 0, XS - 32, 0, ["angle", "long", "std"], false);
-  rangee(-36, -64.6, 0, -1, 65, Math.PI / 2, ["std", "angle", "long"]); rangee(34, -44.6, 0, -1, 85, -Math.PI / 2, ["std", "long", "angle"]);
+  rangee(-36, -67.6, 0, -1, 62, Math.PI / 2, ["std", "angle", "long"]); rangee(34, -44.6, 0, -1, 85, -Math.PI / 2, ["std", "long", "angle"]);
   /* (10.150) à côté du parvis, une petite place pavée toute parisienne : la fontaine à vasques, les lampadaires à deux lanternes, les bornes, les jardinières et deux jeunes arbres ;
      le bistrot au store rouge et sa terrasse, le restaurant bleu nuit, les enseignes en potence ; sur le toit, une grande enseigne lumineuse au néon, allumée le soir */
   NOMF = ["BISTROT CHEZ LÉON", "#7a1414", 1, 0]; immeuble(-46.5, -44.4, Math.PI, 21, 5, true, "std"); NOMF = ["SOUVENIRS DE LA CITÉ", "#1e4a3a", 0, 0]; immeuble(-67.5, -44.4, Math.PI, 21, 5, false, "angle");
