@@ -13051,7 +13051,7 @@ function animerPassants(t) {
           L.march3D.push({ m, a: [x0, z0], b: [x1, z1], sens: (k + j) % 2 ? 1 : -1, v: (P.enfant ? .9 : 1.05) + (k % 5) * .08, lat: j ? .55 : 0 }); } }); }
     const dt = Math.min(.1, (t - (L.march3DT || t)) / 1000); L.march3DT = t; const vis = !M.sansFigurants;
     for (const W of L.march3D) { const m = W.m; m.visible = vis; if (!vis) continue; const [tx, tz] = W.sens > 0 ? W.b : W.a, dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
-      if (d < .5) { W.sens = -W.sens; continue; } const v = Math.min(d, W.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur ? L.hauteur(m.position.x, m.position.z, {}) : 0; m.rotation.y = Math.atan2(dx, dz); m.userData.poser("marche", t * W.v / 1.2); }
+      if (d < .5) { W.sens = -W.sens; continue; } const v = Math.min(d, W.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; { const B = L.busL && L.busL.C; if (B && !B.poteau && Math.abs(m.position.x - B.ax) < 2.3 && m.position.z > B.az - 1.5 && m.position.z < B.az + .3) m.position.z = B.az + .3; }   /* (10.156 : on passe devant l'abribus, pas au travers) */ m.position.y = L.hauteur ? L.hauteur(m.position.x, m.position.z, {}) : 0; m.rotation.y = Math.atan2(dx, dz); m.userData.poser("marche", t * W.v / 1.2); }
     return; }
   for (const [iP, P] of PASSANTS.entries()) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && (!L.nuit || (M.hiver && !P.enfant && !P.suit && iP % 3 === 0)) && (!M.sansFigurants || (!PETIT && (P.suit ? PASSANTS.findIndex(q => q.num === P.suit) : iP) % 2 === 0)) && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);   /* (allégé sur ordinateur : un passant sur deux, plus aucun ; petit téléphone : aucun) */
     const tenueH = M.hiver && P.tenue !== "survet" ? "manteauC" : P.tenue;   // (10.06 : l'hiver, les passants en manteau et écharpe)
@@ -13122,7 +13122,7 @@ function livraisonRue(L, scene) {
    À l'arrêt, « 🚌 Prendre le bus » : le bus parisien arrive, on monte, il remonte la rue… et l'on descend à l'autre arrêt. Pour aller plus vite d'une rue à l'autre */
 function abribus(scene, x, y, z, ry, affiche) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
-  const vertF = new THREE.MeshStandardMaterial({ color: 0x1e3a2c, roughness: .5, metalness: .3 }), verre = new THREE.MeshStandardMaterial({ color: 0xcfe2ea, transparent: true, opacity: .3, roughness: .05 }), add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
+  const vertF = new THREE.MeshStandardMaterial({ color: 0x1e3a2c, roughness: .5, metalness: .3 }), verre = new THREE.MeshStandardMaterial({ color: 0xcfe2ea, transparent: true, opacity: .3, roughness: .05, depthWrite: false }), add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
   for (const sx of [-1.7, 1.7]) for (const sz of [-.55, .55]) add(new THREE.BoxGeometry(.07, 2.4, .07), vertF, sx, 1.2, sz);
   add(new THREE.BoxGeometry(3.7, .1, 1.5), vertF, 0, 2.45, 0);   // (le toit)
   // (10.145, d'après l'image des abribus des années 80) le toit ondulé translucide dans son cadre vert, le plan du quartier sous verre, l'horloge
@@ -13171,7 +13171,7 @@ function interieurBus(g) {
 function busLigne(L, scene, C) {
   const y0 = (() => { try { return L.hauteur ? L.hauteur(C.ax, C.az) : 0; } catch (e) { return 0; } })();
   if (!C.poteau) abribus(scene, C.ax, y0, C.az - .3, 0, C.affiche);   // (le dos de l'abribus vers les façades)
-  if (L.limites && !C.poteau) { const lim0 = L.limites, z0 = C.az - 1.15, z1 = C.az - .2; L.limites = (a, b) => lim0(a, b) && !(Math.abs(a - C.ax) < 1.95 && b > z0 && b < z1); }   // (l'abribus : sa vitre, son banc — on ne passe pas au travers ; on le contourne par devant, côté rue, où l'on attend le bus)
+  if (L.limites && !C.poteau) { const lim0 = L.limites, z0 = C.az - 1.25, z1 = C.az - .1; L.limites = (a, b) => lim0(a, b) && !(Math.abs(a - C.ax) < 2.05 && b > z0 && b < z1) && !(Math.abs(a - C.ax - 2.4) < .25 && Math.abs(b - C.az - .2) < .25); L.grille = L.grilleAdmin = null; }   /* (10.156 : tout l'abribus, ses vitres et son poteau, ne se traverse plus ; la vitre laisse voir les bonshommes derrière) */   // (l'abribus : sa vitre, son banc — on ne passe pas au travers ; on le contourne par devant, côté rue, où l'on attend le bus)
   const B = L.busL = { C, phase: "rien", g: null, x: C.x0, v: 0, t: 0 }, xs = C.ax - C.sens * 4.2, obst = { x: C.x0, z: C.voie, L: 11 };
   const PLACE = [.45, .05];   // (notre place : debout dans le couloir, la main sur la barre jaune)
   let avant = 0;
