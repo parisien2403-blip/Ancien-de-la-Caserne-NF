@@ -13221,8 +13221,10 @@ function busLigne(L, scene, C) {
     else if (B.phase === "descend") { if (tm - B.t > 1000 && B.cache) { B.cache = false; const p = moi(); if (p) { p.g.position.set(C.ax, y0, C.az); p.g.visible = true; envoyerWS({ t: "aller", x: C.ax, z: C.az }); } }   // (les portes s'ouvrent : on apparaît à l'arrêt)
       if (tm - B.t > 2600) { B.avecMoi = false; finCine(); placerCamera(true); B.phase = "repart"; B.t = tm; B.v = 0; } }
     else if (B.phase === "part" || B.phase === "repart") { B.v += (10 - B.v) * Math.min(1, dt * .7); freine(); B.x += C.sens * B.v * dt;
-      if (B.phase === "part" && B.avecMoi && tm - B.t > 6000) { const D = B.dest || C.dest[0]; M.busArrive = { vers: D.vers, train: !!(D.train || C.train) }; debout(false); finCine(); fin(); changerLieu(D.vers, D.arrivee, D.yawA || 0); return; }
-      if ((B.x - C.x1) * C.sens > 0) { fin(); return; } }
+      if (B.phase === "part" && B.avecMoi && tm - B.t > 6000 && B.attendMonde) { B.g.position.x = B.x; return; }   /* (10.167 : on reste dans le bus, qui roule, tant que le monde d'arrivée se charge — plus de bonhomme seul à l'arrêt pendant 3 s) */
+      if (B.phase === "part" && B.avecMoi && tm - B.t > 6000 && !B.mondePret) { const D0 = B.dest || C.dest[0]; if (mondesManquants(D0.vers).length) { B.attendMonde = true; chargerMondes(D0.vers).catch(() => {}).then(() => { B.attendMonde = false; B.mondePret = true; }); B.g.position.x = B.x; return; } }
+      if (B.phase === "part" && B.avecMoi && tm - B.t > 6000) { B.mondePret = false; const D = B.dest || C.dest[0]; M.busArrive = { vers: D.vers, train: !!(D.train || C.train) }; debout(false); finCine(); fin(); changerLieu(D.vers, D.arrivee, D.yawA || 0); return; }
+      if ((B.x - C.x1) * C.sens > 0 && !(B.phase === "part" && B.avecMoi)) { fin(); return; } }
     B.g.position.x = B.x; obst.x = B.x; if (C.suitSol && L.hauteur) { try { B.g.position.y = L.hauteur(B.x, C.voie); } catch (e) {} } for (const m of B.g.userData.pass || []) { const P = m.userData.parts; P.tete.rotation.y = Math.sin(tm / 1500 + m.id) * .3; } };
 }
 /* (10.11) le choix de la destination, à l'arrêt de bus : une petite fiche, une ligne par arrêt desservi */
