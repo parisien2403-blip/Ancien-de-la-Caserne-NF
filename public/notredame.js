@@ -68,11 +68,11 @@ function construireNotreDame(A, L, scene) {
     { let seg = [[-XS, XS]]; for (const [o0, o1] of [pa, PP]) seg = seg.flatMap(([a, b]) => o1 <= a || o0 >= b ? [[a, b]] : [[a, o0], [o1, b]].filter(([u, v]) => v - u > .1));
       for (const [a, b] of seg) { box(b - a, 1, .55, quaiM, (a + b) / 2, .5, s * 25.3); box(b - a, .12, .8, quaiM, (a + b) / 2, 1.06, s * 25.3); } }   // le parapet et sa tablette
   }
-  // la rampe de l'île (visible des deux côtés : plus de trou de ciel)
+  // (10.154) l'escalier de pierre de l'île : il descend le long du mur du quai, de l'ouverture du parapet jusqu'au bas-port ; un garde-corps de pierre côté eau
   const paveDS = paveB.clone(); paveDS.side = THREE.DoubleSide;
-  { const [r0, r1] = RAMPE_C; box(r1 - r0, -YB, .4, murM, (r0 + r1) / 2, YB / 2, -25.1);
-    const g = new THREE.PlaneGeometry(r1 - r0, 2.4); g.rotateX(-Math.PI / 2); const P = g.attributes.position; for (let i = 0; i < P.count; i++) { const x = P.getX(i) + (r0 + r1) / 2, u = (r1 - x) / (r1 - r0); P.setY(i, u < .25 ? 0 : YB * (u - .25) / .75); } g.computeVertexNormals();
-    add(g, paveDS, (r0 + r1) / 2, .01, -23.8); }
+  { const [r0, r1] = RAMPE_C, Lg = r1 - r0, N = 26, D = Lg / N; box(Lg, -YB, .4, murM, (r0 + r1) / 2, YB / 2, -25.1);
+    for (let i = 0; i < N; i++) { const top = YB * (i + 1) / N, x = r1 - (i + .5) * D; box(D + .02, top - YB + .02, 2.6, quaiM, x, (top + YB) / 2, -23.8); box(.06, .04, 2.6, lig, r1 - i * D - .03, top + .01, -23.8); }
+    { const x0 = r0, x1 = r1 - 3, cx = (x0 + x1) / 2, ang = Math.atan(-YB / Lg), lr = (x1 - x0) / Math.cos(ang), yc = YB * (r1 - cx) / Lg; const rb = box(lr, 1, .4, quaiM, cx, yc + .5, -22.7); rb.rotation.z = -ang; const r2 = box(lr, .1, .55, quaiM, cx, yc + 1.04, -22.7); r2.rotation.z = -ang; } }
   // (10.146) le grand escalier de pierre de la rive gauche : il descend le long du mur du quai, parallèle à la Seine ; on y entre depuis le trottoir, par une ouverture du parapet ; un garde-corps côté eau
   { const [e0, e1] = ESC, Lg = e1 - e0, N = 26, D = Lg / N;
     for (let i = 0; i < N; i++) { const top = YB * (i + 1) / N, x = e1 - (i + .5) * D; box(D + .02, top - YB + .02, 2.6, quaiM, x, (top + YB) / 2, 23.8); box(.06, .04, 2.6, lig, e1 - i * D - .03, top + .01, 23.8); }
@@ -422,9 +422,9 @@ function construireNotreDame(A, L, scene) {
   /* ---------- le pont de pierre : trois arches, les piles et leurs avant-becs, les demi-lunes et leurs réverbères, la balustrade, la corniche ; le bas-port passe dessous ---------- */
   { const [x0, x1] = PP, W = x1 - x0, cx = (x0 + x1) / 2;
     sol(x0 + 2.4, x1 - 2.4, -25.6, 25.6, routeM, .03); sol(x0, x0 + 2.4, -25.6, 25.6, trottM, .06); sol(x1 - 2.4, x1, -25.6, 25.6, trottM, .06); for (const sx of [x0 + 2.4, x1 - 2.4]) box(.2, .14, 51.2, quaiM, sx, .07, 0);
-    const a = new THREE.Shape(); a.moveTo(-25.6, 0); a.lineTo(25.6, 0); a.lineTo(25.6, YE - .2); a.lineTo(22.5, YE - .2); a.lineTo(22.5, -1.5); a.lineTo(18, -1.5); a.lineTo(18, YE - .2);
+    const a = new THREE.Shape(); a.moveTo(-25.6, 0); a.lineTo(25.6, 0); a.lineTo(25.6, YE - .2); a.lineTo(22.56, YE - .2); a.lineTo(22.56, -1.5); a.lineTo(18, -1.5); a.lineTo(18, YE - .2);
     for (const [c, r, s0, rv] of [[12.7, 4.3, -5.0, 3.6], [0, 7, -5.2, 4.3], [-12.7, 4.3, -5.0, 3.6]]) { a.lineTo(c + r, YE - .2); a.lineTo(c + r, s0); a.absellipse(c, s0, r, rv, 0, Math.PI, false); a.lineTo(c - r, YE - .2); }   /* (l'arche du milieu, la plus haute : les bateaux-mouches passent dessous) */
-    a.lineTo(-18, YE - .2); a.lineTo(-18, -1.5); a.lineTo(-22.5, -1.5); a.lineTo(-22.5, YE - .2); a.lineTo(-25.6, YE - .2); a.closePath();
+    a.lineTo(-18, YE - .2); a.lineTo(-18, -1.5); a.lineTo(-22.56, -1.5); a.lineTo(-22.56, YE - .2);   /* (10.154 : un poil en retrait du mur du quai — plus de mur qui tremble sous le pont) */ a.lineTo(-25.6, YE - .2); a.closePath();
     const ag = new THREE.ExtrudeGeometry(a, { depth: W, bevelEnabled: false, curveSegments: 18 }); { const uv = ag.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / TUILE, uv.getY(i) / TUILE); } ag.rotateY(Math.PI / 2); add(ag, murM, x0, 0, 0);
     // la corniche, ses consoles
     for (const [sx, d] of [[x0, -1], [x1, 1]]) { box(.5, .3, 51.4, quaiM, sx + d * .1, -.3, 0); for (let z = -24; z <= 24; z += 1.6) box(.25, .45, .3, quaiM, sx + d * .2, -.6, z);
@@ -484,7 +484,7 @@ function construireNotreDame(A, L, scene) {
     { const MF = new THREE.Matrix4().set(0, 0, -1, FX, 0, 1, 0, 0, 1, 0, 0, CZ, 0, 0, 0, 1);   // (u : le long de la façade ; v : la hauteur ; w : vers le parvis)
       const MSp = new THREE.Matrix4().set(1, 0, 0, FX + 6.6, 0, 1, 0, 0, 0, 0, 1, CZ + 19.9, 0, 0, 0, 1), MSm = new THREE.Matrix4().set(-1, 0, 0, FX + 6.6, 0, 1, 0, 0, 0, 0, -1, CZ - 19.9, 0, 0, 0, 1);   // (les faces de côté des tours)
       const NI = mkInst(), pierreF = mat({ map: pierreFinT, color: 0xe6dcc6, roughness: .85, emissive: 0xffe8c0, emissiveIntensity: 0 }), murF = mat({ map: murT, color: 0xe2d8c2, roughness: .9, emissive: 0xffe8c0, emissiveMap: murT, emissiveIntensity: 0 });
-      pierreF.emissive.setHex(0xffb860); murF.emissive.setHex(0xffb860); NUIT.push([pierreF, 0, .62], [murF, 0, .55]);   /* (10.149 : la nuit, la façade dorée, illuminée comme sur les photos) */
+      pierreF.emissive.setHex(0xff9a40); murF.emissive.setHex(0xff9a40); NUIT.push([pierreF, 0, .1], [murF, 0, .08]);   /* (10.154 : une lueur ambrée discrète ; ce sont les projecteurs qui sculptent la pierre) */   /* (10.149 : la nuit, la façade dorée, illuminée comme sur les photos) */
       const ombreF = mat({ color: 0x9a8f7a, roughness: 1 }), voussF = mat({ map: pierreFinT, color: 0xcfc3a8, roughness: .9 }), noirF = mat({ color: 0x24211c, roughness: 1 }), boisF = mat({ color: 0x5a3a22, roughness: .7 });
       const vitrT = tT(256, 256, (c, w, h) => { c.fillStyle = "#1a2450"; c.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { c.fillStyle = ["#2a3c9a", "#9a1a2a", "#d8a83a", "#1a5a8a", "#6a1a6a", "#2a6a3a"][(al() * 6) | 0]; c.fillRect(al() * w, al() * h, 6, 6); } c.strokeStyle = "rgba(10,10,20,.8)"; c.lineWidth = 1.5; for (let x = 0; x < w; x += 6) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); c.beginPath(); c.moveTo(0, x); c.lineTo(w, x); c.stroke(); } });
       const vitrM = mat({ map: vitrT, roughness: .2, metalness: .3, emissive: 0xffffff, emissiveMap: vitrT, emissiveIntensity: .04 }); NUIT.push([vitrM, .04, .7]);
@@ -601,7 +601,7 @@ function construireNotreDame(A, L, scene) {
     // le jardin au pied du chevet, sa grille
   }
   // (la cathédrale est construite en long sur x : on la tourne d'un quart de tour, la façade face au pont et à la Seine, au fond du parvis)
-  { const vus = new Set(); for (const o of scene.children.slice(i0ND)) o.traverse(q => { for (const m of [].concat(q.material || [])) { if (!m || !m.isMeshStandardMaterial || vus.has(m) || m.emissiveIntensity > 0) continue; vus.add(m); if (m.emissive && m.emissive.getHex() !== 0) continue; m.emissive = new THREE.Color(0xffb050); const toit = m.metalness > .3; NUIT.push([m, 0, toit ? .12 : .45]); } }); }   // (la nef, les arcs-boutants, le chevet : illuminés eux aussi)
+  { const vus = new Set(); for (const o of scene.children.slice(i0ND)) o.traverse(q => { for (const m of [].concat(q.material || [])) { if (!m || !m.isMeshStandardMaterial || vus.has(m) || m.emissiveIntensity > 0) continue; vus.add(m); if (m.emissive && m.emissive.getHex() !== 0) continue; m.emissive = new THREE.Color(0xffb050); const toit = m.metalness > .3; NUIT.push([m, 0, toit ? .04 : .1]); } }); }   // (la nef, les arcs-boutants, le chevet : illuminés eux aussi)
   { const T = new THREE.Matrix4().makeRotationY(Math.PI / 2).setPosition(58, 0, -96); for (const o of scene.children.slice(i0ND)) o.applyMatrix4(T); }
   const FAC = { x: -1, z: -69 };   // (le milieu de la façade, après le quart de tour)
   // le parvis : la statue de Charlemagne à cheval, le point zéro
@@ -672,14 +672,22 @@ function construireNotreDame(A, L, scene) {
     /* (10.149, d'après les photos) le restaurant-bateau à quai : la coque noire, le grand salon vitré et ses montants sombres, le toit gris arrondi, les lampadaires ronds aux deux bouts,
        les tables dressées à l'intérieur, la lumière chaude le soir ; sur le bas-port, sa terrasse : le plancher, les jardinières de buis, les parasols blancs, les tables et les chaises en rotin */
     { const X = 76, Z = 14.9, y0 = YE + .5, Lb = 32, Wb = 6.4, g = new THREE.Group(); g.position.set(X, y0, Z); scene.add(g); const b = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
-      const coqueN = mat({ color: 0x1a1c20, roughness: .5, metalness: .2 }), grisT = mat({ color: 0x8a9096, roughness: .5, metalness: .3 }), montM = mat({ color: 0x24262a, roughness: .5 }), salon = mat({ color: 0xf2d8a8, emissive: 0xffc880, emissiveIntensity: .25, roughness: .8 });
+      const vitreN = new THREE.MeshStandardMaterial({ color: 0xc8dce4, transparent: true, opacity: .18, roughness: .05, metalness: .4, depthWrite: false, side: THREE.DoubleSide }), coqueN = mat({ color: 0x1a1c20, roughness: .5, metalness: .2 }), grisT = mat({ color: 0x8a9096, roughness: .5, metalness: .3 }), montM = mat({ color: 0x24262a, roughness: .5 }), salon = mat({ color: 0xf2d8a8, emissive: 0xffc880, emissiveIntensity: .25, roughness: .8 });
       NUIT.push([salon, .25, 1.3]);
       coque(g, Lb, Wb, 1.8, coqueN, 0); b(Lb + .2, .12, Wb + .2, mat({ color: 0x5a4a3a }), 0, .95, 0);
-      b(Lb - 4, 2.3, Wb - .8, salon, 0, 2.2, 0); b(Lb - 3.9, 2.32, Wb - .7, vitreB, 0, 2.2, 0); for (let x = -(Lb - 4) / 2; x <= (Lb - 4) / 2 + .01; x += 1.4) for (const s of [-1, 1]) b(.08, 2.3, .08, montM, x, 2.2, s * (Wb - .7) / 2);
+      b(Lb - 4, .06, Wb - .8, mat({ color: 0x6a3a22, roughness: .6 }), 0, 1.06, 0); b(Lb - 4, .06, Wb - .8, salon, 0, 3.32, 0); b(.1, 2.3, Wb - .8, salon, -(Lb - 4) / 2 + .05, 2.2, 0); b(.1, 2.3, Wb - .8, salon, (Lb - 4) / 2 - .05, 2.2, 0); for (const s of [-1, 1]) b(Lb - 4, 2.3, .04, vitreN, 0, 2.2, s * (Wb - .8) / 2); b(Lb - 4, .45, .06, montM, 0, 1.25, (Wb - .8) / 2); b(Lb - 4, .45, .06, montM, 0, 1.25, -(Wb - .8) / 2);   /* (10.154 : le salon vitré, on voit les dîneurs à travers) */ for (let x = -(Lb - 4) / 2; x <= (Lb - 4) / 2 + .01; x += 1.4) for (const s of [-1, 1]) b(.08, 2.3, .08, montM, x, 2.2, s * (Wb - .7) / 2);
       { const tg = new THREE.CylinderGeometry(Wb / 2, Wb / 2, Lb - 2, 24, 1, false, -Math.PI / 2, Math.PI); tg.rotateZ(Math.PI / 2); tg.scale(1, .22, 1); const t = new THREE.Mesh(tg, grisT); t.position.set(0, 3.35, 0); g.add(t); }
       for (const s of [-1, 1]) { b(.6, 3.6, .6, coqueN, s * (Lb / 2 - .5), 2.3, 0); const gl = new THREE.Mesh(new THREE.SphereGeometry(.28, 12, 10), mat({ color: 0xfff4e0, emissive: 0xffe8c0, emissiveIntensity: .3 })); gl.position.set(s * (Lb / 2 - .5), 4.4, 0); g.add(gl); NUIT.push([gl.material, .3, 1.6]); }
       for (let x = -12; x <= 12; x += 2.4) for (const zz of [-1.6, 1.6]) { b(.8, .06, .8, mat({ color: 0xf8f6f0 }), x, 1.85, zz); b(.06, .8, .06, montM, x, 1.45, zz); }   // (les tables dressées)
+      { let kd = 0; for (let x = -12; x <= 12; x += 2.4) for (const zz of [-1.6, 1.6]) { b(.04, .14, .04, mat({ color: 0xffe8b0, emissive: 0xffd080, emissiveIntensity: .8 }), x, 1.95, zz); for (const s of [-1, 1]) { if ((kd++ * 5) % 7 > 3 || (PEU && kd % 2)) continue; const f = kd % 2 === 1, m = personne3D({ taille: f ? 1.64 : 1.76, peau: ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b"][kd % 4], ch: ["#2a1a12", "#5a3a22", "#141010", "#e2c27a"][kd % 4], haut: ["#1a1a1c", "#7a2a3a", "#f2f0ea", "#2a3a5a", "#5a2a5a"][kd % 5], bas: "#1a1a1c", chaussures: "#1a1a1a", coif: f ? "long" : "court", pantalon: !f, robe: f });
+          m.position.set(x + s * .62, 1.09 + .48 - m.userData.hipY, zz); m.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2; m.userData.poser("assis", 0); g.add(m); b(.4, .05, .4, mat({ color: 0x3a2418 }), x + s * .62, 1.55, zz); b(.05, .5, .4, mat({ color: 0x3a2418 }), x + s * .85, 1.8, zz); } } }   // (les dîneurs, à la lueur des bougies)
       box(1.4, .08, 3.6, metB, X - 6, YB + .25, 18.2); for (const s of [-1, 1]) box(.04, .9, 3.6, metB, X - 6 + s * .7, YB + .7, 18.2);   // (la passerelle)
+      // le videur, à l'entrée de la terrasse : costume noir, bras croisés ; le cordon rouge et ses poteaux dorés
+      { const vx = X - 15.2, vz = 20.4, m = personne3D({ taille: 1.9, peau: "#8d5a3b", ch: "#141010", haut: "#141414", bas: "#141414", chaussures: "#0a0a0a", coif: "chauve", pantalon: true }); m.position.set(vx, YB, vz); m.rotation.y = -Math.PI / 2; m.userData.poser("debout", 0); scene.add(m);
+        const P = m.userData.parts; P.bras[0].e.rotation.set(-1.1, 0, .9); P.bras[0].c.rotation.set(-1.4, 0, 0); P.bras[1].e.rotation.set(-1.1, 0, -.9); P.bras[1].c.rotation.set(-1.4, 0, 0);
+        const oreil = new THREE.Mesh(new THREE.SphereGeometry(.02, 6, 4), mat({ color: 0x1a1a1a })); oreil.position.set(.11, 0, 0); P.tete.add(oreil);
+        const or = mat({ color: 0xc8a040, metalness: .8, roughness: .3 }), rouge = mat({ color: 0x8a1018, roughness: .6 }); for (const z of [19.2, 21.8]) { cyl(.04, .04, .95, or, vx - .6, YB + .48, z, 8); add(new THREE.SphereGeometry(.07, 8, 6), or, vx - .6, YB + 1.0, z); cyl(.18, .2, .05, or, vx - .6, YB + .03, z, 12); }
+        const co = box(.05, .05, 2.6, rouge, vx - .6, YB + .8, 20.5); co.scale.y = 1; OBS.push([vx - .8, vx + .3, 19, 22.2]); }
       // la terrasse sur le bas-port
       sol(X - 14, X + 14, 18.3, 22.3, mat({ color: 0x8a6a48, roughness: .8 }), YB + .03);
       for (let x = X - 13.5; x <= X + 13.6; x += 1.5) { box(1.3, .5, .5, mat({ color: 0x5a3a26 }), x, YB + .25, 18.55); for (let i = 0; i < 3; i++) add(new THREE.IcosahedronGeometry(.28, 0), mat({ color: [0x3a6a2a, 0x4a7a34, 0x2e5a24][i] }), x - .35 + i * .35, YB + .72, 18.55); }
@@ -760,14 +768,14 @@ function construireNotreDame(A, L, scene) {
   { const R = [[[-140, 28.0], [140, 28.0]], [[140, 27.8], [-140, 27.8]], [[-140, 40.0], [140, 40.0]], [[140, 40.4], [-140, 40.4]], [[-140, 20.4], [58, 20.4]], [[58, 21.2], [-140, 21.2]], [[94, 20.6], [140, 20.6]],
       [[-37.3, 30], [-37.3, 23.8], [-50.5, 23.8], [-50.5, 21], [-120, 21], [-50.5, 21], [-50.5, 23.8], [-37.3, 23.8]], [[-12.4, 70], [-12.4, 28.6], [-8.8, 24], [-8.8, -33], [-30, -56], [28, -56], [6.8, -33], [6.8, 24], [10.5, 28.6], [10.5, 70]],
       [[-28, -40], [26, -40]], [[-30, -48], [-62, -48], [-72, -54], [-62, -60.5], [-45, -60.5], [-30, -55]], [[-44, -59], [-62, -60.5], [-71, -52], [-58, -47.5], [-48, -52]], [[-140, -31.3], [140, -31.3]], [[-26, -75], [-26, -190], [-23, -190], [-23, -75]], [[24, -75], [24, -190], [21.5, -190], [21.5, -75]], [[-29, -62], [27, -62]], [[-27.6, -45], [-27.6, -130], [-27.6, -45]], [[25.6, -130], [25.6, -45], [25.6, -130]], [[-20, -36], [18, -66], [-16, -64], [14, -38]], [[0, -34], [0, -66], [12, -50], [-12, -50]], [[-24, -55], [22, -45], [-6, -40], [8, -62]], [[10, -36], [-18, -48], [6, -58], [20, -66]]];
-    for (let k = 0, n = PEU ? 24 : 62; k < n; k++) { const Rr = R[k % R.length], m = gens(k), i0 = (k * 3) % Rr.length, a = Rr[i0], b = Rr[(i0 + 1) % Rr.length], u = ((k * 37) % 100) / 100; m.position.set(a[0] + (b[0] - a[0]) * u, 0, a[1] + (b[1] - a[1]) * u); m.userData.poser("marche", 0); m.userData.anime = true; scene.add(m);
+    for (let k = 0, n = PEU ? 18 : 40; k < n; k++) { const Rr = R[k % R.length], m = gens(k), i0 = (k * 3) % Rr.length, a = Rr[i0], b = Rr[(i0 + 1) % Rr.length], u = ((k * 37) % 100) / 100; m.position.set(a[0] + (b[0] - a[0]) * u, 0, a[1] + (b[1] - a[1]) * u); m.userData.poser("marche", 0); m.userData.anime = true; scene.add(m);
       MARCH.push({ m, R: Rr, i: (i0 + 1) % Rr.length, v: .9 + (k % 5) * .12 }); }
     for (let k = 0; k < (PEU ? 4 : 9); k++) { const m = gens(k + 40), x = -12 + (k % 3) * 9 + al() * 3, z = -40 - Math.floor(k / 3) * 5; m.position.set(x, 0, z); m.rotation.y = Math.PI + (al() - .5) * .6; m.userData.anime = true; scene.add(m); m.userData.poser("debout", 0);
       const P = m.userData.parts; P.bras[1].e.rotation.x = -1.6; P.bras[1].c.rotation.x = -1.1; P.bras[0].e.rotation.x = -1.4; P.bras[0].c.rotation.x = -1.2; P.tete.rotation.x = -.2;   // (ils photographient la cathédrale)
       const ap = new THREE.Mesh(new THREE.BoxGeometry(.14, .09, .05), mat({ color: 0x1a1a1a })); ap.position.y = -m.userData.hipY * .36; P.bras[1].c.add(ap); } }
 
   /* ---------- (10.147) l'ambiance, comme à Montmartre : des gens attablés aux terrasses, l'accordéoniste du quai et son étui ouvert, le peintre à son chevalet face à la Seine, les pigeons sur les pavés ---------- */
-  { for (let i = 0; i < TERR.length; i++) { if ((i * 7) % 10 > 6 || AMB.length > (PEU ? 22 : 90)) continue; const [x, z, cap] = TERR[i], m = gens(i + 60); m.position.set(x, TROT + .48 - m.userData.hipY, z); m.rotation.y = cap; m.userData.poser("assis", 0); m.userData.anime = true; scene.add(m); AMB.push((tm) => { const P = m.userData.parts; P.tete.rotation.y = Math.sin(tm / 1700 + i) * .35; P.bras[(i % 2)].e.rotation.x = -.6 - Math.max(0, Math.sin(tm / 2300 + i * 2)) * .7; }); }
+  { for (let i = 0; i < TERR.length; i++) { if ((i * 7) % 10 > 6 || AMB.length > (PEU ? 12 : 36)) continue; const [x, z, cap] = TERR[i], m = gens(i + 60); m.position.set(x, TROT + .48 - m.userData.hipY, z); m.rotation.y = cap; m.userData.poser("assis", 0); m.userData.anime = true; scene.add(m); AMB.push((tm) => { const P = m.userData.parts; P.tete.rotation.y = Math.sin(tm / 1700 + i) * .35; P.bras[(i % 2)].e.rotation.x = -.6 - Math.max(0, Math.sin(tm / 2300 + i * 2)) * .7; }); }
     // (10.149) les serveurs : chemise blanche, gilet et tablier noirs, le plateau à la main ; ils vont et viennent entre les guéridons
     for (const S of SERV) { if (PEU && S.k % 2) continue; const m = personne3D({ taille: 1.76, peau: PE[S.k % 6], ch: ["#2a1a12", "#141010", "#5a3a22"][S.k % 3], haut: "#f4f2ec", bas: "#141414", chaussures: "#141414", coif: "court", pantalon: true }); m.userData.anime = true; scene.add(m);
       const P = m.userData.parts, tab = new THREE.Mesh(new THREE.BoxGeometry(.5, .5, .5), mat({ color: 0x141414 })); tab.scale.set(.9, .9, .02); void tab;
@@ -795,7 +803,7 @@ function construireNotreDame(A, L, scene) {
     { const SG = TERR.map((t, i) => [t[0], t[1], t[2], i]).filter(([x, z, c, i]) => (i * 7) % 10 > 6 && x < -35 && x > -80 && z < -43 && z > -65).map(s => ({ s, pris: false })), CPX = -57, CPZ = -54;
       const auHasard = () => { for (let t = 0; t < 20; t++) { const x = CPX - 13 + al() * 26, z = CPZ - 6.5 + al() * 13; if (Math.hypot(x - CPX, z - CPZ) > 5.2) return [x, z]; } return [CPX - 10, CPZ]; };
       const abord = ([x, z]) => { const dx = CPX - x, dz = CPZ - z, l = Math.hypot(dx, dz) || 1; return [x + dx / l * 3.6, z + dz / l * 3.6]; };
-      for (let k = 0; k < Math.min(PEU ? 3 : 7, SG.length); k++) { const m = gens(k + 140), [x0, z0] = auHasard(); m.position.set(x0, 0, z0); m.userData.anime = true; scene.add(m);
+      for (let k = 0; k < Math.min(PEU ? 2 : 5, SG.length); k++) { const m = gens(k + 140), [x0, z0] = auHasard(); m.position.set(x0, 0, z0); m.userData.anime = true; scene.add(m);
         const C = { m, etat: "flane", pts: [auHasard()], siege: null, fin: 0, v: .9 + (k % 3) * .15 };
         AMB.push((tm, dt) => { dt = dt || .016; const g = C.m;
           if (C.etat === "assis") { const P = g.userData.parts; P.tete.rotation.y = Math.sin(tm / 1800 + k) * .35; if (tm > C.fin) { C.etat = "part"; const s = C.siege; s.pris = false; C.siege = null; C.pts = [abord(s.s), auHasard(), auHasard()]; g.position.y = 0; } return; }
@@ -803,6 +811,15 @@ function construireNotreDame(A, L, scene) {
             const libres = SG.filter(q => !q.pris); if (libres.length && al() < .7) { const q = libres[(al() * libres.length) | 0]; q.pris = true; C.siege = q; C.etat = "va"; C.pts = [abord(q.s), [q.s[0], q.s[1]]]; } else C.pts = [auHasard()]; return; }
           const dx = p0[0] - g.position.x, dz = p0[1] - g.position.z, d = Math.hypot(dx, dz); if (d < .25) { C.pts.shift(); return; }
           const v = Math.min(d, C.v * dt); g.position.x += dx / d * v; g.position.z += dz / d * v; contourne(g.position); g.position.y = L.hauteur(g.position.x, g.position.z); g.rotation.y = Math.atan2(dx, dz); g.userData.poser("marche", tm * C.v / 1.2); }); } }
+    // (10.154) le jongleur du parvis : la marinière, le chapeau melon posé par terre avec quelques pièces ; trois balles, rouge, bleue et jaune, en cascade
+    { const jx = 8, jz = -45, m = personne3D({ taille: 1.74, peau: "#e8c4a0", ch: "#3a2a1a", haut: "#f2f2f0", bas: "#1a1a2a", chaussures: "#1a1a1a", coif: "court", pantalon: true }); m.position.set(jx, 0, jz); m.rotation.y = 0; m.userData.poser("debout", 0); m.userData.anime = true; scene.add(m);
+      const P = m.userData.parts; for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.155, .155, .035, 12), mat({ color: 0x1a2a6a })); r.position.y = -.05 - i * .09; P.buste.add(r); }   // (les rayures de la marinière)
+      const ch = new THREE.Group(); ch.position.set(jx + .2, .02, jz + 1.1); scene.add(ch); { const n = mat({ color: 0x1a1a1a, roughness: .6 }); const b = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .02, 16), n); ch.add(b); const c2 = new THREE.Mesh(new THREE.SphereGeometry(.15, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), n); c2.rotation.x = Math.PI; c2.position.y = .1; ch.add(c2); for (let i = 0; i < 4; i++) { const p2 = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .005, 8), mat({ color: 0xd8b860, metalness: .8, roughness: .3 })); p2.position.set((i - 1.5) * .04, .03, (i % 2) * .03); ch.add(p2); } }
+      OBS.push([jx - .45, jx + .45, jz - .45, jz + .45], [jx - .1, jx + .5, jz + .8, jz + 1.4]);
+      const B3 = [0xd8202a, 0x2a5ad8, 0xf2c820].map(c => { const s = new THREE.Mesh(new THREE.SphereGeometry(.06, 12, 10), mat({ color: c, roughness: .4 })); scene.add(s); return s; });
+      AMB.push((tm) => { const t = tm / 1000 * 1.15; for (let i = 0; i < 3; i++) { const u = (t + i / 3) % 1, aller = u < .5, v = aller ? u / .5 : (u - .5) / .5, xa = aller ? -.22 : .22, xb = aller ? .22 : -.22, h = aller ? .85 : .7;
+          B3[i].position.set(jx + xa + (xb - xa) * v, 1.12 + 4 * h * v * (1 - v), jz + .36); }
+        const k = Math.sin(t * Math.PI * 4); P.bras[0].e.rotation.set(-.6 + k * .12, 0, .15); P.bras[0].c.rotation.set(-1.0, 0, 0); P.bras[1].e.rotation.set(-.6 - k * .12, 0, -.15); P.bras[1].c.rotation.set(-1.0, 0, 0); P.tete.rotation.x = -.35; }); }
     // l'accordéoniste
     { const ax = -31, az = 28.9, m = personne3D({ taille: 1.74, peau: "#d8a888", ch: "#8a8a8a", haut: "#3a3028", bas: "#2a2a30", chaussures: "#2a1a14", coif: "court", pantalon: true }); m.position.set(ax, TROT, az); m.rotation.y = Math.PI * .1; m.userData.poser("debout", 0); m.userData.anime = true; scene.add(m);
       const P = m.userData.parts, b = (w, h, d, mm, x, y, z, par) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mm); o.position.set(x, y, z); par.add(o); return o; };
@@ -834,12 +851,12 @@ function construireNotreDame(A, L, scene) {
             const b = Math.sin(tm / 45) * .9; P.aG.rotation.z = b; P.aD.rotation.z = -b; if (u >= 1) { P.etat = P.etat === "vol" ? "toit" : "sol"; P.aG.rotation.z = P.aD.rotation.z = 0; } }
           else if (P.etat === "toit" && tm > P.fin && (!q || Math.hypot(q.x - P.hx, q.z - P.hz) > 6)) { P.etat = "retour"; P.u = 0; P.P0 = g.position.clone(); const x = P.hx + (al() - .5) * 2, z = P.hz + (al() - .5) * 2; P.P1 = new THREE.Vector3(x, L.hauteur(x, z) + .02, z); } } }); } }
   /* ---------- là où l'on marche, la hauteur du sol ---------- */
-  const enRampe = (x, z) => x > RAMPE_C[0] && x < RAMPE_C[1] && z < -22.5 && z > -25.1;
+  const enRampe = (x, z) => x > RAMPE_C[0] && x < RAMPE_C[1] && z < -22.4 && z > -25.8 && !(z > -23.05 && x > RAMPE_C[0] + 1 && x < RAMPE_C[1] - 3.2) && (z > -25.15 || x > RAMPE_C[1] - 4);
   const enEsc = (x, z) => x > ESC[0] && x < ESC[1] && z > 22.4 && z < 25.25;
   const libreObs = (x, z) => !(x > -21 && x < 19 && z < -68.4 && z > -208);
   L.hauteur = (x, z, p) => { if (enEsc(x, z)) return YB * Math.max(0, Math.min(1, (ESC[1] - x) / (ESC[1] - ESC[0])));
     for (const [a, b, c, d] of TR) if (x >= a && x <= b && z >= c && z <= d) return TROT;   // (sur le trottoir)
-    if (enRampe(x, z)) { const u = (RAMPE_C[1] - x) / (RAMPE_C[1] - RAMPE_C[0]); return u < .25 ? 0 : YB * (u - .25) / .75; }
+    if (enRampe(x, z)) return z < -25.15 ? 0 : YB * Math.max(0, Math.min(1, (RAMPE_C[1] - x) / (RAMPE_C[1] - RAMPE_C[0])));
     const pont = x > PP[0] && x < PP[1]; if (Math.abs(z) < 22.5 && Math.abs(z) > 18) return pont && !(p && p.g && p.g.position.y < -2) ? 0 : YB; return 0; };   /* (sous le pont, au bord de l'eau, on reste en bas) */
   // (10.147) les obstacles, rangés par cases de 4 m : la carte des passages se calcule d'un coup, sans figer le jeu
   let OBSH = null; const obsCase = (x, z) => ((Math.floor(x / 4) + 200) << 10) | (Math.floor(z / 4) + 200);
@@ -891,7 +908,13 @@ function construireNotreDame(A, L, scene) {
       m.position.x += dx / d * v; m.position.z += dz / d * v; contourne(m.position); m.position.y = L.hauteur(m.position.x, m.position.z, { g: m }); m.rotation.y = Math.atan2(dx, dz);
       if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * W.v / 1.2); } catch (e) {} };
   // le soir : la cathédrale illuminée par des projecteurs, les quais à la lueur des réverbères
-  { const proj = new THREE.SpotLight(0xffe2b0, 0, 140, .5, .6, 1); proj.position.set(FAC.x, 4, -33); proj.target.position.set(FAC.x, 30, FAC.z); scene.add(proj); scene.add(proj.target); NUIT.push([{ set emissiveIntensity(v) { proj.intensity = v * 1800; } }, 0, 1]); }
+  { /* (10.154) la mise en lumière, comme sur les photos de nuit : des projecteurs au pied de la façade, dorés, qui l'éclairent en rasant de bas en haut (les reliefs, les ombres des portails,
+       plus forts en bas, qui s'estompent vers le haut des tours) ; un projecteur plus doux depuis le pont ; une lueur chaude dans les baies des tours */
+    const SP = [], spot = (x, y, z, tx, ty, tz, c, i, an, d) => { const s = new THREE.SpotLight(c, 0, d, an, .55, 1.4); s.position.set(x, y, z); s.target.position.set(tx, ty, tz); scene.add(s); scene.add(s.target); SP.push([s, i]); };
+    for (const dx of [-17, -6, 6, 17]) spot(FAC.x + dx, .4, FAC.z + 3.2, FAC.x + dx * .9, 40, FAC.z + .5, 0xffb060, 900, .38, 70);
+    spot(FAC.x, 3, -30, FAC.x, 32, FAC.z, 0xffd8a0, 380, .42, 120);
+    for (const sx of [-1, 1]) spot(FAC.x + sx * 30, 1, FAC.z + 10, FAC.x + sx * 8, 25, FAC.z, 0xffa850, 300, .45, 60);
+    NUIT.push([{ set emissiveIntensity(v) { for (const [s, i] of SP) s.intensity = v * i; } }, 0, 1]); }
 
   /* ---------- (10.146) au loin, pour fermer la vue : la Seine qui continue et ses quais, un pont de pierre à chaque bout, les immeubles parisiens qui se prolongent ;
      derrière, les toits de Paris en plusieurs plans ; au sud, le dôme du Panthéon ; au nord, la tour Saint-Jacques ---------- */
@@ -953,7 +976,7 @@ function construireNotreDame(A, L, scene) {
         if (lum.s) { lum.s.color.setHex(0xffb878); lum.s.intensity = 2.4; lum.s.position.set(-46, 20, 26); } if (lum.h) { lum.h.color.setHex(0xffd8c0); lum.h.groundColor.setHex(0x7a5a5a); lum.h.intensity = 1.05; } }
       if (n !== jourV) { jourV = n; if (!n) { EAU.u.ciel.value.setHex(0xe8b8a4); EAU.u.soleil.value.set(-.8, .3, .4).normalize(); EAU.u.clair.value.setHex(0x6a7468); } } }; }
   /* (10.146) la musique du quartier, en continu, pas trop fort : la valse d'Amélie ; coupée quand on quitte la carte */
-  { const a11 = L.anim; L.anim = (tm) => { try { a11 && a11(tm); } catch (e) {} if (!M || M.L !== L) return; const A2 = (window.__valseND = window.__valseND || Object.assign(new Audio("sons/notredame-valse.mp3?v=2"), { loop: true, preload: "auto" }));   /* (10.151 : comme l'accordéon de Montmartre — si le navigateur bloque le son, il part au premier toucher) */
+  { const a11 = L.anim; L.anim = (tm) => { try { a11 && a11(tm); } catch (e) {} if (!M || M.L !== L) return; const A2 = (window.__valseND = window.__valseND || Object.assign(new Audio("sons/notredame-valse.mp3?v=3"), { loop: true, preload: "auto" }));   /* (10.151 : comme l'accordéon de Montmartre — si le navigateur bloque le son, il part au premier toucher) */
       if (window.mxArcadeOn) { if (!A2.paused) A2.pause(); return; }
       if (A2.paused && !A2._essai && !A2._attente) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
       if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
@@ -962,6 +985,11 @@ function construireNotreDame(A, L, scene) {
   // (10.146) ce que le doigt touche pour aller quelque part : le quai, l'île et le parvis, le pont, les deux bas-ports (des sols invisibles, à chaque niveau)
   { const inv = new THREE.MeshBasicMaterial({ visible: false }), pl = (x0, x1, z0, z1, y) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), inv); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); scene.add(m); m.updateMatrixWorld(true); return m; };
     L.sol = pl(-XS, XS, 22.5, 140, .02); L.solsPlus = [pl(-XS, XS, -232, -22.5, .02), pl(PP[0], PP[1], -22.5, 22.5, .03), pl(-XS, XS, 18, 22.5, YB + .02), pl(-XS, XS, -22.5, -18, YB + .02)]; }
+  /* (10.154, fluidité) les gens loin de la caméra ne sont plus dessinés ; les ombres portées, coupées (beaucoup trop de décor à ombrer) */
+  { const PERS = []; scene.traverse(o => { if (o.userData && o.userData.parts) PERS.push(o); }); let f = 0, ombres = null; const R2 = (MOBILE || GPU_MODESTE ? 45 : 70) ** 2, v = new THREE.Vector3();
+    const a14 = L.anim; L.anim = (tm) => { try { a14 && a14(tm); } catch (e) {} if (!M || M.L !== L || !M.camera) return; if (!ombres) { ombres = []; scene.traverse(o => { if (o.isLight && o.castShadow) { o.castShadow = false; ombres.push(o); } }); }
+      if (f++ % 8) return; const c = M.camera.position; for (const o of PERS) { o.getWorldPosition(v); o.visible = (v.x - c.x) ** 2 + (v.z - c.z) ** 2 < R2; } };
+    quitterLieu.add(() => { if (ombres) for (const o of ombres) o.castShadow = true; ombres = null; }); }
   fusionStatique(scene, L, 0);
   /* (10.148, comme à Montmartre) plus d'à-coups quand une façade ou un décor entre pour la première fois dans le champ : textures et matières préparées dès l'arrivée */
   { let fait = false; const a0p = L.anim; L.anim = (tm) => { try { a0p && a0p(tm); } catch (e) {} if (fait || !M || M.L !== L || !M.rendu || !M.camera) return; fait = true;
