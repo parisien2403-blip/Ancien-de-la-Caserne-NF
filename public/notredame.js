@@ -114,39 +114,92 @@ function construireNotreDame(A, L, scene) {
     { const herbe = mat({ color: 0x5a7a3a, roughness: 1 }); sol(-36, 36, -215, -205, herbe, .03); for (const x of [-30, -15, 0, 15, 30]) platane(x, -211, 1.1); } }
 
   /* ---------- les immeubles anciens : la façade de pierre, les balcons filants, les toits d'ardoise ; au rez-de-chaussée les cafés à stores rouges, les librairies à stores verts ---------- */
-  const teintes = ["#e8dcc4", "#e2d6bc", "#ece2cc", "#ddd0b4", "#e6d8be"];
+  const teintes = ["#dccaa6", "#d6c39e", "#e2d2b2", "#d2bf98", "#dac8a8"];   /* (la pierre de taille chaude des images) */
   const ENS = [["CAFÉ LE PETIT PONT", "#8a1a1a", 1], ["SHAKESPEARE AND COMPANY", "#1e4a2a", 0], ["BRASSERIE NOTRE-DAME", "#8a1a1a", 1], ["LIBRAIRIE ANCIENNE", "#1e4a3a", 0], ["CAFÉ DE LA SEINE", "#7a1a1a", 1], ["GALERIE D'ESTAMPES", "#2e4a3a", 0], ["LE BISTROT DU PARVIS", "#8a2a1a", 1], ["SOUVENIRS DE PARIS", "#1a4a3a", 0], ["AUX TOURS DE NOTRE-DAME", "#8a1a1a", 1], ["PAPETERIE", "#2a4a3a", 0]];
   const storeR = mat({ color: 0xa82424, roughness: .8 }), storeV = mat({ color: 0x2a4a3a, roughness: .8 }), tableM = mat({ color: 0x2a2a2a, metalness: .4, roughness: .5 }), chaiseM = mat({ color: 0xb8925a, roughness: .7 });
   let kI = 0;
-  /* (d'après les images) les façades photographiées : le long immeuble à porte cochère, l'immeuble d'angle — et leur reflet en miroir, pour varier */
-  const TL = new THREE.TextureLoader(), photo = (n, miroir) => { const t = TL.load(`images/notredame/${n}.webp?v=2`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; if (miroir) { t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; t.offset.x = 1; } return t; };
-  const phM = (n, m) => { const t = photo(n, m), o = mat({ map: t, roughness: .9, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .32 }); NUIT.push([o, .32, .1]); return o; };   // (la façade garde sa lumière, même à l'ombre)
-  const PH = { long: [0, 1].map(m => phM("immeuble-long", m)), angle: [0, 1].map(m => phM("immeuble-angle", m)) }, LARG = { long: 34, angle: 16.4 };
-  const immeuble = (x, z, rot, larg = 16.4, et, terrasse = true, ph = null) => { const k = kI++, [nom, coul, cafe] = ENS[k % ENS.length];
-    const rdc = (c, w, yr, h) => { c.fillStyle = "#3a2a20"; c.fillRect(0, yr, w, h); c.fillStyle = coul; c.fillRect(10, yr + 6, w - 20, 34); c.fillStyle = "#f2e6c8"; c.font = "bold 22px Georgia, serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(nom, w / 2, yr + 24);
-      for (let i = 0; i < 4; i++) { const X = 20 + i * (w - 40) / 4; const g = c.createLinearGradient(0, yr + 48, 0, yr + h); g.addColorStop(0, "#f2d8a6"); g.addColorStop(1, "#8a6440"); c.fillStyle = g; c.fillRect(X + 4, yr + 50, (w - 40) / 4 - 8, h - 54); c.fillStyle = "rgba(255,255,255,.14)"; c.fillRect(X + 4, yr + 50, 10, h - 54); } };
-    const o = A.haussmann({ x, z, largeur: larg, etages: et || 5 + (k % 2), rot, teinte: teintes[k % 5], graine: 200 + k, rdc });
-    if (ph) { const corps = o.children.find(c => Array.isArray(c.material)); if (corps) { const ms = corps.material.slice(); ms[4] = PH[ph][k % 2]; corps.material = ms; } for (const n of o.userData.nuit) o.remove(n); }   // (la façade photographiée ; ses fenêtres sont déjà dessinées)
-    else { L.nuitObjets.push(...o.userData.nuit); L.silhouettes.push(...o.userData.silhouettes); }
-    const sm = cafe ? storeR : storeV; if (!ph) for (let i = 0; i < 3; i++) { const lw = (larg - 3) / 3, lx = -larg / 2 + 1.5 + (i + .5) * lw; const st = new THREE.Mesh(new THREE.BoxGeometry(lw - .4, .06, 1.9), sm); st.position.set(lx, 3.3, .9); st.rotation.x = .32; o.add(st); const la = new THREE.Mesh(new THREE.BoxGeometry(lw - .4, .32, .03), sm); la.position.set(lx, 2.84, 1.8); o.add(la); }
-    if (cafe && terrasse) { o.updateMatrixWorld(true); const T = o.matrixWorld;
-      for (const lx of [-5.2, -1.7, 1.8, 5.3]) { const p = new THREE.Vector3(lx, 0, 2.6).applyMatrix4(T); cyl(.38, .38, .04, tableM, p.x, .74, p.z, 14); cyl(.03, .03, .72, tableM, p.x, .37, p.z, 6); OBS.push([p.x - .4, p.x + .4, p.z - .4, p.z + .4]);
+  /* ---------- (d'après les images, construits en relief) les immeubles de pierre de taille : les bossages du rez-de-chaussée, les boutiques et leurs stores,
+     la porte cochère ; les fenêtres et leurs encadrements, les frontons, les corniches, les balcons filants de fer forgé, les balconnets ; la corniche à denticules ;
+     le toit de zinc à la Mansart, ses lucarnes, les souches de cheminée en brique et leurs pots ; le dôme d'angle ---------- */
+  const uvBox = (g, w, h, d, tu) => { const uv = g.attributes.uv, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]]; for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) { const i = f * 4 + v; uv.setXY(i, uv.getX(i) * dims[f][0] / tu, uv.getY(i) * dims[f][1] / tu); } uv.needsUpdate = true; return g; };
+  const mkInst = () => { const R = {}; return { def: (k, geo, m) => { R[k] = { geo, m, L: [] }; },
+    P: (k, T, x, y, z, sx, sy, sz, rx = 0, col = null, ry = 0, rz = 0) => { const m4 = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz)); if (T) m4.premultiply(T); R[k].L.push([m4, col]); },
+    fin: () => { const out = []; for (const k in R) { const r = R[k]; if (!r.L.length) continue; const im = new THREE.InstancedMesh(r.geo, r.m, r.L.length), co = new THREE.Color(), aC = r.L.some(q => q[1] != null);
+      r.L.forEach(([m4, c], i) => { im.setMatrixAt(i, m4); if (aC) im.setColorAt(i, co.set(c == null ? 0xffffff : c)); }); im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.receiveShadow = true; im.frustumCulled = false; scene.add(im); out.push([k, im]); } return out; } }; };
+  const pierreFinT = tT(128, 128, (c, w, h) => { c.fillStyle = "#f6f2ea"; c.fillRect(0, 0, w, h); for (let i = 0; i < 500; i++) { c.fillStyle = `rgba(${al() < .5 ? "120,105,80" : "255,255,250"},${al() * .09})`; c.fillRect(al() * w, al() * h, 1 + al() * 5, 1 + al() * 4); } });
+  const murT = tT(256, 256, (c, w, h) => { c.fillStyle = "#ffffff"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 32) for (let x = ((y / 32) % 2) * 32 - 64; x < w; x += 64) { c.fillStyle = `rgba(${al() < .5 ? "130,115,90" : "255,252,245"},${al() * .1})`; c.fillRect(x + 1, y + 1, 62, 30); c.fillStyle = "rgba(120,104,80,.32)"; c.fillRect(x, y, 64, 1.5); c.fillRect(x, y, 1.5, 32); } for (let i = 0; i < 400; i++) { c.fillStyle = `rgba(90,80,60,${al() * .06})`; c.fillRect(al() * w, al() * h, 2 + al() * 6, 1 + al() * 3); } }, 1, 1);
+  const vitreT = tT(64, 112, (c, w, h) => { c.fillStyle = "#efe9dc"; c.fillRect(0, 0, w, h); const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#a8bccb"); g.addColorStop(.45, "#4a5a68"); g.addColorStop(1, "#2a333c"); c.fillStyle = g; c.fillRect(5, 5, w - 10, h - 10);
+    c.fillStyle = "rgba(238,230,214,.75)"; c.fillRect(6, 6, 9, h * .8); c.fillRect(w - 15, 6, 9, h * .8); c.fillStyle = "#efe9dc"; c.fillRect(w / 2 - 1.5, 0, 3, h); c.fillRect(0, 40, w, 2.5); c.fillRect(0, 76, w, 2.5); c.fillStyle = "rgba(255,255,255,.14)"; c.beginPath(); c.moveTo(8, 60); c.lineTo(30, 8); c.lineTo(40, 8); c.lineTo(14, 70); c.fill(); });
+  const ferT = tT(128, 96, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = "#000"; c.lineWidth = 5; for (const y of [4, 92]) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); } c.lineWidth = 3; c.beginPath(); c.moveTo(0, 72); c.lineTo(w, 72); c.stroke(); c.beginPath(); c.moveTo(0, 14); c.lineTo(w, 14); c.stroke();
+    c.lineWidth = 2; for (let x = 4; x < w; x += 8) { c.beginPath(); c.moveTo(x, 72); c.lineTo(x, 92); c.stroke(); } for (let x = 0; x <= w; x += 32) { c.lineWidth = 3; c.beginPath(); c.moveTo(x, 4); c.lineTo(x, 92); c.stroke(); c.lineWidth = 2.4; for (const s of [-1, 1]) { c.beginPath(); c.arc(x + s * 9, 30, 8, 0, 7); c.stroke(); c.beginPath(); c.arc(x + s * 9, 55, 8, 0, 7); c.stroke(); } c.beginPath(); c.moveTo(x + 16, 14); c.lineTo(x + 16, 72); c.stroke(); } });
+  const vitrineT = tT(128, 96, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#f4dcaa"); g.addColorStop(1, "#7a5838"); c.fillStyle = g; c.fillRect(0, 0, w, h); for (let r = 0; r < 4; r++) { const y = 14 + r * 21; c.fillStyle = "#5a3e26"; c.fillRect(0, y + 14, w, 3); for (let x = 2; x < w - 4; x += 4 + al() * 3) { c.fillStyle = ["#a82a22", "#2a4a8a", "#e8d8b0", "#2a6a3a", "#c8902a", "#6a2a5a", "#f2efe6"][(al() * 7) | 0]; c.fillRect(x, y + 2 + al() * 3, 3, 12); } }
+    c.fillStyle = "rgba(255,255,255,.16)"; c.beginPath(); c.moveTo(10, h); c.lineTo(50, 0); c.lineTo(66, 0); c.lineTo(26, h); c.fill(); });
+  const zincT = tT(64, 64, (c, w, h) => { c.fillStyle = "#8c96a2"; c.fillRect(0, 0, w, h); for (let i = 0; i < 200; i++) { c.fillStyle = `rgba(${al() < .5 ? "60,70,80" : "220,228,236"},${al() * .08})`; c.fillRect(al() * w, al() * h, 3, 3); } for (let x = 0; x < w; x += 16) { c.fillStyle = "#b2bcc6"; c.fillRect(x, 0, 2, h); c.fillStyle = "#5e6874"; c.fillRect(x + 2, 0, 1, h); } }, 1, 1);
+  const zincM = mat({ map: zincT, roughness: .45, metalness: .35 }), MURM = {};
+  const IM = mkInst(), ub = new THREE.BoxGeometry(1, 1, 1);
+  const frS = new THREE.Shape(); frS.moveTo(-.5, 0); frS.lineTo(.5, 0); frS.lineTo(0, 1); frS.closePath(); const frontonG = new THREE.ExtrudeGeometry(frS, { depth: 1, bevelEnabled: false }); frontonG.translate(0, 0, -.5);
+  IM.def("pierre", ub, mat({ map: pierreFinT, roughness: .85 })); IM.def("fronton", frontonG, mat({ map: pierreFinT, roughness: .85 }));
+  IM.def("vitre", new THREE.PlaneGeometry(1, 1), mat({ map: vitreT, roughness: .25, metalness: .3 }));
+  IM.def("fer", new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ map: ferT, alphaTest: .5, side: THREE.DoubleSide, color: 0x1c1c1c, roughness: .6, metalness: .4 }));
+  IM.def("zinc", ub, mat({ color: 0x8c96a2, roughness: .45, metalness: .35 })); IM.def("brique", ub, mat({ color: 0xa65a3e, roughness: .9 })); IM.def("pot", new THREE.CylinderGeometry(.5, .6, 1, 8), mat({ color: 0xc0623e, roughness: .8 }));
+  IM.def("store", ub, mat({ roughness: .85 })); IM.def("peint", ub, mat({ roughness: .55 })); IM.def("bois", ub, mat({ color: 0x6a4426, roughness: .7 }));
+  IM.def("vitrine", new THREE.PlaneGeometry(1, 1), mat({ map: vitrineT, emissive: 0xffe0b0, emissiveMap: vitrineT, emissiveIntensity: .22, roughness: .3 }));
+  IM.def("lumiere", new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffd48a }));
+  const LARG = { long: 30, angle: 18, std: 21 };
+  const immeuble = (x, z, rot, W = 18, nE = 5, terrasse = true, type = null, coin = 0) => { const k = kI++, [nom, coul, cafe] = ENS[k % ENS.length], te = teintes[k % teintes.length];
+    const T = new THREE.Matrix4().makeRotationY(rot).setPosition(x, 0, z), P = (kk, ...a) => IM.P(kk, T, ...a), HR = 4.4, HE = 3.15, H = HR + nE * HE, D = 12;
+    const mesh = (g, m, px, py, pz) => { const o = new THREE.Mesh(g, m); o.position.set(px, py, pz); o.applyMatrix4(T); o.receiveShadow = true; scene.add(o); return o; };
+    { const g = uvBox(new THREE.BoxGeometry(W, H, D), W, H, D, 4); mesh(g, MURM[te] || (MURM[te] = mat({ map: murT, color: te, roughness: .9 })), 0, H / 2, -D / 2); }
+    const n = Math.max(3, Math.round(W / 2.75)), pas = W / n, xs = [...Array(n)].map((_, i) => -W / 2 + pas * (i + .5)), porte = type === "long" ? Math.floor(n / 2) : -1, sc = cafe ? 0x8a1c1c : 0x2a4a38, pc = cafe ? 0x5a1414 : 0x23382c;
+    // le rez-de-chaussée : les bossages, les boutiques, leurs stores, la porte cochère
+    for (let j = 0; j < 8; j++) P("pierre", 0, .3 + j * .52, .05, W, .44, .1, 0, te);
+    xs.forEach((xc, i) => { const w = pas - .9;
+      if (i === porte) { P("bois", xc, 1.9, .1, 2.3, 3.8, .1); for (const s of [-1, 1]) { P("pierre", xc + s * 1.35, 2.0, .16, .4, 4.0, .22, 0, te); for (let j = 0; j < 4; j++) P("bois", xc + s * .6, .7 + j * .9, .17, .8, .7, .04, 0, 0x5a3a20); } P("pierre", xc, 4.05, .17, 3.1, .35, .26, 0, te); P("pierre", xc, 4.0, .3, .45, .7, .2, 0, te); return; }
+      P("vitrine", xc, 1.8, .13, w, 2.7, 1); for (const s of [-1, 1]) P("peint", xc + s * (w / 2 + .09), 1.8, .16, .18, 3.1, .12, 0, pc); P("peint", xc, .2, .16, w + .36, .4, .14, 0, pc); P("peint", xc, 3.5, .2, w + .45, .55, .16, 0, pc);
+      for (let j = 1; j < 3; j++) P("peint", xc - w / 2 + j * w / 3, 1.8, .15, .06, 2.7, .05, 0, pc);
+      P("store", xc, 3.15, .95, w + .2, .05, 1.8, .34, sc); P("store", xc, 2.68, 1.8, w + .2, .32, .03, 0, sc); });
+    { const j = xs.findIndex((_, i) => i !== porte), xc = xs[j]; const st = tT(512, 64, (c, w, h) => { c.fillStyle = "#" + new THREE.Color(pc).getHexString(); c.fillRect(0, 0, w, h); c.strokeStyle = "#c8a85a"; c.lineWidth = 3; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = "#f2e6c8"; c.font = `bold 34px ${serif}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(nom, w / 2, h / 2 + 2); });
+      mesh(new THREE.PlaneGeometry(pas - .5, .48), mat({ map: st, roughness: .6 }), xc, 3.5, .29); }
+    // les étages : bandeaux, fenêtres et leurs encadrements, frontons, balcons
+    P("pierre", 0, HR - .1, .2, W + .3, .32, .42, 0, te);
+    for (const s of [-1, 1]) P("pierre", s * (W / 2 - .3), HR + nE * HE / 2, .06, .6, nE * HE, .12, 0, te);
+    for (let e = 0; e < nE; e++) { const y0 = HR + e * HE, yc = y0 + 1.55, filant = e === 1 || e === nE - 1;
+      if (e > 0) P("pierre", 0, y0 + .05, .07, W, .16, .14, 0, te);
+      if (filant) { P("pierre", 0, y0 + .1, .46, W - .3, .16, .92, 0, te); for (const xc of xs) for (const s of [-1, 1]) P("pierre", xc + s * .9, y0 - .14, .35, .2, .3, .6, 0, te);
+        for (let xr = -W / 2 + .75; xr < W / 2 - .3; xr += 1.2) P("fer", xr, y0 + .66, .9, 1.2, .95, 1); for (const s of [-1, 1]) P("fer", s * (W / 2 - .17), y0 + .66, .46, .9, .95, 1, 0, null, Math.PI / 2); }
+      xs.forEach((xc, i) => { P("vitre", xc, yc, .03, 1.15, 2.05, 1); if (al() < .28) P("lumiere", xc, yc, .036, 1.0, 1.9, 1);
+        for (const s of [-1, 1]) P("pierre", xc + s * .69, yc, .06, .22, 2.25, .12, 0, te);
+        P("pierre", xc, yc - 1.1, .1, 1.62, .1, .22, 0, te);
+        if (e === 0 || e === 2) { P("pierre", xc, yc + 1.2, .1, 1.62, .16, .2, 0, te); if ((i + e) % 2 === 0 || e === 0) P("fronton", xc, yc + 1.28, .1, 1.75, .44, .22, 0, te); else P("pierre", xc, yc + 1.42, .12, 1.7, .14, .26, 0, te); }
+        else if (e === 1) { P("pierre", xc, yc + 1.22, .14, 1.72, .14, .3, 0, te); for (const s of [-1, 1]) P("pierre", xc + s * .78, yc + 1.06, .14, .14, .32, .24, 0, te); }
+        else P("pierre", xc, yc + 1.17, .08, 1.48, .2, .14, 0, te);
+        if (!filant) { P("pierre", xc, yc - .98, .22, 1.36, .08, .34, 0, te); P("fer", xc, yc - .56, .38, 1.3, .84, 1); } }); }
+    // la corniche à denticules
+    P("pierre", 0, H - .15, .3, W + .5, .42, .7, 0, te); P("pierre", 0, H + .12, .46, W + .7, .14, .96, 0, te); for (let xd = -W / 2 + .1; xd < W / 2; xd += .5) P("pierre", xd, H - .48, .22, .2, .18, .26, 0, te);
+    // le toit de zinc à la Mansart, ses lucarnes, les souches de cheminée
+    { const t = new THREE.Shape(); t.moveTo(0, 0); t.lineTo(D, 0); t.lineTo(D - 1.1, 3.0); t.lineTo(D / 2, 4.3); t.lineTo(1.1, 3.0); t.closePath(); const g = new THREE.ExtrudeGeometry(t, { depth: W, bevelEnabled: false }); g.rotateY(Math.PI / 2); g.translate(-W / 2, H + .2, 0); mesh(g, zincM, 0, 0, 0); }
+    xs.forEach((xc) => { P("pierre", xc, H + 1.5, -.55, 1.2, 1.8, 1.15, 0, te); P("vitre", xc, H + 1.45, .04, .74, 1.2, 1); P("fronton", xc, H + 2.4, -.5, 1.45, .55, 1.2, 0, te); P("zinc", xc, H + 2.62, -1.2, 1.3, .5, 1.3); });
+    for (const [cx, cz] of [[-W / 2 + .7, -D / 2], [W / 2 - .7, -D / 2], [0, -D / 2 - .5]]) { P("brique", cx, H + 3.7, cz, 1.0, 2.6, 2.6); P("pierre", cx, H + 5.05, cz, 1.15, .14, 2.75, 0, te); for (let j = 0; j < 4; j++) P("pot", cx, H + 5.4, cz - .9 + j * .6, .14, .55, .14); }
+    // le dôme d'angle
+    if (coin) { const dx = coin * (W / 2 - 2.6); P("pierre", dx, H + 2.6, -2.6, 4.6, 1.4, 4.6, 0, te); const dm = mesh(new THREE.SphereGeometry(2.3, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2), zincM, dx, H + 3.3, -2.6); dm.scale.y = 1.25;
+      P("pierre", dx, H + 6.4, -2.6, .8, .9, .8, 0, te); P("zinc", dx, H + 7.0, -2.6, .3, .9, .3); for (const a of [0, 1, 2, 3]) P("vitre", dx + Math.sin(a * Math.PI / 2) * 2.31, H + 2.6, -2.6 + Math.cos(a * Math.PI / 2) * 2.31, .9, 1.0, 1, 0, null, a * Math.PI / 2); }
+    if (cafe && terrasse) { for (const lx of [-5.2, -1.7, 1.8, 5.3]) { if (Math.abs(lx) > W / 2 - 1) continue; const p = new THREE.Vector3(lx, 0, 2.6).applyMatrix4(T); cyl(.38, .38, .04, tableM, p.x, .74, p.z, 14); cyl(.03, .03, .72, tableM, p.x, .37, p.z, 6); OBS.push([p.x - .4, p.x + .4, p.z - .4, p.z + .4]);
         for (const sx of [-.7, .7]) { const c = new THREE.Vector3(lx + sx, 0, 2.6).applyMatrix4(T), cap = Math.atan2(p.x - c.x, p.z - c.z), dx = Math.sin(cap), dz = Math.cos(cap);
-          const se = box(.42, .05, .42, chaiseM, c.x, .46, c.z, cap); void se; box(.42, .45, .04, chaiseM, c.x - dx * .2, .7, c.z - dz * .2, cap); cyl(.02, .02, .46, tableM, c.x, .23, c.z, 5);
-          (L.tabourets = L.tabourets || []).push([c.x, c.z, cap, .46]); } } }
-    return o; };
+          box(.42, .05, .42, chaiseM, c.x, .46, c.z, cap); box(.42, .45, .04, chaiseM, c.x - dx * .2, .7, c.z - dz * .2, cap); cyl(.02, .02, .46, tableM, c.x, .23, c.z, 5);
+          (L.tabourets = L.tabourets || []).push([c.x, c.z, cap, .46]); } } } };
   // le quai, rive gauche : la rangée face à la Seine, coupée par la rue du Petit-Pont
   // une rangée de façades photographiées, en alternant l'immeuble d'angle et le long immeuble ; (x, z) avancent le long de la rangée
-  const rangee = (x0, z0, dx, dz, lim, rot, types, terr = true) => { let s = 0, i = 0; while (s < lim) { const t = types[i++ % types.length], w = LARG[t], c = s + w / 2; immeuble(x0 + dx * c, z0 + dz * c, rot, w, 4, terr, t); s += w; } };
+  const rangee = (x0, z0, dx, dz, lim, rot, types, terr = true) => { let s = 0, i = 0; const cs = Math.sign(-(dx * Math.cos(rot) - dz * Math.sin(rot))) || 1; while (s < lim) { const t = types[i % types.length], w = LARG[t], c = s + w / 2; immeuble(x0 + dx * c, z0 + dz * c, rot, w, 5, terr, t, i === 0 && t === "angle" ? cs : 0); s += w; i++; } };
   // le quai, rive gauche : la rangée face à la Seine, coupée par la rue du Petit-Pont
-  rangee(PP[0] - 4, 46, -1, 0, XS - 10, Math.PI, ["angle", "long", "angle", "angle", "long"]);
-  rangee(PP[1] + 4, 46, 1, 0, XS - 8, Math.PI, ["angle", "long", "angle", "long", "angle"]);
+  rangee(PP[0] - 4, 46, -1, 0, XS - 10, Math.PI, ["angle", "long", "std", "angle", "long", "std"]);
+  rangee(PP[1] + 4, 46, 1, 0, XS - 8, Math.PI, ["angle", "std", "long", "std", "angle"]);
   // la rue du Petit-Pont, qui file vers le sud
-  rangee(PP[0] - 4, 58.2, 0, 1, 70, Math.PI / 2, ["angle"], false); rangee(PP[1] + 4, 58.2, 0, 1, 70, -Math.PI / 2, ["angle"], false);
-  immeuble(-1, 134, Math.PI, 34, 4, false, "long");
+  rangee(PP[0] - 4, 58.2, 0, 1, 70, Math.PI / 2, ["std", "angle"], false); rangee(PP[1] + 4, 58.2, 0, 1, 70, -Math.PI / 2, ["angle", "std"], false);
+  immeuble(-1, 134, Math.PI, 30, 5, false, "long");
   // l'île : les immeubles du quai, face à la Seine ; ceux qui bordent le parvis, à droite et à gauche
-  rangee(-63, -32, -1, 0, XS - 60, 0, ["angle", "long"], false); rangee(63, -32, 1, 0, XS - 60, 0, ["angle", "long"], false);
-  rangee(-62, -44.6, 0, -1, 85, Math.PI / 2, ["long", "angle"]); rangee(62, -44.6, 0, -1, 85, -Math.PI / 2, ["long", "angle"]);
+  rangee(-63, -32, -1, 0, XS - 60, 0, ["angle", "std", "long"], false); rangee(63, -32, 1, 0, XS - 60, 0, ["angle", "long", "std"], false);
+  rangee(-62, -44.6, 0, -1, 85, Math.PI / 2, ["long", "std", "angle"]); rangee(62, -44.6, 0, -1, 85, -Math.PI / 2, ["std", "long", "angle"]);
+  for (const [kk, im] of IM.fin()) if (kk === "lumiere") { im.visible = false; L.nuitObjets.push(im); }
   // la bouche de métro Saint-Michel – Notre-Dame : la balustrade de fonte, l'enseigne
   { const mx = -70, mz = 42.6; for (const [w, d, x, z] of [[4.2, .06, mx, mz - 1.4], [.06, 2.8, mx - 2.1, mz], [.06, 2.8, mx + 2.1, mz]]) box(w, .9, d, fonteR, x, .45, z);
     const enT = tT(256, 48, (c, w, h) => { c.fillStyle = "#1a3a2a"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8d890"; c.font = "bold 26px Georgia"; c.textAlign = "center"; c.fillText("MÉTROPOLITAIN", w / 2, 34); });
@@ -211,8 +264,78 @@ function construireNotreDame(A, L, scene) {
       c.clearRect(X(-7), 0, 14 * sx, Y(41.5));
     }) : null;
     const FX = ND.x0, FH = 63;
-    { const facP = photo("facade-nd"); facP.anisotropy = 16; const fm = new THREE.MeshStandardMaterial({ map: facP, transparent: true, alphaTest: .5, roughness: .85, emissive: 0xffe8c0, emissiveMap: facP, emissiveIntensity: 0 }); void facT;   /* (d'après l'image : la vraie façade, ses portails sculptés, la galerie des rois, la rose) */ NUIT.push([fm, 0, .55]);   /* (le soir, la façade illuminée) */
-      const fp = add(new THREE.PlaneGeometry(40, FH), fm, FX - .55, FH / 2, CZ, -Math.PI / 2); void fp; }
+    /* ---------- (en relief, d'après les images) la façade occidentale : les contreforts et leurs retraites ; les trois portails et leurs voussures peuplées de statuettes,
+       les statues des ébrasements, les tympans sculptés, les vantaux de bois ; la galerie des rois et ses vingt-huit statues ; la galerie de la Vierge ;
+       la grande rose et ses rayons, les baies géminées et leurs oculus ; la grande galerie à colonnettes ; les tours et leurs immenses baies à abat-son ---------- */
+    { const MF = new THREE.Matrix4().set(0, 0, -1, FX, 0, 1, 0, 0, 1, 0, 0, CZ, 0, 0, 0, 1);   // (u : le long de la façade ; v : la hauteur ; w : vers le parvis)
+      const MSp = new THREE.Matrix4().set(1, 0, 0, FX + 6.6, 0, 1, 0, 0, 0, 0, 1, CZ + 19.9, 0, 0, 0, 1), MSm = new THREE.Matrix4().set(-1, 0, 0, FX + 6.6, 0, 1, 0, 0, 0, 0, -1, CZ - 19.9, 0, 0, 0, 1);   // (les faces de côté des tours)
+      const NI = mkInst(), pierreF = mat({ map: pierreFinT, color: 0xe6dcc6, roughness: .85, emissive: 0xffe8c0, emissiveIntensity: 0 }), murF = mat({ map: murT, color: 0xe2d8c2, roughness: .9, emissive: 0xffe8c0, emissiveMap: murT, emissiveIntensity: 0 });
+      NUIT.push([pierreF, 0, .24], [murF, 0, .24]);
+      const ombreF = mat({ color: 0x9a8f7a, roughness: 1 }), voussF = mat({ map: pierreFinT, color: 0xcfc3a8, roughness: .9 }), noirF = mat({ color: 0x24211c, roughness: 1 }), boisF = mat({ color: 0x5a3a22, roughness: .7 });
+      const vitrT = tT(256, 256, (c, w, h) => { c.fillStyle = "#1a2450"; c.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { c.fillStyle = ["#2a3c9a", "#9a1a2a", "#d8a83a", "#1a5a8a", "#6a1a6a", "#2a6a3a"][(al() * 6) | 0]; c.fillRect(al() * w, al() * h, 6, 6); } c.strokeStyle = "rgba(10,10,20,.8)"; c.lineWidth = 1.5; for (let x = 0; x < w; x += 6) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); c.beginPath(); c.moveTo(0, x); c.lineTo(w, x); c.stroke(); } });
+      const vitrM = mat({ map: vitrT, roughness: .2, metalness: .3, emissive: 0xffffff, emissiveMap: vitrT, emissiveIntensity: .04 }); NUIT.push([vitrM, .04, .7]);
+      const tympT = tT(256, 320, (c, w, h) => { c.fillStyle = "#d6caae"; c.fillRect(0, 0, w, h); const fig = (x, y, s, t) => { c.fillStyle = `rgba(${t},.55)`; c.beginPath(); c.ellipse(x, y, s * .45, s, 0, 0, 7); c.fill(); c.beginPath(); c.arc(x, y - s * 1.25, s * .32, 0, 7); c.fill(); };
+        for (const [y0, n, s] of [[130, 14, 9], [92, 9, 12]]) { c.fillStyle = "rgba(120,105,80,.5)"; c.fillRect(0, y0 + s + 4, w, 4); for (let i = 0; i < n; i++) fig(18 + i * (w - 36) / (n - 1), y0, s, i % 2 ? "120,104,80" : "150,134,108"); }
+        c.fillStyle = "rgba(120,104,80,.45)"; c.beginPath(); c.ellipse(w / 2, 48, 26, 34, 0, 0, 7); c.fill(); fig(w / 2, 52, 18, "110,96,72"); for (const s of [-1, 1]) fig(w / 2 + s * 62, 60, 13, "130,114,90"); });
+      const tympM = mat({ map: tympT, roughness: .9 });
+      const fm = (M, g, m) => { const o = new THREE.Mesh(g, m); o.applyMatrix4(M); o.receiveShadow = true; scene.add(o); return o; };
+      const fbox = (u0, u1, v0, v1, w0, w1, m = murF, M = MF) => { const W = u1 - u0, Hh = v1 - v0, Dd = w1 - w0, g = uvBox(new THREE.BoxGeometry(W, Hh, Dd), W, Hh, Dd, 4); g.translate((u0 + u1) / 2, (v0 + v1) / 2, (w0 + w1) / 2); return fm(M, g, m); };
+      const ogP = (hw, hs, n = 9) => { const R = 1.6 * hw, c = R - hw, a1 = Math.acos(-c / R), G = []; for (let i = 0; i <= n; i++) { const a = Math.PI - (Math.PI - a1) * i / n; G.push([c + R * Math.cos(a), hs + R * Math.sin(a)]); } const D2 = G.slice(0, n).reverse().map(([x, y]) => [-x, y]); return [[-hw, 0], ...G, ...D2, [hw, 0]]; };
+      const apex = (hw, hs) => hs + hw * Math.sqrt(2.2);
+      const shp = (pts) => { const s = new THREE.Shape(); s.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) s.lineTo(p[0], p[1]); return s; };
+      const anneau = (hw, hs, t, dep, u, v, w, m = pierreF, M = MF) => { const g = new THREE.ExtrudeGeometry(shp([...ogP(hw + t, hs), ...ogP(hw, hs).reverse()]), { depth: dep, bevelEnabled: false }); g.translate(u, v, w - dep); return fm(M, g, m); };
+      const plein = (hw, hs, m, u, v, w, M = MF) => { const g = new THREE.ShapeGeometry(shp(ogP(hw, hs))), uv = g.attributes.uv, P2 = g.attributes.position, ap = apex(hw, hs); for (let i = 0; i < uv.count; i++) uv.setXY(i, (P2.getX(i) + hw) / (2 * hw), P2.getY(i) / ap); g.translate(u, v, w); return fm(M, g, m); };
+      const surArc = (hw, hs, pas, f) => { const pts = ogP(hw, hs, 16).slice(1, -1); for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], d = Math.hypot(x1 - x0, y1 - y0); for (let s = 0; s < d; s += pas) f(x0 + (x1 - x0) * s / d, y0 + (y1 - y0) * s / d); } };
+      NI.def("p", ub, pierreF); NI.def("col", new THREE.CylinderGeometry(1, 1, 1, 8), pierreF); NI.def("stat", new THREE.CapsuleGeometry(1, 1, 3, 8), mat({ color: 0xd2c6aa, roughness: .9 })); NI.def("tete", new THREE.SphereGeometry(1, 8, 6), mat({ color: 0xd2c6aa, roughness: .9 }));
+      NI.def("pin", new THREE.ConeGeometry(1, 1, 4), pierreF); NI.def("tore", new THREE.TorusGeometry(1, .12, 4, 14), pierreF);
+      { const g = new THREE.ExtrudeGeometry(shp([...ogP(.5, 0), ...ogP(.38, 0).reverse()]), { depth: 1, bevelEnabled: false }); g.translate(0, 0, -.5); NI.def("arc", g, pierreF); }
+      const F = (k, u, v, w, su, sv, sw, rz = 0, rx = 0, M = MF) => NI.P(k, M, u, v, w, su, sv, sw, rx, null, 0, rz);
+      const statue = (u, v, w, s = 1, M = MF) => { F("stat", u, v, w, .2 * s, .42 * s, .2 * s, 0, 0, M); F("tete", u, v + .82 * s, w, .17 * s, .19 * s, .17 * s, 0, 0, M); };
+      // le mur, le recul de la grande galerie, les tours
+      fbox(-20, 20, 0, 33, -2, 0); fbox(-20, 20, 33, 42.6, -3, -1, ombreF); for (const s of [-1, 1]) fbox(s > 0 ? 6.8 : -20, s > 0 ? 20 : -6.8, 42.6, 63, -2, 0);
+      // les contreforts, leurs retraites, leurs pinacles ; une statue dans la niche de chacun
+      for (const u of [-19.2, -6.9, 6.9, 19.2]) { fbox(u - .9, u + .9, 0, 11, 0, 1.7); fbox(u - .85, u + .85, 11, 33, 0, 1.25); fbox(u - .8, u + .8, 33, 42.6, 0, .95); fbox(u - .7, u + .7, 42.6, 61, 0, .7);
+        F("pin", u, 62.8, .35, .55, 3.6, .55); statue(u, 7.4, 1.95, 1.3); F("p", u, 6.4, 1.85, .7, .2, .5); }
+      // les trois portails
+      for (const [c, hw, hs] of [[-13.4, 2.5, 5.2], [0, 3.0, 5.8], [13.4, 2.5, 5.2]]) { const NR = 5, t = .34;
+        for (let k = 1; k <= NR; k++) { anneau(hw + (k - 1) * t, hs, t, .3 + k * .24, c, 0, k * .24, k % 2 ? pierreF : voussF);
+          if (k % 2 === 0) surArc(hw + (k - .5) * t, hs, .5, (x, y) => { if (y > hs - .2) F("stat", c + x, y, k * .24 + .08, .1, .14, .1); });
+          if (k <= 4) for (const s of [-1, 1]) { statue(c + s * (hw + (k - .5) * t), 2.4, k * .24 + .12, 1); F("p", c + s * (hw + (k - .5) * t), 1.6, k * .24, .3, .25, .3); } }
+        plein(hw, hs, tympM, c, 0, .025);
+        for (const s of [-1, 1]) { fbox(s > 0 ? c + .25 : c - hw + .05, s > 0 ? c + hw - .05 : c - .25, 0, 4.6, -.2, .06, boisF); for (const v of [1, 2.4, 3.8]) F("p", c + s * hw / 2, v, .08, hw - .5, .06, .03); }
+        F("p", c, 2.3, .15, .55, 4.6, .45); statue(c, 2.9, .45, 1.15);
+        fbox(c - hw, c + hw, 4.6, 5.5, -.2, .14, pierreF); for (let x = c - hw + .3; x < c + hw - .2; x += .42) F("stat", x, 5.05, .18, .11, .16, .08); }
+      // la frise au-dessus des portails, ses consoles
+      fbox(-20.2, 20.2, 10.9, 11.5, 0, 1.0, pierreF); for (let u = -19.8; u < 20; u += .6) F("p", u, 10.72, .62, .22, .3, .7);
+      // la galerie des rois : vingt-huit statues sous leurs arcatures
+      fbox(-19, 19, 11.5, 16.2, -.04, .02, ombreF);
+      for (let i = 0; i <= 28; i++) { const u = -18.9 + i * 37.8 / 28; F("col", u, 13.6, .42, .12, 3.6, .12); if (i < 28) { const um = u + 37.8 / 56; F("arc", um, 15.45, .42, 1.25, 1.1, .3); statue(um, 13.4, .3, 1.15); F("p", um, 14.62, .3, .28, .1, .28); } }
+      fbox(-20.2, 20.2, 16.2, 16.7, 0, .95, pierreF);
+      // la galerie de la Vierge : sa balustrade ; la Vierge et les anges devant la rose, Adam et Ève
+      for (let u = -18.8; u <= 18.8; u += .3) F("col", u, 17.25, .7, .07, .9, .07); fbox(-19, 19, 17.7, 17.92, .5, .9, pierreF);
+      statue(0, 18.9, .75, 1.8); for (const s of [-1, 1]) { statue(s * 3.4, 18.7, .75, 1.5); statue(s * 15.4, 18.7, .75, 1.5); }
+      // la grande rose : le vitrail, les moulures, les rayons, les petits cercles
+      { const rv = 25.6; fm(MF, new THREE.CircleGeometry(4.9, 48).translate(0, rv, .03), vitrM);
+        for (const [R, tb] of [[5.35, .42], [4.95, .2], [3.2, .12], [1.6, .14]]) fm(MF, new THREE.TorusGeometry(R, tb, 6, 56).translate(0, rv, .22), pierreF);
+        for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; F("p", Math.cos(a) * 3.25, rv + Math.sin(a) * 3.25, .12, .13, 3.3, .24, a - Math.PI / 2); F("tore", Math.cos(a + Math.PI / 24) * 4.1, rv + Math.sin(a + Math.PI / 24) * 4.1, .1, .42, .42, 1); }
+        for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; F("p", Math.cos(a) * 1.05, rv + Math.sin(a) * 1.05, .12, .12, 1.1, .2, a - Math.PI / 2); }
+        F("col", 0, rv, .1, .5, .3, .5, 0, Math.PI / 2);
+        anneau(5.9, 5.0, .45, .7, 0, 19.2, .6, voussF); }
+      // les baies géminées des côtés, leurs oculus
+      for (const c of [-13.4, 13.4]) { anneau(2.4, 4.2, .4, .8, c, 19.2, .8, voussF);
+        for (const s of [-1, 1]) { plein(.8, 3.5, vitrM, c + s * 1.15, 19.6, .03); anneau(.8, 3.5, .2, .45, c + s * 1.15, 19.6, .45); }
+        F("col", c, 21.4, .35, .1, 3.6, .1); fm(MF, new THREE.CircleGeometry(.72, 24).translate(c, 25.6, .03), vitrM); F("tore", c, 25.6, .2, .8, .8, 1); }
+      fbox(-20.2, 20.2, 32.4, 33.0, 0, .95, pierreF);
+      // la grande galerie à colonnettes, sa balustrade
+      for (let u = -18.7; u < 18.8; u += 1.0) { if ([-19.2, -6.9, 6.9, 19.2].some(b => Math.abs(u - b) < 1.05)) continue; F("col", u, 36.2, .3, .13, 6.4, .13); F("p", u, 39.45, .3, .36, .24, .36); F("arc", u + .5, 39.55, .3, .95, .95, .3); }
+      fbox(-20, 20, 40.6, 41.4, 0, .5, pierreF); for (let u = -19.8; u <= 19.8; u += .32) F("col", u, 41.95, .3, .07, .9, .07); fbox(-20.2, 20.2, 42.4, 42.65, 0, .7, pierreF);
+      // les tours : les deux immenses baies à abat-son de chaque face, la corniche, la balustrade du sommet
+      const baies = (M, c) => { for (const s of [-1, 1]) { const u = c + s * 3.0; plein(1.3, 11.4, noirF, u, 44.2, .03, M); for (const [k, hw] of [[1, 1.3], [2, 1.62], [3, 1.94]]) anneau(hw, 11.4, .32, .3 * k, u, 44.2, .3 * k, k % 2 ? pierreF : voussF, M);
+          for (let v = 45; v < 56.5; v += .62) F("p", u, v, .14, 2.5, .08, .45, 0, .6, M); F("col", u, 50.2, .32, .1, 12, .1, 0, 0, M); }
+        F("p", c, 51, .3, .8, 17, .6, 0, 0, M); F("p", c, 60.1, .4, 13.4, .6, .8, 0, 0, M); for (let u = c - 6.4; u <= c + 6.4; u += .32) F("col", u, 60.9, .4, .07, 1.0, .07, 0, 0, M); F("p", c, 61.5, .4, 13.4, .22, .5, 0, 0, M); };
+      baies(MF, -13.4); baies(MF, 13.4); baies(MSp, 0); baies(MSm, 0);
+      for (const M of [MSp, MSm]) { plein(1.0, 6, vitrM, 0, 24, .03, M); anneau(1.0, 6, .3, .4, 0, 24, .4, pierreF, M); for (const s of [-1, 1]) { fbox(s * 6.3 - .5, s * 6.3 + .5, 0, 61, 0, .8, murF, M); } }
+      NI.fin(); }
     // les volumes derrière la façade : les tours, le corps central, les contreforts en saillie
     for (const sz of [-1, 1]) { box(12, FH - .2, 13, pierre, FX + 6.6, (FH - .2) / 2, CZ + sz * 13.4); box(13.4, 1, 13.4, pierreS, FX + 6.6, FH - .1, CZ + sz * 13.4);
       for (const [dx, dz] of [[-6, -6], [6, -6], [-6, 6], [6, 6]]) { cyl(.5, .7, 2.2, pierreS, FX + 6.6 + dx, FH + 1.5, CZ + sz * 13.4 + dz, 8); cyl(.02, .5, 3.4, pierreS, FX + 6.6 + dx, FH + 4.2, CZ + sz * 13.4 + dz, 8); }   // les pinacles aux angles des tours
