@@ -213,7 +213,7 @@ function construireNotreDame(A, L, scene) {
   const teintes = ["#dccaa6", "#d6c39e", "#e2d2b2", "#d2bf98", "#dac8a8"];   /* (la pierre de taille chaude des images) */
   const ENS = [["CAFÉ LE PETIT PONT", "#8a1a1a", 1], ["SHAKESPEARE AND COMPANY", "#1e4a2a", 0], ["BRASSERIE NOTRE-DAME", "#8a1a1a", 1], ["LIBRAIRIE ANCIENNE", "#1e4a3a", 0], ["CAFÉ DE LA SEINE", "#7a1a1a", 1], ["GALERIE D'ESTAMPES", "#2e4a3a", 0], ["LE BISTROT DU PARVIS", "#8a2a1a", 1], ["SOUVENIRS DE PARIS", "#1a4a3a", 0], ["AUX TOURS DE NOTRE-DAME", "#8a1a1a", 1], ["PAPETERIE", "#2a4a3a", 0]];
   const storeR = mat({ color: 0xa82424, roughness: .8 }), storeV = mat({ color: 0x2a4a3a, roughness: .8 }), tableM = mat({ color: 0x2a2a2a, metalness: .4, roughness: .5 }), chaiseM = mat({ color: 0xb8925a, roughness: .7 });
-  let kI = 0; const TERR = [], SERV = []; let NOMF = null;
+  let kI = 0; const TERR = [], SERV = []; let NOMF = null, DPROF = 12;
   const vitreP = new THREE.MeshStandardMaterial({ color: 0xd8e8ec, transparent: true, opacity: .28, roughness: .05, metalness: .3, depthWrite: false }), boisP = mat({ color: 0x5a2a1a, roughness: .6 }), chaiseR = mat({ color: 0xb02a22, roughness: .6 }), ardoiseM = mat({ map: tT(64, 96, (c, w, h) => { c.fillStyle = "#1e2420"; c.fillRect(0, 0, w, h); c.strokeStyle = "#8a6a42"; c.lineWidth = 6; c.strokeRect(0, 0, w, h); c.fillStyle = "#f2f0e6"; c.font = "bold 10px Georgia"; c.textAlign = "center"; c.fillText("MENU", w / 2, 18); c.font = "8px Georgia"; ["Croque-monsieur", "Soupe à l'oignon", "Crêpe sucre", "Café crème", "Vin chaud"].forEach((t, i) => c.fillText(t, w / 2, 34 + i * 12)); }), roughness: .9 });
   const lierre = [0x2e5a24, 0x3a6a2a, 0x4a7a30].map(cc => mat({ color: cc, roughness: .9 }));
   const feuille = (c, x, y, s, an, col) => { c.save(); c.translate(x, y); c.rotate(an); c.fillStyle = col; c.beginPath(); c.moveTo(0, -s); c.quadraticCurveTo(s * .9, -s * .6, s * .55, s * .15); c.quadraticCurveTo(s * .3, s * .7, 0, s * .45); c.quadraticCurveTo(-s * .3, s * .7, -s * .55, s * .15); c.quadraticCurveTo(-s * .9, -s * .6, 0, -s); c.fill(); c.strokeStyle = "rgba(200,230,170,.35)"; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -s * .8); c.lineTo(0, s * .4); c.stroke(); c.restore(); };
@@ -253,7 +253,7 @@ function construireNotreDame(A, L, scene) {
   IM.def("verre", new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ color: 0xc8dae2, transparent: true, opacity: .16, roughness: .05, metalness: .5, depthWrite: false }));
   const LARG = { long: 30, angle: 18, std: 21 };
   const immeuble = (x, z, rot, W = 18, nE = 5, terrasse = true, type = null, coin = 0) => { const k = kI++, [nom, coul, cafe] = NOMF || ENS[k % ENS.length], te = teintes[k % teintes.length];
-    const T = new THREE.Matrix4().makeRotationY(rot).setPosition(x, TROT, z), P = (kk, ...a) => IM.P(kk, T, ...a), HR = 4.4, HE = 3.15, H = HR + nE * HE, D = 12;
+    const T = new THREE.Matrix4().makeRotationY(rot).setPosition(x, TROT, z), P = (kk, ...a) => IM.P(kk, T, ...a), HR = 4.4, HE = 3.15, H = HR + nE * HE, D = DPROF;
     const mesh = (g, m, px, py, pz) => { const o = new THREE.Mesh(g, m); o.position.set(px, py, pz); o.applyMatrix4(T); o.receiveShadow = true; scene.add(o); return o; };
     const MM = MURM[te] || (MURM[te] = mat({ map: murT, color: te, roughness: .9 })), PR = 3.2;   // (PR : la profondeur des boutiques)
     { const Hh = H - HR, g = uvBox(new THREE.BoxGeometry(W, Hh, D), W, Hh, D, 4); mesh(g, MM, 0, HR + Hh / 2, -D / 2); }
@@ -330,7 +330,7 @@ function construireNotreDame(A, L, scene) {
   rangee(PP[0] - 4, 58.2, 0, 1, 70, Math.PI / 2, ["std", "angle"], false); rangee(PP[1] + 4, 58.2, 0, 1, 70, -Math.PI / 2, ["angle", "std"], false);
   immeuble(-1, 134, Math.PI, 30, 5, false, "long");
   // l'île : les immeubles du quai, face à la Seine ; ceux qui bordent le parvis, à droite et à gauche
-  rangee(-37, -32, -1, 0, XS - 34, 0, ["angle", "std", "long"], false); rangee(35, -32, 1, 0, XS - 32, 0, ["angle", "long", "std"], false);
+  DPROF = 7.5; rangee(-37, -32, -1, 0, XS - 34, 0, ["angle", "std", "long"], false); DPROF = 12;   /* (10.153 : moins profonds, pour laisser la place aux boutiques de la petite place, derrière) */ rangee(35, -32, 1, 0, XS - 32, 0, ["angle", "long", "std"], false);
   rangee(-36, -64.6, 0, -1, 65, Math.PI / 2, ["std", "angle", "long"]); rangee(34, -44.6, 0, -1, 85, -Math.PI / 2, ["std", "long", "angle"]);
   /* (10.150) à côté du parvis, une petite place pavée toute parisienne : la fontaine à vasques, les lampadaires à deux lanternes, les bornes, les jardinières et deux jeunes arbres ;
      le bistrot au store rouge et sa terrasse, le restaurant bleu nuit, les enseignes en potence ; sur le toit, une grande enseigne lumineuse au néon, allumée le soir */
