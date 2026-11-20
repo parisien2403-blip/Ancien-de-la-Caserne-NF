@@ -39,15 +39,15 @@ function construireNotreDame(A, L, scene) {
   /* ---------- (d'après les images : le quartier exact) rive gauche, le grand quai pavé, ses kiosques de bouquinistes, l'escalier qui descend au bas-port ;
      le pont de pierre à arches, ses demi-lunes et ses réverbères, qui mène tout droit au parvis ; la façade de Notre-Dame face au pont ---------- */
   const PP = [-10, 8], horsPont = (x, m = 2) => !(x > PP[0] - m && x < PP[1] + m);
-  const ESC = [-52, -36], RAMPE_C = [30, 46];   // (le grand escalier de la rive gauche ; la rampe de l'île)
+  const ESC = [-52, -36], RAMPE_C = [30, 46];   const ESCE = 2.6;   // (l'entrée de l'escalier, en haut, à l'est)   // (le grand escalier de la rive gauche ; la rampe de l'île)
   const OBS = [];   // (ce qu'on ne traverse pas : les kiosques, les tables, les troncs…)
   const lig = mat({ color: 0xe2dccc, roughness: .9 });
   for (const s of [1, -1]) {
     sol(-XS, XS, s > 0 ? 18 : -22.5, s > 0 ? 22.5 : -18, paveB, YB);
     box(XS * 2, YB - YE + .2, .6, murM, 0, (YB + YE) / 2, s * 18);   // (le bord du bas-port, dans l'eau)
-    const tr = s > 0 ? ESC : RAMPE_C;
+    const tr = s > 0 ? ESC : RAMPE_C;   /* (le mur, creusé pour l'escalier) */
     for (const [a, b] of [[-XS, tr[0]], [tr[1], XS]]) box(b - a, -YB, 2.8, murM, (a + b) / 2, YB / 2, s * 23.9);   // le mur de quai, épais
-    const pa = s > 0 ? ESC : [RAMPE_C[1] - 4, RAMPE_C[1]];
+    const pa = s > 0 ? [ESC[1] - ESCE, ESC[1]] : [RAMPE_C[1] - 4, RAMPE_C[1]];
     { let seg = [[-XS, XS]]; for (const [o0, o1] of [pa, PP]) seg = seg.flatMap(([a, b]) => o1 <= a || o0 >= b ? [[a, b]] : [[a, o0], [o1, b]].filter(([u, v]) => v - u > .1));
       for (const [a, b] of seg) { box(b - a, 1, .55, quaiM, (a + b) / 2, .5, s * 25.3); box(b - a, .12, .8, quaiM, (a + b) / 2, 1.06, s * 25.3); } }   // le parapet et sa tablette
   }
@@ -55,13 +55,14 @@ function construireNotreDame(A, L, scene) {
   { const [r0, r1] = RAMPE_C; box(r1 - r0, -YB, .4, murM, (r0 + r1) / 2, YB / 2, -25.1);
     const g = new THREE.PlaneGeometry(r1 - r0, 2.4); g.rotateX(-Math.PI / 2); const P = g.attributes.position; for (let i = 0; i < P.count; i++) { const x = P.getX(i) + (r0 + r1) / 2, u = (r1 - x) / (r1 - r0); P.setY(i, u < .25 ? 0 : YB * (u - .25) / .75); } g.computeVertexNormals();
     add(g, paveB, (r0 + r1) / 2, .01, -23.8); }
-  // le grand escalier de pierre de la rive gauche, large, qui descend vers l'eau
-  { const [e0, e1] = ESC, N = 20, D = 8.5 / N;
-    for (let i = 0; i < N; i++) { const top = YB * (N - 1 - i) / N, z = 22.5 + (i + .5) * D; box(e1 - e0, top - YB + .02, D + .02, quaiM, (e0 + e1) / 2, (top + YB) / 2, z); box(e1 - e0, .04, .06, lig, (e0 + e1) / 2, top + .01, 22.5 + i * D + .03); }
-    for (const x of [e0 - .3, e1 + .3]) { box(.6, 1 - YB, 8.5, quaiM, x, (1 + YB) / 2, 26.75); box(.8, .12, 8.6, quaiM, x, 1.06, 26.75); }
-    OBS.push([e0 - .7, e0 + .1, 22.3, 31.2], [e1 - .1, e1 + .7, 22.3, 31.2]); }
+  // (10.146) le grand escalier de pierre de la rive gauche : il descend le long du mur du quai, parallèle à la Seine ; on y entre depuis le trottoir, par une ouverture du parapet ; un garde-corps côté eau
+  { const [e0, e1] = ESC, Lg = e1 - e0, N = 26, D = Lg / N;
+    for (let i = 0; i < N; i++) { const top = YB * (i + 1) / N, x = e1 - (i + .5) * D; box(D + .02, top - YB + .02, 2.6, quaiM, x, (top + YB) / 2, 23.8); box(.06, .04, 2.6, lig, e1 - i * D - .03, top + .01, 23.8); }
+    box(Lg, -YB, .4, murM, (e0 + e1) / 2, YB / 2, 25.1);
+    { const x0 = e0 + 3, x1 = e1, cx = (x0 + x1) / 2, ang = Math.atan(-YB / Lg), lr = (x1 - x0) / Math.cos(ang), r = box(lr, 1, .4, quaiM, cx, YB * (e1 - cx) / Lg + .5, 22.7); r.rotation.z = ang; const r2 = box(lr, .1, .55, quaiM, cx, YB * (e1 - cx) / Lg + 1.04, 22.7); r2.rotation.z = ang; }
+    box(.4, 1 - YB, .5, quaiM, e1 + .2, (1 + YB) / 2, 22.7); }
   // les sols : le grand quai pavé (rive gauche), la rue du Petit-Pont, le quai de l'île et sa chaussée, le parvis
-  sol(-XS, ESC[0], 25.6, 31, paveM, .02); sol(ESC[1], XS, 25.6, 31, paveM, .02); sol(-XS, XS, 31, 46, paveM, .02); sol(-XS, XS, 46, 140, paveM, .01);
+  sol(-XS, XS, 25.6, 31, paveM, .02); sol(-XS, XS, 31, 46, paveM, .02); sol(-XS, XS, 46, 140, paveM, .01);
   sol(PP[0], PP[1], 25.6, 130, routeM, .03); for (const sx of [PP[0], PP[1]]) box(.25, .14, 104, quaiM, sx, .07, 78);
   sol(-XS, XS, -31, -25.6, trottM, .02); sol(-XS, XS, -30.5, -26, routeM, .03); for (const z of [-30.5, -26]) box(XS * 2, .14, .25, quaiM, 0, .07, z);
   { const pm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), lig); void pm; for (let x = -XS; x < XS; x += 6) box(3, .01, .12, lig, x, .04, -28.25); }
@@ -70,7 +71,7 @@ function construireNotreDame(A, L, scene) {
      dans la rue du Petit-Pont ; devant les immeubles de l'île et ceux qui bordent le parvis) */
   const TROT = .15, TR = [], bordM = mat({ color: 0x9a968e, roughness: .8 });
   const trottoir = (x0, x1, z0, z1, bords) => { TR.push([x0, x1, z0, z1]); sol(x0, x1, z0, z1, trottM, TROT); for (const b of bords) { const lz = b === "z0" || b === "z1", c = { x0, x1, z0, z1 }[b]; box(lz ? x1 - x0 : .3, TROT + .03, lz ? .3 : z1 - z0, bordM, lz ? (x0 + x1) / 2 : c + (b === "x0" ? .15 : -.15), (TROT + .03) / 2, lz ? c + (b === "z0" ? .15 : -.15) : (z0 + z1) / 2); } };
-  trottoir(-XS, ESC[0] - .6, 25.6, 28.4, ["z1", "x1"]); trottoir(ESC[1] + .6, PP[0], 25.6, 28.4, ["z1", "x0", "x1"]); trottoir(PP[1], XS, 25.6, 28.4, ["z1", "x0"]);
+  trottoir(-XS, PP[0], 25.6, 28.4, ["z1", "x1"]); trottoir(PP[1], XS, 25.6, 28.4, ["z1", "x0"]);
   trottoir(-XS, PP[0] - 4, 41.4, 46, ["z0"]); trottoir(PP[0] - 4, PP[0], 41.4, 130, ["x1", "z0"]); trottoir(PP[1], PP[1] + 4, 41.4, 130, ["x0", "z0"]); trottoir(PP[1] + 4, XS, 41.4, 46, ["z0"]);
   trottoir(-XS, -61, -32.2, -30.5, ["z1", "x1"]); trottoir(61, XS, -32.2, -30.5, ["z1", "x0"]); trottoir(-62.2, -59, -131, -44, ["x1", "z0", "z1"]); trottoir(59, 62.2, -131, -44, ["x0", "z0", "z1"]);
   // sur le parvis, le tracé des anciennes rues, en pierre claire
@@ -138,12 +139,12 @@ function construireNotreDame(A, L, scene) {
     // les rangées sur le parapet de la rive gauche (ouvertes vers le quai) et, plus clairsemées, sur celui de l'île
     const GAPS = []; let kb = 0;
     for (const [zc, ry, pas] of [[25.3, 0, 1], [-25.3, Math.PI, PEU ? 3 : 2]]) for (let x = -XS + 6, g = 0; x < XS - 4; g++) { const n = 7 + (g % 3);
-      for (let i = 0; i < n; i++, x += 2.06) { if (!horsPont(x, 2.5) || (zc > 0 && x > ESC[0] - 1.5 && x < ESC[1] + 1.5) || (zc < 0 && x > RAMPE_C[1] - 5.5 && x < RAMPE_C[1] + 1.5)) continue; if (g % pas) continue; boite(x, zc, ry, al() < (zc > 0 ? .72 : .55), kb++); }
+      for (let i = 0; i < n; i++, x += 2.06) { if (!horsPont(x, 2.5) || (zc > 0 && x > ESC[1] - ESCE - 1.5 && x < ESC[1] + 1.5) || (zc < 0 && x > RAMPE_C[1] - 5.5 && x < RAMPE_C[1] + 1.5)) continue; if (g % pas) continue; boite(x, zc, ry, al() < (zc > 0 ? .72 : .55), kb++); }
       if (zc > 0) GAPS.push(x + 2.5); x += 5; }
     const inst = (L2, geo, m) => { if (!L2.length) return; const im = new THREE.InstancedMesh(geo, m, L2.length), m4 = new THREE.Matrix4(), co = new THREE.Color(); L2.forEach(([p, q, s, c], i) => { m4.compose(p, q, s); im.setMatrixAt(i, m4); im.setColorAt(i, co.setHex(c)); }); im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; scene.add(im); };
     inst(DOS, new THREE.BoxGeometry(1, 1, 1), mat({ map: dosT, roughness: .7 })); inst(PLAT, new THREE.BoxGeometry(1, 1, 1), mat({ map: couvT, roughness: .6 }));
     // les bancs dans les allées, entre les rangées ; d'autres au bas-port, face à l'eau
-    for (const x of GAPS) { if (!horsPont(x, 5) || (x > ESC[0] - 3 && x < ESC[1] + 3) || x > XS - 4) continue; banc(x, 27.2, 0, TROT); }
+    for (const x of GAPS) { if (!horsPont(x, 5) || (x > ESC[1] - ESCE - 3 && x < ESC[1] + 3) || x > XS - 4) continue; banc(x, 27.2, 0, TROT); }
     for (const x of [-120, -95, -70, -25, 20, 95, 120]) banc(x, 21.9, Math.PI, YB, false);
     for (const x of [-120, -90, -60, -20, 20, 50, 80, 110, 140]) { if (horsPont(x, 3)) reverbere(x, 30.6); }
     for (const x of [-140, -100, -66, -24, 18, 40, 70, 100, 130]) platane(x, 30.2, x === -24 || x === 18 ? 1.25 : 1);
@@ -489,7 +490,7 @@ function construireNotreDame(A, L, scene) {
   const MARCH = [], PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
   const gens = (k) => { const f = k % 2 === 1; return personne3D({ taille: f ? 1.64 : 1.76, peau: PE[k % 6], ch: ["#2a1a12", "#5a3a22", "#141010", "#8a8a8a", "#e2c27a"][k % 5], haut: HA[k % 10], bas: ["#26324e", "#2a2a30", "#3a3028", "#5a6a7a"][k % 4], chaussures: ["#1a1a1a", "#e8e8e8"][k % 2], coif: f ? (k % 3 ? "long" : "carre") : k % 4 ? "court" : "chauve", pantalon: !f || k % 3 === 0, robe: f && k % 3 !== 0 }); };
   { const R = [[[-140, 31.6], [140, 31.6]], [[140, 35.5], [-140, 35.5]], [[-140, 39.8], [140, 39.8]], [[-140, 20.4], [140, 20.4]], [[140, 21.2], [-140, 21.2]],
-      [[-44, 33], [-44, 21], [-120, 21], [-44, 21]], [[-12.2, 70], [-12.2, 28], [-8.6, 24], [-8.6, -33], [-30, -56], [28, -56], [6.6, -33], [6.6, 24], [10.4, 28], [10.4, 70]],
+      [[-37.3, 30], [-37.3, 23.8], [-50.5, 23.8], [-50.5, 21], [-120, 21], [-50.5, 21], [-50.5, 23.8], [-37.3, 23.8]], [[-12.2, 70], [-12.2, 28], [-8.6, 24], [-8.6, -33], [-30, -56], [28, -56], [6.6, -33], [6.6, 24], [10.4, 28], [10.4, 70]],
       [[-52, -40], [50, -40]], [[-140, -25.8], [140, -25.8]], [[-52, -75], [-52, -190], [-30, -190], [-30, -75]], [[50, -75], [50, -190], [28, -190], [28, -75]], [[-55, -62], [55, -62]]];
     for (let k = 0, n = PEU ? 18 : 40; k < n; k++) { const Rr = R[k % R.length], m = gens(k), i0 = (k * 3) % Rr.length, a = Rr[i0], b = Rr[(i0 + 1) % Rr.length], u = ((k * 37) % 100) / 100; m.position.set(a[0] + (b[0] - a[0]) * u, 0, a[1] + (b[1] - a[1]) * u); m.userData.poser("marche", 0); m.userData.anime = true; scene.add(m);
       MARCH.push({ m, R: Rr, i: (i0 + 1) % Rr.length, v: .9 + (k % 5) * .12 }); }
@@ -499,9 +500,9 @@ function construireNotreDame(A, L, scene) {
 
   /* ---------- là où l'on marche, la hauteur du sol ---------- */
   const enRampe = (x, z) => x > RAMPE_C[0] && x < RAMPE_C[1] && z < -22.5 && z > -25.1;
-  const enEsc = (x, z) => x > ESC[0] && x < ESC[1] && z > 22.4 && z < 31;
+  const enEsc = (x, z) => x > ESC[0] && x < ESC[1] && z > 22.4 && z < 25.25;
   const libreObs = (x, z) => !(x > -21 && x < 19 && z < -68.4 && z > -208);
-  L.hauteur = (x, z, p) => { if (enEsc(x, z)) return YB * Math.min(1, (31 - z) / 8.5);
+  L.hauteur = (x, z, p) => { if (enEsc(x, z)) return YB * Math.max(0, Math.min(1, (ESC[1] - x) / (ESC[1] - ESC[0])));
     for (const [a, b, c, d] of TR) if (x >= a && x <= b && z >= c && z <= d) return TROT;   // (sur le trottoir)
     if (enRampe(x, z)) { const u = (RAMPE_C[1] - x) / (RAMPE_C[1] - RAMPE_C[0]); return u < .25 ? 0 : YB * (u - .25) / .75; }
     const pont = x > PP[0] && x < PP[1]; if (Math.abs(z) < 22.5 && Math.abs(z) > 18) return pont && !(p && p.g && p.g.position.y < -2) ? 0 : YB; return 0; };   /* (sous le pont, au bord de l'eau, on reste en bas) */
@@ -509,7 +510,9 @@ function construireNotreDame(A, L, scene) {
     for (const [a, b, c, d] of OBS) if (x > a && x < b && z > c && z < d) return false;
     if (x > PP[0] + .6 && x < PP[1] - .6 && z > -25.8 && z < 25.8) return true;   // le pont
     if (Math.abs(z) > 18.4 && Math.abs(z) < 22.4) return true;   // les bas-ports
-    if (enEsc(x, z) || enRampe(x, z)) return true;
+    if (enEsc(x, z)) return !(z < 22.95 && x > ESC[0] + 3);   // l'escalier (le garde-corps, côté eau)
+    if (x > ESC[1] - ESCE + .3 && x < ESC[1] - .2 && z >= 25.25 && z <= 25.7) return true;   // (l'entrée de l'escalier, par le parapet)
+    if (enRampe(x, z)) return true;
     if (z > 25.7 && z < 44.4) return true;   // le grand quai
     if (x > PP[0] - 3.5 && x < PP[1] + 3.5 && z >= 44.4 && z < 125) return true;   // la rue du Petit-Pont
     if (z < -25.7 && z >= -31) return true;   // le quai de l'île, sa chaussée
@@ -534,6 +537,54 @@ function construireNotreDame(A, L, scene) {
   // le soir : la cathédrale illuminée par des projecteurs, les quais à la lueur des réverbères
   { const proj = new THREE.SpotLight(0xffe2b0, 0, 140, .5, .6, 1); proj.position.set(FAC.x, 4, -33); proj.target.position.set(FAC.x, 30, FAC.z); scene.add(proj); scene.add(proj.target); NUIT.push([{ set emissiveIntensity(v) { proj.intensity = v * 1800; } }, 0, 1]); }
 
+  /* ---------- (10.146) au loin, pour fermer la vue : la Seine qui continue et ses quais, un pont de pierre à chaque bout, les immeubles parisiens qui se prolongent ;
+     derrière, les toits de Paris en plusieurs plans ; au sud, le dôme du Panthéon ; au nord, la tour Saint-Jacques ---------- */
+  { const facL = [0, 1, 2].map(k => { const dess = (lit) => (c, w, h) => { const base = ["#dccaa6", "#d6c39e", "#e2d2b2"][k]; c.fillStyle = lit ? "#000" : base; c.fillRect(0, 0, w, h);
+        for (let r = 0; r < 7; r++) { const y = 8 + r * 34; if (!lit) { c.fillStyle = "rgba(120,104,80,.35)"; c.fillRect(0, y + 28, w, 2); } for (let i = 0; i < 4; i++) { const x = 10 + i * 62;
+          if (r === 6) { if (!lit) { c.fillStyle = "#2a2622"; c.fillRect(x - 4, y, 54, 30); c.fillStyle = ["#8a1c1c", "#2a4a38", "#3a3a5a"][(i + k) % 3]; c.fillRect(x - 6, y - 4, 58, 7); } else if ((i + k) % 2) { c.fillStyle = "#ffcf80"; c.fillRect(x - 2, y + 4, 50, 24); } continue; }
+          if (lit) { if ((r * 7 + i * 3 + k) % 5 === 0) { c.fillStyle = "#ffd890"; c.fillRect(x + 8, y + 2, 26, 22); } continue; }
+          c.fillStyle = "#e8e0cc"; c.fillRect(x + 6, y, 30, 26); c.fillStyle = "#3a4654"; c.fillRect(x + 9, y + 2, 24, 22); c.fillStyle = "#e8e0cc"; c.fillRect(x + 20, y + 2, 2, 22);
+          if (r === 1 || r === 4) { c.fillStyle = "#1a1a1a"; c.fillRect(0, y + 18, w, 2); for (let b = 0; b < w; b += 4) c.fillRect(b, y + 18, 1, 8); } } } };
+        const t = tT(256, 256, dess(false), 1, 1), te = tT(256, 256, dess(true), 1, 1); const m = mat({ map: t, roughness: .9, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: 0 }); NUIT.push([m, 0, .9]); return m; });
+    const zincL = mat({ color: 0x7e8894, roughness: .5, metalness: .3 }), briqL = mat({ color: 0xa65a3e, roughness: .9 }), murC = mat({ color: 0xcfbf9e, roughness: .95 });
+    const loin = (x, z, rot, W, H, k = 0) => { const T = new THREE.Matrix4().makeRotationY(rot).setPosition(x, 0, z), D = 12;
+      const g = new THREE.BoxGeometry(W, H, D), uv = g.attributes.uv; for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) { const i = f * 4 + v; if (f === 4 || f === 5) uv.setXY(i, uv.getX(i) * W / 15.6, uv.getY(i)); else uv.setXY(i, 0.02, 0.5); }
+      const o = new THREE.Mesh(g, [murC, murC, murC, murC, facL[k % 3], murC]); o.position.set(0, H / 2, -D / 2); o.applyMatrix4(T); scene.add(o);
+      const t = new THREE.Shape(); t.moveTo(0, 0); t.lineTo(D, 0); t.lineTo(D - 1.2, 3.2); t.lineTo(D / 2, 4.4); t.lineTo(1.2, 3.2); t.closePath(); const rg = new THREE.ExtrudeGeometry(t, { depth: W, bevelEnabled: false }); rg.rotateY(Math.PI / 2); rg.translate(-W / 2, H, 0);
+      const r = new THREE.Mesh(rg, zincL); r.applyMatrix4(T); scene.add(r);
+      for (const cx of [-W / 2 + .8, W / 2 - .8]) { const c = new THREE.Mesh(new THREE.BoxGeometry(1, 2.4, 2.6), briqL); c.position.set(cx, H + 3.6, -D / 2); c.applyMatrix4(T); scene.add(c); } };
+    const rang = (x0, x1, z, rot, H0, saut) => { let k = 0; for (let x = x0; x < x1;) { const W = 16 + ((k * 7) % 4) * 3; if (!saut || !saut(x + W / 2)) loin(x + W / 2, z, rot, W, H0 + ((k * 5) % 3) * 2.2, k); x += W; k++; } };
+    // la Seine, les bas-ports, les murs et les parapets, les quais, au-delà des deux bouts
+    for (const [a, b] of [[-330, -XS], [XS, 330]]) { const cx = (a + b) / 2, L2 = b - a;
+      sol(a, b, -18, 18, mat({ map: eauT, roughness: .15, metalness: .3, color: 0xb8d0c8 }), YE);
+      for (const s of [1, -1]) { sol(a, b, s > 0 ? 18 : -22.5, s > 0 ? 22.5 : -18, paveB, YB); box(L2, YB - YE + .2, .6, murM, cx, (YB + YE) / 2, s * 18); box(L2, -YB, 2.8, murM, cx, YB / 2, s * 23.9); box(L2, 1, .55, quaiM, cx, .5, s * 25.3); box(L2, .12, .8, quaiM, cx, 1.06, s * 25.3); }
+      sol(a, b, 25.6, 46, paveM, .02); sol(a, b, -32, -25.6, trottM, .02); sol(a, b, 46, 300, paveM, .005); sol(a, b, -300, -32, paveM, .005);
+      for (let x = a + 6; x < b; x += 18) platane(x, 30.2, 1); }
+    // un pont de pierre à chaque bout (le pont Saint-Michel à l'ouest, le pont de l'Archevêché à l'est)
+    for (const xp of [-212, 214]) { const W = 18, a = new THREE.Shape(); a.moveTo(-25.6, 0); a.lineTo(25.6, 0); a.lineTo(25.6, YE - .2);
+      for (const [c, r, s0, rv] of [[12.7, 4.3, -5.0, 3.6], [0, 7, -5.2, 4.3], [-12.7, 4.3, -5.0, 3.6]]) { a.lineTo(c + r, YE - .2); a.lineTo(c + r, s0); a.absellipse(c, s0, r, rv, 0, Math.PI, false); a.lineTo(c - r, YE - .2); } a.lineTo(-25.6, YE - .2); a.closePath();
+      const ag = new THREE.ExtrudeGeometry(a, { depth: W, bevelEnabled: false, curveSegments: 14 }); { const uv = ag.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / TUILE, uv.getY(i) / TUILE); } ag.rotateY(Math.PI / 2); add(ag, murM, xp - W / 2, 0, 0);
+      sol(xp - W / 2, xp + W / 2, -25.6, 25.6, routeM, .03); for (const sx of [xp - W / 2 + .2, xp + W / 2 - .2]) { box(.4, .12, 51.2, quaiM, sx, .06, 0); box(.44, .14, 51.2, quaiM, sx, .93, 0); for (let z = -25; z <= 25; z += .5) box(.12, .8, .12, quaiM, sx, .5, z); for (const z of [-7.7, 7.7]) reverbere(sx + (sx > xp ? 1 : -1) * .6, z); } }
+    // les immeubles qui prolongent les quais
+    rang(-330, -XS - 4, 46, Math.PI, 20); rang(XS + 4, 330, 46, Math.PI, 20); rang(-330, -XS - 4, -32, 0, 20); rang(XS + 4, 330, -32, 0, 20);
+    // les toits de Paris derrière, en plusieurs plans : rive gauche, l'île, rive droite
+    const rue = (x) => x > PP[0] - 6 && x < PP[1] + 6;
+    for (const [z, H] of [[86, 24], [122, 27], [160, 29], [205, 31]]) rang(-320, 320, z, Math.PI, H, z < 140 ? rue : null);
+    for (const [z, H] of [[-62, 22], [-100, 23], [-140, 24], [-180, 24], [-222, 25]]) { rang(-320, -70, z, 0, H); rang(70, 320, z, 0, H); }
+    for (const z of [-141, -158, -175, -192, -209]) { loin(-62, z, Math.PI / 2, 17, 22, (z / 17) | 0); loin(62, z, -Math.PI / 2, 17, 22, ((z / 17) | 0) + 1); }
+    for (const [z, H] of [[-262, 27], [-300, 30]]) rang(-320, 320, z, 0, H);
+    // le Panthéon, au sud : le péristyle, le tambour et sa colonnade, le dôme, la lanterne
+    { const pp = mat({ color: 0xe2d6bc, roughness: .9 }), pd = mat({ color: 0x9aa4ae, roughness: .5, metalness: .3 }), X = -30, Z = 262;
+      box(60, 26, 50, pp, X, 13, Z); box(34, 22, 10, pp, X, 11, Z - 30); const fr = new THREE.Shape(); fr.moveTo(-17, 0); fr.lineTo(17, 0); fr.lineTo(0, 7); fr.closePath(); add(new THREE.ExtrudeGeometry(fr, { depth: 2, bevelEnabled: false }), pp, X, 22, Z - 36);
+      for (let i = 0; i < 6; i++) cyl(.9, .9, 20, pp, X - 15 + i * 6, 11, Z - 35, 10);
+      cyl(15, 15, 6, pp, X, 29, Z, 32); cyl(12, 12, 16, pp, X, 40, Z, 32); for (let i = 0; i < 32; i++) { const a = i / 32 * Math.PI * 2; cyl(.55, .55, 14, pp, X + Math.cos(a) * 13.4, 40, Z + Math.sin(a) * 13.4, 8); }
+      box(30, 1.2, 30, pp, X, 48.5, Z); const d = add(new THREE.SphereGeometry(11.5, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), pd, X, 49, Z); d.scale.y = 1.25; cyl(2, 2.6, 6, pp, X, 66, Z, 12); cyl(.1, 1.6, 5, pd, X, 71, Z, 10); }
+    // la tour Saint-Jacques, au nord : la tour gothique, ses contreforts, ses pinacles
+    { const ts = mat({ color: 0xd8ccb2, roughness: .9 }), X = -95, Z = -278; box(10, 52, 10, ts, X, 26, Z); for (const [dx, dz] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) { box(1.6, 50, 1.6, ts, X + dx, 25, Z + dz); cyl(.05, .9, 5, ts, X + dx, 54, Z + dz, 4); }
+      for (let y = 6; y < 48; y += 9) for (const s of [-1, 1]) { box(2.4, 6, .3, mat({ color: 0x3a3630 }), X - 2.2, y, Z + s * 5.05); box(2.4, 6, .3, mat({ color: 0x3a3630 }), X + 2.2, y, Z + s * 5.05); }
+      box(11, 1.2, 11, ts, X, 52.6, Z); }
+    // (on voit plus loin : la brume s'écarte, sur cette carte)
+    const a12 = L.anim; L.anim = (tm) => { try { a12 && a12(tm); } catch (e) {} if (M && M.L === L && scene.fog && scene.fog.far < 290) { scene.fog.near = 120; scene.fog.far = 295; } }; }
   /* (10.146) la musique du quartier, en continu, pas trop fort : la valse d'Amélie ; coupée quand on quitte la carte */
   { let son = null, v = 0; const a11 = L.anim; L.anim = (tm) => { try { a11 && a11(tm); } catch (e) {} const moi = M && M.L === L && !M.cine && M.moiNum && M.gens.get(M.moiNum);
       const cible = moi && !window.mxArcadeOn && !document.hidden ? .35 * (M.barVol ?? 1) : 0;
