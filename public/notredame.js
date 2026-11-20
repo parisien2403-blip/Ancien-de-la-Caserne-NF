@@ -66,10 +66,11 @@ function construireNotreDame(A, L, scene) {
     { let seg = [[-XS, XS]]; for (const [o0, o1] of [pa, PP]) seg = seg.flatMap(([a, b]) => o1 <= a || o0 >= b ? [[a, b]] : [[a, o0], [o1, b]].filter(([u, v]) => v - u > .1));
       for (const [a, b] of seg) { box(b - a, 1, .55, quaiM, (a + b) / 2, .5, s * 25.3); box(b - a, .12, .8, quaiM, (a + b) / 2, 1.06, s * 25.3); } }   // le parapet et sa tablette
   }
-  // la rampe de l'île
+  // la rampe de l'île (visible des deux côtés : plus de trou de ciel)
+  const paveDS = paveB.clone(); paveDS.side = THREE.DoubleSide;
   { const [r0, r1] = RAMPE_C; box(r1 - r0, -YB, .4, murM, (r0 + r1) / 2, YB / 2, -25.1);
     const g = new THREE.PlaneGeometry(r1 - r0, 2.4); g.rotateX(-Math.PI / 2); const P = g.attributes.position; for (let i = 0; i < P.count; i++) { const x = P.getX(i) + (r0 + r1) / 2, u = (r1 - x) / (r1 - r0); P.setY(i, u < .25 ? 0 : YB * (u - .25) / .75); } g.computeVertexNormals();
-    add(g, paveB, (r0 + r1) / 2, .01, -23.8); }
+    add(g, paveDS, (r0 + r1) / 2, .01, -23.8); }
   // (10.146) le grand escalier de pierre de la rive gauche : il descend le long du mur du quai, parallèle à la Seine ; on y entre depuis le trottoir, par une ouverture du parapet ; un garde-corps côté eau
   { const [e0, e1] = ESC, Lg = e1 - e0, N = 26, D = Lg / N;
     for (let i = 0; i < N; i++) { const top = YB * (i + 1) / N, x = e1 - (i + .5) * D; box(D + .02, top - YB + .02, 2.6, quaiM, x, (top + YB) / 2, 23.8); box(.06, .04, 2.6, lig, e1 - i * D - .03, top + .01, 23.8); }
@@ -81,6 +82,7 @@ function construireNotreDame(A, L, scene) {
   sol(PP[0], PP[1], 25.6, 130, routeM, .03); for (const sx of [PP[0], PP[1]]) box(.25, .14, 104, quaiM, sx, .07, 78);
   sol(-XS, XS, -31, -25.6, trottM, .02); sol(-XS, XS, -30.5, -26, routeM, .03); for (const z of [-30.5, -26]) box(XS * 2, .14, .25, quaiM, 0, .07, z);
   { const pm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), lig); void pm; for (let x = -XS; x < XS; x += 6) box(3, .01, .12, lig, x, .04, -28.25); }
+  { const fond = mat({ color: 0x3a3630, roughness: 1 }); sol(-330, 330, 25.0, 300, fond, -.35); sol(-330, 330, -300, -25.0, fond, -.35); sol(-330, 330, 22.4, 25.4, fond, YB - .3); sol(-330, 330, -25.4, -22.4, fond, YB - .3); }   // (un fond sous les quais : aucune fente ne laisse voir le ciel)
   sol(-XS, XS, -232, -31, paveM, .01); sol(-62, 62, -215, -31, parvisM, .015);
   /* (les trottoirs, surélevés, et leurs bordures de granit : le long du parapet, sous les boîtes des bouquinistes ; le long des immeubles, sous les terrasses et les devantures ;
      dans la rue du Petit-Pont ; devant les immeubles de l'île et ceux qui bordent le parvis) */
@@ -587,10 +589,15 @@ function construireNotreDame(A, L, scene) {
     for (const [a, b, c, d] of TR) if (x >= a && x <= b && z >= c && z <= d) return TROT;   // (sur le trottoir)
     if (enRampe(x, z)) { const u = (RAMPE_C[1] - x) / (RAMPE_C[1] - RAMPE_C[0]); return u < .25 ? 0 : YB * (u - .25) / .75; }
     const pont = x > PP[0] && x < PP[1]; if (Math.abs(z) < 22.5 && Math.abs(z) > 18) return pont && !(p && p.g && p.g.position.y < -2) ? 0 : YB; return 0; };   /* (sous le pont, au bord de l'eau, on reste en bas) */
+  // (10.147) les obstacles, rangés par cases de 4 m : la carte des passages se calcule d'un coup, sans figer le jeu
+  let OBSH = null; const obsCase = (x, z) => ((Math.floor(x / 4) + 200) << 10) | (Math.floor(z / 4) + 200);
+  const obsIci = (x, z) => { if (!OBSH) { OBSH = new Map(); for (const r of OBS) for (let i = Math.floor(r[0] / 4); i <= Math.floor(r[1] / 4); i++) for (let j = Math.floor(r[2] / 4); j <= Math.floor(r[3] / 4); j++) { const k = ((i + 200) << 10) | (j + 200); (OBSH.get(k) || OBSH.set(k, []).get(k)).push(r); } }
+    const l = OBSH.get(obsCase(x, z)); if (l) for (const [a, b, c, d] of l) if (x > a && x < b && z > c && z < d) return true; return false; };
+  const moiBas = () => { try { const p = M && M.moiNum && M.gens.get(M.moiNum); return !!(p && p.g.position.y < -2); } catch (e) { return false; } };
   L.limites = (x, z) => { if (x < -XS + 2 || x > XS - 2) return false;
-    for (const [a, b, c, d] of OBS) if (x > a && x < b && z > c && z < d) return false;
+    if (obsIci(x, z)) return false;
     if (x > PP[0] + .6 && x < PP[1] - .6 && z > -25.8 && z < 25.8) return true;   // le pont
-    if (Math.abs(z) > 18.4 && Math.abs(z) < 22.4) return true;   // les bas-ports
+    if (Math.abs(z) > 18.4 && Math.abs(z) < 22.4) return !(x > PP[0] - .5 && x < PP[1] + .5) || moiBas();   // les bas-ports (sous le pont, seulement quand on est en bas : on ne sort pas du pont par la rambarde)
     if (enEsc(x, z)) return !(z < 22.95 && x > ESC[0] + 3);   // l'escalier (le garde-corps, côté eau)
     if (x > ESC[1] - ESCE + .3 && x < ESC[1] - .2 && z >= 25.25 && z <= 25.7) return true;   // (l'entrée de l'escalier, par le parapet)
     if (enRampe(x, z)) return true;
