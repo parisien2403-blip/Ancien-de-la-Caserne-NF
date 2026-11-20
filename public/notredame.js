@@ -118,11 +118,17 @@ function construireNotreDame(A, L, scene) {
   const ENS = [["CAFÉ LE PETIT PONT", "#8a1a1a", 1], ["SHAKESPEARE AND COMPANY", "#1e4a2a", 0], ["BRASSERIE NOTRE-DAME", "#8a1a1a", 1], ["LIBRAIRIE ANCIENNE", "#1e4a3a", 0], ["CAFÉ DE LA SEINE", "#7a1a1a", 1], ["GALERIE D'ESTAMPES", "#2e4a3a", 0], ["LE BISTROT DU PARVIS", "#8a2a1a", 1], ["SOUVENIRS DE PARIS", "#1a4a3a", 0], ["AUX TOURS DE NOTRE-DAME", "#8a1a1a", 1], ["PAPETERIE", "#2a4a3a", 0]];
   const storeR = mat({ color: 0xa82424, roughness: .8 }), storeV = mat({ color: 0x2a4a3a, roughness: .8 }), tableM = mat({ color: 0x2a2a2a, metalness: .4, roughness: .5 }), chaiseM = mat({ color: 0xb8925a, roughness: .7 });
   let kI = 0;
-  const immeuble = (x, z, rot, larg = 16.4, et, terrasse = true) => { const k = kI++, [nom, coul, cafe] = ENS[k % ENS.length];
+  /* (d'après les images) les façades photographiées : le long immeuble à porte cochère, l'immeuble d'angle — et leur reflet en miroir, pour varier */
+  const TL = new THREE.TextureLoader(), photo = (n, miroir) => { const t = TL.load(`images/notredame/${n}.webp?v=2`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; if (miroir) { t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; t.offset.x = 1; } return t; };
+  const phM = (n, m) => { const t = photo(n, m), o = mat({ map: t, roughness: .9, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .32 }); NUIT.push([o, .32, .1]); return o; };   // (la façade garde sa lumière, même à l'ombre)
+  const PH = { long: [0, 1].map(m => phM("immeuble-long", m)), angle: [0, 1].map(m => phM("immeuble-angle", m)) }, LARG = { long: 34, angle: 16.4 };
+  const immeuble = (x, z, rot, larg = 16.4, et, terrasse = true, ph = null) => { const k = kI++, [nom, coul, cafe] = ENS[k % ENS.length];
     const rdc = (c, w, yr, h) => { c.fillStyle = "#3a2a20"; c.fillRect(0, yr, w, h); c.fillStyle = coul; c.fillRect(10, yr + 6, w - 20, 34); c.fillStyle = "#f2e6c8"; c.font = "bold 22px Georgia, serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(nom, w / 2, yr + 24);
       for (let i = 0; i < 4; i++) { const X = 20 + i * (w - 40) / 4; const g = c.createLinearGradient(0, yr + 48, 0, yr + h); g.addColorStop(0, "#f2d8a6"); g.addColorStop(1, "#8a6440"); c.fillStyle = g; c.fillRect(X + 4, yr + 50, (w - 40) / 4 - 8, h - 54); c.fillStyle = "rgba(255,255,255,.14)"; c.fillRect(X + 4, yr + 50, 10, h - 54); } };
-    const o = A.haussmann({ x, z, largeur: larg, etages: et || 5 + (k % 2), rot, teinte: teintes[k % 5], graine: 200 + k, rdc }); L.nuitObjets.push(...o.userData.nuit); L.silhouettes.push(...o.userData.silhouettes);
-    const sm = cafe ? storeR : storeV; for (let i = 0; i < 3; i++) { const lw = (larg - 3) / 3, lx = -larg / 2 + 1.5 + (i + .5) * lw; const st = new THREE.Mesh(new THREE.BoxGeometry(lw - .4, .06, 1.9), sm); st.position.set(lx, 3.3, .9); st.rotation.x = .32; o.add(st); const la = new THREE.Mesh(new THREE.BoxGeometry(lw - .4, .32, .03), sm); la.position.set(lx, 2.84, 1.8); o.add(la); }
+    const o = A.haussmann({ x, z, largeur: larg, etages: et || 5 + (k % 2), rot, teinte: teintes[k % 5], graine: 200 + k, rdc });
+    if (ph) { const corps = o.children.find(c => Array.isArray(c.material)); if (corps) { const ms = corps.material.slice(); ms[4] = PH[ph][k % 2]; corps.material = ms; } for (const n of o.userData.nuit) o.remove(n); }   // (la façade photographiée ; ses fenêtres sont déjà dessinées)
+    else { L.nuitObjets.push(...o.userData.nuit); L.silhouettes.push(...o.userData.silhouettes); }
+    const sm = cafe ? storeR : storeV; if (!ph) for (let i = 0; i < 3; i++) { const lw = (larg - 3) / 3, lx = -larg / 2 + 1.5 + (i + .5) * lw; const st = new THREE.Mesh(new THREE.BoxGeometry(lw - .4, .06, 1.9), sm); st.position.set(lx, 3.3, .9); st.rotation.x = .32; o.add(st); const la = new THREE.Mesh(new THREE.BoxGeometry(lw - .4, .32, .03), sm); la.position.set(lx, 2.84, 1.8); o.add(la); }
     if (cafe && terrasse) { o.updateMatrixWorld(true); const T = o.matrixWorld;
       for (const lx of [-5.2, -1.7, 1.8, 5.3]) { const p = new THREE.Vector3(lx, 0, 2.6).applyMatrix4(T); cyl(.38, .38, .04, tableM, p.x, .74, p.z, 14); cyl(.03, .03, .72, tableM, p.x, .37, p.z, 6); OBS.push([p.x - .4, p.x + .4, p.z - .4, p.z + .4]);
         for (const sx of [-.7, .7]) { const c = new THREE.Vector3(lx + sx, 0, 2.6).applyMatrix4(T), cap = Math.atan2(p.x - c.x, p.z - c.z), dx = Math.sin(cap), dz = Math.cos(cap);
@@ -130,15 +136,17 @@ function construireNotreDame(A, L, scene) {
           (L.tabourets = L.tabourets || []).push([c.x, c.z, cap, .46]); } } }
     return o; };
   // le quai, rive gauche : la rangée face à la Seine, coupée par la rue du Petit-Pont
-  for (let x = -22.2; x > -XS - 4; x -= 17) immeuble(x, 46, Math.PI);
-  for (let x = 20.2; x < XS + 4; x += 17) immeuble(x, 46, Math.PI);
+  // une rangée de façades photographiées, en alternant l'immeuble d'angle et le long immeuble ; (x, z) avancent le long de la rangée
+  const rangee = (x0, z0, dx, dz, lim, rot, types, terr = true) => { let s = 0, i = 0; while (s < lim) { const t = types[i++ % types.length], w = LARG[t], c = s + w / 2; immeuble(x0 + dx * c, z0 + dz * c, rot, w, 4, terr, t); s += w; } };
+  // le quai, rive gauche : la rangée face à la Seine, coupée par la rue du Petit-Pont
+  rangee(PP[0] - 4, 46, -1, 0, XS - 10, Math.PI, ["angle", "long", "angle", "angle", "long"]);
+  rangee(PP[1] + 4, 46, 1, 0, XS - 8, Math.PI, ["angle", "long", "angle", "long", "angle"]);
   // la rue du Petit-Pont, qui file vers le sud
-  for (const z of [66.5, 83.5, 100.5, 117.5]) { immeuble(PP[0] - 4, z, Math.PI / 2, 16.4, 6, false); immeuble(PP[1] + 4, z, -Math.PI / 2, 16.4, 6, false); }
-  immeuble(-1, 134, Math.PI, 30, 6, false);
+  rangee(PP[0] - 4, 58.2, 0, 1, 70, Math.PI / 2, ["angle"], false); rangee(PP[1] + 4, 58.2, 0, 1, 70, -Math.PI / 2, ["angle"], false);
+  immeuble(-1, 134, Math.PI, 34, 4, false, "long");
   // l'île : les immeubles du quai, face à la Seine ; ceux qui bordent le parvis, à droite et à gauche
-  for (let x = -71.2; x > -XS - 4; x -= 17) immeuble(x, -32, 0, 16.4, 5, false);
-  for (let x = 71.2; x < XS + 4; x += 17) immeuble(x, -32, 0, 16.4, 5, false);
-  for (const z of [-53, -70, -87, -104, -121]) { immeuble(-62, z, Math.PI / 2); immeuble(62, z, -Math.PI / 2); }
+  rangee(-63, -32, -1, 0, XS - 60, 0, ["angle", "long"], false); rangee(63, -32, 1, 0, XS - 60, 0, ["angle", "long"], false);
+  rangee(-62, -44.6, 0, -1, 85, Math.PI / 2, ["long", "angle"]); rangee(62, -44.6, 0, -1, 85, -Math.PI / 2, ["long", "angle"]);
   // la bouche de métro Saint-Michel – Notre-Dame : la balustrade de fonte, l'enseigne
   { const mx = -70, mz = 42.6; for (const [w, d, x, z] of [[4.2, .06, mx, mz - 1.4], [.06, 2.8, mx - 2.1, mz], [.06, 2.8, mx + 2.1, mz]]) box(w, .9, d, fonteR, x, .45, z);
     const enT = tT(256, 48, (c, w, h) => { c.fillStyle = "#1a3a2a"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8d890"; c.font = "bold 26px Georgia"; c.textAlign = "center"; c.fillText("MÉTROPOLITAIN", w / 2, 34); });
@@ -174,7 +182,7 @@ function construireNotreDame(A, L, scene) {
   { const pierre = mat({ color: 0xd6cbb0, roughness: .85 }), pierreS = mat({ color: 0xbfb398, roughness: .9 }), plomb = mat({ color: 0x8a98a6, roughness: .4, metalness: .45 }), vitrail = mat({ color: 0x1a2440, roughness: .2, metalness: .3, emissive: 0x2a3a8a, emissiveIntensity: .05 });
     NUIT.push([vitrail, .05, .5]);
     // la façade : les trois portails, la galerie des rois, la rose et ses baies, la galerie à claire-voie, les deux tours et leurs grandes baies
-    const facT = tT(1024, 1600, (c, w, h) => { c.fillStyle = PIERRE; c.fillRect(0, 0, w, h); const sx = w / 40, sy = h / 63;
+    const facT = 0 ? tT(1024, 1600, (c, w, h) => {   /* (l'ancienne façade dessinée, remplacée par l'image)*/ c.fillStyle = PIERRE; c.fillRect(0, 0, w, h); const sx = w / 40, sy = h / 63;
       for (let i = 0; i < 2600; i++) { c.fillStyle = `rgba(${al() < .5 ? "120,110,90" : "255,250,235"},${al() * .08})`; c.fillRect(al() * w, al() * h, 3 + al() * 20, 2 + al() * 8); }
       for (let y = 0; y < h; y += 14) { c.fillStyle = "rgba(110,95,70,.12)"; c.fillRect(0, y, w, 1); }
       const Y = (m) => h - m * sy, X = (m) => (m + 20) * sx;
@@ -201,16 +209,16 @@ function construireNotreDame(A, L, scene) {
       for (let k = 0; k < 40; k++) { c.fillStyle = "#b0a486"; c.fillRect(X(-20) + k * sx, Y(62), sx * .6, Y(60) - Y(62)); }   // la balustrade du sommet
       // entre les tours, au-dessus de la galerie : le ciel (la façade s'arrête)
       c.clearRect(X(-7), 0, 14 * sx, Y(41.5));
-    });
-    const FX = ND.x0, FH = 63; facT.anisotropy = 8;
-    { const fm = new THREE.MeshStandardMaterial({ map: facT, transparent: true, alphaTest: .5, roughness: .85, emissive: 0xffe8c0, emissiveMap: facT, emissiveIntensity: 0 }); NUIT.push([fm, 0, .55]);   /* (le soir, la façade illuminée) */
+    }) : null;
+    const FX = ND.x0, FH = 63;
+    { const facP = photo("facade-nd"); facP.anisotropy = 16; const fm = new THREE.MeshStandardMaterial({ map: facP, transparent: true, alphaTest: .5, roughness: .85, emissive: 0xffe8c0, emissiveMap: facP, emissiveIntensity: 0 }); void facT;   /* (d'après l'image : la vraie façade, ses portails sculptés, la galerie des rois, la rose) */ NUIT.push([fm, 0, .55]);   /* (le soir, la façade illuminée) */
       const fp = add(new THREE.PlaneGeometry(40, FH), fm, FX - .55, FH / 2, CZ, -Math.PI / 2); void fp; }
     // les volumes derrière la façade : les tours, le corps central, les contreforts en saillie
     for (const sz of [-1, 1]) { box(12, FH - .2, 13, pierre, FX + 6.6, (FH - .2) / 2, CZ + sz * 13.4); box(13.4, 1, 13.4, pierreS, FX + 6.6, FH - .1, CZ + sz * 13.4);
       for (const [dx, dz] of [[-6, -6], [6, -6], [-6, 6], [6, 6]]) { cyl(.5, .7, 2.2, pierreS, FX + 6.6 + dx, FH + 1.5, CZ + sz * 13.4 + dz, 8); cyl(.02, .5, 3.4, pierreS, FX + 6.6 + dx, FH + 4.2, CZ + sz * 13.4 + dz, 8); }   // les pinacles aux angles des tours
       cyl(.02, 1.2, 5, plomb, FX + 6.6, FH + 2.5, CZ + sz * 13.4, 4); }
     box(12.6, 41.5, 12, pierre, FX + 6.9, 20.75, CZ);
-    for (const z of [-20, -13.3, -6.8, 6.8, 13.3, 20]) box(.5, 42, 1.4, pierreS, FX - .85, 21, CZ + z);
+    /* (les contreforts sont dans l'image de la façade) */
     // la nef et le chœur, le toit de plomb, les bas-côtés, les fenêtres hautes
     const NX0 = FX + 12, NX1 = ND.x1, NL = NX1 - NX0, NH = 33, NW = 14;
     const nefT = tT(512, 256, (c, w, h) => { c.fillStyle = PIERRE; c.fillRect(0, 0, w, h); for (let i = 0; i < 300; i++) { c.fillStyle = `rgba(${al() < .5 ? "120,110,90" : "255,250,235"},${al() * .08})`; c.fillRect(al() * w, al() * h, 3 + al() * 14, 2 + al() * 6); }

@@ -13125,6 +13125,17 @@ function abribus(scene, x, y, z, ry, affiche) {
   const vertF = new THREE.MeshStandardMaterial({ color: 0x1e3a2c, roughness: .5, metalness: .3 }), verre = new THREE.MeshStandardMaterial({ color: 0xcfe2ea, transparent: true, opacity: .3, roughness: .05 }), add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
   for (const sx of [-1.7, 1.7]) for (const sz of [-.55, .55]) add(new THREE.BoxGeometry(.07, 2.4, .07), vertF, sx, 1.2, sz);
   add(new THREE.BoxGeometry(3.7, .1, 1.5), vertF, 0, 2.45, 0);   // (le toit)
+  // (10.145, d'après l'image des abribus des années 80) le toit ondulé translucide dans son cadre vert, le plan du quartier sous verre, l'horloge
+  { const ond = tex(toile(256, 64, (c) => { c.fillStyle = "#c8ccc8"; c.fillRect(0, 0, 256, 64); for (let x = 0; x < 256; x += 8) { c.fillStyle = "rgba(255,255,255,.55)"; c.fillRect(x, 0, 3, 64); c.fillStyle = "rgba(60,70,64,.35)"; c.fillRect(x + 5, 0, 2, 64); } }));
+    const to = add(new THREE.BoxGeometry(3.86, .05, 1.62), new THREE.MeshStandardMaterial({ map: ond, roughness: .35, metalness: .2 }), 0, 2.53, .02); to.rotation.x = -.06;
+    for (const sz of [-.8, .8]) add(new THREE.BoxGeometry(3.9, .08, .06), vertF, 0, 2.55 - sz * .05, sz);
+    const plan = tex(toile(256, 192, (c) => { c.fillStyle = "#f2efe4"; c.fillRect(0, 0, 256, 192); c.strokeStyle = "#c8c0a8"; c.lineWidth = 6; for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(0, 20 + i * 22 + (i % 3) * 5); c.lineTo(256, 10 + i * 20); c.stroke(); c.beginPath(); c.moveTo(14 + i * 30, 0); c.lineTo(30 + i * 27, 192); c.stroke(); }
+      c.strokeStyle = "#6a9ac8"; c.lineWidth = 14; c.beginPath(); c.moveTo(0, 120); c.bezierCurveTo(80, 90, 160, 150, 256, 110); c.stroke(); c.strokeStyle = "#2a8a5a"; c.lineWidth = 4; c.beginPath(); c.moveTo(20, 40); c.lineTo(110, 70); c.lineTo(200, 60); c.stroke(); c.fillStyle = "#c8202a"; c.beginPath(); c.arc(128, 96, 7, 0, 7); c.fill();
+      c.fillStyle = "#1e3a2c"; c.fillRect(0, 0, 256, 22); c.fillStyle = "#fff"; c.font = "bold 15px Arial"; c.fillText("PLAN DU QUARTIER", 8, 16); }));
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.3, .95), new THREE.MeshStandardMaterial({ map: plan, roughness: .5 })); pl.position.set(-.3, 1.55, -.53); g.add(pl); add(new THREE.BoxGeometry(1.38, 1.03, .03), vertF, -.3, 1.55, -.55);
+    const hor = tex(toile(128, 128, (c) => { c.fillStyle = "#fbfbf6"; c.beginPath(); c.arc(64, 64, 62, 0, 7); c.fill(); c.strokeStyle = "#222"; c.lineWidth = 3; for (let k = 0; k < 12; k++) { const t = k / 6 * Math.PI; c.beginPath(); c.moveTo(64 + Math.cos(t) * 50, 64 + Math.sin(t) * 50); c.lineTo(64 + Math.cos(t) * 58, 64 + Math.sin(t) * 58); c.stroke(); } c.lineWidth = 5; c.beginPath(); c.moveTo(64, 64); c.lineTo(64, 26); c.stroke(); c.lineWidth = 4; c.beginPath(); c.moveTo(64, 64); c.lineTo(92, 76); c.stroke(); }));
+    add(new THREE.CylinderGeometry(.2, .2, .08, 20), vertF, 0, 2.18, .52).rotation.x = Math.PI / 2; add(new THREE.BoxGeometry(.04, .2, .04), vertF, 0, 2.36, .52);
+    for (const sg of [1, -1]) { const f = new THREE.Mesh(new THREE.CircleGeometry(.17, 20), new THREE.MeshBasicMaterial({ map: hor })); f.position.set(0, 2.18, .52 + sg * .045); if (sg < 0) f.rotation.y = Math.PI; g.add(f); } }
   add(new THREE.BoxGeometry(3.4, 2.1, .02), verre, 0, 1.25, -.55);   // (la vitre du fond)
   add(new THREE.BoxGeometry(.02, 2.1, 1.0), verre, -1.7, 1.25, 0);
   // (10.14) l'affiche publicitaire, éclairée dans son caisson : une vraie pub des années 80-90
