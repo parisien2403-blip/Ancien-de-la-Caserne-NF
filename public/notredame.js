@@ -10,7 +10,7 @@ function construireNotreDame(A, L, scene) {
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || 1); } return t; };
   const mat = (o) => new THREE.MeshStandardMaterial({ roughness: .85, ...o });
   const add = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.receiveShadow = true; scene.add(o); return o; };
-  const box = (w, h, d, m, x, y, z, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, ry);
+  const box = (w, h, d, m, x, y, z, ry = 0) => { const g = new THREE.BoxGeometry(w, h, d); if (typeof PIERRES !== "undefined" && PIERRES.has(m)) uvMonde(g, w, h, d); return add(g, m, x, y, z, ry); };
   const cyl = (rt, rb, h, m, x, y, z, seg = 10) => add(new THREE.CylinderGeometry(rt, rb, h, seg), m, x, y, z);
   const sol = (x0, x1, z0, z1, m, y) => { const s = add(new THREE.PlaneGeometry(x1 - x0, z1 - z0), m, (x0 + x1) / 2, y, (z0 + z1) / 2); s.rotation.x = -Math.PI / 2; return s; };
   L.nuitObjets = L.nuitObjets || []; L.silhouettes = L.silhouettes || []; const NUIT = [];
@@ -22,8 +22,10 @@ function construireNotreDame(A, L, scene) {
   const pierreT = (base, joint, rx, ry, bloc = [64, 32]) => tT(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += bloc[1]) for (let x = (y / bloc[1] % 2) * bloc[0] / 2 - bloc[0]; x < w; x += bloc[0]) { c.fillStyle = `rgba(${al() < .5 ? "90,80,60" : "255,250,235"},${al() * .1})`; c.fillRect(x + 1, y + 1, bloc[0] - 2, bloc[1] - 2); c.fillStyle = joint; c.fillRect(x, y, bloc[0], 1.5); c.fillRect(x, y, 1.5, bloc[1]); }
     for (let i = 0; i < 300; i++) { c.fillStyle = `rgba(60,50,40,${al() * .08})`; c.fillRect(al() * w, al() * h, 2 + al() * 8, 2 + al() * 8); } }, rx, ry);
   const paveT = (base, rx, ry) => tT(256, 256, (c, w, h) => { c.fillStyle = "#4a4640"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) for (let x = (y / 16 % 2) * 10; x < w; x += 20) { const k = al(); c.fillStyle = `rgb(${base[0] + k * 30 - 15},${base[1] + k * 30 - 15},${base[2] + k * 26 - 13})`; c.beginPath(); c.roundRect(x + 1.5, y + 1.5, 17, 13, 3); c.fill(); } }, rx, ry);
-  const quaiM = mat({ map: pierreT("#c8bca2", "rgba(90,80,60,.5)", 30, 2, [48, 24]) });
-  const murM = mat({ map: pierreT("#b8ac92", "rgba(80,70,50,.55)", 40, 1, [64, 32]) });
+  const quaiM = mat({ map: pierreT("#c8bca2", "rgba(90,80,60,.5)", 1, 1, [64, 32]) });   /* (10.145 : la pierre à l'échelle — des blocs d'environ 1,2 m × 0,6 m, sur chaque face) */
+  const murM = mat({ map: pierreT("#b8ac92", "rgba(80,70,50,.55)", 1, 1, [64, 32]) });
+  const PIERRES = new Set([quaiM, murM]), TUILE = 4.8;
+  const uvMonde = (g, w, h, d) => { const uv = g.attributes.uv, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]]; for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) { const i = f * 4 + v; uv.setXY(i, uv.getX(i) * dims[f][0] / TUILE, uv.getY(i) * dims[f][1] / TUILE); } uv.needsUpdate = true; return g; };
   const paveM = mat({ map: paveT([120, 116, 108], 40, 3), roughness: .95 });
   const paveB = mat({ map: paveT([108, 104, 96], 60, 2), roughness: .95 });
   const trottM = mat({ map: tT(128, 128, (c, w, h) => { c.fillStyle = "#a8a296"; c.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { c.fillStyle = ["#9a948a", "#b6b0a4", "#8e887e"][i % 3]; c.fillRect(al() * w, al() * h, 2, 2); } }, 60, 3), roughness: .95 });
@@ -148,7 +150,7 @@ function construireNotreDame(A, L, scene) {
     const a = new THREE.Shape(); a.moveTo(-25.6, 0); a.lineTo(25.6, 0); a.lineTo(25.6, YE - .2); a.lineTo(22.5, YE - .2); a.lineTo(22.5, -1.5); a.lineTo(18, -1.5); a.lineTo(18, YE - .2);
     for (const [c, r, s0, rv] of [[12.7, 4.3, -5.0, 3.6], [0, 7, -5.2, 4.3], [-12.7, 4.3, -5.0, 3.6]]) { a.lineTo(c + r, YE - .2); a.lineTo(c + r, s0); a.absellipse(c, s0, r, rv, 0, Math.PI, false); a.lineTo(c - r, YE - .2); }   /* (l'arche du milieu, la plus haute : les bateaux-mouches passent dessous) */
     a.lineTo(-18, YE - .2); a.lineTo(-18, -1.5); a.lineTo(-22.5, -1.5); a.lineTo(-22.5, YE - .2); a.lineTo(-25.6, YE - .2); a.closePath();
-    const ag = new THREE.ExtrudeGeometry(a, { depth: W, bevelEnabled: false, curveSegments: 18 }); ag.rotateY(Math.PI / 2); add(ag, murM, x0, 0, 0);
+    const ag = new THREE.ExtrudeGeometry(a, { depth: W, bevelEnabled: false, curveSegments: 18 }); { const uv = ag.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / TUILE, uv.getY(i) / TUILE); } ag.rotateY(Math.PI / 2); add(ag, murM, x0, 0, 0);
     // la corniche, ses consoles
     for (const [sx, d] of [[x0, -1], [x1, 1]]) { box(.5, .3, 51.4, quaiM, sx + d * .1, -.3, 0); for (let z = -24; z <= 24; z += 1.6) box(.25, .45, .3, quaiM, sx + d * .2, -.6, z);
       // les piles et leurs avant-becs arrondis, les demi-lunes au-dessus, avec leur réverbère
