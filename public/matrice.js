@@ -1828,6 +1828,79 @@ function construireRue(A, T, L, scene) {
     // dans les deux cadres de droite : les affiches de deux films à louer
     for (const [cle, px, w] of [["bttf", .8, .82], ["lb", 1.875, .74]]) { const t = charge(`images/videofutur/jaquette-${cle}.webp`), af = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 850 / 600), new THREE.MeshStandardMaterial({ map: t, roughness: .4, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .2 })); af.position.set(px, 1.98, .045); g.add(af); }
     L.videoFutur = { x: 19.1, z: 6.8 }; }
+  /* (10.144) en face de la caserne, d'après les photos : la boulangerie (bois verni, marbre noir veiné, l'enseigne de verre vert aux lettres d'or, les vitrines pleines,
+     le lustre, la porte ouverte) et la librairie Jonas (le bleu canard, les lettres faites de livres, la grille en accordéon) ; on voit dedans, en relief */
+  { const M3 = (o) => new THREE.MeshStandardMaterial({ roughness: .5, ...o }), lumi = (t, k = .55) => new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: k, roughness: .6 });
+    const verreM = new THREE.MeshStandardMaterial({ color: 0xdcecf2, roughness: .03, metalness: .4, transparent: true, opacity: .16, depthWrite: false });
+    const groupe = (x) => { const g = new THREE.Group(); g.position.set(x, 0, 6.8); g.rotation.y = Math.PI; scene.add(g); return g; };
+    const bx = (g, w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
+    const pl = (g, w, h, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.position.set(x, y, z); o.rotation.y = ry; g.add(o); return o; };
+    const marbreT = tex(toile(256, 128, (c, w, h) => { c.fillStyle = "#2a2a2c"; c.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { c.strokeStyle = `rgba(${200 + alea() * 50},${200 + alea() * 50},${200 + alea() * 50},${.15 + alea() * .35})`; c.lineWidth = .5 + alea() * 1.5; c.beginPath(); let x = alea() * w, y = alea() * h; c.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (alea() - .3) * 50; y += (alea() - .5) * 30; c.lineTo(x, y); } c.stroke(); } }));
+    // ---------- la boulangerie (6,8 m, au milieu de l'immeuble) ----------
+    { const g = groupe(0), W = 6.8, P = .75, bois = M3({ color: 0xa8642a, roughness: .35, metalness: .1 }), boisF = M3({ color: 0x6a3a18, roughness: .4 }), or = M3({ color: 0xd8b04a, metalness: .7, roughness: .3 }), marbre = M3({ map: marbreT, roughness: .2, metalness: .2 });
+      // le fond de la boutique : les étagères de pains et de viennoiseries, la lumière chaude
+      const fondT = tex(toile(1024, 512, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#f4e2c0"); gr.addColorStop(1, "#c89a5a"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+        for (let s = 0; s < 5; s++) { const y = 90 + s * 80; c.fillStyle = "#6a3a18"; c.fillRect(30, y + 50, w - 60, 8); for (let x = 40; x < w - 50; x += 22 + (x * 7) % 11) { c.fillStyle = ["#c98a3e", "#a8652a", "#e0b06a", "#8a4e22", "#d8a050"][(x + s) % 5]; c.beginPath(); c.ellipse(x, y + 38, 10 + (x % 3) * 3, 12, 0, 0, 7); c.fill(); c.fillStyle = "rgba(255,240,200,.35)"; c.beginPath(); c.ellipse(x - 3, y + 32, 4, 3, 0, 0, 7); c.fill(); } }
+        c.fillStyle = "#4a2a14"; c.fillRect(0, h - 40, w, 40); }));
+      pl(g, W - .4, 3.0, lumi(fondT, .5), 0, 1.5, .03);
+      bx(g, W - .4, .02, P, M3({ color: 0x8a6a4a }), 0, .56, P / 2);   // le sol de la vitrine
+      // dans chaque vitrine : trois gradins de gâteaux, d'éclairs, de tartes, de croissants
+      const gat = [0xf2d0e0, 0x8a4a22, 0xe8b860, 0xf4f0e8, 0xd84a5a, 0x6a3a1a, 0xf0c070, 0x5ab06a];
+      for (const sx of [-1, 1]) { for (let r = 0; r < 3; r++) { const y = .75 + r * .45, z = .18 + r * .13; bx(g, 2.3, .03, .32, M3({ color: 0xf4f4f0, roughness: .2 }), sx * 1.85, y, P - z);
+          for (let k = 0; k < 9; k++) { const x = sx * 1.85 - 1.05 + k * .26, c2 = gat[(k + r * 3 + (sx > 0 ? 2 : 0)) % 8]; const pc = new THREE.Mesh(k % 3 === 0 ? new THREE.CylinderGeometry(.08, .09, .07, 12) : k % 3 === 1 ? new THREE.BoxGeometry(.18, .045, .06) : new THREE.SphereGeometry(.06, 8, 6), M3({ color: c2, roughness: .6 })); pc.position.set(x, y + .05, P - z); g.add(pc); } } }
+      // le lustre, la lumière
+      { const lu = new THREE.Group(); lu.position.set(0, 2.75, .4); g.add(lu); const tige = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, .3, 4), or); tige.position.y = .15; lu.add(tige);
+        for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2, b2 = new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfff0c0 })); b2.position.set(Math.cos(a) * .2, 0, Math.sin(a) * .12); lu.add(b2); }
+        const l = new THREE.PointLight(0xffd8a0, 8, 6, 1.6); l.position.set(0, 2.4, .5); g.add(l); }
+      // la devanture : le marbre noir en bas, les montants de bois verni, les pilastres peints, l'enseigne de verre vert
+      for (const sx of [-1, 1]) bx(g, 2.6, .55, .1, marbre, sx * 1.85, .275, P);
+      bx(g, W, .05, P + .05, boisF, 0, .56, P / 2);
+      const pilT = tex(toile(64, 256, (c, w, h) => { c.fillStyle = "#a8642a"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8dcb0"; c.fillRect(8, 20, w - 16, h - 40); c.strokeStyle = "#c8a040"; c.lineWidth = 3; c.strokeRect(12, 24, w - 24, h - 48); c.fillStyle = "#7a9a5a"; c.beginPath(); c.ellipse(w / 2, h * .4, 14, 26, 0, 0, 7); c.fill(); c.fillStyle = "#c86a5a"; for (let k = 0; k < 4; k++) { c.beginPath(); c.arc(w / 2 + (k % 2 ? 8 : -8), h * .3 + k * 18, 5, 0, 7); c.fill(); } c.strokeStyle = "#c8a040"; c.beginPath(); c.moveTo(w / 2, h * .62); c.lineTo(w / 2, h * .8); c.stroke(); }));
+      for (const sx of [-1, 1]) { bx(g, .32, 3.0, P + .1, bois, sx * (W / 2 - .16), 1.5, P / 2); pl(g, .26, 2.2, M3({ map: pilT, roughness: .4 }), sx * (W / 2 - .16), 1.75, P + .06); bx(g, .3, .55, P + .12, marbre, sx * (W / 2 - .16), .275, P / 2); }
+      for (const x of [-.55, .55]) bx(g, .1, 3.0, P + .06, bois, x, 1.5, P / 2);   // (de part et d'autre de la porte)
+      for (const sx of [-1, 1]) bx(g, .06, 3.82, P + .05, bois, sx * (W / 2 + .03), 1.91, P / 2);   // (les côtés, fermés)
+      for (const sx of [-1, 1]) { bx(g, .06, 2.45, .06, bois, sx * 1.85, 1.8, P); pl(g, 2.5, 2.45, verreM, sx * 1.85, 1.8, P + .02); }   // les grandes vitres
+      bx(g, W, .14, P + .1, bois, 0, 3.0, P / 2);
+      const ensT = tex(toile(1024, 128, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#1a3a2a"); gr.addColorStop(1, "#0a2216"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.strokeStyle = "#d8b04a"; c.lineWidth = 4; c.strokeRect(6, 6, w - 12, h - 12);
+        c.fillStyle = "#e8c860"; c.font = "bold 78px Georgia, serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("BOULANGERIE", w / 2, h / 2 + 4);
+        for (const x of [90, w - 90]) { c.strokeStyle = "#d8b04a"; c.lineWidth = 3; c.beginPath(); c.ellipse(x, h / 2, 54, 34, 0, 0, 7); c.stroke(); c.font = "bold 30px Georgia"; c.fillText("270", x, h / 2 + 2); }
+        c.strokeStyle = "rgba(216,176,74,.6)"; c.lineWidth = 2; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(w / 2 + s * 270, 30); c.bezierCurveTo(w / 2 + s * 330, 10, w / 2 + s * 360, 110, w / 2 + s * 400, 64); c.stroke(); } }));
+      bx(g, W, .72, .2, boisF, 0, 3.43, P - .05); pl(g, W - .2, .62, lumi(ensT, .35), 0, 3.43, P + .06);
+      // la porte : ouverte, le battant rabattu à l'intérieur
+      { const pT = tex(toile(64, 192, (c, w, h) => { c.fillStyle = "#a8642a"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(220,236,242,.35)"; c.fillRect(8, 8, w - 16, h - 40); c.fillStyle = "#c8a040"; c.fillRect(w - 14, h / 2, 6, 20); }));
+        const d = new THREE.Mesh(new THREE.BoxGeometry(.05, 2.3, .9), M3({ map: pT })); d.position.set(-.5, 1.72, .3); g.add(d); }
+      // sur le trottoir : la terrasse de la boulangerie — les petites tables rondes de marbre, les chaises bistrot, l'ardoise
+      const marbB = M3({ color: 0xf2efe8, roughness: .25 }), fonteM = M3({ color: 0x1a1a1a, metalness: .5 }), rot = M3({ color: 0x8a5a2a, roughness: .7 }), rotT = M3({ color: 0xc89a5a, roughness: .8 });
+      L.tabourets = L.tabourets || []; const T0 = L.tabourets.length;
+      for (const tx of [-2.6, -1.0, 1.0, 2.6]) { const tz = 1.75; const tb = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .03, 16), marbB); tb.position.set(tx, .74, tz); g.add(tb); bx(g, .04, .72, .04, fonteM, tx, .37, tz);
+        for (const s of [-1, 1]) { const ch = new THREE.Group(); ch.position.set(tx + s * .5, 0, tz); ch.rotation.y = -s * Math.PI / 2; g.add(ch); const a2 = new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, .04, 12), rotT); a2.position.y = .46; ch.add(a2); const ds = new THREE.Mesh(new THREE.TorusGeometry(.18, .025, 6, 12, Math.PI), rot); ds.position.set(0, .72, -.17); ch.add(ds); for (const [a, b] of [[-.13, -.13], [.13, -.13], [-.13, .13], [.13, .13]]) { const pd = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .46, 5), rot); pd.position.set(a, .23, b); ch.add(pd); }
+          const w2 = g.localToWorld(new THREE.Vector3(tx + s * .5, 0, tz)); L.tabourets.push([w2.x, w2.z, Math.PI - s * Math.PI / 2, .46]); } }
+      { const ar = tex(toile(128, 192, (c, w, h) => { c.fillStyle = "#6a3a18"; c.fillRect(0, 0, w, h); c.fillStyle = "#1c211e"; c.fillRect(8, 8, w - 16, h - 16); c.fillStyle = "#f4f4ee"; c.font = "bold 16px Georgia"; c.textAlign = "center"; c.fillText("Aujourd'hui", w / 2, 34); c.font = "13px Arial"; ["Croissant  1,30", "Pain au choc.  1,50", "Éclair  3,20", "Café  2,00", "Baguette  1,20"].forEach((t, i) => c.fillText(t, w / 2, 64 + i * 24)); }));
+        const ag = new THREE.Group(); ag.position.set(3.7, 0, 1.2); g.add(ag); for (const s of [-1, 1]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(.55, .85), M3({ map: ar, side: THREE.DoubleSide })); f.position.set(0, .48, s * .14); f.rotation.x = -s * .3; ag.add(f); } }
+      L.nbTabouretsSalle = 0; void T0; }
+    // ---------- la librairie Jonas (4,1 m, à droite du Video Futur) ----------
+    { const g = groupe(8.05), W = 4.1, P = .6,   /* (10.144 : à la place des présentoirs à journaux) */ canard = M3({ color: 0x1e5a6a, roughness: .45, metalness: .2 }), canardF = M3({ color: 0x15404c, roughness: .5 });
+      const livresT = tex(toile(512, 384, (c, w, h) => { c.fillStyle = "#5a3a22"; c.fillRect(0, 0, w, h); for (let s = 0; s < 6; s++) { const y = s * 64; c.fillStyle = "#3a2214"; c.fillRect(0, y + 56, w, 8); for (let x = 2; x < w; ) { const bw = 6 + (x * 13 % 9), bh = 34 + (x * 7 % 18); c.fillStyle = ["#c83a2a", "#2a5aa8", "#e8d8b0", "#2a7a4a", "#d8a020", "#7a2a6a", "#f2f0ea", "#1a1a1a", "#c86a2a"][(x + s * 3) % 9]; c.fillRect(x, y + 56 - bh, bw, bh); x += bw + 1; } }
+        const gr = c.createRadialGradient(w * .3, 40, 10, w * .3, 40, 260); gr.addColorStop(0, "rgba(255,230,160,.45)"); gr.addColorStop(1, "rgba(255,230,160,0)"); c.fillStyle = gr; c.fillRect(0, 0, w, h); }));
+      pl(g, W - .2, 2.6, lumi(livresT, .45), 0, 1.6, .03);   // le fond : la librairie pleine de livres
+      // la vitrine de gauche (vue de la rue) : les livres présentés en pente, les cartes, les affiches
+      const vx = .9; bx(g, 2.2, .5, P, canard, vx, .25, P / 2); { const pente = new THREE.Mesh(new THREE.BoxGeometry(2.1, .02, .45), M3({ color: 0xe8e2d4 })); pente.position.set(vx, .62, P - .3); pente.rotation.x = .35; g.add(pente);
+        for (let k = 0; k < 10; k++) { const lv = new THREE.Mesh(new THREE.BoxGeometry(.16, .22, .02), M3({ color: [0xc83a2a, 0x2a5aa8, 0xe8d8b0, 0x2a7a4a, 0xd8a020, 0x7a2a6a, 0xf2f0ea][k % 7] })); lv.position.set(vx - .9 + k * .2, .72 + (k % 2) * .08, P - .32 + (k % 2) * .05); lv.rotation.x = -.35; g.add(lv); }
+        for (let k = 0; k < 4; k++) { const af = new THREE.Mesh(new THREE.PlaneGeometry(.3, .4), M3({ color: [0xf2f0ea, 0xd8c8a0, 0xe86a4a, 0x8ab0d8][k] })); af.position.set(vx - .8 + k * .5, 1.4 + (k % 2) * .25, .25); g.add(af); } }
+      pl(g, 2.2, 2.0, verreM, vx, 1.5, P + .01);
+      // à droite : la porte, et sa grille en accordéon, tirée à moitié
+      const grT = tex(toile(128, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = "#1a3a6a"; c.lineWidth = 4; for (let k = -h; k < w + h; k += 22) { c.beginPath(); c.moveTo(k, 0); c.lineTo(k + h * .35, h); c.stroke(); c.beginPath(); c.moveTo(k + h * .35, 0); c.lineTo(k, h); c.stroke(); } c.lineWidth = 6; for (let x = 0; x < w; x += 32) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } }));
+      bx(g, .9, 2.2, .04, M3({ color: 0x2a3a4a, roughness: .3, transparent: true, opacity: .55 }), -.75, 1.1, .1);   // la porte vitrée, au fond
+      pl(g, .55, 2.2, new THREE.MeshStandardMaterial({ map: grT, transparent: true, alphaTest: .3, side: THREE.DoubleSide, roughness: .4, metalness: .5 }), -.55, 1.1, P - .05);
+      bx(g, .5, .5, P, canard, -1.75, .25, P / 2); pl(g, .4, 1.9, verreM, -1.75, 1.45, P + .01); for (const sx of [-1, 1]) bx(g, .05, 3.9, P + .05, canard, sx * (W / 2 + .03), 1.95, P / 2);
+      for (const x of [-W / 2 + .06, -.2, W / 2 - .06]) bx(g, .12, 2.6, P + .06, canard, x, 1.3, P / 2);   // les montants
+      // le bandeau rivé, puis le mur blanc et les lettres faites de livres
+      bx(g, W + .1, .38, P + .1, canardF, 0, 2.78, P / 2); for (let k = 0; k < 12; k++) bx(g, .03, .03, .02, M3({ color: 0x5a7a8a, metalness: .6 }), -W / 2 + .2 + k * .34, 2.78, P + .06);
+      const enT = tex(toile(1024, 220, (c, w, h) => { c.fillStyle = "#e8e4da"; c.fillRect(0, 0, w, h); const txt = "LIBRAIRIE JONAS", L2 = toile(w, h, (q) => { q.font = "bold 120px Georgia, serif"; let f = 120; while (q.measureText(txt).width > w - 60 && f > 40) { f -= 4; q.font = `bold ${f}px Georgia, serif`; }
+          q.textAlign = "center"; q.textBaseline = "middle"; q.fillStyle = "#6a4422"; q.fillText(txt, w / 2, h / 2 + 4); q.globalCompositeOperation = "source-atop"; for (let x = 0; x < w; x += 6) { q.fillStyle = ["#c83a2a", "#2a5aa8", "#e8d8b0", "#2a7a4a", "#d8a020", "#7a2a6a", "#8a5a2a"][(x / 6 | 0) % 7]; q.fillRect(x + 1, 0, 4, h); } q.globalCompositeOperation = "source-over"; q.lineWidth = 5; q.strokeStyle = "#5a3418"; q.strokeText(txt, w / 2, h / 2 + 4); });   /* (les lettres faites de livres) */
+        c.drawImage(L2, 0, 0); }));
+      pl(g, W, .9, M3({ map: enT, roughness: .7 }), 0, 3.45, .5);
+      const sp = new THREE.PointLight(0xffd8a0, 5, 4, 1.6); sp.position.set(.2, 3.9, 1.1); g.add(sp); } }
   im({ x: 32, z: 6.8, largeur: 16, etages: 5, rot: Math.PI, teinte: teintes[3], graine: 65 });
   im({ x: 48, z: 6.8, largeur: 16, etages: 6, rot: Math.PI, teinte: teintes[2], graine: 66 });
   im({ x: -46, z: 6.8, largeur: 18, etages: 6, rot: Math.PI, teinte: teintes[1], graine: 67, rdc: RDC.yoji });
@@ -1876,15 +1949,15 @@ function construireRue(A, T, L, scene) {
   // devant la presse : présentoirs à journaux et l'enseigne « PRESSE » en carotte ; devant la boulangerie : la terrasse
   const alu = A.mat({ color: 0xa9adb0, metalness: .6, roughness: .35 });
   // la « carotte » du tabac-presse, accrochée au mur par sa potence
-  A.ajoute(new THREE.BoxGeometry(.05, .05, .75), fer, 9.7, 4.75, 6.4);
+  if (false) A.ajoute(new THREE.BoxGeometry(.05, .05, .75), fer, 9.7, 4.75, 6.4);
   const carotte = A.ajoute(new THREE.CylinderGeometry(.2, .2, .8, 16), A.mat({ map: tex(toile(256, 64, (x, w, h) => { x.fillStyle = "#e9a43a"; x.fillRect(0, 0, w, h); x.fillStyle = "#c0392b"; x.fillRect(0, h / 2 - 9, w, 18); x.fillStyle = "#fff"; x.font = "bold 13px Arial"; x.textAlign = "center"; x.fillText("PRESSE    PRESSE", w / 2, h / 2 + 5); })) }), 9.7, 4.3, 6.05);
-  carotte.rotation.z = .45;
+  carotte.rotation.z = .45; carotte.visible = false;   // (10.144 : la carotte du tabac retirée)
   // les présentoirs à journaux : un pied en métal, des magazines rangés en gradins
-  for (let k = 0; k < 3; k++) { const px = 8.7 - k * 1.1;
+  for (let k = 0; k < 0; k++) { const px = 8.7 - k * 1.1;   /* (10.144 : les présentoirs retirés : la librairie est là) */
     const p = A.ajoute(new THREE.BoxGeometry(.9, 1.05, .06), A.mat({ map: tex(toile(90, 105, (x, w, h) => { x.fillStyle = "#2b2b2b"; x.fillRect(0, 0, w, h); for (let i = 0; i < 12; i++) { x.fillStyle = `hsl(${alea() * 360}, 60%, ${45 + alea() * 25}%)`; x.fillRect(4 + (i % 3) * 29, 4 + Math.floor(i / 3) * 25, 26, 22); x.fillStyle = "rgba(255,255,255,.7)"; x.fillRect(7 + (i % 3) * 29, 8 + Math.floor(i / 3) * 25, 16, 3); } })) }), px, .75, 6.3);
     p.rotation.x = .18; p.rotation.y = Math.PI;
     for (const s of [-.4, .4]) A.ajoute(new THREE.CylinderGeometry(.015, .015, .9, 6), alu, px + s, .45, 6.42, false); }
-  for (const tx of [-.6, 1.3, 3.2]) {
+  for (const tx of []) {   /* (10.144 : remplacée par la terrasse de la nouvelle boulangerie) */
     A.ajoute(new THREE.BoxGeometry(.7, .03, .7), A.mat({ color: 0xd5d6d2 }), tx, .74, 5.75); A.ajoute(new THREE.CylinderGeometry(.03, .03, .74, 8), alu, tx, .37, 5.75);
     for (const s of [-1, 1]) { const c = new THREE.Group(); c.position.set(tx + s * .55, 0, 5.75); c.rotation.y = s * Math.PI / 2; scene.add(c);
       const assise = new THREE.Mesh(new THREE.BoxGeometry(.42, .04, .42), alu); assise.position.y = .46; c.add(assise);
@@ -1903,7 +1976,7 @@ function construireRue(A, T, L, scene) {
 
   /* --- où l'on peut marcher, la caméra, les passages --- */
   // la grille noire (z = -7,5) ne s'ouvre qu'au portillon (x de 0,2 à 1,4)
-  L.limites = (x, z) => (x > -54.4 && x < 53.4 && z > -7.2 && z < 6.4)
+  L.limites = (x, z) => !(z > 5.95 && ((x > -3.5 && x < 3.5) || (x > 5.9 && x < 10.2))) && !(z > 4.6 && z < 5.5 && x > -3.2 && x < 3.2 && Math.abs(Math.abs(x) - 1.8) > .45 && false) && (x > -54.4 && x < 53.4 && z > -7.2 && z < 6.4)
     || (L.messageries && x > L.messageries.xe + .3 && x < L.messageries.xo - .3 && z > L.messageries.zP - 1.2 && z <= -7.1)   // (l'entrée de la rue des Messageries)
     || (Math.abs(x) < 2.3 && z > -12.9 && z <= -7.9) || (x > .15 && x < 1.45 && z > -8.4 && z <= -6.9)   // (le tourniquet : un peu plus large, bien raccordé au trottoir et au porche — on n'y reste plus coincé)
     // le passage sous le porche (sans traverser les plantes, l'armoire rouge ni la borne de la barrière)
@@ -12968,6 +13041,17 @@ const PASSANTS = [
   { num: -127, nom: "Une vieille dame", tenue: "tailleur", couleur: "#4a4a6a", pieds: "#2a1a14", tete: ["mamie3", { peau: "#f0d0b4", ch: "#f2f0ea", coif: "court", femme: true, lunettes: true }], acc: "caddie", allure: .55, trajet: [60, -144.0, -40, -144.0] }];
 function animerPassants(t) {
   if (!M || !M.L) return; const L = M.L;
+  /* (10.144) rue du Faubourg-Poissonnière et rue d'Hauteville : les passants deviennent des promeneurs en volume, comme sur les Grands Boulevards (mêmes trajets, en double) */
+  if ((M.lieu === "rue" || M.lieu === "grande") && !L.apo && !L.sh && !L.bttf && !L.gb) { const A = L.passAcc || (L.passAcc = {});
+    for (const P of PASSANTS) { if (M.gens.has(P.num)) retirerAncien(P.num); if (A[P.num]) A[P.num].visible = false; }
+    if (!L.march3D) { L.march3D = []; const PS = PASSANTS.filter(P => (P.lieu || "grande") === M.lieu && !P.suit), n = PETIT ? 1 : 2;
+      PS.forEach((P, k) => { for (let j = 0; j < n; j++) { const o = P.tete ? P.tete[1] : {}, f = !!o.femme, m = personne3D({ enfant: !!P.enfant, taille: P.enfant ? 1.15 : f ? 1.63 + (k % 3) * .04 : 1.74 + (k % 4) * .03, peau: o.peau || "#f0c9a6", ch: o.ch || "#3a2a1e", haut: j ? ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a"][(k + 2) % 6] : P.couleur, bas: P.bas || (j ? "#2a2a30" : "#3a3a40"), chaussures: P.pieds || "#1a1a1a", coif: o.coif === "long" ? "long" : o.coif === "carre" ? "carre" : o.coif === "chauve" ? "chauve" : "court", robe: /robe|jupe|tailleur/.test(P.tenue) && f, pantalon: !(/robe|jupe|tailleur/.test(P.tenue) && f) });
+          const [x0, z0, x1, z1] = P.trajet, u = ((k * 37 + j * 51) % 100) / 100; m.position.set(x0 + (x1 - x0) * u, 0, z0 + (z1 - z0) * u); m.userData.anime = true; M.scene.add(m);
+          L.march3D.push({ m, a: [x0, z0], b: [x1, z1], sens: (k + j) % 2 ? 1 : -1, v: (P.enfant ? .9 : 1.05) + (k % 5) * .08, lat: j ? .55 : 0 }); } }); }
+    const dt = Math.min(.1, (t - (L.march3DT || t)) / 1000); L.march3DT = t; const vis = !M.sansFigurants;
+    for (const W of L.march3D) { const m = W.m; m.visible = vis; if (!vis) continue; const [tx, tz] = W.sens > 0 ? W.b : W.a, dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
+      if (d < .5) { W.sens = -W.sens; continue; } const v = Math.min(d, W.v * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur ? L.hauteur(m.position.x, m.position.z, {}) : 0; m.rotation.y = Math.atan2(dx, dz); m.userData.poser("marche", t * W.v / 1.2); }
+    return; }
   for (const [iP, P] of PASSANTS.entries()) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && (!L.nuit || (M.hiver && !P.enfant && !P.suit && iP % 3 === 0)) && (!M.sansFigurants || (!PETIT && (P.suit ? PASSANTS.findIndex(q => q.num === P.suit) : iP) % 2 === 0)) && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);   /* (allégé sur ordinateur : un passant sur deux, plus aucun ; petit téléphone : aucun) */
     const tenueH = M.hiver && P.tenue !== "survet" ? "manteauC" : P.tenue;   // (10.06 : l'hiver, les passants en manteau et écharpe)
     if (p && p.info.tenue !== tenueH) { retirerAncien(P.num); p = null; }
@@ -16221,7 +16305,7 @@ function chercherAction(t) {
       else if (C3.sousSol && C3.sousSol.tablePP && M.lieu === "grande" && moi.g.position.y < -2 && Math.abs(x - C3.sousSol.tablePP[0]) < 1.5 && Math.abs(z - C3.sousSol.tablePP[1]) < 2.2) a = { type: "pingpong", label: "🏓 Jouer au ping-pong" };
       else if (C3.hifi && M.lieu === "grande" && Math.abs(moi.g.position.y - C3.FL) < .6 && Math.hypot(x - C3.hifi[0], z - C3.hifi[1]) < 1.4) a = { type: "hifi", label: M.hifiOn ? "⏹ Arrêter la musique" : "▶️ Mettre la musique" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
-      else if (i >= 0) a = { type: "asseoir", i, label: M.lieu === "corbier" || M.lieu === "tertre" ? "🪑 S'asseoir" : "🪑 S'asseoir au bar" };
+      else if (i >= 0) a = { type: "asseoir", i, label: M.lieu === "corbier" || M.lieu === "tertre" || M.lieu === "rue" ? "🪑 S'asseoir" : "🪑 S'asseoir au bar" };
       else if (M.L.appart && moi.installe) a = { type: "leverAppart", label: "🧍 Se lever" };
       else if (M.L.appart && !M.amen && siegeAppart(x, z)) a = siegeAppart(x, z);   /* (l'appartement : s'asseoir, s'allonger) */
       else if (M.L.apo) {}
