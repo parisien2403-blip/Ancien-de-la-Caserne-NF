@@ -2174,7 +2174,7 @@ function construireNotreDame(A, L, scene) {
         M.cine = { gel: true, fov: [50, 44], maj: () => { const t = (performance.now() - t0) / 1000, c = M.camera;
             if (t > 1.3 && !moiRat) { moiRat = bete("ratg", 1.15); moiRat.g.position.copy(q); moiRat.cap = Math.PI; p.g.visible = false; scintille(q.clone(), .6, 1.6); }   /* (on se voit : un petit rat gris, là où l'on était) */
             const e = Math.min(1, t / 2.2), k = e * e * (3 - 2 * e), a2 = Math.PI + Math.sin(t * .5) * .5, cible = new THREE.Vector3(q.x + Math.sin(a2) * -1.1, q.y + .45, q.z + Math.cos(a2) * -1.1); c.position.lerpVectors(c0, cible, k); c.lookAt(q.x, q.y + .14, q.z);
-            if (moiRat) { moiRat.maj(c.position); moiRat.bond = Math.abs(Math.sin(t * 3)) * .02; }
+            if (moiRat) { moiRat.cap = Math.atan2(c.position.x - q.x, c.position.z - q.z); moiRat.maj(c.position);   /* (10.182 : il nous regarde, de face) */ moiRat.bond = Math.abs(Math.sin(t * 3)) * .02; }
             if (t > 4.8 && !fini) { fini = true; if (moiRat) scene.remove(moiRat.g); finCine(); RAT = true; L.hauteurYeux = .13; if (!M.premiere) premiere(true); else placerCamera(true); pierre.style.display = "block"; bulleR("🐀 Tu es un petit rat de Paris ! Promène-toi… et méfie-toi des chats.", 4500); } } }; };
       const redevenir = () => { const p = moiR(); if (!p || !RAT) return; RAT = false; pierre.style.display = "none"; L.hauteurYeux = null; scintille(p.g.position.clone(), 1.9); premiere(false); p.g.visible = true; };
       pierre.querySelector("button").onclick = (e) => { e.stopPropagation(); redevenir(); };
