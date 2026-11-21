@@ -2390,7 +2390,7 @@ function construireNotreDame(A, L, scene) {
         for (const r of [4.8, 5.4, 2.2]) { c.beginPath(); c.arc(X(0), Y(25.5), r * KP, 0, 7); c.stroke(); }
         for (let k = 0; k < 24; k++) { const a = k / 24 * 6.283; c.beginPath(); c.moveTo(X(0) + Math.cos(a) * 2.2 * KP, Y(25.5) + Math.sin(a) * 2.2 * KP); c.lineTo(X(0) + Math.cos(a) * 4.8 * KP, Y(25.5) + Math.sin(a) * 4.8 * KP); c.stroke(); } };
       const dessins = {
-        bleuor() { c.fillStyle = "#1e46ff"; c.fillRect(0, 0, N, N); const g = c.createLinearGradient(0, Y(62), 0, Y(0)); g.addColorStop(0, "rgba(90,140,255,.5)"); g.addColorStop(1, "rgba(10,30,200,.3)"); c.fillStyle = g; c.fillRect(0, 0, N, N);
+        bleuor() { c.fillStyle = "#0a2aff"; c.fillRect(0, 0, N, N); const g = c.createLinearGradient(0, Y(62), 0, Y(0)); g.addColorStop(0, "rgba(90,140,255,.5)"); g.addColorStop(1, "rgba(10,30,200,.3)"); c.fillStyle = g; c.fillRect(0, 0, N, N);
           for (let x = -20; x < 20; x += 1.66) { c.fillStyle = "rgba(255,190,40,.55)"; c.fillRect(X(x), Y(60), 2, (Y(41.5) - Y(60))); c.fillRect(X(x), Y(11.5), 2, Y(0) - Y(11.5)); }
           tracer("#ffc22a", 5); for (let k = 0; k < 28; k++) { c.fillStyle = k % 2 ? "#e0283a" : "#2a8cff"; c.fillRect(X(-18.5 + k * 37 / 28 + .25), Y(16.2), .8 * KP, 2.2 * KP); } },
         vitraux() { c.fillStyle = "#1a2cc8"; c.fillRect(0, 0, N, N); const cols = ["#ff2a3a", "#2aff6a", "#ffd02a", "#2ae8ff", "#ff4ad8", "#ff8a1a", "#3a5aff", "#b0ff3a"];
@@ -2404,9 +2404,11 @@ function construireNotreDame(A, L, scene) {
         etoile(tm) { const g = c.createLinearGradient(0, Y(62), 0, Y(0)); g.addColorStop(0, "#1630ff"); g.addColorStop(.6, "#1c78ff"); g.addColorStop(1, "#1ae0ff"); c.fillStyle = g; c.fillRect(0, 0, N, N);
           for (let i = 0; i < 260; i++) { const x = ((i * 397.1) % N), sp = 12 + (i % 7) * 5, y = ((i * 211.7) + tm * sp / 1000 * 3) % N, tw = .45 + .55 * Math.abs(Math.sin(tm / 600 + i)); c.fillStyle = `rgba(255,255,255,${tw})`; c.beginPath(); c.arc(x, N - y, 1.5 + (i % 4), 0, 7); c.fill(); }
           tracer("rgba(160,235,255,.7)", 3); } };
+      const masque = () => { c.fillStyle = "#000"; c.fillRect(0, 0, X(-20.6), N); c.fillRect(X(20.6), 0, N, N); c.fillRect(0, 0, N, Y(62.5)); c.fillRect(0, Y(-.2), N, N); c.fillRect(X(-6.9), 0, X(6.9) - X(-6.9), Y(41.4)); };   /* (rien en dehors de la façade : les immeubles voisins restent dans le noir) */
+      for (const k of Object.keys(dessins)) { const f = dessins[k]; dessins[k] = (tm) => { f(tm); masque(); }; }
       let mode = "dore", cible = 0, it = 0, derD = 0, suivant = null; L.facOr = 1;
       AMB.push((tm) => { const nuit = (L.nuitSP || 0) > .5, voulu = nuit && mode !== "dore" ? 1 : 0; if (suivant && it < .02) { mode = suivant; suivant = null; if (dessins[mode]) { dessins[mode](tm); tex.needsUpdate = true; } }
-        cible = suivant ? 0 : voulu; it += (cible - it) * .04; proj.intensity = it * 5.5; L.facOr = 1 - .88 * Math.min(1, it * 1.3);
+        cible = suivant ? 0 : voulu; it += (cible - it) * .04; proj.intensity = it * 3.4; L.facOr = 1 - .88 * Math.min(1, it * 1.3);
         for (const [s2, i] of L.SPfac || []) s2.intensity = (L.nuitSP || 0) * i * L.facOr;
         if (mode === "etoile" && it > .02 && tm - derD > 110) { derD = tm; dessins.etoile(tm); tex.needsUpdate = true; } });
       const choisir = (m) => { if (m === mode && !suivant) return; suivant = m;
