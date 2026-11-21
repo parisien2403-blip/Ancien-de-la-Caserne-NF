@@ -8128,7 +8128,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // au milieu de la cour : le cercle vert du chantier de la nouvelle caserne (l'administrateur seul le voit)
     L.portails.push({ dans: (x, z) => x > 10 && z > 5.4 && z < 7.6, vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
-    if (false) L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "corbier", arrivee: [54.5, 15], yaw: -Math.PI / 2, violet: true, pasApo: true });   // (10.99) le cercle violet : Le Corbier, pour l'administrateur seul (le temps de le construire)
+    if (false) L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "corbier", arrivee: [54.5, 15], yaw: -Math.PI / 2, violet: true, pasApo: true });
+    L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "notredame", arrivee: [-1, -40], yaw: Math.PI, violet: true, pasApo: true, admin: true });   // (10.195) le cercle violet de l'administrateur : tout droit sur le parvis de Notre-Dame   // (10.99) le cercle violet : Le Corbier, pour l'administrateur seul (le temps de le construire)
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
   }
 
@@ -12589,7 +12590,7 @@ function animerCercles(t) {
   if (M.cerclesL !== M.L) {   // nouveau lieu : on (re)pose les cercles
     for (const c of M.cercles || []) { if (c.g && c.g.parent) c.g.parent.remove(c.g); }   // (de la scène où ils étaient : elle est peut-être gardée pour y revenir)
     M.cercles = []; M.cerclesL = M.L; M.cerclePret = false;
-    for (const pt of M.L.portails || []) if (!pt.continu || pt.seuil) M.cercles.push({ pt, g: null });
+    for (const pt of M.L.portails || []) if ((!pt.continu || pt.seuil) && !(pt.admin && !estAdmin())) M.cercles.push({ pt, g: null });   /* (un cercle « admin » : invisible pour les autres) */
   }
   const moi = M.moiNum && M.gens.get(M.moiNum);
   // arrivé dans un cercle (en entrant dans le lieu) : il faut d'abord en sortir, pour ne pas repartir aussitôt
