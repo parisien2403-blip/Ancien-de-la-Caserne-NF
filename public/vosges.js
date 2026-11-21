@@ -323,7 +323,7 @@ function construireVosges(A, L, scene) {
       const fl = new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd060 })); fl.scale.set(.7, 1.6, .7); fl.position.y = .3; fl.visible = false; L2.add(fl); const ha = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloG, color: 0xffc860, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 })); ha.scale.setScalar(1.6); ha.position.y = .32; L2.add(ha);
       REV.push({ x, z, fl, ha, on: false, ph: al() * 10 }); LAMPES.push([x, 3.9, z]); };
     for (let t = -48; t <= 48; t += 16) for (const s of [-1, 1]) { if (t !== 0) { rev(t, s * (GR + 1.4)); rev(s * (GR + 1.4), t); }   /* (10.198 : rien devant les portes du square) */ rev(t + 8, s * (FA - 3.9)); rev(s * (FA - 3.9), t + 8); }
-    for (const [x, z] of [[-7.4, -7.4], [7.4, -7.4], [-7.4, 7.4], [7.4, 7.4]]) rev(x, z);
+    /* (10.199 : plus de réverbères au milieu des allées autour de la statue) */
     AMB.push((tm) => { const t = tm / 1000; for (const R of REV) { const on = R.on && !!L.nuit; if (R.fl.visible !== on) R.fl.visible = on; if (on) { const f = .85 + Math.sin(t * 9 + R.ph) * .08 + Math.sin(t * 23 + R.ph * 3) * .05; R.fl.scale.set(.7 * f, 1.6 * (2 - f), .7 * f); R.ha.material.opacity = .75 * f; } else R.ha.material.opacity = 0; } }); }
   L.becs = REV;
 
