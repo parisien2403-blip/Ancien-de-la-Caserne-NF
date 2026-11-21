@@ -296,7 +296,7 @@
   /* ---------- La Matrice ---------- */
   .mx-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
   .mx-tete .btn { flex: none; margin-top: 10px; }
-  .mx-lieux { display: flex; gap: 8px; overflow-x: auto; margin: 0 0 10px; padding-bottom: 2px; scrollbar-width: none; }
+  .mx-lieux { display: none !important;   /* (10.190 : plus de raccourcis vers les lieux — on s'y rend à pied, en bus ou en métro) */ display: flex; gap: 8px; overflow-x: auto; margin: 0 0 10px; padding-bottom: 2px; scrollbar-width: none; }
   .mx-lieux button { flex: none; border-radius: 99px; padding: 8px 14px; background: #fff; border: 1.5px solid var(--line); font: 700 14px "Lato", sans-serif; color: var(--muted); cursor: pointer; }
   .mx-lieux button.on { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
   .mx-lieux .nb { display: inline-block; min-width: 20px; margin-left: 6px; padding: 1px 6px; border-radius: 10px; background: #2ea043; color: #fff; font-size: 12px; }
