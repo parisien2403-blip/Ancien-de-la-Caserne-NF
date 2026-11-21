@@ -164,7 +164,7 @@ function construireVosges(A, L, scene) {
       for (const [y0] of etg.slice(1)) box(W, .18, .12, pierreR, 0, y0 - .45, fz + .06, 0, G);
       box(W + .1, .22, .34, pierreR, 0, H - .62, fz + .17, 0, G); box(W + .2, .2, .48, pierreR, 0, H - .42, fz + .24, 0, G);   // (les moulures sous la corniche)
       for (let i = 0; i < nb; i++) { const cx = -W / 2 + 2 + i * 4;
-        box(2.3, H - 6.7, .07, pierreR, cx, (6.3 + H - .4) / 2, fz + .035, 0, G);   // (la chaîne de pierre, un peu en avant de la brique)
+        for (const sx of [-1.02, 1.02]) box(.26, H - 6.7, .06, pierreR, cx + sx, (6.3 + H - .4) / 2, fz + .03, 0, G);   // (les chaînes de pierre, de chaque côté, un peu en avant de la brique)
         for (const [y0, hh] of etg) { const xw = cx - .7, ww = 1.4;
           box(ww + .4, .16, .2, pierreR, cx, y0 + hh + .14, fz + .1, 0, G); box(ww + .56, .1, .26, pierreR, cx, y0 + hh + .27, fz + .13, 0, G);   // (le linteau et sa corniche)
           box(.16, hh + .2, .16, pierreR, xw - .1, y0 + hh / 2, fz + .08, 0, G); box(.16, hh + .2, .16, pierreR, xw + ww + .1, y0 + hh / 2, fz + .08, 0, G);   // (les jambages)
@@ -210,8 +210,9 @@ function construireVosges(A, L, scene) {
        de verts différents (plus clair au soleil, en haut ; plus sombre dessous) ; l'ombre douce au pied */
     const ecorceT = tT(64, 256, (c, w, h) => { c.fillStyle = "#4a3c2e"; c.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { c.fillStyle = `rgba(${20 + al() * 40},${16 + al() * 30},${10 + al() * 20},.6)`; c.fillRect(al() * w, al() * h, 2 + al() * 3, 10 + al() * 30); } }, 1, 1);
     const troncM = mat({ map: ecorceT, color: 0xb8a890, roughness: 1 });
-    const bosse = (sd) => { const g = new THREE.IcosahedronGeometry(1, 2), p = g.attributes.position, v = new THREE.Vector3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const n = 1 + .16 * Math.sin(v.x * 5.3 + sd) * Math.sin(v.y * 4.7 + sd * 2) + .1 * Math.sin(v.z * 7.1 + v.x * 3 + sd) + .06 * Math.sin(v.y * 13 + v.z * 11); v.multiplyScalar(n); if (v.y < -.3) v.y = -.3 + (v.y + .3) * .45; p.setXYZ(i, v.x, v.y, v.z); } g.computeVertexNormals(); return g; };
-    const FG = [bosse(1), bosse(2.7), bosse(4.1)], feuM = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .85 });
+    const bosse = (sd) => { const g = new THREE.IcosahedronGeometry(1, 3), p = g.attributes.position, v = new THREE.Vector3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const n = 1 + .16 * Math.sin(v.x * 5.3 + sd) * Math.sin(v.y * 4.7 + sd * 2) + .1 * Math.sin(v.z * 7.1 + v.x * 3 + sd) + .06 * Math.sin(v.y * 13 + v.z * 11); const nr = g.attributes.normal; nr.setXYZ(i, v.x, v.y * 1.2 + .15, v.z); v.multiplyScalar(n); if (v.y < -.3) v.y = -.3 + (v.y + .3) * .45; p.setXYZ(i, v.x, v.y, v.z); } const nr = g.attributes.normal, w = new THREE.Vector3(); for (let i = 0; i < nr.count; i++) { w.fromBufferAttribute(nr, i).normalize(); nr.setXYZ(i, w.x, w.y, w.z); } return g; };
+    const feuT = tT(256, 256, (c, w, h) => { c.fillStyle = "#9a9a9a"; c.fillRect(0, 0, w, h); for (let i = 0; i < 1400; i++) { const k = 80 + al() * 175; c.fillStyle = `rgb(${k},${k},${k})`; c.save(); c.translate(al() * w, al() * h); c.rotate(al() * 6.28); c.beginPath(); c.ellipse(0, 0, 7, 3.5, 0, 0, 7); c.fill(); c.restore(); } }, 3, 3);
+    const FG = [bosse(1), bosse(2.7), bosse(4.1)], feuM = new THREE.MeshStandardMaterial({ map: feuT, color: 0xffffff, roughness: .85 });
     const tg = new THREE.CylinderGeometry(.16, .3, 1, 8); tg.translate(0, .5, 0); const bg = new THREE.CylinderGeometry(.06, .13, 1, 6); bg.translate(0, .5, 0);
     const NT = ARB.length, NB = PEU ? 14 : 26, it = new THREE.InstancedMesh(tg, troncM, NT), ib = new THREE.InstancedMesh(bg, troncM, NT * 5), ifs = FG.map(g => new THREE.InstancedMesh(g, feuM, NT * NB)), nf = [0, 0, 0];
     const mm = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), sc = new THREE.Vector3(), col = new THREE.Color(); let nb2 = 0;
