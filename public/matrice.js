@@ -13247,7 +13247,7 @@ function choixBus(B) { if (M.choixBusEl) M.choixBusEl.remove(); const d = docume
 const METRO_STATIONS = { rex: { nom: "Bonne Nouvelle", ligne: "8 · 9", lieu: "rex", arrivee: [-66.6, 9.8], yaw: -Math.PI / 2, libelle: "Bonne Nouvelle — les Grands Boulevards, le Grand Rex" },
   tertre: { nom: "Abbesses", ligne: "12", lieu: "tertre", arrivee: [-83, 35.3], yaw: Math.PI, libelle: "Abbesses — Montmartre, la place du Tertre" },
   notredame: { nom: "Saint-Michel – Notre-Dame", ligne: "4 · RER B C", lieu: "notredame", arrivee: [-66.2, 41.9], yaw: Math.PI / 2, libelle: "Saint-Michel – Notre-Dame — les quais de Seine, Notre-Dame" },
-  vosges: { nom: "Bastille", ligne: "1 · 5 · 8", lieu: "vosges", arrivee: [-48.5, 42.5], yaw: Math.PI, libelle: "Bastille — la place des Vosges, la maison de Victor Hugo" },
+  vosges: { admin: true, nom: "Bastille", ligne: "1 · 5 · 8", lieu: "vosges", arrivee: [-48.5, 42.5], yaw: Math.PI, libelle: "Bastille — la place des Vosges, la maison de Victor Hugo" },
   corbier: { nom: "Le Corbier", lieu: "corbier", arrivee: [-26, 13.8], yaw: Math.PI, libelle: "🚌 Le Corbier — en car, jusqu'à la station (Savoie)", car: true } };
 function metroProche(x, z) { if (!M || !M.L || M.L.apo || M.L.sh) return false; if (M.lieu === "rex") return [[-70.5, 9.8], [-43.6, -10.4]].some(([a, b]) => Math.hypot(x - a, z - b) < 3.4);
   if (M.lieu === "tertre" && M.L.metroAbbesses) return Math.hypot(x - M.L.metroAbbesses.x, z - M.L.metroAbbesses.z) < 3;
