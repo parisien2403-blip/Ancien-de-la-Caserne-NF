@@ -646,6 +646,11 @@ export class Compteur extends DurableObject {
       if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }, ws);
     } else if (m.t === "vespa") {   // (10.95) à Montmartre, il monte sur une Vespa (ou en descend) : les autres le voient
       a.vespa = !!m.on && a.lieu === "tertre"; ws.serializeAttachment(a); if (a.lieu) this.diffuser(a.lieu, { t: "vespa", numero: a.numero, on: a.vespa }, ws);
+    } else if (m.t === "facadeND") {
+      // (10.189) les lumières de la façade de Notre-Dame : les mêmes pour tout le monde (choisies au point zéro) ; sans mode, on demande celles du moment
+      const MODES = ["dore", "bleuor", "vitraux", "etoile"];
+      if (MODES.includes(m.m)) { await this.ctx.storage.put("facadeND", m.m); if (a.lieu) this.diffuser(a.lieu, { t: "facadeND", m: m.m }, ws); }
+      else ws.send(JSON.stringify({ t: "facadeND", m: (await this.ctx.storage.get("facadeND")) || "dore" }));
     } else if (m.t === "absent") {
       // (10.184) il vit une aventure (une cinématique, ou il est devenu un petit rat) : les autres ne voient plus son bonhomme
       a.absent = !!m.on; ws.serializeAttachment(a);

@@ -18293,6 +18293,7 @@ function connecter() {
     else if (m.t === "z_evac") chargerMonde("residentevil").then(R => R.surEvac(m)).catch(() => {});
     else if (m.t === "z_ramasse") { const o = (M.objets || []).find(q => q.id === m.id); if (o) { o.cache = performance.now() + 45000; o.sp.visible = false; } }
     else if (m.t === "joue") { const p = M.gens.get(m.numero); if (p) p.info.joue = m.jeu || null; }
+    else if (m.t === "facadeND") { if (M.L && M.L.facadeRecue) M.L.facadeRecue(m.m); }   /* (10.189) */
     else if (m.t === "absent") { const p = M.gens.get(m.numero); if (p) p.info.absent = !!m.on; }   /* (10.184) */
     else if (m.t === "notes_corbier") { M.notesCorbier = m.notes || []; if (M.L && M.L.majNotes) M.L.majNotes(M.notesCorbier); }   // (10.100 : les notes du Corbier)
     else if (m.t === "vespa") { const p = M.gens.get(m.numero); if (p) p.info.vespa = !!m.on; }   // (10.95 : il roule en Vespa à Montmartre)
