@@ -467,7 +467,7 @@ function construireVosges(A, L, scene) {
       OBS.push([cx - 1, cx + 1, cz - 1.2, cz + .5]); } }
   /* (10.193) Victor Hugo lui-même, qui fait le tour du square à pas lents : les cheveux et la grande barbe blanche, la redingote brune, le gilet sombre, le nœud crème,
      la chaîne de montre, la canne ; il s'arrête parfois, songeur. Quand on l'approche, il nous dit quelques mots */
-  const fabriqueVH = () => { const T = 1.74, m = personne3D({ taille: T, peau: "#e0b494", ch: "#e8e4dc", haut: "#6e6252", bas: "#24221f", chaussures: "#0e0e0e", coif: "court", pantalon: true }), P = m.userData.parts, hy = m.userData.hipY, rT = T * .062;
+  const fabriqueVH = () => { const T = 1.64, m = personne3D({ taille: T, peau: "#e0b494", ch: "#e8e4dc", haut: "#6e6252", bas: "#24221f", chaussures: "#0e0e0e", coif: "court", pantalon: true }), P = m.userData.parts, hy = m.userData.hipY, rT = T * .062;
     /* (10.196, d'après la photo) le long pardessus gris-brun façon tweed, ouvert, aux larges revers ; la veste et le gilet sombres, la chemise blanche, le petit nœud noir ;
        la barbe blanche courte et taillée, la moustache, les cheveux blancs ; le pantalon sombre et les hautes bottes noires ; la main glissée dans le manteau */
     const tweedT = tT(64, 64, (c, w, h) => { c.fillStyle = "#6e6252"; c.fillRect(0, 0, w, h); for (let i = 0; i < 700; i++) { const k = al(); c.fillStyle = `rgba(${90 + k * 60},${80 + k * 50},${60 + k * 40},.5)`; c.fillRect(al() * w, al() * h, 2, 1); } for (let y = 0; y < h; y += 4) { c.fillStyle = "rgba(40,34,26,.18)"; c.fillRect(0, y, w, 1); } }, 2, 3);
@@ -489,6 +489,9 @@ function construireVosges(A, L, scene) {
     // les hautes bottes noires
     P.jambes.forEach(J => { const bo = new THREE.Mesh(new THREE.CylinderGeometry(T * .033, T * .03, T * .2, 10), noir); bo.position.y = -T * .13; J.gen.add(bo); });
     // la main glissée dans le manteau, quand il s'arrête
+    // (10.196) plus petit, plus trapu : la carrure, le ventre sous le gilet ; la tête garde sa taille
+    P.bassin.scale.set(1.16, 1, 1.18); P.buste.scale.set(1.1, 1, 1.12); P.tete.scale.set(1 / 1.28, 1, 1 / 1.32); P.jambes.forEach(J => J.h.scale.set(1 / 1.16, 1, 1 / 1.18));
+    const ventre = new THREE.Mesh(new THREE.SphereGeometry(T * .075, 14, 10), sombre); ventre.scale.set(1.05, 1.1, .75); ventre.position.set(0, T * .09, T * .03); P.buste.add(ventre);
     m.userData.mainCoeur = () => { for (const [k, sg] of [[0, 1], [1, -1]]) { const b = P.bras[k]; if (b.e.position.x * sg > 0) { b.e.rotation.set(-.45, 0, sg * .28); b.c.rotation.set(-1.75, sg * .5, 0); return; } } const b = P.bras[1]; b.e.rotation.set(-.3, 0, -.3); b.c.rotation.set(-1.35, -.6, 0); };
     m.userData.anime = true; return m; }; const VHG = fabriqueVH(); scene.add(VHG); L.fabriqueVH = fabriqueVH;
   { const R = [[0, 13], [9.2, 9.2], [13, 0], [9.2, -9.2], [0, -13], [0, -30], [-1.6, -36], [-30, -1.6], [-13, 0], [-9.2, 9.2], [0, 13], [0, 30], [30, 1.6], [13, 0]]; let i = 0, pause = 0; VHG.position.set(0, 0, 13);
