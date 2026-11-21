@@ -257,7 +257,7 @@ function construireVosges(A, L, scene) {
         c.strokeStyle = "#8a8070"; c.lineWidth = 6; c.strokeRect(10, 10, w - 20, h - 20); c.fillStyle = "#2a2a30"; c.textAlign = "center"; c.font = `bold 50px ${serif}`; c.fillText("VICTOR HUGO", w / 2, 80); c.font = `30px ${serif}`; c.fillText("A HABITÉ CETTE MAISON", w / 2, 140); c.fillText("DE 1832 À 1848", w / 2, 190); c.font = `italic 20px ${serif}`; c.fillText("Il y écrivit une grande partie des Misérables", w / 2, 228); });
       const pm = new THREE.Mesh(new THREE.BoxGeometry(1.8, .9, .06), [pierreR, pierreR, pierreR, pierreR, mat({ map: t2, roughness: .35 }), pierreR]); pm.position.set(HUGO.x + 2, 10.15, FA - .1); pm.rotation.y = Math.PI; scene.add(pm); }
     const porte = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.6), mat({ map: tT(128, 192, (c, w, h) => { c.fillStyle = "#3a2414"; c.fillRect(0, 0, w, h); c.strokeStyle = "#20140a"; c.lineWidth = 4; for (const [x, y, ww, hh] of [[8, 8, 52, 80], [68, 8, 52, 80], [8, 98, 52, 86], [68, 98, 52, 86]]) c.strokeRect(x, y, ww, hh); c.fillStyle = "#c8a040"; c.beginPath(); c.arc(62, 100, 5, 0, 7); c.fill(); c.beginPath(); c.arc(66, 100, 5, 0, 7); c.fill(); }), roughness: .6 }));
-    porte.position.set(HUGO.x, 1.75 + TROT, FA + GAL - .05); porte.rotation.y = Math.PI; scene.add(porte);
+    porte.position.set(HUGO.x, 1.75 + TROT, FA + GAL - .05); { const fd = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 5), murGal); fd.position.set(HUGO.x, 2.5, FA + GAL - .04); fd.rotation.y = Math.PI; scene.add(fd); } porte.rotation.y = Math.PI; scene.add(porte);
     const lan = mat({ color: 0xf8e8b8, emissive: 0xffc870, emissiveIntensity: .1 }); NUIT.push([lan, .1, 2.2]); const l = new THREE.Mesh(new THREE.CylinderGeometry(.16, .12, .4, 6), lan); l.position.set(HUGO.x - 1.6, 3.4, FA + GAL - .3); scene.add(l); LAMPES.push([HUGO.x, 4.2, FA - 1.4]); }
 
   /* ---------- le square : la grille noire aux pointes dorées, ses portes au milieu de chaque côté ; les tilleuls ; les bancs ; les réverbères ---------- */
@@ -422,7 +422,7 @@ function construireVosges(A, L, scene) {
   /* ---------- l'arrivée par le vieux livre : les pages tourbillonnent autour de nous, puis s'envolent au-dessus du square et laissent voir la place ---------- */
   { const papT = tT(64, 88, (c, w, h) => { c.fillStyle = "#f2ead6"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(60,40,20,.55)"; for (let y = 10; y < h - 8; y += 6) c.fillRect(6, y, w - 12 - (y % 18 ? 0 : 14), 1.5); });
     const scT = tT(64, 64, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.3, "rgba(255,255,255,.5)"); g.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
-    L.arriveeLivre = (coul) => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p) return; const C2 = coul || { page: 0x9cffc0, em: 0x20b060, sc: 0x6aff9a }, pm = mat({ map: papT, color: C2.page, emissive: C2.em, emissiveIntensity: .55, side: THREE.DoubleSide, roughness: .9 });
+    L.arriveeLivre = (coul) => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p) return; const C2 = coul || { page: 0xffffff, em: 0x3a3428, sc: 0xffd890 }, pm = mat({ map: papT, color: C2.page, emissive: C2.em, emissiveIntensity: .3, side: THREE.DoubleSide, roughness: .9 });
       const G = new THREE.Group(); scene.add(G); const PG = []; for (let i = 0; i < 36; i++) { const g = new THREE.Group(), a1 = new THREE.Mesh(new THREE.PlaneGeometry(.12, .17), pm), a2 = a1.clone(); a1.position.x = -.06; a2.position.x = .06; g.add(a1, a2); const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: scT, color: C2.sc, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); h.scale.setScalar(.6); g.add(h); G.add(g); PG.push({ g, a1, a2, r: .8 + al() * 1.6, a: al() * 6.28, y: al() * 2.4, w: .8 + al() * 1.2, ph: al() * 6.28 }); }
       const t0 = performance.now(), DUR = 11, P0 = p.g.position.clone(), c = M.camera; p.g.visible = false; let dit = 0, fin = false;
       M.cine = { gel: true, fov: [52, 60], maj: () => { const t = (performance.now() - t0) / 1000, k = Math.min(1, t / DUR), e = k * k * (3 - 2 * k);
@@ -446,6 +446,6 @@ function construireVosges(A, L, scene) {
   fusionStatique(scene, L, 0);
   // (10.190) on arrive par le livre : dès que le bonhomme est là, la cinématique des pages ; puis le voile de lumière se dissipe
   { const a2 = L.anim; L.anim = (tm) => { try { a2 && a2(tm); } catch (e) {} const A2 = window.__arriveeLivre; if (!A2 || !M || M.L !== L || !M.moiNum || !M.gens.get(M.moiNum)) return; window.__arriveeLivre = null;
-      try { if (M.cine) finCine(); L.arriveeLivre(A2.coul); } catch (e) { console.warn(e); } const v = A2.voile; if (v && v.isConnected) setTimeout(() => { v.style.opacity = "0"; setTimeout(() => v.remove(), 1500); }, 400); }; }
+      try { if (M.cine) finCine(); L.arriveeLivre(A2.coul); } catch (e) { console.warn(e); } const v = A2.voile; if (v && v.sortir) setTimeout(() => v.sortir(), 350); else if (v && v.isConnected) setTimeout(() => { v.style.opacity = "0"; setTimeout(() => v.remove(), 1500); }, 400); }; }
 }
 ({ construireVosges })
