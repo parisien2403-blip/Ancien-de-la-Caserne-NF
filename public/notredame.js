@@ -2283,14 +2283,14 @@ function construireNotreDame(A, L, scene) {
           const ail = (s) => { const piv = new THREE.Group(); piv.position.set(0, .02, .05); piv.add(tri([[0, 0, .14], [s * .34, .02, -.02], [0, 0, -.14]], pm)); g.add(piv); return piv; }; const A = [ail(-1), ail(1)];
           const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: lueurOr, transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); h.scale.setScalar(1.1); g.add(h); g.scale.setScalar(2.6); scene.add(g); return { g, A, h }; };
         const envoyer = (txt, qui) => { const p = moiC2(); if (!p || enCours || M.cine) return; enCours = true; const G = new THREE.Group(); scene.add(G);
-          const feuille = new THREE.Mesh(new THREE.PlaneGeometry(.42, .52), new THREE.MeshBasicMaterial({ map: papierT(txt, qui), side: THREE.DoubleSide, transparent: true, fog: false })); feuille.position.set(BX, YB + .95, BZ - .45); feuille.rotation.y = Math.PI; G.add(feuille);
+          const feuille = new THREE.Mesh(new THREE.PlaneGeometry(.24, .3), new THREE.MeshBasicMaterial({ map: papierT(txt, qui), side: THREE.DoubleSide, transparent: true, fog: false })); feuille.position.set(BX, YB + .78, BZ - .35); feuille.rotation.y = Math.PI; G.add(feuille);
           const ois = oiseau(); ois.g.visible = false; const E = etincelles(220, lueurOr, .16), etoile = new THREE.Sprite(new THREE.SpriteMaterial({ map: lueurOr, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); etoile.visible = false; scene.add(etoile);
           const queue = etincelles(320, lueurC, 2.6);
           const CH = new THREE.CatmullRomCurve3([P3(BX, YB + .8, BZ - .6), P3(BX + 3, YB + 2.5, 14), P3(BX + 10, 4, 4), P3(BX + 18, 14, -8), P3(-4, 34, -30), P3(2, 84, -58), P3(16, 100, -84), P3(30, 112, -110)], false, "catmullrom", .5), pos = P3(0, 0, 0), tg = P3(0, 0, 1);
           const t0 = performance.now(), DUR = 30, far0 = M.camera.far; M.camera.far = 900; M.camera.updateProjectionMatrix(); p.g.visible = false; L.enBalade = true; let dits = 0, fin = false;
           sousTitre("", "Tu écris… puis tu plies doucement ta lettre.", 3600);
           M.cine = { gel: true, fov: [46, 60], maj: () => { const t = (performance.now() - t0) / 1000, c = M.camera, ts = performance.now() / 1000;
-              if (t < 4.2) { const k = Math.min(1, t / 2); c.position.set(BX - .15, YB + 1.05, BZ - 1.25 + k * .2); c.lookAt(feuille.position);
+              if (t < 4.2) { const k = Math.min(1, t / 2); c.position.set(BX - .08, YB + .86, BZ - .95 + k * .12); c.lookAt(feuille.position);
                 if (t > 2.6) { const f = (t - 2.6) / 1.6; feuille.scale.set(1 - f * .8, 1 - f * .85, 1); feuille.rotation.y = Math.PI + f * Math.PI * 2; feuille.material.opacity = 1 - Math.max(0, f - .7) / .3; } }
               else { if (feuille.visible) { feuille.visible = false; ois.g.visible = true; E.sem(feuille.position, ts, 40, .4); }
                 const u = Math.min(1, (t - 4.2) / 17), e = u * u * (3 - 2 * u); CH.getPointAt(e, pos); CH.getTangentAt(Math.min(.999, e + .001), tg);
