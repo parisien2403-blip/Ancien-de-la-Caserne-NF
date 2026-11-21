@@ -125,7 +125,7 @@ function construireVosges(A, L, scene) {
     for (const s of [-1, 1]) for (let t = -GR; t <= GR; t += .16) { if (Math.abs(t) < 2.6) continue; B.push([t, s * GR], [s * GR, t]); }
     const bg = new THREE.BoxGeometry(.035, 2.1, .035), pg = new THREE.ConeGeometry(.05, .16, 5), mm = new THREE.Matrix4();
     const ib = new THREE.InstancedMesh(bg, ferM, B.length), ip = new THREE.InstancedMesh(pg, orM, B.length); B.forEach(([x, z], i) => { mm.makeTranslation(x, 1.05, z); ib.setMatrixAt(i, mm); mm.makeTranslation(x, 2.18, z); ip.setMatrixAt(i, mm); }); scene.add(ib, ip);
-    for (const s of [-1, 1]) for (const h of [.25, 1.85]) { box(2 * GR - 5.2, .05, .06, ferM, -GR / 2 - 1.3, h, s * GR); box(2 * GR - 5.2, .05, .06, ferM, GR / 2 + 1.3, h, s * GR); box(.06, .05, 2 * GR - 5.2, ferM, s * GR, h, -GR / 2 - 1.3); box(.06, .05, 2 * GR - 5.2, ferM, s * GR, h, GR / 2 + 1.3); }
+    for (const s of [-1, 1]) for (const h of [.25, 1.85]) { box(GR - 2.6, .05, .06, ferM, -GR / 2 - 1.3, h, s * GR); box(GR - 2.6, .05, .06, ferM, GR / 2 + 1.3, h, s * GR); box(.06, .05, GR - 2.6, ferM, s * GR, h, -GR / 2 - 1.3); box(.06, .05, GR - 2.6, ferM, s * GR, h, GR / 2 + 1.3); }
     for (const s of [-1, 1]) for (const d of [-2.6, 2.6]) for (const [x, z] of [[d, s * GR], [s * GR, d]]) { box(.3, 2.8, .3, ferM, x, 1.4, z); cyl(.0, .16, .4, orM, x, 3, z, 8); }   // (les piliers des portes)
     for (const [x, z] of [[-GR, -GR], [GR, -GR], [-GR, GR], [GR, GR]]) { box(.4, 2.8, .4, ferM, x, 1.4, z); cyl(0, .2, .45, orM, x, 3, z, 8); }
     OBS.push([-GR - .3, GR + .3, -GR - .3, -GR + .3, "grille"]); }
