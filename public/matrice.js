@@ -16340,6 +16340,7 @@ function chercherAction(t) {
     }
   }
   if (a && M.L && M.L.sh && /^(console|babyfoot|flechettes|tir|pingpong|flipper|asseoir|hifi|jukebox|borne|arcade)$/.test(a.type)) a = null;   // (à Silent Hill, aucun jeu, aucune distraction : on n'est pas là pour s'amuser)
+  if (a && M.L && M.L.filtreAction && !M.L.filtreAction(a)) a = null;   // (10.187 : le lieu peut tout bloquer, ex. Notre-Dame en rat : seul le pigeon)
   const cle = a ? a.type + (a.i ?? "") + (a.numero ?? "") + (a.id ?? "") + (a.type === "hifi" ? a.label : "") : "";   // (la chaîne hi-fi : le bouton change, marche ou arrêt)
   if (cle !== M.actionCle) { M.actionCle = cle; M.action = a; M.ctx.surAction && M.ctx.surAction(a); }
 }
