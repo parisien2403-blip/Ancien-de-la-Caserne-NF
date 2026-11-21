@@ -443,6 +443,14 @@ function construireVosges(A, L, scene) {
       for (const W of MARCH) try { const m = W.m, [tx, tz] = W.R[W.i], dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz); if (d < .3) { W.i = (W.i + 1) % W.R.length; continue; } const v = Math.min(d, W.v * dt);
         m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur(m.position.x, m.position.z); m.rotation.y = Math.atan2(dx, dz); if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * W.v / 1.2); } catch (e) {}
       if (!M || M.L !== L || !M.camera || fr++ % 20) return; const cp = M.camera.position; const tri = LAMPES.map(p => [p, (p[0] - cp.x) ** 2 + (p[2] - cp.z) ** 2]).sort((u, w) => u[1] - w[1]); POOL.forEach((l, i) => { const p = tri[i] && tri[i][0]; if (p) l.position.set(p[0], p[1], p[2]); }); }; }
+  /* (10.191) la musique des quais de Seine, ici aussi : la même playlist, qui reprend là où elle en était */
+  { const a11 = L.anim; L.anim = (tm) => { try { a11 && a11(tm); } catch (e) {} if (!M || M.L !== L) return; const A2 = (window.__valseND = window.__valseND || (() => { const PL = ["sons/notredame-valse.mp3?v=3", "sons/notredame-2.mp3?v=1", "sons/notredame-3.mp3?v=1", "sons/notredame-4.mp3?v=1", "sons/notredame-5.mp3?v=1", "sons/notredame-6.mp3?v=1"], au = Object.assign(new Audio(PL[0]), { loop: false, preload: "auto" }); au._k = 0;
+        au.addEventListener("ended", () => { au._k = (au._k + 1) % PL.length; au.src = PL[au._k]; au.play().catch(() => {}); }); return au; })());
+      if (window.mxArcadeOn) { if (!A2.paused) A2.pause(); return; }
+      if (A2.paused && !A2._essai && !A2._attente) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
+      if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
+      if (!A2.paused) try { A2.volume = Math.max(0, Math.min(1, A2.volume + Math.max(-.01, Math.min(.006, .35 - A2.volume)))); } catch (e) {} };
+    quitterLieu.add(() => { const A2 = window.__valseND; if (A2) A2.pause(); }); }
   fusionStatique(scene, L, 0);
   // (10.190) on arrive par le livre : dès que le bonhomme est là, la cinématique des pages ; puis le voile de lumière se dissipe
   { const a2 = L.anim; L.anim = (tm) => { try { a2 && a2(tm); } catch (e) {} const A2 = window.__arriveeLivre; if (!A2 || !M || M.L !== L || !M.moiNum || !M.gens.get(M.moiNum)) return; window.__arriveeLivre = null;

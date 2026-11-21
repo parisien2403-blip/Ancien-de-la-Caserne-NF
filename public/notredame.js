@@ -1582,7 +1582,7 @@ function construireNotreDame(A, L, scene) {
       if (A2.paused && !A2._essai && !A2._attente) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
       if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
       if (!A2.paused) try { const cv = window.__ndDuck ?? .35; A2.volume = Math.max(0, Math.min(1, A2.volume + Math.max(-.01, Math.min(.006, cv - A2.volume)))); } catch (e) {} };
-    quitterLieu.add(() => { const A2 = window.__valseND; if (A2) { A2.pause(); try { A2.currentTime = 0; } catch (e) {} } }); }
+    quitterLieu.add(() => { const A2 = window.__valseND; if (A2) A2.pause(); }); }   /* (10.191 : on ne rembobine plus — la musique reprend où elle en était, aux quais comme place des Vosges) */
   // (10.146) ce que le doigt touche pour aller quelque part : le quai, l'île et le parvis, le pont, les deux bas-ports (des sols invisibles, à chaque niveau)
   { const inv = new THREE.MeshBasicMaterial({ visible: false }), pl = (x0, x1, z0, z1, y) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), inv); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); scene.add(m); m.updateMatrixWorld(true); return m; };
     L.sol = pl(-XS, XS, 22.5, 140, .02); L.solsPlus = [pl(-XS, XS, -232, -22.5, .02), pl(PP[0], PP[1], -22.5, 22.5, .03), pl(-XS, XS, 18, 22.5, YB + .02), pl(-XS, XS, -22.5, -18, YB + .02)]; }
