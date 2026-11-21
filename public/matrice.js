@@ -9091,6 +9091,8 @@ export async function ouvrir(ctx) {
               else if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw, true); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // il joue : 🎮 la console, 🕹️ le flipper, 🎯 les fléchettes, au-dessus de sa tête (elle flotte doucement)
+      if (!p.moi) { if (p.info.absent) { if (p.g.visible) { p.g.visible = false; p.cacheAbsent = true; } } else if (p.cacheAbsent) { p.cacheAbsent = false; p.g.visible = true; } }   /* (10.184 : parti dans une aventure : on ne voit plus son bonhomme) */
+      if (p.moi && M.L) { const ab = !!(M.L.absentPerso && M.L.absentPerso()); if (ab !== !!p.absentEnvoye) { p.absentEnvoye = ab; envoyerWS({ t: "absent", on: ab }); } }
       if ((p.info.joue || null) !== (p.iconeJeu || null)) { if (p.icone) { p.g.remove(p.icone); p.icone.material.map.dispose(); p.icone.material.dispose(); p.icone = null; }
         p.iconeJeu = p.info.joue || null;
         if (p.iconeJeu) { const H = tailleBonhomme(); p.icone = sprite(toile(128, 128, x => { x.fillStyle = "rgba(255,250,240,.95)"; x.beginPath(); x.arc(64, 64, 58, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#b5573c"; x.stroke();
@@ -18290,6 +18292,7 @@ function connecter() {
     else if (m.t === "z_evac") chargerMonde("residentevil").then(R => R.surEvac(m)).catch(() => {});
     else if (m.t === "z_ramasse") { const o = (M.objets || []).find(q => q.id === m.id); if (o) { o.cache = performance.now() + 45000; o.sp.visible = false; } }
     else if (m.t === "joue") { const p = M.gens.get(m.numero); if (p) p.info.joue = m.jeu || null; }
+    else if (m.t === "absent") { const p = M.gens.get(m.numero); if (p) p.info.absent = !!m.on; }   /* (10.184) */
     else if (m.t === "notes_corbier") { M.notesCorbier = m.notes || []; if (M.L && M.L.majNotes) M.L.majNotes(M.notesCorbier); }   // (10.100 : les notes du Corbier)
     else if (m.t === "vespa") { const p = M.gens.get(m.numero); if (p) p.info.vespa = !!m.on; }   // (10.95 : il roule en Vespa à Montmartre)
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
