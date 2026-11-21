@@ -1244,12 +1244,12 @@ function construireNotreDame(A, L, scene) {
           const a0v = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0v && a0v(x, z, moi); if (r) return r; return !L.enHaut && Math.hypot(x - RXv, z - RZv) < 1.6 ? { type: "lieu", id: "velovolant", label: "🚲 Monter sur le vieux vélo", faire: monter } : null; }; }
         } }
     /* (10.160) la chatte noire et blanche qui se promène sur le bas-port, près des bateaux, et ses trois chatons qui la suivent partout */
-    { const noir = mat({ color: 0x141414, roughness: .8 }), blanc = mat({ color: 0xf2f0ea, roughness: .8 }), rose = mat({ color: 0xe8a0a0 });
-      const chat = (s, k) => { const g = new THREE.Group(), C = (geo, m, x, y, z, rx = 0, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.x = rx; o.scale.set(sx, sy, sz); g.add(o); return o; };
-        const col = [noir, k % 2 ? blanc : noir]; C(new THREE.SphereGeometry(.12, 12, 8), col[0], 0, .2, 0, 0, .8, .75, 1.6); C(new THREE.SphereGeometry(.1, 10, 8), blanc, 0, .17, .08, 0, .7, .6, 1.1);   // (le corps, le ventre et le plastron blancs)
+    { const noir0 = mat({ color: 0x141414, roughness: .8 }), blanc0 = mat({ color: 0xf2f0ea, roughness: .8 }), noir = noir0, blanc = blanc0, rose = mat({ color: 0xe8a0a0 });
+      const chat = (s, k, pal) => { const g = new THREE.Group(), C = (geo, m, x, y, z, rx = 0, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.x = rx; o.scale.set(sx, sy, sz); g.add(o); return o; };
+        const blanc = pal ? pal.ventre : blanc0, noir = pal ? pal.oreille : noir0, col = pal ? [pal.corps, pal.corps] : [noir, k % 2 ? blanc : noir]; C(new THREE.SphereGeometry(.12, 12, 8), col[0], 0, .2, 0, 0, .8, .75, 1.6); C(new THREE.SphereGeometry(.1, 10, 8), blanc, 0, .17, .08, 0, .7, .6, 1.1);   // (le corps, le ventre et le plastron blancs)
         const t = C(new THREE.SphereGeometry(.085, 12, 10), col[1], 0, .3, .2); C(new THREE.SphereGeometry(.05, 8, 6), blanc, 0, .27, .26, 0, 1, .8, .8); for (const x of [-1, 1]) { C(new THREE.ConeGeometry(.03, .07, 4), noir, x * .045, .38, .19); C(new THREE.SphereGeometry(.013, 6, 4), mat({ color: 0x8ac840, emissive: 0x2a4a10 }), x * .03, .32, .27); } C(new THREE.SphereGeometry(.01, 4, 3), rose, 0, .295, .285);
         const P = []; for (const [x, z] of [[-.05, .1], [.05, .1], [-.05, -.1], [.05, -.1]]) P.push(C(new THREE.CylinderGeometry(.018, .016, .14, 6), x > 0 && z > 0 ? blanc : col[0], x, .07, z));
-        const q = C(new THREE.CylinderGeometry(.012, .018, .26, 6), col[0], 0, .3, -.24, -.7); g.scale.setScalar(s); scene.add(g); return { g, P, q, t }; };
+        const q = C(new THREE.CylinderGeometry(.012, .018, .26, 6), col[0], 0, .3, -.24, -.7); g.scale.setScalar(s); scene.add(g); return { g, P, q, t }; }; L.chat3D = chat;   /* (10.181 : réutilisée pour les chats du rat) */
       const MAMAN = chat(1, 0), PETITS = [1, 2, 3].map(k => chat(.5, k)), H = [];   // (le chemin de la maman, que les petits suivent à la trace)
       const R2 = [[-40, 21.6], [10, 21.6], [62, 20.6], [96, 21.2], [96, 19.4], [30, 19.4], [-60, 19.6], [-95, 21.4]]; let i = 0, x = R2[0][0], z = R2[0][1], pause = 0;
       AMB.push((tm, dt) => { dt = dt || .016; const [tx, tz] = R2[(i + 1) % R2.length], dx = tx - x, dz = tz - z, d = Math.hypot(dx, dz);
@@ -2132,13 +2132,14 @@ function construireNotreDame(A, L, scene) {
        on devient un petit rat gris, vu à hauteur de pavé ; les chats rôdent (attention !) ; et sur le parvis, un pigeon nous propose de nous montrer Paris, sur son dos, au-dessus des toits */
     { const BT = {}, chargeT = (n) => BT[n] || (BT[n] = (() => { const t = new THREE.TextureLoader().load("images/notredame/betes/" + n + ".webp?v=1", (tx) => { tx.userData.asp = tx.image.width / tx.image.height; }); t.colorSpace = THREE.SRGBColorSpace; t.userData.asp = 1; return t; })());
       for (const n of ["ratb", "ratg", "pigeon", "chatr", "chatg"]) for (const v of ["face", "profil", "dos"]) chargeT(n + "-" + v);   /* (toutes chargées d'avance) */
+      const CENTRE = {"chatg-dos": 0.412, "chatg-face": 0.499, "chatg-profil": 0.394, "chatr-dos": 0.56, "chatr-face": 0.517, "chatr-profil": 0.578, "pigeon-dos": 0.48, "pigeon-face": 0.493, "pigeon-profil": 0.641, "ratb-dos": 0.73, "ratb-face": 0.675, "ratb-profil": 0.624, "ratg-dos": 0.691, "ratg-face": 0.653, "ratg-profil": 0.53};   /* (10.181 : le milieu du corps dans chaque image, la queue mise à part) */
       const VUES = { ratb: { H: .26, gauche: false }, ratg: { H: .26, gauche: false }, pigeon: { H: .36, gauche: false }, chatr: { H: .56, gauche: false }, chatg: { H: .56, gauche: true } };
       // une bête dessinée : on montre la face, le profil ou le dos selon d'où on la regarde (comme les bonshommes 2D du jeu)
       const bete = (nom, k = 1) => { const V = VUES[nom], T = { face: chargeT(nom + "-face"), profil: chargeT(nom + "-profil"), dos: chargeT(nom + "-dos") }, m = new THREE.SpriteMaterial({ map: T.face, transparent: true, alphaTest: .25 }), s = new THREE.Sprite(m); s.center.set(.5, 0); const g = new THREE.Group(); g.add(s); scene.add(g);
         const ombre = new THREE.Mesh(new THREE.CircleGeometry(V.H * k * .45, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .25, depthWrite: false })); ombre.rotation.x = -Math.PI / 2; ombre.position.y = .01; ombre.scale.y = .6; g.add(ombre);
         const B = { g, s, cap: 0, bond: 0, k, maj: (cam) => { const dx = cam.x - g.position.x, dz = cam.z - g.position.z, rel = Math.atan2(Math.sin(Math.atan2(dx, dz) - B.cap), Math.cos(Math.atan2(dx, dz) - B.cap)); let vue, flip = 1;
             if (Math.abs(rel) < Math.PI / 4) vue = "face"; else if (Math.abs(rel) > Math.PI * .75) vue = "dos"; else { vue = "profil"; const droite = rel < 0; flip = (droite !== V.gauche) ? 1 : -1; }
-            const t = T[vue]; if (m.map !== t) { m.map = t; m.needsUpdate = true; } const h = V.H * B.k; s.scale.set(h * (t.userData.asp || 1) * flip, h, 1); s.position.y = B.bond; } };
+            const t = T[vue]; if (m.map !== t) { m.map = t; m.needsUpdate = true; } const h = V.H * B.k, cx = CENTRE[nom + "-" + vue] || .5; s.center.x = cx; s.scale.set(h * (t.userData.asp || 1) * flip, h, 1); s.position.y = B.bond; } };
         return B; };
       const moiR = () => M && M.moiNum && M.gens.get(M.moiNum), cam = () => M.camera.position;
       const bulleR = (t, ms = 4000) => { const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:46;max-width:80%;background:rgba(255,250,240,.95);color:#3a2a1a;border-radius:14px;padding:10px 18px;font:italic 17px Georgia,serif;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.4);pointer-events:none"; d.textContent = t; (M.ctx.conteneur || document.body).appendChild(d); setTimeout(() => d.remove(), ms); };
@@ -2148,13 +2149,16 @@ function construireNotreDame(A, L, scene) {
       const cercle = (x, y, z) => { const RM = new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: .75, depthWrite: false, side: THREE.DoubleSide }), r = new THREE.Mesh(new THREE.RingGeometry(.5, .6, 40), RM); r.rotation.x = -Math.PI / 2; r.position.set(x, y + .035, z); scene.add(r); AMB.push((tm) => { RM.opacity = .6 + Math.sin(tm / 450) * .25; }); return r; };
       let RAT = false;   // (sommes-nous un rat ?)
       // — la scène du quai : le rat brun acculé contre le mur, les deux chats qui le menacent —
-      const QX = 24, QZ = 20.6, rb = bete("ratb"), c1 = bete("chatr"), c2 = bete("chatg"); rb.g.position.set(QX, YB, QZ); rb.cap = Math.PI;
+      const chat3 = (corps, ventre, oreille) => { const C = L.chat3D(1.6, 0, { corps: mat({ color: corps, roughness: .85 }), ventre: mat({ color: ventre, roughness: .85 }), oreille: mat({ color: oreille, roughness: .85 }) }); let px = 0, pz = 0;
+        const B = { g: C.g, cap: 0, bond: 0, k: 1, maj: (cam, tm = performance.now()) => { C.g.rotation.y = B.cap; C.g.scale.set(1.6, 1.6 * B.k, 1.6); const v = Math.hypot(C.g.position.x - px, C.g.position.z - pz); px = C.g.position.x; pz = C.g.position.z; const ph = tm / 90; C.P.forEach((p, j) => p.rotation.x = v > .001 ? Math.sin(ph + j * 1.6) * .6 : 0); C.q.rotation.z = Math.sin(tm / 300) * .4; C.q.rotation.x = B.k > 1.02 ? -1.3 : -.7; } };   /* (la queue dressée quand il crache) */
+        return B; };
+      const QX = 24, QZ = 20.6, rb = bete("ratb"), c1 = chat3(0xd8782a, 0xf4d8b0, 0xc0601a), c2 = chat3(0x5c6068, 0x9a9ea6, 0x3a3e46);   /* (le chat roux et le chat gris, en 3D comme la chatte du quai) */ rb.g.position.set(QX, YB, QZ); rb.cap = Math.PI;
       const placeChats = () => { c1.g.position.set(QX - .9, YB, QZ - .35); c1.cap = Math.PI / 2 + .3; c2.g.position.set(QX + .95, YB, QZ - .3); c2.cap = -Math.PI / 2 - .3; c1.g.visible = c2.g.visible = true; };
       placeChats(); let scene1 = "menace", tSc = 0; const cerQ = cercle(QX, YB, QZ - 1.6);
       // — les chats qui rôdent sur le parvis, une fois chassés : si on est un rat, ils nous poursuivent —
       const RONDE = [[-14, -38.5], [14, -38.5], [16, -46], [-2, -47.5], [-18, -46]], chasse = [{ c: c1, i: 0, f: 0 }, { c: c2, i: 2, f: 0 }];
       AMB.push((tm, dt) => { dt = Math.min(.05, dt || .016); const C = cam(), p = moiR();
-        if (scene1 === "menace") { const t = tm / 1000; for (const [c, s] of [[c1, 1], [c2, -1]]) { c.k = 1 + Math.max(0, Math.sin(t * 3 + s)) * .06; c.bond = 0; } rb.k = 1 - Math.abs(Math.sin(t * 20)) * .03; }
+        if (scene1 === "menace") { const t = tm / 1000; for (const [c, s] of [[c1, 1], [c2, -1]]) { c.k = 1 + Math.max(0, Math.sin(t * 3 + s)) * .08; c.bond = 0; } rb.k = 1 - Math.abs(Math.sin(t * 20)) * .03; }
         else if (scene1 === "ronde") for (const ch of chasse) { const c = ch.c, q = c.g.position; let cible = RONDE[ch.i], v = 1.1;
             if (RAT && p && Math.hypot(p.g.position.x - q.x, p.g.position.z - q.z) < 6 && Math.abs(p.g.position.y - q.y) < 1) { cible = [p.g.position.x, p.g.position.z]; v = 2.6; if (!ch.vu) { ch.vu = true; bulleR("😾 Attention, un chat ! Fuis vite !", 2200); } } else ch.vu = false;
             const dx = cible[0] - q.x, dz = cible[1] - q.z, d = Math.hypot(dx, dz); if (ch.f > 0) { ch.f -= dt; c.bond = 0; continue; }
