@@ -1613,7 +1613,7 @@ function construireNotreDame(A, L, scene) {
         const a0f = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0f && a0f(x, z, moi); if (r) return r; const d = Math.hypot(x - PX, z - PZ); return d < 6.2 && d > 3.6 ? { type: "lieu", id: "voeu", label: "🪙 Lancer une pièce et faire un vœu", faire: lancer } : null; }; } }
     /* (10.168) des petits cercles jaunes au sol, devant chaque endroit où l'on peut faire quelque chose : ils palpitent doucement */
     { const RM = new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: .75, depthWrite: false, side: THREE.DoubleSide }), CM = new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: .18, depthWrite: false, side: THREE.DoubleSide }), CER = [];
-      for (const [x, y, z] of [[32, YB, 19.8], [-14, 0, -56.9], [-14.6, 0, -96.1], [12.4, 0, -67.4], [-2.3, 0, -51.3], [-8, 0, -36.2], [-52.2, 0, -54], [10.8, 0, -57], [28.4, TROT, 27.2], [27, 0, -84.5]]) {
+      for (const [x, y, z] of [[32, YB, 19.8], [-14, 0, -56.9], [-14.6, 0, -96.1], [12.4, 0, -67.4], [-2.3, 0, -51.3], [-8, 0, -36.2], [-52.2, 0, -54], [10.8, 0, -57], [28.4, TROT, 27.2], [27, 0, -84.5], [-8.3, .06, 2.2]]) {
         const g = new THREE.Group(), r = new THREE.Mesh(new THREE.RingGeometry(.5, .6, 40), RM), c = new THREE.Mesh(new THREE.CircleGeometry(.5, 40), CM); for (const o of [r, c]) { o.rotation.x = -Math.PI / 2; o.renderOrder = 2; g.add(o); } c.position.y = -.002; g.position.set(x, y + .035, z); scene.add(g); CER.push(g); }
       AMB.push((tm) => { const s = 1 + Math.sin(tm / 450) * .08; RM.opacity = .6 + Math.sin(tm / 450) * .25; for (const g of CER) { g.scale.set(s, 1, s); g.visible = !L.enHaut; } }); }
     /* (10.170) la magie du soir et des jours doux : les lucioles du square, la pluie de pétales, le peintre dont la toile avance au fil du jour,
@@ -1696,6 +1696,43 @@ function construireNotreDame(A, L, scene) {
             EPO.userData.F.position.set(-45 + u * 100, 0, -27.5); EPO.userData.F.children.forEach(o => { if (o.geometry && o.geometry.type === "TorusGeometry") o.rotation.z = -t * 3; }); };
           AMB.push(anim); const finir = () => { if (fini) return; fini = true; const i = AMB.indexOf(anim); if (i >= 0) AMB.splice(i, 1); EPO.visible = false; cvs.style.filter = f0 || ""; vig.style.opacity = "0"; setTimeout(() => vig.remove(), 1300); for (const o of CA) { o.visible = true; o.userData.masque = false; } if (apres) apres(); };
           setTimeout(finir, D); quitterLieu.add(finir); }; } }
+    /* (10.171) le lâcher de lanternes, depuis le pont : une jeune femme tient une lanterne de papier allumée ; elle nous en propose une ;
+       on la lâche, et des centaines d'autres s'envolent avec elle, du pont, des quais, des bateaux — au-dessus de la Seine et de Notre-Dame */
+    { const LX = -9.25, LZ = 3, RX = -8.3, RZ = 2.2, moiL = () => M && M.moiNum && M.gens.get(M.moiNum);
+      // la lanterne : une poche de papier de riz (un peu plus large en haut), son anneau et sa flamme ; plus claire en bas, là où brûle la mèche
+      const geoL = (() => { const P2 = [[0, 0], [.2, .0], [.24, .12], [.29, .4], [.3, .62], [.27, .78], [.18, .86], [0, .88]].map(([r, y]) => new THREE.Vector2(r, y)), g = new THREE.LatheGeometry(P2, 14); const c = []; for (let i = 0; i < g.attributes.position.count; i++) { const y = g.attributes.position.getY(i), k = 1 - y / .88; c.push(1, .72 + k * .25, .38 + k * .42); } g.setAttribute("color", new THREE.Float32BufferAttribute(c, 3)); return g; })();
+      const papM = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: .93, side: THREE.DoubleSide, fog: false }), halo = tT(64, 64, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, "rgba(255,200,120,.9)"); g.addColorStop(.35, "rgba(255,150,60,.35)"); g.addColorStop(1, "rgba(255,120,40,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
+      const uneLanterne = (s = 1) => { const g = new THREE.Group(), m = new THREE.Mesh(geoL, papM); g.add(m); const fl = new THREE.Mesh(new THREE.SphereGeometry(.045, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffe080, fog: false })); fl.position.y = .04; fl.scale.y = 1.6; g.add(fl); const an = new THREE.Mesh(new THREE.TorusGeometry(.2, .006, 4, 16), new THREE.MeshBasicMaterial({ color: 0x8a6a3a })); an.rotation.x = Math.PI / 2; g.add(an);
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); sp.scale.setScalar(1.6); sp.position.y = .4; g.add(sp); g.scale.setScalar(s); return g; };
+      // la jeune femme du pont, sa lanterne allumée entre les mains
+      const fem = personne3D({ taille: 1.66, peau: "#f0d0b0", ch: "#6a3a1e", haut: "#e8dcc8", bas: "#3a3a48", chaussures: "#2a1a14", coif: "long", pantalon: true }); fem.position.set(LX, .06, LZ); fem.rotation.y = Math.PI / 2 + .4; fem.userData.poser("debout", 0); scene.add(fem); fem.userData.masque = false;
+      { const P = fem.userData.parts; P.bras[0].e.rotation.set(-1.25, 0, .35); P.bras[1].e.rotation.set(-1.25, 0, -.35); P.tete.rotation.x = -.15; }
+      const saL = uneLanterne(1); fem.add(saL); saL.position.set(0, 1.45, .45); OBS.push([LX - .4, LX + .4, LZ - .4, LZ + .4]);
+      AMB.push((tm) => { saL.children[1].scale.x = 1 + Math.sin(tm / 90) * .15; saL.position.y = 1.45 + Math.sin(tm / 900) * .02; });
+      const bulle = (t, ms = 4000) => { const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:22%;transform:translateX(-50%);z-index:46;max-width:80%;background:rgba(255,250,240,.95);color:#3a2a1a;border-radius:14px;padding:10px 18px;font:italic 17px Georgia,serif;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.4);pointer-events:none"; d.textContent = t; (M.ctx.conteneur || document.body).appendChild(d); setTimeout(() => d.remove(), ms); };
+      let enCours = false, VOL = null;
+      const lacher = () => { const p = moiL(); if (!p || enCours) return; if (!L.nuit) { bulle("« Revenez ce soir, quand il fera nuit : c'est là qu'elles sont les plus belles. »"); return; } enCours = true;
+        bulle("« Faites un vœu… et laissez-la s'envoler. »", 4500);
+        // la nôtre, dans nos mains, puis des centaines d'autres : du pont, des quais, des bateaux
+        const N = (MOBILE || GPU_MODESTE) ? 110 : 240, LS = [], G = new THREE.Group(); scene.add(G); if (VOL) scene.remove(VOL); VOL = G;
+        const q = p.g.position.clone(), notre = uneLanterne(1.1); notre.position.set(q.x + .5, 1.5, q.z - .3); G.add(notre); LS.push({ o: notre, x: notre.position.x, y: 1.5, z: notre.position.z, t0: 2.5, v: .7, ph: 0, s: 1.1 });
+        for (let i = 0; i < N; i++) { const o = uneLanterne(.8 + al() * .5); let x, y, z; const r = al();
+          if (r < .35) { x = PP[0] + .5 + al() * 17; z = -24 + al() * 48; y = .9; } else if (r < .75) { x = -110 + al() * 220; z = (al() < .5 ? 1 : -1) * (19 + al() * 8); y = Math.abs(z) > 24 ? 1.4 : YB + 1.2; } else { x = -60 + al() * 120; z = -14 + al() * 28; y = YE + 1.5; }
+          o.position.set(x, -50, z); o.visible = false; G.add(o); LS.push({ o, x, y, z, t0: 3 + al() * 14, v: .55 + al() * .7, ph: al() * 6.28, s: o.scale.x }); }
+        const t0 = performance.now(), DUR = 38000; let finiC = false; p.g.visible = true;
+        const anim = (tm) => { const t = (performance.now() - t0) / 1000; for (const l of LS) { const u = t - l.t0; if (u < 0) { l.o.visible = false; continue; } l.o.visible = true; const h = l.y + u * l.v + Math.min(u, 3) * .1;
+            l.o.position.set(l.x + Math.sin(u * .4 + l.ph) * .8 + u * .35, h, l.z + Math.cos(u * .33 + l.ph) * .8 - u * .15); l.o.rotation.y = u * .2 + l.ph; l.o.children[1].scale.x = 1 + Math.sin(tm / 80 + l.ph * 9) * .2; const f = h > 140 ? Math.max(0, 1 - (h - 140) / 30) : 1; l.o.scale.setScalar(l.s * f); }
+          if (t > DUR / 1000 + 70) { const i = AMB.indexOf(anim); if (i >= 0) AMB.splice(i, 1); scene.remove(G); if (VOL === G) VOL = null; } };
+        AMB.push(anim);
+        // la cinématique : nos mains et notre lanterne qui s'élève ; puis l'on recule et l'on monte, le pont, la Seine, Notre-Dame dans le ciel plein de lanternes
+        const ND = new THREE.Vector3(0, 22, -66);
+        M.cine = { gel: true, fov: [52, 62], maj: () => { const t = (performance.now() - t0) / 1000, c = M.camera;
+            if (t < 7) { const k = t / 7; c.position.set(q.x - 1.6, 1.7 + k * .6, q.z + 2.2); c.lookAt(notre.position.x, Math.max(1.8, notre.position.y + .3), notre.position.z); }
+            else if (t < 22) { const k = (t - 7) / 15, e = k * k * (3 - 2 * k); c.position.set(q.x - 1.6 - e * 22, 2.3 + e * 16, q.z + 2.2 + e * 36); const look = new THREE.Vector3(notre.position.x, notre.position.y, notre.position.z).lerp(ND, e); c.lookAt(look); }
+            else { const k = (t - 22) / 16, a = -.55 + k * .7; c.position.set(Math.sin(a) * 52 - 4, 18.3 + k * 8, Math.cos(a) * 52 - 20); c.lookAt(ND.x, ND.y + k * 14, ND.z); }
+            if (t >= DUR / 1000 && !finiC) { finiC = true; finCine(); placerCamera(true); enCours = false; bulle("« Elles emportent nos vœux jusqu'aux étoiles… »", 4500); } } }; };
+      const a0l = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0l && a0l(x, z, moi); if (r) return r; return Math.hypot(x - RX, z - RZ) < 1.8 ? { type: "lieu", id: "lanterne", label: "🏮 Lâcher une lanterne", faire: lacher } : null; };
+      quitterLieu.add(() => { if (VOL) { scene.remove(VOL); VOL = null; } enCours = false; }); }
     L.grille = L.grilleAdmin = null; }
   /* (10.156, fluidité) la nuit, seulement quelques lumières de réverbère, toujours les plus proches de la caméra (une lumière par réverbère, c'était des dizaines : tout ramait) */
   { const N = (MOBILE || GPU_MODESTE) ? 5 : 8, POOL = []; for (let i = 0; i < N; i++) { const l = new THREE.PointLight(0xffd08a, 14, 15, 1.5); l.visible = false; scene.add(l); L.nuitObjets.push(l); POOL.push(l); }
