@@ -1493,7 +1493,7 @@ function construireNotreDame(A, L, scene) {
     for (const dx of [-17, -6, 6, 17]) spot(FAC.x + dx, .4, FAC.z + 3.2, FAC.x + dx * .9, 40, FAC.z + .5, 0xffb060, 900, .38, 70);
     spot(FAC.x, 3, -30, FAC.x, 32, FAC.z, 0xffd8a0, 380, .42, 120);
     for (const sx of [-1, 1]) spot(FAC.x + sx * 30, 1, FAC.z + 10, FAC.x + sx * 8, 25, FAC.z, 0xffa850, 300, .45, 60);
-    NUIT.push([{ set emissiveIntensity(v) { for (const [s, i] of SP) { s.intensity = v * i; s.visible = v > .5; } } }, 0, 1]); for (const [s] of SP) s.visible = false; }
+    NUIT.push([{ set emissiveIntensity(v) { L.nuitSP = v; for (const [s, i] of SP) { s.intensity = v * i * (L.facOr ?? 1); s.visible = v > .5; } } }, 0, 1]); L.SPfac = SP; for (const [s] of SP) s.visible = false; }
 
   /* ---------- (10.146) au loin, pour fermer la vue : la Seine qui continue et ses quais, un pont de pierre à chaque bout, les immeubles parisiens qui se prolongent ;
      derrière, les toits de Paris en plusieurs plans ; au sud, le dôme du Panthéon ; au nord, la tour Saint-Jacques ---------- */
@@ -2372,6 +2372,54 @@ function construireNotreDame(A, L, scene) {
                 M.camera.far = far0; M.camera.updateProjectionMatrix(); L.enBalade = false; p.info.slow = null; p.info.slowPNJ = null; p.info.danse = avant || false; p.g.rotation.z = 0;
                 p.g.position.set(CX, 0, CZ); p.cible = null; p.chemin = []; try { envoyerWS({ t: "aller", x: CX, z: CZ }); } catch (e) {} finCine(); placerCamera(true); enCours = false; } } }; };
         const a0dl = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0dl && a0dl(x, z, moi); if (r) return r; return Math.hypot(x - CX, z - CZ) < 1.4 ? { type: "lieu", id: "lune", label: "🌙 Tendre la main vers la lune", faire: danser } : null; }; } }
+    /* (10.188) au point zéro, le soir : on choisit la mise en lumière de la façade — dorée (comme d'habitude), bleu et or, les vitraux, le bleu étoilé ;
+       un grand projecteur, sur le parvis côté Seine, peint la façade (une image projetée, qui épouse les reliefs) */
+    { const DX = FAC.x, FY = 31, FZ = FAC.z, N = 1024, KP = N / 2 / 36.8, X = (m) => N / 2 + m * KP, Y = (m) => N / 2 - (m - FY) * KP;
+      const cv = document.createElement("canvas"); cv.width = cv.height = N; const c = cv.getContext("2d"), tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+      const proj = new THREE.SpotLight(0xffffff, 0, 0, .52, .08, 0); proj.position.set(DX, 14, FZ + 62); proj.target.position.set(DX, FY, FZ); proj.map = tex; scene.add(proj); scene.add(proj.target);
+      const al = ((s) => () => (s = (s * 16807) % 2147483647) / 2147483647)(7);
+      const ogv = (cx, b, lg, ht) => { c.beginPath(); c.moveTo(X(cx - lg / 2), Y(b)); c.lineTo(X(cx - lg / 2), Y(b + ht - lg * .6)); c.quadraticCurveTo(X(cx - lg / 2), Y(b + ht), X(cx), Y(b + ht)); c.quadraticCurveTo(X(cx + lg / 2), Y(b + ht), X(cx + lg / 2), Y(b + ht - lg * .6)); c.lineTo(X(cx + lg / 2), Y(b)); };
+      const tracer = (col, lw) => { c.strokeStyle = col; c.lineWidth = lw; c.lineJoin = "round";
+        for (const x of [-20, -13.3, -6.8, 6.8, 13.3, 20]) { c.beginPath(); c.moveTo(X(x), Y(0)); c.lineTo(X(x), Y(x * x > 50 ? 62 : 41.5)); c.stroke(); }
+        for (const y of [0.3, 11.5, 13.6, 17.2, 20.3, 33.8, 41.5, 60]) { c.beginPath(); c.moveTo(X(-20), Y(y)); c.lineTo(X(20), Y(y)); c.stroke(); }
+        for (const [cx, lg] of [[-10, 5.4], [0, 6.2], [10, 5.4]]) { for (const e of [0, 1.2, 2.4]) { ogv(cx, 0, lg + e, 9.5 + e * .6); c.stroke(); } }
+        for (const cx of [-10, 10]) { ogv(cx, 20.5, 6, 9); c.stroke(); for (const dx of [-1.5, 1.5]) { ogv(cx + dx, 21, 2.2, 7.5); c.stroke(); } }
+        for (let k = 0; k < 28; k++) { ogv(-18.5 + k * 37 / 28 + .66, 13.8, 1.1, 3); c.stroke(); }
+        for (let k = 0; k < 18; k++) { ogv(-18.4 + k * 2.15 + .65, 34.4, 1.3, 5.6); c.stroke(); }
+        for (const cx of [-13.4, 13.4]) for (const dx of [-3, 3]) { ogv(cx + dx, 42, 3.2, 15.5); c.stroke(); }
+        for (const r of [4.8, 5.4, 2.2]) { c.beginPath(); c.arc(X(0), Y(25.5), r * KP, 0, 7); c.stroke(); }
+        for (let k = 0; k < 24; k++) { const a = k / 24 * 6.283; c.beginPath(); c.moveTo(X(0) + Math.cos(a) * 2.2 * KP, Y(25.5) + Math.sin(a) * 2.2 * KP); c.lineTo(X(0) + Math.cos(a) * 4.8 * KP, Y(25.5) + Math.sin(a) * 4.8 * KP); c.stroke(); } };
+      const dessins = {
+        bleuor() { c.fillStyle = "#1e46ff"; c.fillRect(0, 0, N, N); const g = c.createLinearGradient(0, Y(62), 0, Y(0)); g.addColorStop(0, "rgba(90,140,255,.5)"); g.addColorStop(1, "rgba(10,30,200,.3)"); c.fillStyle = g; c.fillRect(0, 0, N, N);
+          for (let x = -20; x < 20; x += 1.66) { c.fillStyle = "rgba(255,190,40,.55)"; c.fillRect(X(x), Y(60), 2, (Y(41.5) - Y(60))); c.fillRect(X(x), Y(11.5), 2, Y(0) - Y(11.5)); }
+          tracer("#ffc22a", 5); for (let k = 0; k < 28; k++) { c.fillStyle = k % 2 ? "#e0283a" : "#2a8cff"; c.fillRect(X(-18.5 + k * 37 / 28 + .25), Y(16.2), .8 * KP, 2.2 * KP); } },
+        vitraux() { c.fillStyle = "#1a2cc8"; c.fillRect(0, 0, N, N); const cols = ["#ff2a3a", "#2aff6a", "#ffd02a", "#2ae8ff", "#ff4ad8", "#ff8a1a", "#3a5aff", "#b0ff3a"];
+          for (let i = 0; i < 2600; i++) { const x = al() * N, y = al() * N, r = 3 + al() * 9; c.fillStyle = cols[(al() * cols.length) | 0]; c.globalAlpha = .55; c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r, y); c.lineTo(x, y + r); c.lineTo(x - r, y); c.fill(); } c.globalAlpha = 1;
+          const perso = (x, y, h, k) => { const r1 = cols[k % 8], r2 = cols[(k + 3) % 8]; c.fillStyle = r1; c.beginPath(); c.moveTo(X(x), Y(y + h * .78)); c.lineTo(X(x + h * .28), Y(y)); c.lineTo(X(x - h * .28), Y(y)); c.fill();
+            c.fillStyle = r2; c.fillRect(X(x - h * .2), Y(y + h * .7), h * .4 * KP, h * .18 * KP); c.fillStyle = "#ffe0b0"; c.beginPath(); c.arc(X(x), Y(y + h * .88), h * .1 * KP, 0, 7); c.fill(); c.strokeStyle = "#ffd02a"; c.lineWidth = 3; c.beginPath(); c.arc(X(x), Y(y + h * .88), h * .15 * KP, 0, 7); c.stroke(); };
+          [[-16.5, 21, 6], [-4, 21.5, 5.5], [4, 21.5, 5.5], [16.5, 21, 6], [-16.5, 43, 7], [16.5, 43, 7], [-10, 2, 6], [10, 2, 6], [-18, 2, 5], [18, 2, 5]].forEach(([x, y, h], k) => perso(x, y, h, k * 3 + 1));
+          for (let k = 0; k < 28; k++) { c.fillStyle = cols[k % 8]; c.fillRect(X(-18.5 + k * 37 / 28 + .25), Y(16.6), .8 * KP, 2.6 * KP); }
+          for (let r = 4.8; r > .5; r -= .6) { c.fillStyle = cols[(r * 5 | 0) % 8]; c.beginPath(); c.arc(X(0), Y(25.5), r * KP, 0, 7); c.fill(); }
+          tracer("#ffe24a", 4); },
+        etoile(tm) { const g = c.createLinearGradient(0, Y(62), 0, Y(0)); g.addColorStop(0, "#1630ff"); g.addColorStop(.6, "#1c78ff"); g.addColorStop(1, "#1ae0ff"); c.fillStyle = g; c.fillRect(0, 0, N, N);
+          for (let i = 0; i < 260; i++) { const x = ((i * 397.1) % N), sp = 12 + (i % 7) * 5, y = ((i * 211.7) + tm * sp / 1000 * 3) % N, tw = .45 + .55 * Math.abs(Math.sin(tm / 600 + i)); c.fillStyle = `rgba(255,255,255,${tw})`; c.beginPath(); c.arc(x, N - y, 1.5 + (i % 4), 0, 7); c.fill(); }
+          tracer("rgba(160,235,255,.7)", 3); } };
+      let mode = "dore", cible = 0, it = 0, derD = 0, suivant = null; L.facOr = 1;
+      AMB.push((tm) => { const nuit = (L.nuitSP || 0) > .5, voulu = nuit && mode !== "dore" ? 1 : 0; if (suivant && it < .02) { mode = suivant; suivant = null; if (dessins[mode]) { dessins[mode](tm); tex.needsUpdate = true; } }
+        cible = suivant ? 0 : voulu; it += (cible - it) * .04; proj.intensity = it * 5.5; L.facOr = 1 - .88 * Math.min(1, it * 1.3);
+        for (const [s2, i] of L.SPfac || []) s2.intensity = (L.nuitSP || 0) * i * L.facOr;
+        if (mode === "etoile" && it > .02 && tm - derD > 110) { derD = tm; dessins.etoile(tm); tex.needsUpdate = true; } });
+      const choisir = (m) => { if (m === mode && !suivant) return; suivant = m;
+        sousTitre("", { dore: "La façade retrouve sa lumière dorée…", bleuor: "Bleu et or… comme un manteau royal.", vitraux: "Les vitraux sortent de la pierre et s'allument sur toute la façade.", etoile: "Une nuit d'étoiles se pose sur Notre-Dame…" }[m], 4200); };
+      L.dbgFacade = (m) => { suivant = m; };
+      const menuF = () => { if (M.manMenu && M.manMenu.d && M.manMenu.d.isConnected) return; if (!L.nuit) { sousTitre("", "Reviens ce soir : d'ici, on peut changer les lumières de Notre-Dame…", 4200); return; }
+        const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;background:rgba(20,22,40,.95);color:#fff;border-radius:16px;padding:16px 18px;width:min(86vw,320px);box-shadow:0 8px 30px rgba(0,0,0,.5);font:15px Lato,Arial,sans-serif;text-align:center";
+        d.innerHTML = `<div style="font:italic 17px Georgia,serif;margin-bottom:8px">Au point zéro, la nuit… de quelle lumière habiller Notre-Dame ?</div>`; const fermer = () => { d.remove(); if (M.manMenu && M.manMenu.d === d) M.manMenu = null; };
+        for (const [lab, m, bg] of [["✨ Dorée", "dore", "#b8862a"], ["💙 Bleu et or", "bleuor", "linear-gradient(90deg,#1e46ff,#d8a020)"], ["🌈 Les vitraux", "vitraux", "linear-gradient(90deg,#d82a3a,#2a8cff,#2ac85a,#e8b82a)"], ["🌌 Bleu étoilé", "etoile", "linear-gradient(90deg,#1630ff,#1ae0ff)"], ["Fermer", null, "rgba(255,255,255,.12)"]]) {
+          const b = document.createElement("button"); b.type = "button"; b.textContent = lab + (m && m === (suivant || mode) ? "  ✓" : ""); b.style.cssText = `display:block;width:100%;margin-top:6px;padding:10px;border:0;border-radius:10px;background:${bg};color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5)`;
+          b.onclick = (e) => { e.stopPropagation(); fermer(); if (m) choisir(m); }; d.appendChild(b); }
+        ((M.ctx && M.ctx.conteneur) || document.body).appendChild(d); M.manMenu = { d, fermer }; };
+      const a0fz = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0fz && a0fz(x, z, moi); if (r) return r; return Math.hypot(x - FAC.x, z + 58) < 1 ? { type: "lieu", id: "facade", label: "🎨 Changer les lumières de Notre-Dame", faire: menuF } : null; }; }
     /* (10.185) on ferme la carte : au bout des rues, plus de vide — un rideau d'immeubles tout autour (des façades à fenêtres, allumées le soir) */
     { const M2 = mat({ map: DOSD.tm, color: 0xd8ccb8, roughness: .9, emissive: 0xffd890, emissiveMap: DOSD.tl, emissiveIntensity: 0 }); NUIT.push([M2, 0, .9]); const toit = mat({ color: 0x4a4e56, roughness: .8 });
       const mur = (cx, cz, w, ry, h = 27) => { const g = new THREE.PlaneGeometry(w, h), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (w / 2.75) / DOSD.B, uv.getY(i) * (h / 3.15) / DOSD.F); g.rotateY(ry); const m = new THREE.Mesh(g, M2); m.position.set(cx, h / 2 - .5, cz); scene.add(m);
