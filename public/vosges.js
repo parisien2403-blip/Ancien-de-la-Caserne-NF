@@ -25,7 +25,7 @@ function construireVosges(A, L, scene) {
 
   /* ---------- le sol : les pavés de la chaussée, le trottoir sous les arcades, le sable du square ---------- */
   const paveM = mat({ map: tT(256, 256, (c, w, h) => { c.fillStyle = "#56524c"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) for (let x = (y / 16 % 2) * 10; x < w; x += 20) { const k = 100 + al() * 40; c.fillStyle = `rgb(${k},${k - 4},${k - 10})`; c.beginPath(); c.roundRect ? c.roundRect(x + 1, y + 1, 18, 14, 4) : c.rect(x + 1, y + 1, 18, 14); c.fill(); } }, 70, 70), roughness: .95 });
-  plan(-90, 90, -90, 90, paveM, 0); L.sol = true;
+  L.sol = plan(-90, 90, -90, 90, paveM, 0);   /* (10.197 : le sol qu'on touche du doigt pour y aller) */
   const trottM = mat({ map: tT(128, 128, (c, w, h) => { c.fillStyle = "#b4aa98"; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 32) for (let x = 0; x < w; x += 64) { c.strokeStyle = "rgba(80,70,60,.35)"; c.strokeRect(x, y, 64, 32); } for (let i = 0; i < 500; i++) { c.fillStyle = `rgba(90,80,70,${al() * .12})`; c.fillRect(al() * w, al() * h, 2, 2); } }, 1, 1), roughness: .9 });
   { const tr = (x0, x1, z0, z1) => { const g = new THREE.BoxGeometry(x1 - x0, .14, z1 - z0), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (x1 - x0) / 4, uv.getY(i) * (z1 - z0) / 4); add(g, trottM, (x0 + x1) / 2, .07, (z0 + z1) / 2); };
     const GA = FA + 4; tr(-GA, GA, -GA, -FA + 3.4); tr(-GA, GA, FA - 3.4, GA); tr(-GA, -FA + 3.4, -FA + 3.4, FA - 3.4); tr(FA - 3.4, GA, -FA + 3.4, FA - 3.4); }
