@@ -321,7 +321,7 @@ function construireVosges(A, L, scene) {
       for (let a = 0; a < 6; a++) { const an = a / 6 * Math.PI * 2, fe = new THREE.Mesh(new THREE.ConeGeometry(.03, .09, 4), fonte); fe.position.set(Math.cos(an) * .26, .7, Math.sin(an) * .26); L2.add(fe); }
       const fl = new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd060 })); fl.scale.set(.7, 1.6, .7); fl.position.y = .3; fl.visible = false; L2.add(fl); const ha = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloG, color: 0xffc860, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 })); ha.scale.setScalar(1.6); ha.position.y = .32; L2.add(ha);
       REV.push({ x, z, fl, ha, on: false, ph: al() * 10 }); LAMPES.push([x, 3.9, z]); };
-    for (let t = -48; t <= 48; t += 16) for (const s of [-1, 1]) { rev(t, s * (GR + 1.4)); rev(s * (GR + 1.4), t); rev(t + 8, s * (FA - 3.9)); rev(s * (FA - 3.9), t + 8); }
+    for (let t = -48; t <= 48; t += 16) for (const s of [-1, 1]) { if (t !== 0) { rev(t, s * (GR + 1.4)); rev(s * (GR + 1.4), t); }   /* (10.198 : rien devant les portes du square) */ rev(t + 8, s * (FA - 3.9)); rev(s * (FA - 3.9), t + 8); }
     for (const [x, z] of [[-7.4, -7.4], [7.4, -7.4], [-7.4, 7.4], [7.4, 7.4]]) rev(x, z);
     AMB.push((tm) => { const t = tm / 1000; for (const R of REV) { const on = R.on && !!L.nuit; if (R.fl.visible !== on) R.fl.visible = on; if (on) { const f = .85 + Math.sin(t * 9 + R.ph) * .08 + Math.sin(t * 23 + R.ph * 3) * .05; R.fl.scale.set(.7 * f, 1.6 * (2 - f), .7 * f); R.ha.material.opacity = .75 * f; } else R.ha.material.opacity = 0; } }); }
   L.becs = REV;
@@ -516,13 +516,14 @@ function construireVosges(A, L, scene) {
     P.bassin.scale.set(1.16, 1, 1.18); P.buste.scale.set(1.1, 1, 1.12); P.tete.scale.set(1 / 1.28, 1, 1 / 1.32); P.jambes.forEach(J => J.h.scale.set(1 / 1.16, 1, 1 / 1.18));
     const ventre = new THREE.Mesh(new THREE.SphereGeometry(T * .075, 14, 10), sombre); ventre.scale.set(1.05, 1.1, .75); ventre.position.set(0, T * .09, T * .03); P.buste.add(ventre);
     for (const b of P.bras) b.c.children[0].material = tweed;   /* (les manches longues du pardessus) */
+    m.userData.brasLibres = () => { for (const b of P.bras) { b.e.rotation.y = 0; b.e.rotation.z = 0; b.c.rotation.y = 0; b.c.rotation.z = 0; } };
     m.userData.mainCoeur = () => { for (const [k, sg] of [[0, 1], [1, -1]]) { const b = P.bras[k]; if (b.e.position.x * sg > 0) { b.e.rotation.set(-.45, 0, sg * .28); b.c.rotation.set(-1.75, sg * .5, 0); return; } } const b = P.bras[1]; b.e.rotation.set(-.3, 0, -.3); b.c.rotation.set(-1.35, -.6, 0); };
     m.userData.anime = true; return m; }; const VHG = fabriqueVH(); scene.add(VHG); L.fabriqueVH = fabriqueVH;
   { const R = [[0, 13], [9.2, 9.2], [13, 0], [9.2, -9.2], [0, -13], [0, -30], [-1.6, -36], [-30, -1.6], [-13, 0], [-9.2, 9.2], [0, 13], [0, 30], [30, 1.6], [13, 0]]; let i = 0, pause = 0; VHG.position.set(0, 0, 13);
     AMB.push((tm, dt) => { if (L.vhParle && tm < L.vhParle) { VHG.userData.poser("debout", tm); VHG.userData.mainCoeur(); const moi = M && M.moiNum && M.gens.get(M.moiNum); if (moi) VHG.rotation.y = Math.atan2(moi.g.position.x - VHG.position.x, moi.g.position.z - VHG.position.z); return; }
       if (pause > 0) { pause -= dt; VHG.userData.poser("debout", tm); VHG.userData.mainCoeur(); VHG.userData.parts.tete.rotation.x = -.15; return; } VHG.userData.parts.tete.rotation.x = .05;
       const [tx, tz] = R[i], dx = tx - VHG.position.x, dz = tz - VHG.position.z, d = Math.hypot(dx, dz); if (d < .3) { i = (i + 1) % R.length; if (i % 4 === 0) pause = 5 + (i % 3) * 2; return; }
-      const v = Math.min(d, .62 * dt); VHG.position.x += dx / d * v; VHG.position.z += dz / d * v; VHG.rotation.y = Math.atan2(dx, dz); VHG.userData.poser("marche", tm * .5); }); }
+      const v = Math.min(d, .62 * dt); VHG.position.x += dx / d * v; VHG.position.z += dz / d * v; VHG.rotation.y = Math.atan2(dx, dz); VHG.userData.brasLibres(); VHG.userData.poser("marche", tm * .5); }); }
   const MOTS_VH = ["Bonsoir, mon ami. Paris, voyez-vous, c'est un monde.", "J'ai habité cette place seize années. Les plus belles, peut-être.", "Il y a ici, sous ces arcades, plus de poésie que dans bien des livres.", "Les mots sont les passants mystérieux de l'âme.", "Aimer, c'est agir.", "Rêver, c'est le bonheur ; attendre, c'est la vie.", "Celui qui ouvre une porte d'école ferme une prison.", "La liberté commence où l'ignorance finit.", "Le bonheur est parfois caché dans l'inconnu.", "Allez, marchez, regardez : Paris se lit comme un livre."];
   let iVH = 0; const a0vh = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0vh && a0vh(x, z, moi); if (r) return r; return !L.estHugo && Math.hypot(x - VHG.position.x, z - VHG.position.z) < 2.2 ? { type: "lieu", id: "victorhugo", label: "🎩 Saluer Victor Hugo", faire: () => { L.vhParle = performance.now() + 6500; sousTitre("Victor Hugo", MOTS_VH[iVH++ % MOTS_VH.length], 6000); } } : null; };
   L.dbgVH = VHG;
@@ -657,7 +658,7 @@ function construireVosges(A, L, scene) {
       const q = p.g.position, dx = pPrec ? q.x - pPrec.x : 0, dz = pPrec ? q.z - pPrec.z : 0, v = Math.hypot(dx, dz) / dt; pPrec = q.clone(); vLis += (v - vLis) * Math.min(1, dt * 6);   /* (la vitesse lissée : plus d'à-coups entre « marche » et « arrêt ») */
       if (v > .2) { const c2 = Math.atan2(dx, dz); let d = c2 - cap; d = ((d + Math.PI * 3) % (Math.PI * 2)) - Math.PI; cap += d * Math.min(1, dt * 10); }   /* (il regarde où il va — notre bonhomme habituel, lui, est un panneau toujours tourné vers la caméra) */
       VJ.rotation.y = cap - p.g.rotation.y; pas += dt * Math.min(1.6, vLis / 1.3) * 1000;
-      if (Number.isInteger(p.info.assis)) VJ.userData.poser("assis", tm); else if (vLis > .35) VJ.userData.poser("marche", pas); else { VJ.userData.poser("debout", tm); VJ.userData.mainCoeur(); } }); }
+      if (Number.isInteger(p.info.assis)) VJ.userData.poser("assis", tm); else if (vLis > .35) { VJ.userData.brasLibres(); VJ.userData.poser("marche", pas); } else { VJ.userData.poser("debout", tm); VJ.userData.mainCoeur(); } }); }
   /* ---------- la nuit, les fenêtres, les lanternes ; l'animation ---------- */
   { const N = (MOBILE || GPU_MODESTE) ? 5 : 8, POOL = []; for (let i = 0; i < N; i++) { const l = new THREE.PointLight(0xffd08a, 14, 15, 1.5); l.visible = false; scene.add(l); L.nuitObjets.push(l); POOL.push(l); }
     let nV = null, tp = 0, fr = 0; const a1 = L.anim; L.anim = (tm) => { try { a1 && a1(tm); } catch (e) {} const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
