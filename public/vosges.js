@@ -680,21 +680,20 @@ function construireVosges(A, L, scene) {
     L.devenirHugo = devenir; const redevenir = () => { if (!VJ) return; if (VJ.parent) VJ.parent.remove(VJ); for (const o of cache) o.visible = true; cache = []; VJ = null; VHG.visible = true; L.estHugo = false; }; quitterLieu.add(redevenir);
     let vLis = 0, cap = 0, pas = 0;
     /* (10.201) assis, Victor Hugo songe à son grand roman : une bulle de pensée au-dessus de la tête, et ses idées, en italique, l'une après l'autre */
-    const PENSEES = ["Un homme… un forçat. Dix-neuf ans de bagne pour avoir volé un pain. Je l'appellerai Jean Valjean.", "Un évêque qui lui ouvre sa porte… et qui lui donne ses chandeliers d'argent, au lieu de le livrer aux gendarmes.",
-      "Une petite fille, la nuit, qui porte un seau trop lourd au fond d'un bois… Cosette.", "Sa mère, Fantine, qui vend ses cheveux, puis ses dents, pour que l'enfant ne manque de rien…", "Et un policier, Javert, qui ne connaît que la loi… et qui le poursuivra toute sa vie.",
-      "Les Thénardier, à Montfermeil : l'auberge, les mensonges, l'avarice…", "Un gamin de Paris, Gavroche, qui chante sur les barricades, au milieu des balles.", "Marius, un jeune homme amoureux… et Cosette, dans le jardin de la rue Plumet.",
-      "Les égouts de Paris… Valjean qui porte Marius blessé, dans la nuit sous la ville.", "Tant qu'il y aura sur la terre ignorance et misère, des livres de la nature de celui-ci pourront ne pas être inutiles…", "Je l'appellerai d'abord… Les Misères. Non. Les Misérables."];
-    let iPe = 0, pePro = 0; const bulle = new THREE.Sprite(new THREE.SpriteMaterial({ map: tT(256, 192, (c, w, h) => { c.fillStyle = "rgba(255,255,255,.95)"; c.strokeStyle = "#5a5a6a"; c.lineWidth = 4; const nu = (x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.stroke(); };
-      for (const [x, y, r] of [[80, 70, 44], [130, 55, 50], [180, 72, 42], [105, 100, 40], [160, 104, 40]]) nu(x, y, r); c.beginPath(); for (const [x, y, r] of [[80, 70, 42], [130, 55, 48], [180, 72, 40], [105, 100, 38], [160, 104, 38]]) { c.moveTo(x + r, y); c.arc(x, y, r, 0, 7); } c.fill(); nu(70, 150, 12); nu(50, 175, 7);
-      c.fillStyle = "#3a3a4a"; c.font = "italic bold 26px Georgia, serif"; c.textAlign = "center"; c.fillText("Les", 130, 76); c.fillText("Misérables…", 130, 106); }), transparent: true, depthWrite: false })); bulle.scale.set(1.1, .82, 1); bulle.visible = false; scene.add(bulle);
-    const pense = (tm, V) => { if (tm < 0 || !V) { bulle.visible = false; pePro = 0; return; } const w = new THREE.Vector3(); V.userData.parts.tete.getWorldPosition(w); bulle.position.set(w.x + .45, w.y + .7 + Math.sin(tm / 600) * .04, w.z); bulle.visible = true;
-      if (!pePro) pePro = tm + 1500; if (tm >= pePro) { sousTitre("Victor Hugo, songeur", "<i>" + PENSEES[iPe++ % PENSEES.length] + "</i>", 6500); pePro = tm + 7200; } };
+    const PENSEES = ["Il me faudra, sans plus tarder, aller rendre visite à mon fils Charles ; voilà bien trop longtemps que je néglige ce doux devoir de père.", "Et ma petite Jeanne… ma chère petite-fille. Ses rires sont, à n'en point douter, la plus belle des poésies.",
+      "Georges aussi, ce charmant garnement qui me tire la barbe en riant aux éclats. Je leur porterai des dragées et des pains d'épice.", "L'art d'être grand-père… Voilà, sans doute, le plus noble des arts. Peut-être en ferai-je un livre.",
+      "Ce soir, si la Providence le permet, je leur conterai l'histoire d'un forçat au grand cœur et d'une enfant qui portait un seau trop lourd.", "Mon cher François-Victor, mon fils cadet, me manque également ; je lui écrirai dès demain une longue lettre.",
+      "Ma fille Adèle… Que le ciel veille sur elle, là où ses pas l'ont menée.", "Les enfants ont tous la même maison : le cœur de ceux qui les aiment. Il est temps que je rentre au mien.",
+      "Que ces chers petits soient heureux : c'est là toute ma fortune, et la seule gloire qui vaille.", "Allons ! Il me faut me lever, prendre ma canne, et traverser Paris pour les embrasser."];
+    let iPe = 0, pePro = 0;
+    const pense = (tm, V, Ts) => { if (tm < 0 || !V || !Ts || Math.abs(Ts[0]) > GR || Math.abs(Ts[1]) > GR) { pePro = 0; return; }   /* (seulement sur un banc du square : il se parle à lui-même) */
+      if (!pePro) pePro = tm + 1500; if (tm >= pePro) { sousTitre("Victor Hugo, à lui-même", "<i>" + PENSEES[iPe++ % PENSEES.length] + "</i>", 6500); pePro = tm + 7200; } };
     AMB.push((tm, dt) => { if (!VJ) return; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || VJ.parent !== p.g) { redevenir(); return; } for (const o of cache) if (o.visible) o.visible = false; dt = Math.max(.001, dt || .016);
       const q = p.g.position, dx = pPrec ? q.x - pPrec.x : 0, dz = pPrec ? q.z - pPrec.z : 0, v = Math.hypot(dx, dz) / dt; pPrec = q.clone(); vLis += (v - vLis) * Math.min(1, dt * 6);   /* (la vitesse lissée : plus d'à-coups entre « marche » et « arrêt ») */
       if (v > .2) { const c2 = Math.atan2(dx, dz); let d = c2 - cap; d = ((d + Math.PI * 3) % (Math.PI * 2)) - Math.PI; cap += d * Math.min(1, dt * 10); }   /* (il regarde où il va — notre bonhomme habituel, lui, est un panneau toujours tourné vers la caméra) */
       VJ.rotation.y = cap - p.g.rotation.y; pas += dt * Math.min(1.6, vLis / 1.3) * 1000;
       const sc = p.g.scale.x || 1, Ts = Number.isInteger(p.info.assis) && (L.tabourets || [])[p.info.assis];
-      if (Ts) { VJ.rotation.y = Ts[2] - p.g.rotation.y; VJ.position.y = ((Ts[3] || .46) - VJ.userData.hipY - p.g.position.y) / sc; VJ.userData.brasLibres(); VJ.userData.poser("assis", tm); const P2 = VJ.userData.parts; P2.tete.rotation.x = .2 + Math.sin(tm / 2600) * .08; P2.bras[1].e.rotation.x = -1.2; P2.bras[1].c.rotation.x = -1.3; pense(tm, VJ); }   /* (assis : il réfléchit à son futur roman) */
+      if (Ts) { VJ.rotation.y = Ts[2] - p.g.rotation.y; VJ.position.y = ((Ts[3] || .46) - VJ.userData.hipY - p.g.position.y) / sc; VJ.userData.brasLibres(); VJ.userData.poser("assis", tm); const P2 = VJ.userData.parts; P2.tete.rotation.x = .2 + Math.sin(tm / 2600) * .08; P2.bras[1].e.rotation.x = -.5; P2.bras[1].c.rotation.x = -.9; pense(tm, VJ, Ts); }   /* (assis : il réfléchit à son futur roman) */
       else { VJ.position.y = 0; pense(-1); }
       if (Ts) {} else if (vLis > .35) { VJ.userData.brasLibres(); VJ.userData.poser("marche", pas); } else { VJ.userData.poser("debout", tm); VJ.userData.mainCoeur(); } }); }
   /* ---------- la nuit, les fenêtres, les lanternes ; l'animation ---------- */
@@ -857,6 +856,9 @@ function construireVosges(A, L, scene) {
       let ici = null, bd = 1e9; for (const Zn of Z) { const [cx, cz] = Zn.c(), d = Math.hypot(x - cx, z - cz); if (d < Zn.r + 1.5 && d < bd) { bd = d; ici = Zn; } }
       if (ici !== zone) { if (zone) efface(); zone = ici; iL = ici && ici.k0 ? ici.k0 % ici.lignes.length : 0; prochain = tm; }
       if (zone && tm >= prochain) { const [nom, t] = zone.lignes[iL++ % zone.lignes.length]; sousTitre(nom, t, 5200); prochain = tm + 5600; } }); }
+  /* (10.201) assis (banc, chaise de terrasse) : A ou B de la manette pour se relever, à coup sûr */
+  { let avant = false; AMB.push(() => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine || !Number.isInteger(p.info.assis)) { avant = true; return; } let app = false; try { for (const g of navigator.getGamepads ? navigator.getGamepads() : []) if (g && (g.buttons[0] && g.buttons[0].pressed || g.buttons[1] && g.buttons[1].pressed)) app = true; } catch (e) {}
+      if (app && !avant) { try { M.action = { type: "lever" }; agir(); } catch (e) {} } avant = app; }); }
   /* (10.198) plus d'ombres portées ici (elles grésillaient sur la pierre des arcades, et pesaient sur le téléphone) ; on les rend en partant */
   { let ombres = null; const a4 = L.anim; L.anim = (tm) => { try { a4 && a4(tm); } catch (e) {} if (ombres || !M || M.L !== L) return; ombres = []; scene.traverse(o => { if (o.isLight && o.castShadow) { o.castShadow = false; ombres.push(o); } }); };
     quitterLieu.add(() => { if (ombres) for (const o of ombres) o.castShadow = true; ombres = null; }); }
