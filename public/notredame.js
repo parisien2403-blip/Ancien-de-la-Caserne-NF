@@ -1698,7 +1698,7 @@ function construireNotreDame(A, L, scene) {
       let enCours = false;
       /* (10.177) quand le ballon monte très haut… on quitte la Terre : l'espace étoilé, la Terre bleue en dessous, un tout petit astéroïde avec sa rose sous globe et ses volcans,
          un petit voyageur aux cheveux d'or et à la longue écharpe qui flotte, et un vieil avion biplan qui tourne autour (un hommage rêvé, pas une copie) */
-      const ESPACE = (() => { const S0 = new THREE.Vector3(0, 3000, 0); let E = null;
+      const fabEspace = (scene) => { const S0 = new THREE.Vector3(0, 3000, 0); let E = null;   /* (10.200 : réutilisable ailleurs — la place des Vosges y envoie le ballon rouge) */
         const surSphere = (o, dir, R, h = 0) => { const d = dir.clone().normalize(); o.position.copy(S0).addScaledVector(d, R + h); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); };
         const batir = () => { const G = new THREE.Group(); scene.add(G); const B = (m) => new THREE.MeshBasicMaterial(m);
           // les étoiles
@@ -1753,7 +1753,7 @@ function construireNotreDame(A, L, scene) {
           maj: (t) => { const { nu, TERRE, FU, ECH, AV, ETO, PV } = E; { const P = PV.userData.parts; P.bras[1].e.rotation.set(-2.7, 0, -.35 + Math.sin(t * 6) * .35); P.bras[1].c.rotation.set(-.3, 0, 0); P.tete.rotation.y = Math.sin(t * .8) * .3; }   /* (il nous fait coucou de la main) */ for (const q of ETO) { const f = .8 + Math.sin(t * 2.2 + q.ph) * .2; q.s.scale.setScalar(q.k * f); q.s.material.rotation += .002; } TERRE.rotation.y = t * .03; nu.rotation.y = t * .012;
             FU.forEach((s, i) => { const u = ((t * .35 + i / 5) % 1); s.position.set(Math.sin(t + i) * .05, .5 + u * .9, 0); s.scale.setScalar(.6 + u * 1.4); s.material.opacity = .45 * (1 - u); });
             ECH.forEach((s, i) => { s.rotation.x = Math.sin(t * 3.2 - i * .7) * .25 + .15; s.rotation.y = Math.sin(t * 2.1 - i * .6) * .3; });
-            const a = t * .45, rr = 5.2; AV.position.copy(S0).add(new THREE.Vector3(Math.cos(a) * rr, 4.2 + Math.sin(t * .7) * 1.0, Math.sin(a) * rr)); AV.rotation.set(0, -a, -.4, "YXZ");   /* (10.178 : le nez dans le sens du vol, penché dans le virage) */ AV.userData.hel.rotation.z = t * 23; AV.userData.ech.forEach((s, i) => { s.rotation.x = Math.sin(t * 9 - i) * .25; s.rotation.y = Math.sin(t * 6 - i) * .2; }); } }; })();
+            const a = t * .45, rr = 5.2; AV.position.copy(S0).add(new THREE.Vector3(Math.cos(a) * rr, 4.2 + Math.sin(t * .7) * 1.0, Math.sin(a) * rr)); AV.rotation.set(0, -a, -.4, "YXZ");   /* (10.178 : le nez dans le sens du vol, penché dans le virage) */ AV.userData.hel.rotation.z = t * 23; AV.userData.ech.forEach((s, i) => { s.rotation.x = Math.sin(t * 9 - i) * .25; s.rotation.y = Math.sin(t * 6 - i) * .2; }); } }; }; const ESPACE = fabEspace(scene); window.__fabEspace = fabEspace;
       const lacher = (coul) => { const p = moiT(); if (!p || enCours) return; enCours = true; const b = ballon(coul); b.scale.setScalar(1.6); scene.add(b); const t0 = performance.now(), DUR = 42000, TP = 14, x0 = p.g.position.x, z0 = p.g.position.z, far0 = M.camera.far; let dansEspace = false, flash = null, dit1 = false, dit2 = false;
         const fil = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, -1.6, 0)]), ficM); b.add(fil);
         const R = L.regard360(0, -.55), base = new THREE.Vector3(-.25, 0, -1); M.camera.far = 1400; M.camera.updateProjectionMatrix();
@@ -2540,6 +2540,17 @@ function construireNotreDame(A, L, scene) {
     const a14 = L.anim; L.anim = (tm) => { try { a14 && a14(tm); } catch (e) {} if (!M || M.L !== L || !M.camera) return; if (!ombres) { ombres = []; scene.traverse(o => { if (o.isLight && o.castShadow) { o.castShadow = false; ombres.push(o); } }); }
       if (f++ % 8) return; const c = M.camera.position; for (const o of PERS) { o.getWorldPosition(v); o.visible = !o.userData.masque && (v.x - c.x) ** 2 + (v.z - c.z) ** 2 < R2; } };
     quitterLieu.add(() => { if (ombres) for (const o of ombres) o.castShadow = true; ombres = null; }); }
+  /* (10.200) la calèche volante, venue de la place des Vosges : elle arrive au-dessus de la Seine, traverse le fleuve, descend et se pose sur la chaussée du quai de l'île, à gauche du parvis ;
+     on en descend, redevenu soi-même */
+  { const a5 = L.anim; L.anim = (tm) => { try { a5 && a5(tm); } catch (e) {} const A3 = window.__arriveeCaleche; if (!A3 || !M || M.L !== L || !M.moiNum || !M.gens.get(M.moiNum)) return; window.__arriveeCaleche = null;
+      const p = M.gens.get(M.moiNum), fab = window.__calecheVH; if (!fab) { if (A3.voile) A3.voile.sortir(); return; } const C = fab(scene); p.g.visible = false; if (M.cine) finCine();
+      const PTS = [[95, 34, 30], [55, 24, 14], [22, 15, 2], [0, 9, -12], [-10, 4, -22], [-18, 1, -28], [-24, .05, -29.3]].map(([x, y, z]) => new THREE.Vector3(x, y, z)), courbe = new THREE.CatmullRomCurve3(PTS), t0 = performance.now(), DUR = 15, c = M.camera, far0 = c.far; c.far = 900; c.updateProjectionMatrix(); let dit = 0, fin = false;
+      if (A3.voile) setTimeout(() => A3.voile.sortir(), 300);
+      M.cine = { gel: true, fov: [55, 64], maj: () => { const t = (performance.now() - t0) / 1000, k = Math.min(1, t / (DUR - 3)), e = 1 - (1 - k) ** 2.2, q = courbe.getPointAt(e), tg = courbe.getTangentAt(Math.min(.999, e + .001));
+          C.G.position.copy(q); C.G.rotation.y = Math.atan2(tg.x, tg.z); C.G.rotation.x = -Math.asin(Math.max(-.5, Math.min(.5, tg.y))) * .6; C.anime(tm = performance.now(), k < 1 ? 1 : 0);
+          const cible = q.clone().add(new THREE.Vector3(0, 1.4, 0)); if (k < 1) { c.position.copy(q).addScaledVector(tg, -9).add(new THREE.Vector3(3, 3.5, 0)); } else { c.position.lerp(q.clone().add(new THREE.Vector3(-4, 3, 7)), .03); } c.lookAt(cible);
+          if (dit < 1 && t > .6) { dit = 1; sousTitre("", "La calèche enchantée survole la Seine…", 4200); } if (dit < 2 && t > 7) { dit = 2; sousTitre("", "…et te ramène près de Notre-Dame.", 3800); }
+          if (t > DUR && !fin) { fin = true; scene.remove(C.G); c.far = far0; c.updateProjectionMatrix(); p.g.position.set(-24, 0, -31); p.g.visible = true; try { envoyerWS({ t: "aller", x: -24, z: -31 }); } catch (e) {} finCine(); placerCamera(true); sousTitre("", "Te revoilà toi-même, sur l'île de la Cité.", 4000); } } }; }; }
   fusionStatique(scene, L, 0);
   /* (10.148, comme à Montmartre) plus d'à-coups quand une façade ou un décor entre pour la première fois dans le champ : textures et matières préparées dès l'arrivée */
   { let fait = false; const a0p = L.anim; L.anim = (tm) => { try { a0p && a0p(tm); } catch (e) {} if (fait || !M || M.L !== L || !M.rendu || !M.camera) return; fait = true;
