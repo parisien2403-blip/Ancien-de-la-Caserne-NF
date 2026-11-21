@@ -2375,6 +2375,9 @@ function construireNotreDame(A, L, scene) {
         const tg = new THREE.BoxGeometry(w, 2.2, 3); tg.rotateY(ry); const t = new THREE.Mesh(tg, toit); t.position.set(cx - Math.sin(ry) * 1.5, h + .5, cz - Math.cos(ry) * 1.5); scene.add(t); };
       const X = XS + 8; mur(-X, -132, 208, Math.PI / 2); mur(X, -132, 208, -Math.PI / 2); mur(0, -236, 2 * X, 0);   // (le côté de l'île : à gauche, à droite, au fond)
       mur(-X, 82, 104, Math.PI / 2); mur(X, 82, 104, -Math.PI / 2); mur(0, 132, 2 * X, Math.PI); }
+    /* (10.186) plus de cercles jaunes bien nets au sol : à leur place, une lueur chaude et floue, comme un rayon de soleil ou le halo d'un réverbère, qui respire doucement */
+    { const halo = tT(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, "rgba(255,236,170,.75)"); g.addColorStop(.35, "rgba(255,214,120,.45)"); g.addColorStop(.7, "rgba(255,196,90,.14)"); g.addColorStop(1, "rgba(255,190,80,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); }), disque = new THREE.CircleGeometry(1.05, 40);
+      const lueurs = new Map(); scene.traverse(o => { if (o.isMesh && o.geometry && o.geometry.type === "RingGeometry" && o.material && o.material.color && o.material.color.getHex() === 0xffd23a) { o.geometry = disque; let m = lueurs.get(o.material); if (!m) { m = o.material; m.map = halo; m.color.setHex(0xffd23a); m.needsUpdate = true; lueurs.set(o.material, m); } } }); }
     L.grille = L.grilleAdmin = null; }
   /* (10.156, fluidité) la nuit, seulement quelques lumières de réverbère, toujours les plus proches de la caméra (une lumière par réverbère, c'était des dizaines : tout ramait) */
   { const N = (MOBILE || GPU_MODESTE) ? 5 : 8, POOL = []; for (let i = 0; i < N; i++) { const l = new THREE.PointLight(0xffd08a, 14, 15, 1.5); l.visible = false; scene.add(l); L.nuitObjets.push(l); POOL.push(l); }
