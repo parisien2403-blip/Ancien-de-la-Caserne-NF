@@ -2162,9 +2162,9 @@ function construireNotreDame(A, L, scene) {
       AMB.push((tm, dt) => { dt = Math.min(.05, dt || .016); const C = cam(), p = moiR();
         if (scene1 === "menace") { const t = tm / 1000; for (const [c, s] of [[c1, 1], [c2, -1]]) { c.k = 1 + Math.max(0, Math.sin(t * 3 + s)) * .08; c.bond = 0; } rb.k = 1 - Math.abs(Math.sin(t * 20)) * .03; }
         else if (scene1 === "ronde") for (const ch of chasse) { const c = ch.c, q = c.g.position; let cible = RONDE[ch.i], v = 1.1;
-            if (RAT && p && Math.hypot(p.g.position.x - q.x, p.g.position.z - q.z) < 6 && Math.abs(p.g.position.y - q.y) < 1) { cible = [p.g.position.x, p.g.position.z]; v = 2.6; if (!ch.vu) { ch.vu = true; bulleR("😾 Attention, un chat ! Fuis vite !", 2200); } } else ch.vu = false;
+            if (RAT && p && Math.hypot(p.g.position.x - q.x, p.g.position.z - q.z) < 6 && Math.abs(p.g.position.y - q.y) < 1) { cible = [p.g.position.x, p.g.position.z]; v = 2.6; } else ch.vu = false;
             const dx = cible[0] - q.x, dz = cible[1] - q.z, d = Math.hypot(dx, dz); if (ch.f > 0) { ch.f -= dt; c.bond = 0; continue; }
-            if (d < .3) { if (cible === RONDE[ch.i]) ch.i = (ch.i + 1) % RONDE.length; else { ch.f = 4; bulleR("Ouf… il t'a raté de peu ! Il fait sa toilette, file !", 2600); } } else { q.x += dx / d * v * dt; q.z += dz / d * v * dt; c.cap = Math.atan2(dx, dz); } c.bond = Math.abs(Math.sin(tm / 120)) * .03; }
+            if (d < .3) { if (cible === RONDE[ch.i]) ch.i = (ch.i + 1) % RONDE.length; else { ch.f = 4; } } else { q.x += dx / d * v * dt; q.z += dz / d * v * dt; c.cap = Math.atan2(dx, dz); } c.bond = Math.abs(Math.sin(tm / 120)) * .03; }
         for (const b of [rb, c1, c2]) b.maj(C); if (rb.trotte) { rb.trotte -= dt; rb.g.position.x += dt * 1.6; rb.bond = Math.abs(Math.sin(tm / 70)) * .03; rb.cap = Math.PI / 2; if (rb.trotte <= 0) rb.g.visible = false; }
         if (scene1 === "ronde" && !RAT && (tSc += dt) > 60) { scene1 = "menace"; tSc = 0; rb.g.position.set(QX, YB, QZ); rb.g.visible = true; rb.cap = Math.PI; placeChats(); cerQ.visible = true; } });
       // — devenir rat, et le redevenir —
