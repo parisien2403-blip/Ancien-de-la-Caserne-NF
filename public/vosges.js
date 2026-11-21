@@ -308,7 +308,8 @@ function construireVosges(A, L, scene) {
   // les bancs verts, le long des allées
   const BANCS = []; { const vertB = mat({ color: 0x6a4228, roughness: .7 }), ferB = mat({ color: 0x1a1a1a, roughness: .5, metalness: .5 });   /* (10.193 : les bancs de 1900 — lattes de bois brun, pieds de fonte travaillés) */
     const banc = (x, z, ry) => { const G = new THREE.Group(); G.position.set(x, 0, z); G.rotation.y = ry; scene.add(G); for (let i = 0; i < 4; i++) box(1.9, .05, .09, vertB, 0, .45, -.18 + i * .12, 0, G); for (let i = 0; i < 3; i++) { const l = box(1.9, .08, .03, vertB, 0, .62 + i * .12, -.27, 0, G); l.rotation.x = -.15; } for (const sx of [-.8, .8]) { box(.05, .05, .5, ferB, sx, .42, 0, 0, G); for (const [dz, rx] of [[.18, .35], [-.18, -.35]]) { const l = box(.05, .48, .05, ferB, sx, .2, dz, 0, G); l.rotation.x = rx; } const vo = new THREE.Mesh(new THREE.TorusGeometry(.09, .02, 4, 10, Math.PI * 1.5), ferB); vo.position.set(sx, .55, .2); vo.rotation.y = Math.PI / 2; G.add(vo); const dsx = box(.05, .5, .05, ferB, sx, .68, -.27, 0, G); dsx.rotation.x = -.15; const ac = box(.05, .05, .42, ferB, sx, .66, -.03, 0, G); void ac; } BANCS.push([x, z, ry]); OBS.push([x - .5, x + .5, z - .5, z + .5]); };
-    for (const s of [-1, 1]) for (const d of [16, 26]) { banc(d * s, 2.6, Math.PI); banc(d * s, -2.6, 0); banc(2.6, d * s, -Math.PI / 2); banc(-2.6, d * s, Math.PI / 2); } }
+    for (const s of [-1, 1]) for (const d of [16, 26]) { banc(d * s, 2.6, Math.PI); banc(d * s, -2.6, 0); banc(2.6, d * s, -Math.PI / 2); banc(-2.6, d * s, Math.PI / 2); }
+    banc(-22.9, 22.9, Math.PI * .75); L.bancLeo = [-22.9, 22.9]; }   /* (10.203) le banc près de la fontaine, tourné vers l'eau : le banc de Léopoldine */
   L.tabourets = BANCS.flatMap(([x, z, ry]) => [-.5, .5].map(o => [x + Math.cos(ry) * o, z - Math.sin(ry) * o, ry, .46]));   /* (on peut s'asseoir sur les bancs) */ L.siegesSansVerre = { has: k => { const t = L.tabourets[k]; return !!t && t[3] < .5; } };   /* (10.202 : un objet avec has(), comme ailleurs — le simple « true » faisait planter la boucle, et le bouton restait sur « S'asseoir ») */
   // les réverbères : la lanterne parisienne sur son mât de fonte verte, le long de la chaussée et dans le square
   /* (10.193) les becs de gaz de 1900 : le mât de fonte moulurée (le pied large et ses bagues, le fût, le collier, les volutes), la lanterne à six vitres et sa couronne ;
@@ -394,7 +395,7 @@ function construireVosges(A, L, scene) {
     L.metroVosges = { x: devant.x, z: devant.z }; OBS.push([Math.min(c1.x, c2.x), Math.max(c1.x, c2.x), Math.min(c1.z, c2.z), Math.max(c1.z, c2.z), "metro"]); }
 
   /* ---------- du monde : les promeneurs sous les arcades et autour du square, les familles dans les allées, des gens assis sur l'herbe ; les fiacres sur les pavés ---------- */
-  const MARCH = [], PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
+  const MARCH = L.dbgMarch = [], PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#6a4028"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c", "#8a2a2a", "#4a5a7a"];
   /* (10.193) les passants de 1900 : les dames en robe longue, grand chapeau à plumes, ombrelle (ouverte, ou fermée comme une canne) ; les messieurs en redingote,
      pantalon rayé, haut-de-forme ou chapeau melon, la canne ; les ouvriers en casquette, gilet et chemise blanche */
   const ROBES = ["#e8e0d0", "#6a7a9a", "#8a4a5a", "#d8c8a8", "#4a5a4a", "#c8a8b8", "#f2ece0", "#5a4a6a", "#a8c0d8", "#e8b8a0", "#7a2a3a", "#c8d8b0", "#f0d8e0", "#3a4a6a"], CHEV = ["#e2c27a", "#a8481e", "#2a1a12", "#6a4a2a", "#141010", "#b8b0a8", "#d8a860", "#8a3a1a", "#4a2e1c"], OMBR = ["#f2ece0", "#e8c8d8", "#d8e0f0", "#f0e6c8", "#c8e0c8", "#f0c8b0", "#d8c8f0", "#ffffff", "#e8a8a8", "#a8c8e8"], REDING = ["#1a1a1e", "#5a5c62", "#6a1e24", "#2e3e2a", "#2a2a34", "#3a2e26"], PLUMES = ["#f2ece0", "#c86a9a", "#1a1a1a", "#e8d8a0"];
@@ -571,7 +572,7 @@ function construireVosges(A, L, scene) {
       const v = Math.min(d, 1.3 * dt); al2.position.x += dx / d * v; al2.position.z += dz / d * v; al2.position.y = L.hauteur(al2.position.x, al2.position.z); al2.rotation.y = Math.atan2(dx, dz); al2.userData.poser("marche", tm); });
     L.dbgAllumeur = al2; }
   /* (10.193) sur les bancs : des promeneurs de 1900 qui se reposent, lisent le journal, bavardent (on garde des places libres pour s'asseoir) */
-  { const pris = new Set(); BANCS.forEach(([x, z, ry], i) => { if (i % 3 === 2 || (PEU && i % 2)) return; const nb = i % 4 === 0 ? 2 : 1; for (let j = 0; j < nb; j++) { const o = j ? .5 : -.5, sx = x + Math.cos(ry) * o, sz = z - Math.sin(ry) * o, m = gens(170 + i * 2 + j);
+  { const pris = new Set(); BANCS.forEach(([x, z, ry], i) => { if (i % 3 === 2 || (PEU && i % 2) || (L.bancLeo && Math.hypot(x - L.bancLeo[0], z - L.bancLeo[1]) < 1)) return;   /* (le banc de Léopoldine reste libre) */ const nb = i % 4 === 0 ? 2 : 1; for (let j = 0; j < nb; j++) { const o = j ? .5 : -.5, sx = x + Math.cos(ry) * o, sz = z - Math.sin(ry) * o, m = gens(170 + i * 2 + j);
       m.position.set(sx + Math.sin(ry) * .08, .47 - m.userData.hipY, sz + Math.cos(ry) * .08); m.rotation.y = ry; m.userData.poser("assis", 0); m.userData.anime = true; scene.add(m); pris.add(i * 2 + j);
       const P = m.userData.parts; if ((i + j) % 3 === 0) { const jo = new THREE.Mesh(new THREE.PlaneGeometry(.42, .3), mat({ map: tT(64, 48, (c, w, h) => { c.fillStyle = "#e8e0cc"; c.fillRect(0, 0, w, h); c.fillStyle = "#3a3a3a"; c.fillRect(4, 3, w - 8, 6); for (let y = 13; y < h - 3; y += 3) c.fillRect(4 + ((y * 7) % 3), y, w / 2 - 7, 1); for (let y = 13; y < h - 3; y += 3) c.fillRect(w / 2 + 3, y, w / 2 - 7, 1); }), side: THREE.DoubleSide })); jo.position.set(0, .28, .32); jo.rotation.x = -.5; P.buste.add(jo); AMB.push(() => { for (const b of P.bras) { b.e.rotation.x = -1.1; b.c.rotation.x = -.7; } }); }
       AMB.push((tm) => { P.tete.rotation.y = Math.sin(tm / 2300 + i + j * 2) * .35; }); } });
@@ -709,7 +710,7 @@ function construireVosges(A, L, scene) {
       "Ma fille Adèle… Que le ciel veille sur elle, là où ses pas l'ont menée.", "Les enfants ont tous la même maison : le cœur de ceux qui les aiment. Il est temps que je rentre au mien.",
       "Que ces chers petits soient heureux : c'est là toute ma fortune, et la seule gloire qui vaille.", "Allons ! Il me faut me lever, prendre ma canne, et traverser Paris pour les embrasser."];
     let iPe = 0, pePro = 0;
-    const pense = (tm, V, Ts) => { if (tm < 0 || !V || !Ts || Math.abs(Ts[0]) > GR || Math.abs(Ts[1]) > GR) { pePro = 0; return; }   /* (seulement sur un banc du square : il se parle à lui-même) */
+    const pense = (tm, V, Ts) => { if (tm < 0 || !V || !Ts || Math.abs(Ts[0]) > GR || Math.abs(Ts[1]) > GR || L.leoEnCours || (L.bancLeo && Math.hypot(Ts[0] - L.bancLeo[0], Ts[1] - L.bancLeo[1]) < 1.4)) { pePro = 0; return; }   /* (seulement sur un banc du square : il se parle à lui-même) */
       if (!pePro) pePro = tm + 1500; if (tm >= pePro) { sousTitre("Victor Hugo, à lui-même", "<i>" + PENSEES[iPe++ % PENSEES.length] + "</i>", 6500); pePro = tm + 7200; } };
     AMB.push((tm, dt) => { if (!VJ) return; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || VJ.parent !== p.g) { redevenir(); return; } for (const o of cache) if (o.visible) o.visible = false; dt = Math.max(.001, dt || .016);
       const q = p.g.position, dx = pPrec ? q.x - pPrec.x : 0, dz = pPrec ? q.z - pPrec.z : 0, v = Math.hypot(dx, dz) / dt; pPrec = q.clone(); vLis += (v - vLis) * Math.min(1, dt * 6);   /* (la vitesse lissée : plus d'à-coups entre « marche » et « arrêt ») */
@@ -724,6 +725,11 @@ function construireVosges(A, L, scene) {
     let nV = null, tp = 0, fr = 0; const a1 = L.anim; L.anim = (tm) => { try { a1 && a1(tm); } catch (e) {} const n = !!L.nuit; if (n !== nV) { nV = n; for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; }
       const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; for (const f of AMB) try { f(tm, dt); } catch (e) {}
       const c = M && M.camera && M.camera.position, R2 = ((MOBILE || GPU_MODESTE) ? 40 : 70) ** 2;
+      if (!MARCH.fixe && L.limites) { MARCH.fixe = true;   /* (10.203) personne ne passe à travers les grilles, les piliers, les réverbères, les tables : chaque chemin est vérifié pas à pas, et contourne l'obstacle */
+        const lim = L.limites; for (const W of MARCH) { const R = W.R, N = []; for (let i = 0; i < R.length; i++) { const a = R[i], b = R[(i + 1) % R.length], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, n = Math.max(1, Math.ceil(l / .6)), ex = (b[0] - a[0]) / l, ez = (b[1] - a[1]) / l;
+            for (let k = 0; k < n; k++) { const x = a[0] + (b[0] - a[0]) * k / n, z = a[1] + (b[1] - a[1]) * k / n; if (lim(x, z)) { N.push([x, z]); continue; } let q = null; for (const o of [.6, -.6, 1.2, -1.2, 1.8, -1.8, 2.4, -2.4, 3.2, -3.2]) if (lim(x - ez * o, z + ex * o)) { q = [x - ez * o, z + ex * o]; break; } if (q) N.push(q); } }
+          for (let it = 0; it < 2; it++) for (let j = N.length - 1; j >= 0; j--) { const a = N[j], b = N[(j + 1) % N.length], x = (a[0] + b[0]) / 2, z = (a[1] + b[1]) / 2; if (lim(x, z)) continue; const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, ex = (b[0] - a[0]) / l, ez = (b[1] - a[1]) / l; for (const o of [.4, -.4, .8, -.8, 1.2, -1.2, 1.8, -1.8]) if (lim(x - ez * o, z + ex * o)) { N.splice(j + 1, 0, [x - ez * o, z + ex * o]); break; } }
+          if (N.length > 2) { const m = W.m; let bi = 0, bd = 1e9; N.forEach(([x, z], j) => { const d = (x - m.position.x) ** 2 + (z - m.position.z) ** 2; if (d < bd) { bd = d; bi = j; } }); W.R = N; W.i = (bi + 1) % N.length; } } }
       for (const W of MARCH) try { const m = W.m, [tx, tz] = W.R[W.i], dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz); if (d < .3) { W.i = (W.i + 1) % W.R.length; continue; } const v = Math.min(d, W.v * dt);
         m.position.x += dx / d * v; m.position.z += dz / d * v; m.position.y = L.hauteur(m.position.x, m.position.z); m.rotation.y = Math.atan2(dx, dz); if (!c || (m.position.x - c.x) ** 2 + (m.position.z - c.z) ** 2 < R2) m.userData.poser("marche", tm * W.v / 1.2); } catch (e) {}
       if (!M || M.L !== L || !M.camera || fr++ % 20) return; const cp = M.camera.position; const tri = LAMPES.map(p => [p, (p[0] - cp.x) ** 2 + (p[2] - cp.z) ** 2]).sort((u, w) => u[1] - w[1]); POOL.forEach((l, i) => { const p = tri[i] && tri[i][0]; if (p) l.position.set(p[0], p[1], p[2]); }); }; }
@@ -830,7 +836,7 @@ function construireVosges(A, L, scene) {
   const billet = (txt, k) => { const [lx, ty, rot] = POSB[k % POSB.length], d = document.createElement("div"); d.style.cssText = `position:absolute;left:${lx}%;top:${ty}%;z-index:56;width:min(42vw,300px);padding:14px 18px 12px;transform:rotate(${rot}deg) scale(.6);opacity:0;transition:all .9s;pointer-events:none;
       background:radial-gradient(ellipse at 30% 20%,#f8efd8,#ead9b0 70%,#d8c08a);box-shadow:0 10px 30px rgba(0,0,0,.45);border-radius:2px;color:#1a120c;font:italic clamp(14px,2.2vw,19px)/1.3 'Segoe Script','Brush Script MT','Apple Chancery','URW Chancery L','Lucida Handwriting',cursive`;
     d.innerHTML = `« ${txt} »<div style="text-align:right;margin-top:6px;font-size:.85em">— V. Hugo</div>`; C0V().appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; d.style.transform = `rotate(${rot}deg) scale(1)`; }); return d; };
-  { const BX = -22, BZ = FA - 2.3, G = new THREE.Group(); G.position.set(BX, TROT, BZ); G.rotation.y = Math.PI; scene.add(G);   /* (la table de la marchande, sur le trottoir des arcades, côté sud) */
+  { const BX = -22, BZ = FA - 2.3; L.ptLivres = [BX, BZ - .9]; const G = new THREE.Group(); G.position.set(BX, TROT, BZ); G.rotation.y = Math.PI; scene.add(G);   /* (la table de la marchande, sur le trottoir des arcades, côté sud) */
     const boisL = mat({ color: 0x5a3a22, roughness: .7 }); box(1.6, .06, .7, boisL, 0, .82, 0, 0, G); for (const [x, z] of [[-.72, -.3], [.72, -.3], [-.72, .3], [.72, .3]]) box(.05, .82, .05, boisL, x, .41, z, 0, G);
     { /* (10.202) les autres livres, sur les côtés (le milieu est pour le livre de Victor Hugo) : chacun sa couverture de cuir, son titre et son auteur dorés */
       const TITRES = [["Notre-Dame de Paris", "Victor Hugo", "#6a1a18"], ["Les Contemplations", "Victor Hugo", "#2a3a5a"], ["Le Comte de Monte-Cristo", "Alexandre Dumas", "#2a4a2a"], ["Les Trois Mousquetaires", "Alexandre Dumas", "#5a2a18"], ["Madame Bovary", "Gustave Flaubert", "#3a2a4a"], ["Germinal", "Émile Zola", "#4a3a1a"],
@@ -964,6 +970,58 @@ function construireVosges(A, L, scene) {
   /* (10.198, fluidité) les personnages loin de la caméra ne sont plus dessinés (sur un téléphone : au-delà de 32 m) */
   { const PERS = []; scene.traverse(o => { if (o.userData && o.userData.parts && o !== VHG) PERS.push(o); }); const R2 = (PEU ? 32 : 60) ** 2, v = new THREE.Vector3(); let f = 0;
     const a3 = L.anim; L.anim = (tm) => { try { a3 && a3(tm); } catch (e) {} if (!M || M.L !== L || !M.camera || f++ % 6) return; const c = M.camera.position; for (const o of PERS) { if (o.userData.masque) continue; o.getWorldPosition(v); const vis = (v.x - c.x) ** 2 + (v.z - c.z) ** 2 < R2; if (o.parent === scene) o.visible = vis; else if (o.visible !== vis && o.parent && !o.parent.userData.parts) o.visible = vis; } }; }
+  /* (10.203) Léopoldine. Victor Hugo s'assoit sur le banc près de la fontaine : le souvenir de sa fille aînée, noyée à dix-neuf ans dans la Seine à Villequier, en 1843.
+     Des textes racontent qui elle était ; puis, de l'eau de la fontaine, une jeune fille de lumière en robe blanche se lève, lui parle, et il lui dit « Demain, dès l'aube… » ;
+     elle s'en va en pétales et en lumière vers les étoiles */
+  { const B = L.bancLeo, F = [-19, 19]; let tAssis = 0, deja = false;
+    const nar = (t) => `<span style="color:#f6eedc;font-weight:400;font-style:italic">${t}</span>`;
+    const LIG = [[.6, "", nar("Victor Hugo s'assoit au bord de la fontaine. Le murmure de l'eau éveille en lui un souvenir…"), 5600], [6.6, "Victor Hugo, à lui-même", "<i>Léopoldine… ma fille… mon enfant bien-aimée.</i>", 5200],
+      [12.2, "", nar("Léopoldine était la fille aînée de Victor Hugo. Il l'adorait : elle était sa joie, son rayon de soleil."), 6200],
+      [18.6, "", nar("En septembre 1843, à dix-neuf ans, quelques mois après son mariage, elle s'est noyée dans la Seine, à Villequier, quand sa barque a chaviré. Son jeune mari, Charles Vacquerie, est mort en voulant la sauver."), 8400],
+      [27.2, "", nar("Hugo était en voyage : il a appris la nouvelle par hasard, en lisant un journal. Ce chagrin ne l'a jamais quitté."), 6400],
+      [33.8, "Léopoldine", "Papa… ne pleure plus. Je suis là, dans chaque reflet de l'eau, dans chaque fleur que tu regardes.", 6400],
+      [40.4, "Victor Hugo", "<i>Demain, dès l'aube, à l'heure où blanchit la campagne,<br>Je partirai. Vois-tu, je sais que tu m'attends.</i>", 6800],
+      [47.4, "Victor Hugo", "<i>Et quand j'arriverai, je mettrai sur ta tombe<br>Un bouquet de houx vert et de bruyère en fleur.</i>", 6800],
+      [54.4, "", nar("« Demain, dès l'aube… » : Victor Hugo a écrit ce poème pour Léopoldine, quatre ans après sa mort. C'est l'un des plus beaux poèmes de la langue française."), 7800],
+      [62.4, "Victor Hugo, à lui-même", "<i>Dors en paix, mon enfant. Je t'aime.</i>", 4800]], DUR = 67.5;
+    const lancer = () => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; L.leoEnCours = true; const t0 = performance.now(), c = M.camera, ux = (B[0] - F[0]), uz = (B[1] - F[1]), ul = Math.hypot(ux, uz); const U = [ux / ul, uz / ul];
+      const px = F[0] + U[0] * 3.2, pz = F[1] + U[1] * 3.2;   /* (devant le rideau d'eau, au bord de la vasque) */
+      // la jeune fille de lumière : la robe blanche, les cheveux longs ; tout en lumière pâle, un peu transparente
+      const fig = personne3D({ taille: 1.58, peau: "#ffffff", ch: "#ffffff", haut: "#ffffff", bas: "#ffffff", chaussures: "#ffffff", coif: "long", robe: true }), MG = []; { const P = fig.userData.parts, hy = fig.userData.hipY, ju = new THREE.Mesh(new THREE.CylinderGeometry(.14, .34, hy + .04, 20, 1, true), mat({ color: 0xffffff, side: THREE.DoubleSide })); ju.position.y = -hy / 2 + .02; P.bassin.add(ju); }   /* (la robe longue, jusqu'aux pieds) */ fig.traverse(o => { if (o.isMesh) { const m = new THREE.MeshBasicMaterial({ color: 0xe4f0ff, transparent: true, opacity: 0, depthWrite: false, fog: false }); o.material = m; MG.push(m); o.castShadow = false; } });
+      fig.position.set(px, -1.7, pz); fig.rotation.y = Math.atan2(B[0] - px, B[1] - pz); fig.userData.masque = true; scene.add(fig); fig.userData.poser("debout", 0);
+      const aura = new THREE.Sprite(new THREE.SpriteMaterial({ map: lueurV, color: 0xcfe6ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); aura.scale.set(2.6, 3.6, 1); scene.add(aura);
+      const eau = new THREE.Mesh(new THREE.CircleGeometry(3.6, 40), new THREE.MeshBasicMaterial({ map: lueurV, color: 0x9ad0ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); eau.rotation.x = -Math.PI / 2; eau.position.set(F[0], .66, F[1]); scene.add(eau);
+      // les pétales : blancs et roses, qui tournent autour d'elle, puis s'envolent avec elle vers les étoiles
+      const NP = PEU ? 90 : 180, pp = new Float32Array(NP * 3), pc = new Float32Array(NP * 3), pg = new THREE.BufferGeometry(); pg.setAttribute("position", new THREE.BufferAttribute(pp, 3)); pg.setAttribute("color", new THREE.BufferAttribute(pc, 3));
+      const PD = Array.from({ length: NP }, (_, i) => { const rose = i % 3 !== 0; pc[i * 3] = 1; pc[i * 3 + 1] = rose ? .78 : .96; pc[i * 3 + 2] = rose ? .86 : .98; return { a: Math.random() * 6.28, r: .5 + Math.random() * 1.4, h: Math.random() * 2.2, v: .4 + Math.random() * .8, mt: 1 + Math.random() * 3 }; });
+      const pet = new THREE.Points(pg, new THREE.PointsMaterial({ map: lueurV, size: .16, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); pet.frustumCulled = false; scene.add(pet);
+      let iL = 0, fin = false; const duck0 = window.__ndDuck; window.__ndDuck = .1;
+      const camA = new THREE.Vector3(B[0] + U[0] * 3.4 - U[1] * 1.2, 2.1, B[1] + U[1] * 3.4 + U[0] * 1.2), camB = new THREE.Vector3(B[0] - U[0] * .8 + U[1] * 3.2, 1.5, B[1] - U[1] * .8 - U[0] * 3.2), camC = new THREE.Vector3(B[0] + U[0] * 1.6 - U[1] * .7, 1.75, B[1] + U[1] * 1.6 + U[0] * .7), tmp = new THREE.Vector3(), cible = new THREE.Vector3();
+      c.position.copy(camA);
+      M.cine = { gel: true, fov: [46, 56], maj: () => { const t = (performance.now() - t0) / 1000, tm = performance.now();
+          while (iL < LIG.length && t >= LIG[iL][0]) { const [, n, tx, ms] = LIG[iL++]; sousTitre(n, tx, ms); }
+          // la caméra : derrière Hugo, la fontaine devant ; puis de côté, quand elle se lève ; puis tout près, sur son épaule, pour le poème
+          if (t < 20) { tmp.copy(camA); cible.set(F[0], 1.1, F[1]); } else if (t < 39) { tmp.copy(camB); cible.set((px + B[0]) / 2, 1.3, (pz + B[1]) / 2); } else if (t < 55) { tmp.copy(camC); cible.set(px, 1.4, pz); } else { tmp.copy(camB); tmp.y = 2.4 + (t - 55) * .25; cible.set(px, 1.6 + Math.max(0, t - 55) * .9, pz); }
+          c.position.lerp(tmp, .025); c.lookAt(cible);
+          // l'eau s'illumine ; elle se lève de l'eau, doucement ; elle reste ; puis s'en va en lumière
+          const montee = Math.min(1, Math.max(0, (t - 21) / 6)), dep = Math.min(1, Math.max(0, (t - 56) / 5)), e = montee * montee * (3 - 2 * montee);
+          eau.material.opacity = Math.min(.55, Math.max(0, (t - 16) / 5) * .55) * (1 - dep) * (.85 + Math.sin(t * 2.2) * .15);
+          fig.position.y = -1.7 + e * 2.32 + dep * dep * 6 + Math.sin(t * 1.3) * .03 * e; const op = Math.min(.72, e * .72) * (1 - dep); for (const m of MG) m.opacity = op;
+          fig.userData.poser("debout", tm); { const P = fig.userData.parts; if (P && P.bras) { const tend = t > 34 && t < 40 ? 1 : 0; P.bras[1].e.rotation.x = -.5 * tend - .15; P.bras[0].e.rotation.x = -.15; P.tete.rotation.x = -.08 + Math.sin(t * .8) * .04; } }
+          aura.position.set(px, fig.position.y + 1.05, pz); aura.material.opacity = op * .95 * (.85 + Math.sin(t * 3) * .15);
+          pet.material.opacity = Math.min(1, Math.max(0, (t - 22) / 3)) * (t > 61 ? Math.max(0, 1 - (t - 61) / 4) : 1);
+          for (let i = 0; i < NP; i++) { const D = PD[i], a = D.a + t * D.v * .6, up = dep * (6 + D.mt * 4); pp[i * 3] = px + Math.cos(a) * D.r * (1 + dep * 1.5); pp[i * 3 + 1] = fig.position.y + .2 + ((D.h + t * .25 * D.v) % 2.2) + up; pp[i * 3 + 2] = pz + Math.sin(a) * D.r * (1 + dep * 1.5); } pg.attributes.position.needsUpdate = true;
+          if (t > DUR && !fin) { fin = true; for (const o of [fig, aura, eau, pet]) scene.remove(o); window.__ndDuck = duck0; L.leoEnCours = false; finCine(); placerCamera(true); } } }; };
+    L.leopoldine = lancer;
+    AMB.push((tm) => { const p = M && M.moiNum && M.gens.get(M.moiNum), T = p && Number.isInteger(p.info.assis) && (L.tabourets || [])[p.info.assis];
+      if (!T || !B || Math.hypot(T[0] - B[0], T[1] - B[1]) > 1.4) { tAssis = 0; deja = false; return; }
+      if (!L.estHugo || deja || L.leoEnCours || M.cine) return; if (!tAssis) tAssis = tm; if (tm - tAssis > 1400) { deja = true; lancer(); } }); }
+  /* (10.203) les endroits où l'on peut faire quelque chose : une lueur chaude et floue au sol, qui respire doucement — comme sur les quais de Seine */
+  { const halo = tT(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, "rgba(255,236,170,.75)"); g.addColorStop(.35, "rgba(255,214,120,.45)"); g.addColorStop(.7, "rgba(255,196,90,.14)"); g.addColorStop(1, "rgba(255,190,80,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
+    const hm = new THREE.MeshBasicMaterial({ map: halo, color: 0xffd23a, transparent: true, opacity: .75, depthWrite: false, fog: false }), dq = new THREE.CircleGeometry(1.05, 40), RBl = REV.find(R => R.bleu);
+    const SPOTS = [[0, L.bancLeo ? [L.bancLeo[0] + .55, L.bancLeo[1] - .55, .05] : null], [0, RBl ? [RBl.x, RBl.z + 1.2, TROT + .02] : null], [0, L.ptLivres ? [L.ptLivres[0], L.ptLivres[1], TROT + .02] : null], [0, [HUGO.x, FA + 2.4, TROT + .02]], [0, L.metroVosges ? [L.metroVosges.x, L.metroVosges.z, .03] : null]];
+    for (const [, q] of SPOTS) { if (!q) continue; const d = new THREE.Mesh(dq, hm); d.rotation.x = -Math.PI / 2; d.position.set(q[0], q[1] + 0 * 0, q[2]); d.position.set(q[0], q[2] + .02, q[1]); d.userData.anime = true; d.renderOrder = 2; scene.add(d); }
+    AMB.push((tm) => { hm.opacity = .55 + Math.sin(tm / 600) * .2; }); }
   fusionStatique(scene, L, 0);
   // (10.190) on arrive par le livre : dès que le bonhomme est là, la cinématique des pages ; puis le voile de lumière se dissipe
   { const a2 = L.anim; L.anim = (tm) => { try { a2 && a2(tm); } catch (e) {} const A2 = window.__arriveeLivre; if (!A2 || !M || M.L !== L || !M.moiNum || !M.gens.get(M.moiNum)) return; window.__arriveeLivre = null;
