@@ -9101,7 +9101,7 @@ export async function ouvrir(ctx) {
       if (p.corps && p.poses && !p.differe) {
         const sx = tailleBonhomme() * .476 * 1.6 * hauteurDe(p);
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
-        const partenaire = p.info.slow && M.gens.get(p.info.slow);
+        const partenaire = p.info.slow && (M.gens.get(p.info.slow) || p.info.slowPNJ);   /* (10.171 : ou une cavalière du bal musette) */
         if (p.info.gbDos && p.poses.dos) {   // (S.O.S. Fantômes : en ligne, face au monstre, on le voit de dos — l'arrière de la tête et le pack ; englué, couvert de slime)
           const td = p.englue > 0 ? texEnglue(p.poses.dos) : p.poses.dos; if (p.corps.material.map !== td) { p.corps.material.map = td; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
