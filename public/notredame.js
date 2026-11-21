@@ -2299,8 +2299,8 @@ function construireNotreDame(A, L, scene) {
                   if (dits < 1 && t > 6) { dits = 1; sousTitre("", qui ? "Ta lettre s'envole vers " + qui + "…" : "Ta lettre s'envole…", 4200); }
                   if (dits < 2 && t > 13.5) { dits = 2; sousTitre("", "Elle passe au-dessus de Notre-Dame, et monte, et monte encore…", 4400); } }
                 else { // l'étoile filante
-                  if (ois.g.visible) { ois.g.visible = false; etoile.visible = true; } const k = Math.min(1, (t - 21.2) / 4.5), A2 = P3(30, 112, -110), B2 = P3(-80, 150, -20), ep = A2.clone().lerp(B2, k * k * (3 - 2 * k)); etoile.position.copy(ep); etoile.scale.setScalar(16 + Math.sin(ts * 20) * 2); for (let s = 0; s < 8; s++) queue.sem(ep, ts, 1, 2.5);
-                  c.lookAt(ep);
+                  if (ois.g.visible) { ois.g.visible = false; etoile.visible = true; } const k = Math.min(1, (t - 21.2) / 4.5), A2 = P3(30, 112, -110), B2 = P3(-80, 150, -20), ep = A2.clone().lerp(B2, k * k * (3 - 2 * k)); etoile.position.copy(ep); etoile.scale.setScalar(9 + Math.sin(ts * 20) * 1.5); for (let s = 0; s < 8; s++) queue.sem(ep, ts, 1, 2.5);
+                  c.position.lerp(P3(-10, 70, -10), .04); c.lookAt(ep);   /* (on recule pour la voir filer à travers le ciel) */
                   if (dits < 3 && t > 22.5) { dits = 3; sousTitre("", qui ? "Une étoile filante… " + qui + " a bien reçu ta lettre. ✨" : "Une étoile filante… ta lettre est bien arrivée. ✨", 5500); } } }
               E.maj(ts, 1.6); queue.maj(ts, 1.8);
               if (t > DUR && !fin) { fin = true; scene.remove(G); scene.remove(ois.g); scene.remove(etoile); E.fin(); queue.fin(); M.camera.far = far0; M.camera.updateProjectionMatrix(); L.enBalade = false; p.g.visible = true; finCine(); placerCamera(true); enCours = false; } } }; };
