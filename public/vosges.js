@@ -734,7 +734,7 @@ function construireVosges(A, L, scene) {
         const pa = E.fg.attributes.position; pa.setXYZ(0, v.x, v.y, v.z); pa.setXYZ(1, E.bp.x, E.bp.y - .26, E.bp.z); pa.needsUpdate = true; } }); }
   /* ===================== (10.200) quatre enchantements de la place des Vosges ===================== */
   const moiV = () => M && M.moiNum && M.gens.get(M.moiNum), C0V = () => (M.ctx && M.ctx.conteneur) || document.body;
-  const voileV = (fond) => { const v = document.createElement("div"); v.style.cssText = "position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;transition:opacity 1.1s;background:" + fond; document.body.appendChild(v); requestAnimationFrame(() => { v.style.opacity = "1"; });
+  const voileV = (fond) => { const v = document.createElement("div"); v.style.cssText = "position:absolute;inset:0;z-index:9000;pointer-events:none;opacity:0;transition:opacity 1.1s;background:" + fond; C0V().appendChild(v);   /* (dans le conteneur du jeu : visible aussi en plein écran) */ requestAnimationFrame(() => { v.style.opacity = "1"; });
     return { el: v, actif: true, sortir() { if (!this.actif) return; this.actif = false; v.style.transition = "opacity 1.6s"; v.style.opacity = "0"; setTimeout(() => v.remove(), 1800); } }; };
   const lueurV = tT(64, 64, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.3, "rgba(255,255,255,.45)"); g.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
   const menuOuiNon = (question, oui, labOui = "Oui", labNon = "Non merci") => { if (M.manMenu && M.manMenu.d && M.manMenu.d.isConnected) return; const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;background:rgba(24,22,34,.95);color:#fff;border-radius:16px;padding:16px 18px;width:min(86vw,320px);box-shadow:0 8px 30px rgba(0,0,0,.5);font:15px Lato,Arial,sans-serif;text-align:center";
@@ -868,6 +868,6 @@ function construireVosges(A, L, scene) {
   fusionStatique(scene, L, 0);
   // (10.190) on arrive par le livre : dès que le bonhomme est là, la cinématique des pages ; puis le voile de lumière se dissipe
   { const a2 = L.anim; L.anim = (tm) => { try { a2 && a2(tm); } catch (e) {} const A2 = window.__arriveeLivre; if (!A2 || !M || M.L !== L || !M.moiNum || !M.gens.get(M.moiNum)) return; window.__arriveeLivre = null;
-      try { if (M.cine) finCine(); L.arriveeLivre(A2.coul, A2.hugo); } catch (e) { console.warn(e); } const v = A2.voile; if (v && v.sortir) setTimeout(() => v.sortir(), 350); else if (v && v.isConnected) setTimeout(() => { v.style.opacity = "0"; setTimeout(() => v.remove(), 1500); }, 400); }; }
+      try { if (M.cine) finCine(); L.arriveeLivre(A2.coul, A2.hugo); } catch (e) { console.warn(e); } const v = A2.voile; if (v && v.sortir) setTimeout(() => v.sortir(), 1300); else if (v && v.isConnected) setTimeout(() => { v.style.opacity = "0"; setTimeout(() => v.remove(), 1500); }, 400); }; }
 }
 ({ construireVosges })
