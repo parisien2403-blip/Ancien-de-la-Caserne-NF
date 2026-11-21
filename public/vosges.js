@@ -489,7 +489,7 @@ function construireVosges(A, L, scene) {
     // les hautes bottes noires
     P.jambes.forEach(J => { const bo = new THREE.Mesh(new THREE.CylinderGeometry(T * .033, T * .03, T * .2, 10), noir); bo.position.y = -T * .13; J.gen.add(bo); });
     // la main glissée dans le manteau, quand il s'arrête
-    m.userData.mainCoeur = () => { for (const [k, sg] of [[0, 1], [1, -1]]) { const b = P.bras[k]; if (b.e.position.x * sg > 0) { b.e.rotation.set(-.45, 0, sg * .28); b.c.rotation.set(-1.75, sg * .5, 0); return; } } const b = P.bras[1]; b.e.rotation.set(-.45, 0, -.28); b.c.rotation.set(-1.75, -.5, 0); };
+    m.userData.mainCoeur = () => { for (const [k, sg] of [[0, 1], [1, -1]]) { const b = P.bras[k]; if (b.e.position.x * sg > 0) { b.e.rotation.set(-.45, 0, sg * .28); b.c.rotation.set(-1.75, sg * .5, 0); return; } } const b = P.bras[1]; b.e.rotation.set(-.3, 0, -.3); b.c.rotation.set(-1.35, -.6, 0); };
     m.userData.anime = true; return m; }; const VHG = fabriqueVH(); scene.add(VHG); L.fabriqueVH = fabriqueVH;
   { const R = [[0, 13], [9.2, 9.2], [13, 0], [9.2, -9.2], [0, -13], [0, -30], [-1.6, -36], [-30, -1.6], [-13, 0], [-9.2, 9.2], [0, 13], [0, 30], [30, 1.6], [13, 0]]; let i = 0, pause = 0; VHG.position.set(0, 0, 13);
     AMB.push((tm, dt) => { if (L.vhParle && tm < L.vhParle) { VHG.userData.poser("debout", tm); VHG.userData.mainCoeur(); const moi = M && M.moiNum && M.gens.get(M.moiNum); if (moi) VHG.rotation.y = Math.atan2(moi.g.position.x - VHG.position.x, moi.g.position.z - VHG.position.z); return; }
