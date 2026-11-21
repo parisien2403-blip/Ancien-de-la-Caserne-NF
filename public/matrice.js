@@ -16286,7 +16286,7 @@ function chercherAction(t) {
   if (moi) {
     const x = moi.g.position.x, z = moi.g.position.z;
     if (Number.isInteger(moi.info.assis)) a = { type: "lever", label: "🧍 Se relever" };
-    else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
+    else if (moi.info.slow && !moi.info.slowPNJ) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
     else if (M.L.portesRex && M.L.portesRex.some(p => Math.hypot(x - p.x, z - p.z) < 1.1)) { const p = M.L.portesRex.find(p => Math.hypot(x - p.x, z - p.z) < 1.1); a = { type: "rexFilm", cle: p.f.cle, id: p.f.cle, label: `🎬 Entrer dans « ${p.f.titre} »` }; }   // (10.11, le Grand Rex : on entre dans le film par sa porte)
     else if (M.L.actionLieu && (a = M.L.actionLieu(x, z, moi))) ;   // (10.95 : ce que le lieu propose — à Montmartre, la Vespa)
