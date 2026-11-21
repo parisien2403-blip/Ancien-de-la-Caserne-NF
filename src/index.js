@@ -44,7 +44,7 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["notredame", "rue", "rex", "jouffroy", "grande", "fetes", "cave", "etage", "mess", "z-rue", "z-grande", "z-fetes", "z-etage", "z-mess", "sh-rue", "sh-grande", "sh-fetes", "sh-etage", "sh-mess", "bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart", "santacarla", "kingston", "tertre", "corbier"];
+const LIEUX_MATRICE = ["notredame", "vosges", "rue", "rex", "jouffroy", "grande", "fetes", "cave", "etage", "mess", "z-rue", "z-grande", "z-fetes", "z-etage", "z-mess", "sh-rue", "sh-grande", "sh-fetes", "sh-etage", "sh-mess", "bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart", "santacarla", "kingston", "tertre", "corbier"];
 // l'Almanach des sports : les endroits où il peut traîner (jamais deux fois de suite au même)
 const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 7.4, -11], ["grande", 1.4, -35], ["grande", 7.4, 7], ["grande", 4.4, -2], ["grande", -1.6, 13], ["grande", -7.6, 1], ["grande", 7.4, -32], ["grande", 10.4, 10]];   // (dans les cours de la caserne seulement : ni dans les bâtiments, ni dans la rue — tout le monde peut les trouver)
 const APPART_INVITES = [2, 3, 4, 11];   // (les badges invités dans l'appartement de l'escalier Z, en plus de l'administrateur ; la même liste dans index.html)
@@ -697,9 +697,9 @@ export class Compteur extends DurableObject {
       const s = m.s, n = v => Number.isFinite(Number(v)) ? Math.round(Number(v) * 1000) / 1000 : 0;
       a.installe = s && (s.sorte === "assis" || s.sorte === "allonge") ? { sorte: s.sorte, x: n(s.x), y: n(s.y), z: n(s.z), h: n(s.h), ry: n(s.ry) } : null; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "installe", numero: a.numero, s: a.installe }, ws);
-    } else if (m.t === "assis" && (a.lieu === "fetes" || a.lieu === "cave" || a.lieu === "corbier" || a.lieu === "tertre" || a.lieu === "rue")) {
+    } else if (m.t === "assis" && (a.lieu === "fetes" || a.lieu === "cave" || a.lieu === "corbier" || a.lieu === "tertre" || a.lieu === "rue" || a.lieu === "vosges")) {
       // assis sur un tabouret du bar (son numéro), ou debout (null)
-      a.assis = Number.isInteger(m.i) && m.i >= 0 && m.i < (a.lieu === "corbier" || a.lieu === "tertre" || a.lieu === "rue" ? 200 : 20) ? m.i : null; ws.serializeAttachment(a);
+      a.assis = Number.isInteger(m.i) && m.i >= 0 && m.i < (a.lieu === "corbier" || a.lieu === "tertre" || a.lieu === "rue" || a.lieu === "vosges" ? 200 : 20) ? m.i : null; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "assis", numero: a.numero, i: a.assis }, ws);
     } else if (m.t === "slow_demande" && a.lieu && !a.slow) {
       // une invitation à danser un slow, envoyée seulement à la personne choisie

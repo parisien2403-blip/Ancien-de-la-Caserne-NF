@@ -20,6 +20,7 @@ export const LIEUX = {
   jouffroy: { nom: "Le passage Jouffroy", icone: "🛍️" },
   tertre: { nom: "Montmartre, la place du Tertre", icone: "🎨" },
   corbier: { nom: "Le Corbier, le Front de Neige", icone: "🏔️" },
+  vosges: { nom: "La place des Vosges", icone: "🏰" },
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
@@ -7651,6 +7652,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "jouffroy") construireJouffroy(A, L, scene);
   if (id === "tertre") MD.montmartre.construireTertre(A, L, scene);
   if (id === "corbier") MD.corbier.construireCorbier(A, L, scene);
+  if (id === "vosges") MD.vosges.construireVosges(A, L, scene);   // (10.190 : la place des Vosges)
   if (id === "notredame") MD.notredame.construireNotreDame(A, L, scene);   // (10.145 : Notre-Dame et les quais de Seine)   // (10.99 : Le Corbier, la station de ski de Savoie)   // (Montmartre : son propre fichier, chargé la première fois qu'on y va)
 
   if (id === "grande") {
@@ -11692,7 +11694,7 @@ function petitTrain(scene, x, z, rot) { const g = new THREE.Group(); g.position.
   g.userData.train = true; return g; }
 /* (10.157) les lignes, comme sur le réseau parisien : le numéro de bus de chaque arrêt, ses couleurs ; les lignes de métro de chaque station */
 const LIGNES_BUS = { rue: ["39", "Faubourg-Poissonnière", "#2a8a5a"], grande: ["48", "Hauteville", "#c8202a"], rex: ["20", "Bonne-Nouvelle", "#3a6ab0"], notredame: ["47", "Notre-Dame", "#8a2a7a"], corbier: ["S1", "Le Corbier", "#f08a1a"] };
-const LIGNES_METRO = { rex: [["8", "#e19bdf", "#000"], ["9", "#b6bd00", "#000"]], tertre: [["12", "#007852", "#fff"]], notredame: [["4", "#a0006e", "#fff"], ["B", "#5091cb", "#fff"], ["C", "#f3d311", "#000"]], corbier: [["Car 61", "#f08a1a", "#fff"]] };
+const LIGNES_METRO = { rex: [["8", "#e19bdf", "#000"], ["9", "#b6bd00", "#000"]], tertre: [["12", "#007852", "#fff"]], vosges: [["1", "#ffcd00", "#000"], ["5", "#ff7e2e", "#000"], ["8", "#e19bdf", "#000"]], notredame: [["4", "#a0006e", "#fff"], ["B", "#5091cb", "#fff"], ["C", "#f3d311", "#000"]], corbier: [["Car 61", "#f08a1a", "#fff"]] };
 const pastille = (t, fond, txt, rond) => `<span style="display:inline-block;min-width:26px;padding:2px 6px;margin-right:9px;border-radius:${rond ? "50%" : "5px"};background:${fond};color:${txt};font:800 14px Arial,sans-serif;text-align:center;vertical-align:middle">${t}</span>`;
 let GIROU = null;   // (le numéro et la destination à afficher sur le prochain bus fabriqué)
 function busCaserne(scene, modele, x, z, rot) { const giro = GIROU; GIROU = null;
@@ -13245,10 +13247,12 @@ function choixBus(B) { if (M.choixBusEl) M.choixBusEl.remove(); const d = docume
 const METRO_STATIONS = { rex: { nom: "Bonne Nouvelle", ligne: "8 · 9", lieu: "rex", arrivee: [-66.6, 9.8], yaw: -Math.PI / 2, libelle: "Bonne Nouvelle — les Grands Boulevards, le Grand Rex" },
   tertre: { nom: "Abbesses", ligne: "12", lieu: "tertre", arrivee: [-83, 35.3], yaw: Math.PI, libelle: "Abbesses — Montmartre, la place du Tertre" },
   notredame: { nom: "Saint-Michel – Notre-Dame", ligne: "4 · RER B C", lieu: "notredame", arrivee: [-66.2, 41.9], yaw: Math.PI / 2, libelle: "Saint-Michel – Notre-Dame — les quais de Seine, Notre-Dame" },
+  vosges: { nom: "Bastille", ligne: "1 · 5 · 8", lieu: "vosges", arrivee: [-48.5, 42.5], yaw: Math.PI, libelle: "Bastille — la place des Vosges, la maison de Victor Hugo" },
   corbier: { nom: "Le Corbier", lieu: "corbier", arrivee: [-26, 13.8], yaw: Math.PI, libelle: "🚌 Le Corbier — en car, jusqu'à la station (Savoie)", car: true } };
 function metroProche(x, z) { if (!M || !M.L || M.L.apo || M.L.sh) return false; if (M.lieu === "rex") return [[-70.5, 9.8], [-43.6, -10.4]].some(([a, b]) => Math.hypot(x - a, z - b) < 3.4);
   if (M.lieu === "tertre" && M.L.metroAbbesses) return Math.hypot(x - M.L.metroAbbesses.x, z - M.L.metroAbbesses.z) < 3;
   if (M.lieu === "notredame" && M.L.metroND) return Math.hypot(x - M.L.metroND.x, z - M.L.metroND.z) < 3;
+  if (M.lieu === "vosges" && M.L.metroVosges) return Math.hypot(x - M.L.metroVosges.x, z - M.L.metroVosges.z) < 3.4;
   return false; }
 /* (10.99) le car : de Paris au Corbier, ou du Corbier à Paris — l'écran noir, la route de montagne qui défile en mots, et l'on y est */
 function voyageCar(dep, arr) { if (!M || M.cine) return; const n = voile("background:#000;opacity:0;transition:opacity .9s;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#f2ead8;font:600 20px Lato,Arial,sans-serif;text-align:center;padding:20px");
@@ -16329,7 +16333,7 @@ function chercherAction(t) {
       else if (C3.sousSol && C3.sousSol.tablePP && M.lieu === "grande" && moi.g.position.y < -2 && Math.abs(x - C3.sousSol.tablePP[0]) < 1.5 && Math.abs(z - C3.sousSol.tablePP[1]) < 2.2) a = { type: "pingpong", label: "🏓 Jouer au ping-pong" };
       else if (C3.hifi && M.lieu === "grande" && Math.abs(moi.g.position.y - C3.FL) < .6 && Math.hypot(x - C3.hifi[0], z - C3.hifi[1]) < 1.4) a = { type: "hifi", label: M.hifiOn ? "⏹ Arrêter la musique" : "▶️ Mettre la musique" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
-      else if (i >= 0) a = { type: "asseoir", i, label: M.lieu === "corbier" || M.lieu === "tertre" || M.lieu === "rue" ? "🪑 S'asseoir" : "🪑 S'asseoir au bar" };
+      else if (i >= 0) a = { type: "asseoir", i, label: M.lieu === "corbier" || M.lieu === "tertre" || M.lieu === "rue" || M.lieu === "vosges" ? "🪑 S'asseoir" : "🪑 S'asseoir au bar" };
       else if (M.L.appart && moi.installe) a = { type: "leverAppart", label: "🧍 Se lever" };
       else if (M.L.appart && !M.amen && siegeAppart(x, z)) a = siegeAppart(x, z);   /* (l'appartement : s'asseoir, s'allonger) */
       else if (M.L.apo) {}
@@ -17895,7 +17899,7 @@ function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ct
 /* Les mondes des films ont chacun leur fichier (kingston.js pour Gremlins, santacarla.js pour Génération perdue…) : on le charge la première fois
    qu'on va dans l'un de ses lieux (pas avant : l'appli s'ouvre plus vite), et on l'exécute ici même (eval direct), pour qu'il se serve de tout
    ce que la matrice a (M, THREE, voile, sonBruit…) sans rien changer à son code. MD[monde] : ce que le fichier rend (ses points d'entrée). */
-const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id), montmartre: id => id === "tertre", corbier: id => id === "corbier", notredame: id => id === "notredame" };
+const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id), montmartre: id => id === "tertre", corbier: id => id === "corbier", notredame: id => id === "notredame", vosges: id => id === "vosges" };
 function chargerMonde(nom) { if (MD[nom]) return Promise.resolve(MD[nom]);
   return MD_P[nom] = MD_P[nom] || fetch(nom + ".js?v=" + (new URL(import.meta.url).searchParams.get("v") || DIAG_V))   /* (la version du site : chaque mise à jour recharge les mondes) */.then(r => { if (!r.ok) throw new Error(nom + ".js : " + r.status); return r.text(); })
     .then(src => (MD[nom] = eval(src + "\n//# sourceURL=" + nom + ".js"))).catch(e => { MD_P[nom] = null; throw e; }); }
