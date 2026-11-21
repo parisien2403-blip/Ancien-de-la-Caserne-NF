@@ -676,6 +676,26 @@ function construireVosges(A, L, scene) {
       if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
       if (!A2.paused) try { A2.volume = Math.max(0, Math.min(1, A2.volume + Math.max(-.01, Math.min(.006, .35 - A2.volume)))); } catch (e) {} };
     quitterLieu.add(() => { const A2 = window.__valseND; if (A2) A2.pause(); }); }
+  /* (10.199) des enfants de 1900 qui jouent dans le square avec des ballons de baudruche rouges : les garçons en costume marin, béret à pompon ; les filles en robe, un grand nœud dans les cheveux ;
+     ils courent en rond, le bras levé, le ballon rouge qui flotte au bout de sa ficelle */
+  { const ROUGE = mat({ color: 0xd8202a, roughness: .25, metalness: .05 }), ficM = new THREE.LineBasicMaterial({ color: 0x3a3a3a }), ENF = [];
+    const CENTRES = [[-14, 6, 3.2], [15, -5, 2.6], [-6, -16, 2.8], [10, 17, 3.4], [-27, -11, 3.5], [12, 27, 3]];
+    CENTRES.forEach(([cx, cz, r], k) => { const fille = k % 2 === 1, T = 1.08 + (k % 3) * .07;
+      const m = personne3D({ taille: T, enfant: true, peau: ["#f0c9a6", "#e8bd95", "#f6d6bc", "#c78f62"][k % 4], ch: ["#e2c27a", "#5a3a22", "#a8481e", "#2a1a12"][k % 4], haut: fille ? ["#f6f2ea", "#f0d8e0", "#d8e4f0"][k % 3] : "#1e2a4a", bas: fille ? ["#f6f2ea", "#f0d8e0", "#d8e4f0"][k % 3] : "#1e2a4a", chaussures: "#1a1a1a", coif: fille ? "long" : "court", robe: fille, pantalon: !fille }), P = m.userData.parts, hy = m.userData.hipY, rT = T * .085;
+      if (fille) { const ju = new THREE.Mesh(new THREE.CylinderGeometry(T * .09, T * .17, hy * .6, 16, 1, true), mat({ color: ["#f6f2ea", "#f0d8e0", "#d8e4f0"][k % 3], side: THREE.DoubleSide })); ju.position.y = -hy * .28; P.bassin.add(ju);
+        for (const sx of [-1, 1]) { const n = new THREE.Mesh(new THREE.SphereGeometry(rT * .45, 8, 6), mat({ color: [0xd8202a, 0x2a5ab0, 0xf2f2f2][k % 3] })); n.scale.set(1.3, .7, .5); n.position.set(sx * rT * .5, rT * .9, -rT * .4); P.tete.add(n); } }
+      else { const col = new THREE.Mesh(new THREE.BoxGeometry(T * .17, T * .12, .01), mat({ color: 0xf2f2f2 })); col.position.set(0, T * .23, -T * .07); col.rotation.x = .2; P.buste.add(col); for (const y of [.02, -.02]) { const r2 = new THREE.Mesh(new THREE.BoxGeometry(T * .16, .006, .012), mat({ color: 0x1e2a4a })); r2.position.set(0, T * .23 + y, -T * .074); r2.rotation.x = .2; P.buste.add(r2); }
+        const be = new THREE.Mesh(new THREE.CylinderGeometry(rT * 1.25, rT * 1.1, rT * .3, 16), mat({ color: 0xf2f2f2 })); be.position.y = rT * .75; be.rotation.x = -.15; P.tete.add(be); const po = new THREE.Mesh(new THREE.SphereGeometry(rT * .25, 8, 6), mat({ color: 0xd8202a })); po.position.y = rT * .98; P.tete.add(po); }
+      for (const b of P.bras) b.c.children[0].material = mat({ color: fille ? ["#f6f2ea", "#f0d8e0", "#d8e4f0"][k % 3] : "#1e2a4a" });
+      m.userData.anime = true; scene.add(m);
+      const bal = new THREE.Mesh(new THREE.SphereGeometry(.2, 16, 12), ROUGE); bal.scale.set(1, 1.18, 1); scene.add(bal); const noeud = new THREE.Mesh(new THREE.ConeGeometry(.035, .06, 6), ROUGE); noeud.position.y = -.24; noeud.rotation.x = Math.PI; bal.add(noeud);
+      const fg = new THREE.BufferGeometry(); fg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3)); const fil = new THREE.Line(fg, ficM); fil.frustumCulled = false; scene.add(fil);
+      ENF.push({ m, P, bal, fg, cx, cz, r, a: k * 1.3, v: (1.3 + (k % 3) * .25) * (k % 2 ? 1 : -1), bp: null, ph: k * 1.7 }); });
+    const v = new THREE.Vector3(); AMB.push((tm, dt) => { dt = dt || .016; for (const E of ENF) { E.a += E.v * dt / E.r; const x = E.cx + Math.cos(E.a) * E.r, z = E.cz + Math.sin(E.a) * E.r; E.m.position.set(x, 0, z); E.m.rotation.y = Math.atan2(-Math.sin(E.a) * Math.sign(E.v), Math.cos(E.a) * Math.sign(E.v));
+        if (!E.m.visible) { E.bal.visible = false; continue; } E.bal.visible = true; E.m.userData.poser("marche", tm * 1.7); E.P.bras[1].e.rotation.set(-2.6, 0, -.15); E.P.bras[1].c.rotation.x = -.2;   /* (le bras levé, qui tient la ficelle) */
+        E.P.bras[1].c.updateWorldMatrix(true, false); v.set(0, -E.m.userData.hipY * .3, 0); E.P.bras[1].c.localToWorld(v);
+        const cible = new THREE.Vector3(v.x + Math.sin(tm / 700 + E.ph) * .25, v.y + .95 + Math.sin(tm / 450 + E.ph) * .06, v.z + Math.cos(tm / 800 + E.ph) * .25); if (!E.bp) E.bp = cible.clone(); E.bp.lerp(cible, Math.min(1, dt * 3)); E.bal.position.copy(E.bp); E.bal.rotation.z = (E.bp.x - v.x) * .5;
+        const pa = E.fg.attributes.position; pa.setXYZ(0, v.x, v.y, v.z); pa.setXYZ(1, E.bp.x, E.bp.y - .26, E.bp.z); pa.needsUpdate = true; } }); }
   /* (10.199) les gens parlent, quand on s'approche : le camelot et ses nouvelles de 1900, la marchande de glaces et son client, la marchande des quatre-saisons,
      les clients des terrasses ; en sous-titres, chacun son tour. Dès qu'on s'éloigne (à plus d'un mètre et demi d'eux), plus rien */
   { const Z = [];
