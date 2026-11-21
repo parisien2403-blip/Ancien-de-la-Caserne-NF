@@ -995,10 +995,10 @@ function construireVosges(A, L, scene) {
       const NP = PEU ? 90 : 180, pp = new Float32Array(NP * 3), pc = new Float32Array(NP * 3), pg = new THREE.BufferGeometry(); pg.setAttribute("position", new THREE.BufferAttribute(pp, 3)); pg.setAttribute("color", new THREE.BufferAttribute(pc, 3));
       const PD = Array.from({ length: NP }, (_, i) => { const rose = i % 3 !== 0; pc[i * 3] = 1; pc[i * 3 + 1] = rose ? .78 : .96; pc[i * 3 + 2] = rose ? .86 : .98; return { a: Math.random() * 6.28, r: .5 + Math.random() * 1.4, h: Math.random() * 2.2, v: .4 + Math.random() * .8, mt: 1 + Math.random() * 3 }; });
       const pet = new THREE.Points(pg, new THREE.PointsMaterial({ map: lueurV, size: .16, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); pet.frustumCulled = false; scene.add(pet);
-      let iL = 0, fin = false; const duck0 = window.__ndDuck; window.__ndDuck = .1;
+      let iL = 0, fin = false; const duck0 = window.__ndDuck; window.__ndDuck = .1; const EC = ecarter(F[0], F[1], 9, [fig]);
       const camA = new THREE.Vector3(B[0] + U[0] * 3.4 - U[1] * 1.2, 2.1, B[1] + U[1] * 3.4 + U[0] * 1.2), camB = new THREE.Vector3(B[0] - U[0] * .8 + U[1] * 3.2, 1.5, B[1] - U[1] * .8 - U[0] * 3.2), camC = new THREE.Vector3(B[0] + U[0] * 1.6 - U[1] * .7, 1.75, B[1] + U[1] * 1.6 + U[0] * .7), tmp = new THREE.Vector3(), cible = new THREE.Vector3();
       c.position.copy(camA);
-      M.cine = { gel: true, fov: [46, 56], maj: () => { const t = (performance.now() - t0) / 1000, tm = performance.now();
+      M.cine = { gel: true, fov: [46, 56], maj: () => { const t = (performance.now() - t0) / 1000, tm = performance.now(); EC.maj();
           while (iL < LIG.length && t >= LIG[iL][0]) { const [, n, tx, ms] = LIG[iL++]; sousTitre(n, tx, ms); }
           // la caméra : derrière Hugo, la fontaine devant ; puis de côté, quand elle se lève ; puis tout près, sur son épaule, pour le poème
           if (t < 20) { tmp.copy(camA); cible.set(F[0], 1.1, F[1]); } else if (t < 39) { tmp.copy(camB); cible.set((px + B[0]) / 2, 1.3, (pz + B[1]) / 2); } else if (t < 55) { tmp.copy(camC); cible.set(px, 1.4, pz); } else { tmp.copy(camB); tmp.y = 2.4 + (t - 55) * .25; cible.set(px, 1.6 + Math.max(0, t - 55) * .9, pz); }
@@ -1011,7 +1011,7 @@ function construireVosges(A, L, scene) {
           aura.position.set(px, fig.position.y + 1.05, pz); aura.material.opacity = op * .95 * (.85 + Math.sin(t * 3) * .15);
           pet.material.opacity = Math.min(1, Math.max(0, (t - 22) / 3)) * (t > 61 ? Math.max(0, 1 - (t - 61) / 4) : 1);
           for (let i = 0; i < NP; i++) { const D = PD[i], a = D.a + t * D.v * .6, up = dep * (6 + D.mt * 4); pp[i * 3] = px + Math.cos(a) * D.r * (1 + dep * 1.5); pp[i * 3 + 1] = fig.position.y + .2 + ((D.h + t * .25 * D.v) % 2.2) + up; pp[i * 3 + 2] = pz + Math.sin(a) * D.r * (1 + dep * 1.5); } pg.attributes.position.needsUpdate = true;
-          if (t > DUR && !fin) { fin = true; for (const o of [fig, aura, eau, pet]) scene.remove(o); window.__ndDuck = duck0; L.leoEnCours = false; finCine(); placerCamera(true); } } }; };
+          if (t > DUR && !fin) { fin = true; EC.fin(); for (const o of [fig, aura, eau, pet]) scene.remove(o); window.__ndDuck = duck0; L.leoEnCours = false; finCine(); placerCamera(true); } } }; };
     L.leopoldine = lancer;
     AMB.push((tm) => { const p = M && M.moiNum && M.gens.get(M.moiNum), T = p && Number.isInteger(p.info.assis) && (L.tabourets || [])[p.info.assis];
       if (!T || !B || Math.hypot(T[0] - B[0], T[1] - B[1]) > 1.4) { tAssis = 0; deja = false; return; }
@@ -1022,6 +1022,121 @@ function construireVosges(A, L, scene) {
     const SPOTS = [[0, L.bancLeo ? [L.bancLeo[0] + .55, L.bancLeo[1] - .55, .05] : null], [0, RBl ? [RBl.x, RBl.z + 1.2, TROT + .02] : null], [0, L.ptLivres ? [L.ptLivres[0], L.ptLivres[1], TROT + .02] : null], [0, [HUGO.x, FA + 2.4, TROT + .02]], [0, L.metroVosges ? [L.metroVosges.x, L.metroVosges.z, .03] : null]];
     for (const [, q] of SPOTS) { if (!q) continue; const d = new THREE.Mesh(dq, hm); d.rotation.x = -Math.PI / 2; d.position.set(q[0], q[1] + 0 * 0, q[2]); d.position.set(q[0], q[2] + .02, q[1]); d.userData.anime = true; d.renderOrder = 2; scene.add(d); }
     AMB.push((tm) => { hm.opacity = .55 + Math.sin(tm / 600) * .2; }); }
+  /* (10.203) pendant une scène, personne ne vient se mettre devant la caméra : les passants proches s'effacent, et reviennent après */
+  const ecarter = (x, z, r, garder) => { const vus = new Set(); return { maj: () => { for (const o of scene.children) { if (!o.userData || !o.userData.parts || garder.includes(o) || (M && M.moiNum && M.gens.get(M.moiNum) && M.gens.get(M.moiNum).g === o)) continue; const d = Math.hypot(o.position.x - x, o.position.z - z);
+        if (d < r && o.visible) { o.visible = false; if (!o.userData.masque) { o.userData.masque = true; vus.add(o); } } } }, fin: () => { for (const o of vus) { o.userData.masque = false; o.visible = true; } } }; };
+  /* (10.203) Les lettres de Juliette. Juliette Drouet, l'amour de Victor Hugo pendant cinquante ans, lui a écrit plus de vingt mille lettres.
+     Cinq lettres cachetées de cire rouge flottent sous les arcades, dans une lueur ; Hugo en ramasse une : elle monte devant lui, le cachet se brise,
+     la lettre se déplie, les mots s'écrivent à l'encre ; puis elle se replie, et une rose rouge éclot à sa place avant de s'envoler en pétales */
+  { const narJ = (t) => `<span style="color:#f6eedc;font-weight:400;font-style:italic">${t}</span>`;
+    const LETTRES = [
+      { lieu: "Paris, le 17 février 1835", txt: "Mon Victor bien-aimé,\nIl y a deux ans cette nuit, ma vie a commencé. Je t'aime comme au premier soir, et plus encore, si c'est possible.", sig: "Ta Juliette",
+        a: "Juliette Drouet, comédienne, est entrée dans la vie de Victor Hugo en 1833. Pendant cinquante ans, elle lui a écrit presque chaque jour : plus de vingt mille lettres. Voici quelques mots, inspirés des siennes.", b: "Hugo gardait ses lettres comme un trésor." },
+      { lieu: "Paris, un matin de printemps", txt: "Mon cher petit homme,\nJe t'ai attendu toute la nuit à ma fenêtre, et les étoiles avaient ton sourire. Reviens vite. Je baise tes chères mains.", sig: "Ta Juju",
+        a: "Une autre lettre de Juliette… Elle lui écrivait parfois plusieurs fois par jour.", b: "Elle l'appelait « mon petit homme », et signait souvent « Juju »." },
+      { lieu: "Jersey, l'hiver 1853", txt: "Mon grand exilé,\nLa mer gronde autour de notre île, mais près de toi je n'ai jamais peur. Ton pays, désormais, c'est mon cœur.", sig: "Ta Juliette",
+        a: "En décembre 1851, Hugo a dû fuir la France de Napoléon III. Juliette l'a caché, l'a aidé à partir sous un faux nom… et l'a suivi en exil.", b: "Ils ont vécu près de vingt ans en exil, à Jersey puis à Guernesey." },
+      { lieu: "Guernesey, 1860", txt: "Mon Victor,\nJe vois ta lumière depuis ma petite maison. Tu écris, et moi je t'aime : chacun son ouvrage, et le mien est le plus doux.", sig: "Ta Juliette",
+        a: "À Guernesey, Juliette habitait une petite maison tout près de Hauteville House, la maison de Hugo.", b: "De sa fenêtre, elle voyait celle où il écrivait." },
+      { lieu: "Paris, 1880", txt: "Mon bien-aimé,\nNos cheveux sont blancs, mais mon cœur a toujours vingt-six ans quand tu entres. Merci pour toute cette vie d'amour.", sig: "Ta Juliette",
+        a: "Juliette est morte en 1883. Victor Hugo l'a suivie deux ans plus tard.", b: "Sur un portrait qu'il lui a offert, il avait écrit : « Cinquante ans d'amour, c'est le plus beau mariage. »" }];
+    let lu = 0;
+    const papT = tT(64, 48, (c, w, h) => { c.fillStyle = "#efe2c2"; c.fillRect(0, 0, w, h); c.strokeStyle = "rgba(120,90,50,.5)"; c.lineWidth = 1; c.beginPath(); c.moveTo(0, 0); c.lineTo(w / 2, h * .55); c.lineTo(w, 0); c.stroke(); c.beginPath(); c.moveTo(0, h); c.lineTo(w * .4, h * .45); c.moveTo(w, h); c.lineTo(w * .6, h * .45); c.stroke(); });
+    const papM = mat({ map: papT, roughness: .9, emissive: 0xffe8b0, emissiveIntensity: .25 }), cireM = mat({ color: 0x9a1414, roughness: .35, metalness: .1, emissive: 0x400404 });
+    const POSL = [[FA + 2, -24], [-(FA + 2), 16], [-34, FA + 2], [20, -(FA + 2)], [-(FA + 2), -38]].map(([x, z]) => { for (const o of [0, .8, -.8, 1.6, -1.6]) { const x2 = Math.abs(x) > Math.abs(z) ? x : x + o, z2 = Math.abs(x) > Math.abs(z) ? z + o : z; if (!L.limites || L.limites(x2, z2)) return [x2, z2]; } return [x, z]; });
+    const ENV = POSL.map(([x, z], k) => { const G = new THREE.Group(), y0 = (L.hauteur ? L.hauteur(x, z) : TROT); G.position.set(x, y0 + .55, z); const e = new THREE.Mesh(new THREE.BoxGeometry(.3, .012, .2), papM); G.add(e); const sc = new THREE.Mesh(new THREE.CylinderGeometry(.038, .04, .012, 16), cireM); sc.position.y = .012; G.add(sc);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: lueurV, color: 0xffd8a0, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); sp.scale.setScalar(1.1); G.add(sp);
+      const hl = new THREE.Mesh(new THREE.CircleGeometry(.8, 32), new THREE.MeshBasicMaterial({ map: lueurV, color: 0xffc070, transparent: true, opacity: .5, depthWrite: false, fog: false })); hl.rotation.x = -Math.PI / 2; hl.position.y = -.53; G.add(hl);
+      G.userData.anime = true; G.userData.masque = true; scene.add(G); return { G, e, sc, sp, x, z, y0, ph: k * 1.7, pris: false }; });
+    AMB.push((tm) => { for (const E of ENV) { if (E.pris || E.vol) continue; E.G.position.y = E.y0 + .55 + Math.sin(tm / 700 + E.ph) * .06; E.G.rotation.y = tm / 2500 + E.ph; E.e.rotation.z = Math.sin(tm / 900 + E.ph) * .12; E.sp.material.opacity = .45 + Math.sin(tm / 500 + E.ph) * .15; } });
+    const lire = (E) => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine || E.pris) return; E.vol = true; const LT = LETTRES[lu % LETTRES.length], num = lu; lu++;
+      const t0 = performance.now(), c = M.camera, q = p.g.position, dx = E.x - q.x, dz = E.z - q.z, dl = Math.hypot(dx, dz) || 1, D = [dx / dl, dz / dl], Lp = new THREE.Vector3(E.x, E.y0 + 1.4, E.z), cote = Math.abs(E.x) > Math.abs(E.z), axe = cote ? [0, -Math.sign(E.z) || 1] : [-Math.sign(E.x) || 1, 0];   /* (la lettre monte sur place, à hauteur des yeux ; la caméra, dans la galerie, le long des arcades — jamais dans un pilier) */
+      const camP = new THREE.Vector3(cote ? Math.sign(E.x) * (FA + 1.3) + axe[0] * 1.3 : E.x + axe[0] * 1.3, Lp.y + .18, cote ? E.z + axe[1] * 1.3 : Math.sign(E.z) * (FA + 1.3)), P0 = E.G.position.clone(), duck0 = window.__ndDuck; window.__ndDuck = .14;
+      // le cachet qui se brise : deux moitiés de cire, des éclats rouges
+      const demi = [-1, 1].map(sg => { const m = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .014, 12, 1, false, sg > 0 ? 0 : Math.PI, Math.PI), cireM); m.visible = false; scene.add(m); return { m, sg }; });
+      const NE = 60, ep = new Float32Array(NE * 3), eg = new THREE.BufferGeometry(); eg.setAttribute("position", new THREE.BufferAttribute(ep, 3)); const ED = Array.from({ length: NE }, () => new THREE.Vector3((Math.random() - .5) * 1.6, Math.random() * 1.2, (Math.random() - .5) * 1.6));
+      const ecl = new THREE.Points(eg, new THREE.PointsMaterial({ map: lueurV, color: 0xff5a4a, size: .07, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); ecl.frustumCulled = false; scene.add(ecl);
+      // la rose rouge : les pétales en spirale autour du cœur, la tige, deux feuilles
+      const rose = new THREE.Group(), rM = mat({ color: 0xb0101a, roughness: .5, emissive: 0x500006, emissiveIntensity: .6 }), vM = mat({ color: 0x2a6a2a, roughness: .7 });
+      for (let i = 0; i < 16; i++) { const a = i * 2.4, r = .012 + i * .0045, pe = new THREE.Mesh(new THREE.SphereGeometry(.03 + i * .0022, 10, 8, 0, Math.PI), rM); pe.scale.set(1, 1.15, .35); pe.position.set(Math.cos(a) * r, .02 + i * .0012, Math.sin(a) * r); pe.rotation.set(-.3 - i * .05, -a + Math.PI / 2, 0); rose.add(pe); }
+      const tige = new THREE.Mesh(new THREE.CylinderGeometry(.006, .007, .32, 6), vM); tige.position.y = -.16; rose.add(tige); for (const sg of [-1, 1]) { const f = new THREE.Mesh(new THREE.SphereGeometry(.03, 8, 6), vM); f.scale.set(1.6, .25, .7); f.position.set(sg * .035, -.14 - sg * .04, 0); f.rotation.z = sg * .5; rose.add(f); }
+      rose.position.copy(Lp); rose.scale.setScalar(.001); scene.add(rose);
+      const NR = 90, rp = new Float32Array(NR * 3), rg = new THREE.BufferGeometry(); rg.setAttribute("position", new THREE.BufferAttribute(rp, 3)); const RD = Array.from({ length: NR }, () => ({ a: Math.random() * 6.28, r: .05 + Math.random() * .5, v: .5 + Math.random(), h: Math.random() }));
+      const pet = new THREE.Points(rg, new THREE.PointsMaterial({ map: lueurV, color: 0xff6a7a, size: .09, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); pet.frustumCulled = false; scene.add(pet);
+      // la lettre, à l'écran : le papier qui se déplie, l'écriture à l'encre, la signature
+      const C0 = (M && M.ctx && M.ctx.conteneur) || document.body, W = document.createElement("div");
+      W.style.cssText = "position:absolute;left:50%;top:7%;transform:translateX(-50%);z-index:57;width:min(86vw,520px);perspective:900px;pointer-events:none";
+      W.innerHTML = `<div class="jp" style="transform-origin:50% 0;transform:rotateX(88deg) scaleY(.2);opacity:0;padding:22px 30px 20px;border-radius:3px;background:radial-gradient(ellipse at 30% 20%,#fbf3de,#efdfb8 65%,#dcc392);box-shadow:0 18px 50px rgba(0,0,0,.55),inset 0 0 40px rgba(150,110,50,.25);color:#2a170c;position:relative">
+        <div style="position:absolute;left:0;right:0;top:33%;height:1px;background:rgba(120,90,50,.18)"></div><div style="position:absolute;left:0;right:0;top:66%;height:1px;background:rgba(120,90,50,.18)"></div>
+        <div class="jl" style="font:500 clamp(15px,2.4vw,20px)/1.2 Caveat,cursive;text-align:right;opacity:.8;margin-bottom:8px"></div><div class="jt" style="font:500 clamp(19px,3.3vw,27px)/1.32 Caveat,cursive;white-space:pre-wrap;min-height:5.2em"></div>
+        <div class="js" style="font:clamp(30px,5vw,44px)/1 'Mrs Saint Delafield',cursive;text-align:right;margin-top:6px;opacity:0;transition:opacity 1.4s;color:#3a1408"></div>
+        <div style="position:absolute;right:14px;bottom:12px;font:600 11px Lato,sans-serif;color:rgba(80,50,20,.55)">Lettre ${num % 5 + 1} sur 5</div></div>`;
+      C0.appendChild(W); const jp = W.querySelector(".jp"), jl = W.querySelector(".jl"), jt = W.querySelector(".jt"), js = W.querySelector(".js"); jl.textContent = LT.lieu; js.textContent = LT.sig;
+      let fin = false, dA = false, dB = false, ouv = false, sig = false, ferm = false; const EC = ecarter(E.x, E.z, 6, []);
+      M.cine = { gel: true, fov: [44, 52], maj: () => { const t = (performance.now() - t0) / 1000; EC.maj();
+          if (!dA && t > .4) { dA = true; sousTitre("", narJ(LT.a), num === 0 ? 7800 : 6000); } if (!dB && t > 15.6) { dB = true; sousTitre("", narJ(LT.b), 4200); }
+          c.position.lerp(camP, t < .3 ? .08 : .05); c.lookAt(Lp.x, Lp.y - .05, Lp.z);
+          // la lettre vole vers Hugo, en tournant, de plus en plus lumineuse
+          const u = Math.min(1, t / 2.4), e = u * u * (3 - 2 * u); if (t < 3.2) { E.G.position.lerpVectors(P0, Lp, e); E.G.position.y += Math.sin(u * Math.PI) * .2; E.G.rotation.y = t * 3; E.G.rotation.x = e * -1.2; E.sp.material.opacity = .5 + e * .4; E.sp.scale.setScalar(1.1 + e * .6); }
+          if (t > 2.6 && !demi[0].m.visible && !ouv) { const w = E.sc.getWorldPosition(new THREE.Vector3()); for (const H of demi) { H.m.visible = true; H.m.position.copy(w); H.t = t; } E.sc.visible = false; }
+          for (const H of demi) if (H.m.visible) { const k = t - H.t; H.m.position.x += H.sg * .012; H.m.position.y -= k * .02; H.m.rotation.z += H.sg * .15; if (k > 1.2) H.m.visible = false; }
+          ecl.material.opacity = t > 2.6 && t < 4.2 ? 1 - (t - 2.6) / 1.6 : 0; for (let i = 0; i < NE; i++) { const k = Math.max(0, t - 2.6); ep[i * 3] = Lp.x + ED[i].x * k * .5; ep[i * 3 + 1] = Lp.y + ED[i].y * k * .5 - k * k * .2; ep[i * 3 + 2] = Lp.z + ED[i].z * k * .5; } eg.attributes.position.needsUpdate = true;
+          if (t > 3 && !ouv) { ouv = true; E.G.visible = false; jp.style.transition = "transform 1.3s cubic-bezier(.2,.8,.3,1), opacity .6s"; jp.style.transform = "none"; jp.style.opacity = "1"; }
+          if (ouv && !ferm) { const n = Math.floor(Math.max(0, t - 4.3) / 8.2 * LT.txt.length); jt.textContent = LT.txt.slice(0, Math.min(LT.txt.length, n)); }
+          if (!sig && t > 12.8) { sig = true; js.style.opacity = "1"; }
+          if (!ferm && t > 15.2) { ferm = true; jt.textContent = LT.txt; jp.style.transition = "transform 1.1s ease-in, opacity 1.1s"; jp.style.transform = "rotateX(88deg) scaleY(.2)"; jp.style.opacity = "0"; }
+          // la rose éclot, puis s'envole en pétales vers le ciel
+          const b = Math.min(1, Math.max(0, (t - 15.6) / 1.6)), bo = b * b * (3 - 2 * b), dep = Math.min(1, Math.max(0, (t - 19.2) / 1.8)); rose.scale.setScalar(.001 + bo * 1.8 * (1 - dep)); rose.rotation.y = t * .8; rose.position.y = Lp.y + dep * .6;
+          pet.material.opacity = Math.min(1, Math.max(0, (t - 16) / 1)) * (t > 21.5 ? Math.max(0, 1 - (t - 21.5) / 1.5) : 1); for (let i = 0; i < NR; i++) { const R = RD[i], a = R.a + t * R.v; rp[i * 3] = Lp.x + Math.cos(a) * R.r * (1 + dep * 2); rp[i * 3 + 1] = Lp.y - .1 + ((R.h + t * .2 * R.v) % .8) + dep * dep * 2.5 * R.v; rp[i * 3 + 2] = Lp.z + Math.sin(a) * R.r * (1 + dep * 2); } rg.attributes.position.needsUpdate = true;
+          if (t > 23.2 && !fin) { fin = true; E.pris = true; EC.fin(); scene.remove(E.G); for (const o of [rose, pet, ecl, ...demi.map(H => H.m)]) scene.remove(o); W.remove(); window.__ndDuck = duck0; finCine(); placerCamera(true);
+            if (lu === LETTRES.length) setTimeout(() => sousTitre("", narJ("Tu as lu les cinq lettres de Juliette. Un amour de cinquante ans, écrit à l'encre, jour après jour."), 6000), 600); else sousTitre("", narJ(`Il reste ${LETTRES.length - lu} lettre${LETTRES.length - lu > 1 ? "s" : ""} de Juliette sous les arcades…`), 4000); } } }; };
+    L.lettresJuliette = ENV; L.lireLettre = lire;
+    const a0j = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0j && a0j(x, z, moi); if (r) return r; if (!L.estHugo) return null; const E = ENV.find(E => !E.pris && !E.vol && Math.hypot(x - E.x, z - E.z) < 1.5); return E ? { type: "lieu", id: "lettre" + ENV.indexOf(E), label: "💌 Lire la lettre de Juliette", faire: () => lire(E) } : null; }; }
+
+  /* (10.203) La valse d'Adèle. Le soir, sous un réverbère du square, Victor Hugo voit apparaître dans la lumière Adèle Foucher, son amour d'enfance et sa femme :
+     elle lui rappelle la valse promise ; ils valsent, entourés de lucioles, pendant que des textes racontent leur histoire ; puis elle s'efface en lumière */
+  { const narA = (t) => `<span style="color:#f6eedc;font-weight:400;font-style:italic">${t}</span>`, RA = REV.find(R => Math.abs(R.x + 16) < .1 && Math.abs(R.z + GR + 1.4) < .1) || REV.find(R => !R.bleu);
+    const AX = RA.x, AZ = RA.z - 1.6;   /* (le pied du réverbère, côté chaussée) */
+    const hA = new THREE.Mesh(new THREE.CircleGeometry(1.05, 40), new THREE.MeshBasicMaterial({ map: lueurV, color: 0xffd23a, transparent: true, opacity: 0, depthWrite: false, fog: false })); hA.rotation.x = -Math.PI / 2; hA.position.set(AX, (L.hauteur ? L.hauteur(AX, AZ) : 0) + .03, AZ); hA.userData.anime = true; scene.add(hA);
+    let enCours = false; AMB.push((tm) => { hA.visible = !!L.nuit && !!L.estHugo && !enCours; hA.material.opacity = .55 + Math.sin(tm / 600) * .2; });
+    const LIGA = [[.5, "", narA("Sous le réverbère, Victor Hugo s'arrête. La flamme vacille… et dans sa lumière apparaît une silhouette qu'il connaît depuis l'enfance."), 6400],
+      [7.2, "", narA("Adèle Foucher. Enfants, ils jouaient ensemble dans le grand jardin des Feuillantines. Ils se sont mariés en 1822 : il avait vingt ans, elle dix-neuf."), 7400],
+      [14.8, "Adèle", "Victor… tu te souviens ? Tu m'avais promis une valse.", 4200], [19.2, "Victor Hugo", "Toute ma vie, Adèle. Viens.", 3400],
+      [23, "", narA("Elle lui a donné cinq enfants : Léopold, Léopoldine, Charles, François-Victor et Adèle."), 6000],
+      [29.4, "", narA("Leur amour a connu des orages et des chagrins, mais Hugo ne l'a jamais oubliée. Adèle est morte en 1868, à Bruxelles."), 7000],
+      [37, "Adèle", "Ne m'oublie pas, mon Victor…", 4000], [43.5, "Victor Hugo", "<i>Jamais, Adèle. Jamais.</i>", 4200]], DUR = 49;
+    const valser = () => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine || enCours) return; enCours = true; const t0 = performance.now(), c = M.camera, y0 = L.hauteur ? L.hauteur(AX, AZ) : 0, CX = AX, CZ = AZ - .9;
+      const VH = fabriqueVH(); VH.position.set(p.g.position.x, y0, p.g.position.z); scene.add(VH); p.g.visible = false; const VH0 = VH.position.clone();
+      const ad = personne3D({ taille: 1.6, peau: "#ffffff", ch: "#ffffff", haut: "#ffffff", bas: "#ffffff", chaussures: "#ffffff", coif: "long", robe: true }), MA = [];
+      { const P = ad.userData.parts, hy = ad.userData.hipY; const ju = new THREE.Mesh(new THREE.CylinderGeometry(.14, .42, hy + .04, 24, 1, true), mat({ color: 0xffffff, side: THREE.DoubleSide })); ju.position.y = -hy / 2 + .02; P.bassin.add(ju); const ch = new THREE.Mesh(new THREE.SphereGeometry(.075, 10, 8), mat({ color: 0xffffff })); ch.position.set(0, .07, -.08); P.tete.add(ch); }   /* (la robe à crinoline qui tourne, le chignon) */
+      ad.traverse(o => { if (o.isMesh) { const m = new THREE.MeshBasicMaterial({ color: 0xffeccc, transparent: true, opacity: 0, depthWrite: false, fog: false }); o.material = m; MA.push(m); } }); ad.position.set(AX, y0, AZ - .3); ad.userData.masque = true; scene.add(ad);
+      const aura = new THREE.Sprite(new THREE.SpriteMaterial({ map: lueurV, color: 0xffd8a0, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); aura.scale.set(2.4, 3.4, 1); scene.add(aura);
+      const rayon = new THREE.Mesh(new THREE.CylinderGeometry(.25, 1.4, 3.7, 24, 1, true), new THREE.MeshBasicMaterial({ map: lueurV, color: 0xffd890, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false })); rayon.position.set(AX, y0 + 1.85, AZ + 1.6); scene.add(rayon);
+      const NL = PEU ? 110 : 220, lp = new Float32Array(NL * 3), lg = new THREE.BufferGeometry(); lg.setAttribute("position", new THREE.BufferAttribute(lp, 3)); const LD = Array.from({ length: NL }, () => ({ a: Math.random() * 6.28, r: .6 + Math.random() * 2.4, h: .2 + Math.random() * 2.6, v: (.25 + Math.random() * .5) * (Math.random() < .5 ? 1 : -1), f: Math.random() * 6 }));
+      const luc = new THREE.Points(lg, new THREE.PointsMaterial({ map: lueurV, color: 0xe8ff9a, size: .13, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); luc.frustumCulled = false; scene.add(luc);
+      let iL = 0, fin = false; const duck0 = window.__ndDuck; window.__ndDuck = .5; const tmp = new THREE.Vector3(); const EC = ecarter(AX, AZ - 2, 9, [VH, ad]);
+      M.cine = { gel: true, fov: [50, 60], maj: () => { const t = (performance.now() - t0) / 1000, tm = performance.now(); EC.maj();
+          while (iL < LIGA.length && t >= LIGA[iL][0]) { const [, n, tx, ms] = LIGA[iL++]; sousTitre(n, tx, ms); }
+          // la flamme qui grandit, le rayon de lumière ; Adèle qui se forme dans la lumière
+          const app = Math.min(1, Math.max(0, (t - 2.5) / 4)), dep = Math.min(1, Math.max(0, (t - 40) / 4.5)), ea = app * app * (3 - 2 * app);
+          RA.fl.visible = true; RA.fl.scale.setScalar(1 + (1 - dep) * Math.min(1, t / 2) * 1.2); rayon.material.opacity = (Math.min(1, t / 2.5) * .35 + Math.sin(t * 3) * .04) * (1 - Math.max(0, (t - 8) / 3) * .7) * (1 - dep);
+          const opA = .82 * ea * (1 - dep); for (const m of MA) m.opacity = opA;
+          // la valse : de 19 à 41 s ils tournent l'un autour de l'autre, en dessinant un grand cercle autour du réverbère
+          const w = Math.min(1, Math.max(0, (t - 19.5) / 2)) * (1 - dep), ang = Math.max(0, t - 19.5) * 2.1, orb = Math.max(0, t - 19.5) * .32, cx = CX + Math.sin(orb) * .9 * w, cz = CZ + (Math.cos(orb) - 1) * .9 * w;
+          if (t < 19.5) { const k = Math.min(1, Math.max(0, (t - 8) / 9)); VH.position.lerpVectors(VH0, new THREE.Vector3(CX, y0, CZ - .36), k * k * (3 - 2 * k)); ad.position.set(CX, y0 + (1 - ea) * .6, CZ + .36 - (1 - ea) * .5); VH.userData.poser(k > 0 && k < 1 ? "marche" : "debout", tm); ad.userData.poser("debout", tm); }
+          else { const r = .36; VH.position.set(cx - Math.sin(ang) * r, y0, cz - Math.cos(ang) * r); ad.position.set(cx + Math.sin(ang) * r, y0 + dep * dep * 3, cz + Math.cos(ang) * r); VH.userData.poser(w > .2 && dep < .5 ? "marche" : "debout", tm * .7); ad.userData.poser(w > .2 && dep < .5 ? "marche" : "debout", tm * .7); }
+          VH.rotation.y = Math.atan2(ad.position.x - VH.position.x, ad.position.z - VH.position.z); ad.rotation.y = VH.rotation.y + Math.PI;
+          if (t > 17 && dep < .6) for (const Q of [VH, ad]) { const P = Q.userData.parts; if (!P || !P.bras) continue; P.bras[0].e.rotation.set(-1.05, 0, 0); P.bras[0].c.rotation.x = -.55; P.bras[1].e.rotation.set(-.85, 0, 0); P.bras[1].c.rotation.x = -1.0;   /* (les bras vers l'autre : une main dans la main, l'autre à la taille) */ }
+          if (dep > .3) { const P = VH.userData.parts; if (P && P.bras) { P.bras[1].e.rotation.set(-2 * dep, 0, 0); P.bras[1].c.rotation.x = 0; } }   /* (il lui tend la main, quand elle s'envole) */
+          aura.position.set(ad.position.x, ad.position.y + 1.05, ad.position.z); aura.material.opacity = opA * (.85 + Math.sin(t * 2.6) * .15);
+          // les lucioles qui tournent autour d'eux, puis montent avec elle
+          luc.material.opacity = Math.min(1, Math.max(0, (t - 16) / 3)) * (t > 45 ? Math.max(0, 1 - (t - 45) / 3) : 1);
+          for (let i = 0; i < NL; i++) { const D = LD[i], a = D.a + t * D.v; lp[i * 3] = CX + Math.cos(a) * D.r * (1 - dep * .6) ; lp[i * 3 + 1] = y0 + D.h + Math.sin(t * 1.3 + D.f) * .2 + dep * dep * (3 + D.h); lp[i * 3 + 2] = CZ + Math.sin(a) * D.r * (1 - dep * .6); } lg.attributes.position.needsUpdate = true;
+          // la caméra : de loin, la lumière ; puis elle tourne lentement autour du couple ; à la fin, elle suit Adèle vers le ciel
+          const oa = Math.sin(t * .11) * 1.15, od = t < 19 ? 5.6 - t * .09 : 3.7; tmp.set(CX + Math.sin(oa) * od, y0 + 1.75 + (t > 40 ? (t - 40) * .25 : 0), CZ - Math.cos(oa) * od);   /* (toujours côté chaussée : jamais derrière la grille du square) */ c.position.lerp(tmp, .03); c.lookAt(CX, y0 + 1.25 + dep * 2.2, CZ);
+          if (t > DUR && !fin) { fin = true; EC.fin(); for (const o of [VH, ad, aura, rayon, luc]) scene.remove(o); p.g.position.set(VH.position.x, p.g.position.y, VH.position.z); p.g.visible = true; try { envoyerWS({ t: "aller", x: VH.position.x, z: VH.position.z }); } catch (e) {} window.__ndDuck = duck0; enCours = false; RA.fl.scale.setScalar(1); finCine(); placerCamera(true); } } }; };
+    L.valseAdele = valser;
+    const a0a = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0a && a0a(x, z, moi); if (r) return r; return L.estHugo && L.nuit && !enCours && Math.hypot(x - AX, z - AZ) < 1.6 ? { type: "lieu", id: "adele", label: "💃 Inviter Adèle à valser", faire: valser } : null; }; }
   fusionStatique(scene, L, 0);
   // (10.190) on arrive par le livre : dès que le bonhomme est là, la cinématique des pages ; puis le voile de lumière se dissipe
   { const a2 = L.anim; L.anim = (tm) => { try { a2 && a2(tm); } catch (e) {} const A2 = window.__arriveeLivre; if (!A2 || !M || M.L !== L || !M.moiNum || !M.gens.get(M.moiNum)) return; window.__arriveeLivre = null;
