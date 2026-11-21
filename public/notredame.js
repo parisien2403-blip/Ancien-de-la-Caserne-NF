@@ -507,7 +507,7 @@ function construireNotreDame(A, L, scene) {
       const MSp = new THREE.Matrix4().set(1, 0, 0, FX + 6.6, 0, 1, 0, 0, 0, 0, 1, CZ + 19.9, 0, 0, 0, 1), MSm = new THREE.Matrix4().set(-1, 0, 0, FX + 6.6, 0, 1, 0, 0, 0, 0, -1, CZ - 19.9, 0, 0, 0, 1);   // (les faces de côté des tours)
       const NI = mkInst(), pierreF = mat({ map: pierreFinT, color: 0xe6dcc6, roughness: .85, emissive: 0xffe8c0, emissiveIntensity: 0 }), murF = mat({ map: murT, color: 0xe2d8c2, roughness: .9, emissive: 0xffe8c0, emissiveMap: murT, emissiveIntensity: 0 });
       pierreF.emissive.setHex(0xff9a40); murF.emissive.setHex(0xff9a40); NUIT.push([pierreF, 0, .1], [murF, 0, .08]);   /* (10.154 : une lueur ambrée discrète ; ce sont les projecteurs qui sculptent la pierre) */   /* (10.149 : la nuit, la façade dorée, illuminée comme sur les photos) */
-      const ombreF = mat({ color: 0x9a8f7a, roughness: 1 }), voussF = mat({ map: pierreFinT, color: 0xcfc3a8, roughness: .9 }), noirF = mat({ color: 0x24211c, roughness: 1 }), boisF = mat({ color: 0x5a3a22, roughness: .7 });
+      const ombreF = mat({ color: 0x9a8f7a, roughness: 1 }), voussF = mat({ map: pierreFinT, color: 0xcfc3a8, roughness: .9 }); L.facMats = [pierreF, murF, ombreF, voussF]; const noirF = mat({ color: 0x24211c, roughness: 1 }), boisF = mat({ color: 0x5a3a22, roughness: .7 });
       const vitrT = tT(256, 256, (c, w, h) => { c.fillStyle = "#1a2450"; c.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { c.fillStyle = ["#2a3c9a", "#9a1a2a", "#d8a83a", "#1a5a8a", "#6a1a6a", "#2a6a3a"][(al() * 6) | 0]; c.fillRect(al() * w, al() * h, 6, 6); } c.strokeStyle = "rgba(10,10,20,.8)"; c.lineWidth = 1.5; for (let x = 0; x < w; x += 6) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); c.beginPath(); c.moveTo(0, x); c.lineTo(w, x); c.stroke(); } });
       const vitrM = mat({ map: vitrT, roughness: .2, metalness: .3, emissive: 0xffffff, emissiveMap: vitrT, emissiveIntensity: .04 }); NUIT.push([vitrM, .04, .7]);
       const tympT = tT(256, 320, (c, w, h) => { c.fillStyle = "#d6caae"; c.fillRect(0, 0, w, h); const fig = (x, y, s, t) => { c.fillStyle = `rgba(${t},.55)`; c.beginPath(); c.ellipse(x, y, s * .45, s, 0, 0, 7); c.fill(); c.beginPath(); c.arc(x, y - s * 1.25, s * .32, 0, 7); c.fill(); };
@@ -2406,10 +2406,13 @@ function construireNotreDame(A, L, scene) {
           tracer("rgba(160,235,255,.7)", 3); } };
       const masque = () => { c.fillStyle = "#000"; c.fillRect(0, 0, X(-20.6), N); c.fillRect(X(20.6), 0, N, N); c.fillRect(0, 0, N, Y(62.5)); c.fillRect(0, Y(-.2), N, N); c.fillRect(X(-6.9), 0, X(6.9) - X(-6.9), Y(41.4)); };   /* (rien en dehors de la façade : les immeubles voisins restent dans le noir) */
       for (const k of Object.keys(dessins)) { const f = dessins[k]; dessins[k] = (tm) => { f(tm); masque(); }; }
+      const TEINTE = { dore: new THREE.Color(0xffffff), bleuor: new THREE.Color(0x1a3cff), vitraux: new THREE.Color(0x5a5cff), etoile: new THREE.Color(0x1478ff) };   /* (la pierre elle-même prend la teinte : un vrai bleu profond, pas délavé) */
       let mode = "dore", cible = 0, it = 0, derD = 0, suivant = null; L.facOr = 1;
       AMB.push((tm) => { const nuit = (L.nuitSP || 0) > .5, voulu = nuit && mode !== "dore" ? 1 : 0; if (suivant && it < .02) { mode = suivant; suivant = null; if (dessins[mode]) { dessins[mode](tm); tex.needsUpdate = true; } }
-        cible = suivant ? 0 : voulu; it += (cible - it) * .04; proj.intensity = it * 3.4; L.facOr = 1 - .88 * Math.min(1, it * 1.3);
+        cible = suivant ? 0 : voulu; it += (cible - it) * .04; proj.intensity = it * 3.4; L.facOr = 1 - Math.min(1, it * 1.3);
         for (const [s2, i] of L.SPfac || []) s2.intensity = (L.nuitSP || 0) * i * L.facOr;
+        if (!L.facBase && L.facMats) L.facBase = L.facMats.map(m => [m.color.clone(), m.emissive.clone()]);
+        if (L.facBase) { const tint = TEINTE[mode] || TEINTE.dore, k = Math.min(1, it * 1.2); L.facMats.forEach((m, j) => { m.color.copy(L.facBase[j][0]).lerp(tint, k * .85); m.emissive.copy(L.facBase[j][1]).lerp(tint, k); }); }
         if (mode === "etoile" && it > .02 && tm - derD > 110) { derD = tm; dessins.etoile(tm); tex.needsUpdate = true; } });
       const choisir = (m) => { if (m === mode && !suivant) return; suivant = m;
         sousTitre("", { dore: "La façade retrouve sa lumière dorée…", bleuor: "Bleu et or… comme un manteau royal.", vitraux: "Les vitraux sortent de la pierre et s'allument sur toute la façade.", etoile: "Une nuit d'étoiles se pose sur Notre-Dame…" }[m], 4200); };
