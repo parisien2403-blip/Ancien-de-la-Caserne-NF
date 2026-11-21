@@ -14765,7 +14765,7 @@ L.feuEtat = (tm) => { const c = (tm / 1000) % 38; return { B: c < 20 ? "vert" : 
   const LBT = [["michael", "#141416", "#141416", "#0e0e0e"], ["david", "#f2f0ea", "#f2f0ea", "#e8e4dc"], ["sam", "#22324f", "#22324f", "#1a1a1a"], ["dwayne", "#1a1a1e", "#1a1a1e", "#0e0e0e"], ["marko", "#5a1a2a", "#141416", "#0e0e0e"], ["paul", "#2a2a30", "#2a2a30", "#0e0e0e"], ["edgar", "#3a4a3a", "#2a3028", "#1a1a1a"], ["alan", "#3a3e46", "#3a3e46", "#1a1a1a"], ["tim", "#141416", "#141416", "#0e0e0e"]];
   const STARS = LBT.map((d, k) => ({ d, num: -300 - k, u: (k / LBT.length + .05) % 1, cote: k % 2 ? .45 : -.45, v: .14 + (k % 3) * .02, arret: 0 }));
   const sortir = () => { for (const S of STARS) if (M && M.gens.get(S.num)) retirerAncien(S.num); }; quitterLieu.add(sortir);
-  const a0 = L.anim; let tp = 0; L.anim = (tm) => { a0 && a0(tm); const ok = !!M && M.L === L && !!L.nuit && !L.apo && !M.sansFigurants; TR.visible = LIMO.visible = ok;
+  const a0 = L.anim; let tp = 0; L.anim = (tm) => { a0 && a0(tm); const ok = !!M && M.L === L && !L.apo && !M.sansFigurants;   /* (10.179 : la première, le jour comme le soir) */ TR.visible = LIMO.visible = ok;
     if (!ok) { pf.intensity = 0; tp = 0; for (const S of STARS) if (M && M.gens.get(S.num)) retirerAncien(S.num); return; }
     const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; let fort = 0, fp = null;
     for (const F of FL) { const c = ((tm / 1000 + F.ph) % F.per); const a = c < .09 ? 1 - c / .09 : 0; F.fl.material.opacity = a; if (a > fort) { fort = a; fp = F.fl; } }   // (les flashs, chacun à son rythme)
