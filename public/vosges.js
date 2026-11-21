@@ -37,7 +37,8 @@ function construireVosges(A, L, scene) {
   const FONT = [[-19, -19], [19, -19], [-19, 19], [19, 19]];
   for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const x0 = 3.2, x1 = 35, yA = Math.sqrt(11.5 * 11.5 - x0 * x0), sh = new THREE.Shape(); sh.moveTo(x0, yA); sh.lineTo(x0, x1); sh.lineTo(x1, x1); sh.lineTo(x1, x0); sh.lineTo(yA, x0); sh.absarc(0, 0, 11.5, Math.atan2(x0, yA), Math.atan2(yA, x0), false);
     const ho = new THREE.Path(); ho.absarc(19, 19, 6.2, 0, Math.PI * 2, true); sh.holes.push(ho); const g = new THREE.ShapeGeometry(sh, 24); g.rotateX(Math.PI / 2); g.scale(sx, 1, sz);
-    const uv = g.attributes.uv, p = g.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / 6, p.getZ(i) / 6); { const n = g.attributes.normal; for (let i = 0; i < n.count; i++) n.setXYZ(i, 0, 1, 0); }   /* (10.198 : les quatre pelouses éclairées pareil, toutes vertes) */
+    const uv = g.attributes.uv, p = g.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / 6, p.getZ(i) / 6); { const ix = g.index, A3 = new THREE.Vector3(), B3 = new THREE.Vector3(), C3 = new THREE.Vector3(); A3.fromBufferAttribute(p, ix.getX(0)); B3.fromBufferAttribute(p, ix.getX(1)); C3.fromBufferAttribute(p, ix.getX(2)); if (B3.sub(A3).cross(C3.sub(A3)).y < 0) { for (let i = 0; i < ix.count; i += 3) { const t = ix.getX(i); ix.setX(i, ix.getX(i + 2)); ix.setX(i + 2, t); } ix.needsUpdate = true; }
+      const n = g.attributes.normal; for (let i = 0; i < n.count; i++) n.setXYZ(i, 0, 1, 0); }   /* (10.198 : les quatre pelouses tournées vers le ciel, toutes vertes) */
     add(g, herbeM, 0, .04, 0);
     // la petite bordure en arceaux, autour de chaque pelouse
     const arcM = mat({ color: 0x1e3a2a, roughness: .5, metalness: .4 }), pts = [[x0, 11.5], [x0, x1], [x1, x1], [x1, x0], [11.5, x0]];
