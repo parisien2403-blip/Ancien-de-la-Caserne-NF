@@ -1039,11 +1039,16 @@ function construireVosges(A, L, scene) {
       ["Une dame", "Ce soir, nous allons au Moulin-Rouge voir le french cancan. Mon mari est tout émoustillé !"], ["Un monsieur", "Avez-vous lu Le Petit Journal ? Toute la France ne parle que de l'Exposition."], ["Une dame", "La tour Eiffel ? Moi, je l'aime bien, cette grande dame de fer. Elle est éclairée au gaz, le soir !"],
       ["Un monsieur", "Avec l'électricité, bientôt plus besoin d'allumeurs de réverbères. Le progrès, ma chère !"], ["Une dame", "Mon chapeau vient de chez Caroline Reboux, rue de la Paix. Quarante francs ! Ne le dites pas à mon mari."], ["Le garçon de café", "Et voilà : deux cafés, une limonade. Ce sera tout, messieurs-dames ?"]];
     for (const C of L.cafes || []) { const ctr = C.p.clone().addScaledVector(C.dir, -2.6); Z.push({ c: () => [ctr.x, ctr.z], r: 3.2, lignes: TERR, k0: Z.length * 3 }); }
-    let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } };
+    /* (10.211) les vraies voix des passants : chaque réplique enregistrée a son fichier ; le sous-titre dure le temps de la voix ; on s'éloigne, la voix se tait */
+    const VPNJ = { "Approchez, approchez, mesdames et messieurs ! L'Exposition universelle a ouvert ses portes : cinquante millions de visiteurs attendus !": ["pnj-a01", 10.1],
+      "Le métropolitain ! La toute première ligne, de la porte de Vincennes à la porte Maillot. Paris traversé sous la terre en vingt-cinq minutes !": ["pnj-a02", 10.7],
+      "Le cinématographe des frères Lumière ! Des images qui bougent, sur un écran géant, à la galerie des Machines !": ["pnj-a03", 8.3] };
+    L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
+    let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
       let ici = null, bd = 1e9; for (const Zn of Z) { const [cx, cz] = Zn.c(), d = Math.hypot(x - cx, z - cz); if (d < Zn.r + 1.5 && d < bd) { bd = d; ici = Zn; } }
       if (ici !== zone) { if (zone) efface(); zone = ici; iL = ici && ici.k0 ? ici.k0 % ici.lignes.length : 0; prochain = tm; }
-      if (zone && tm >= prochain) { const [nom, t] = zone.lignes[iL++ % zone.lignes.length]; sousTitre(nom, t, 5200); prochain = tm + 5600; } }); }
+      if (zone && tm >= prochain) { const [nom, t] = zone.lignes[iL++ % zone.lignes.length], V = (L.voixPnj || {})[t.replace(/<[^>]+>/g, "").replace(/^« | »$/g, "")]; taire(); if (V) { try { sonZ = new Audio("sons/voix/" + V[0] + ".mp3"); sonZ.play().catch(() => {}); } catch (e) {} } const du = V ? V[1] * 1000 + 300 : 5200; sousTitre(nom, t, du); prochain = tm + du + 500; } }); }
   /* (10.201) assis (banc, chaise de terrasse) : A ou B de la manette pour se relever, à coup sûr */
   { let avant = false; AMB.push(() => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine || !Number.isInteger(p.info.assis)) { avant = true; return; } let app = false; try { for (const g of navigator.getGamepads ? navigator.getGamepads() : []) if (g && (g.buttons[0] && g.buttons[0].pressed || g.buttons[1] && g.buttons[1].pressed)) app = true; } catch (e) {}
       if (app && !avant) { try { M.action = { type: "lever" }; agir(); } catch (e) {} } avant = app; }); }
