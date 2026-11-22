@@ -1054,7 +1054,8 @@ function construireVosges(A, L, scene) {
       "Des roses, des belles roses ! Fleurissez vos dames, messieurs !": ["pnj-b08", 5.0], "Violettes de Parme, muguet du bois de Meudon… deux sous le petit bouquet !": ["pnj-b09", 5.8],
       "Une rose pour la boutonnière, monsieur Hugo ? Elle vous ira comme à un jeune homme !": ["pnj-b10", 5.0], "Mes roses ont été coupées ce matin, elles sentent encore la rosée.": ["pnj-b11", 4.4],
       "Et le pont Alexandre-III, vous l'avez vu ? Tout en or, on dirait un bijou posé sur la Seine.": ["pnj-c01", 7.8], "Monsieur Hugo, du numéro 6, reçoit tout Paris dans son salon. On dit qu'il écrit la nuit, debout !": ["pnj-c02", 8.4],
-      "Ce soir, nous allons au Moulin-Rouge voir le french cancan. Mon mari est tout émoustillé !": ["pnj-c03", 7.8] };
+      "Ce soir, nous allons au Moulin-Rouge voir le french cancan. Mon mari est tout émoustillé !": ["pnj-c03", 7.8],
+      "La tour Eiffel ? Moi, je l'aime bien, cette grande dame de fer. Elle est éclairée au gaz, le soir !": ["pnj-c04", 8.1], "Mon chapeau vient de chez Caroline Reboux, rue de la Paix. Quarante francs ! Ne le dites pas à mon mari.": ["pnj-c05", 8.0] };
     L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
     let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
