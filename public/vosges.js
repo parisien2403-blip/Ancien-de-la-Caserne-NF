@@ -1045,7 +1045,10 @@ function construireVosges(A, L, scene) {
       "Le cinématographe des frères Lumière ! Des images qui bougent, sur un écran géant, à la galerie des Machines !": ["pnj-a03", 8.3],
       "La fée Électricité, messieurs-dames ! Au Palais de l'Électricité, cinq mille lampes s'allument d'un seul coup, chaque soir !": ["pnj-a04", 9.1],
       "Le trottoir roulant ! On monte dessus, et il vous promène tout seul autour de l'Exposition. Voilà le siècle nouveau !": ["pnj-a05", 9.0],
-      "Les Jeux olympiques sont à Paris cette année ! Allez voir courir les athlètes au bois de Boulogne !": ["pnj-a06", 6.5] };
+      "Les Jeux olympiques sont à Paris cette année ! Allez voir courir les athlètes au bois de Boulogne !": ["pnj-a06", 6.5],
+      "Une épingle à chapeau, deux sous ! Un lacet, un sou ! L'almanach de l'année 1900, trois sous seulement !": ["pnj-a07", 7.0],
+      "Vrai de vrai, mon petit ! Et regarde-la aujourd'hui : la reine de Paris !": ["pnj-a08", 5.0],
+      "Sous la terre, le métro ? Très peu pour moi, j'ai mes jambes !": ["pnj-a09", 4.4] };
     L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
     let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
