@@ -1046,7 +1046,9 @@ function construireVosges(A, L, scene) {
       "Une épingle à chapeau, deux sous ! Un lacet, un sou ! L'almanach de l'année 1900, trois sous seulement !": ["pnj-a07", 7.0],
       "Vrai de vrai, mon petit ! Et regarde-la aujourd'hui : la reine de Paris !": ["pnj-a08", 5.0],
       "Sous la terre, le métro ? Très peu pour moi, j'ai mes jambes !": ["pnj-a09", 4.4],
-      "Vi-i-i-trier ! Vitrieeer !": ["pnj-a10", 3.2], "Au vitrier ! Carreaux cassés, carreaux remis !": ["pnj-a11", 5.0], "Vi-i-trier ! Voilà l'vitrier ! Qui veut des vitres ?": ["pnj-a12", 5.4] };
+      "Vi-i-i-trier ! Vitrieeer !": ["pnj-a10", 3.2], "Au vitrier ! Carreaux cassés, carreaux remis !": ["pnj-a11", 5.0], "Vi-i-trier ! Voilà l'vitrier ! Qui veut des vitres ?": ["pnj-a12", 5.4],
+      "Glaces à la vanille, au café, à la fraise ! Deux sous le cornet, rafraîchissez-vous !": ["pnj-b01", 7.1], "Ma glace vient des glacières du bois de Boulogne, monsieur, gardée tout l'hiver dans la paille !": ["pnj-b02", 7.0],
+      "Le sorbet au citron, c'est la mode depuis l'Exposition. Même les dames du faubourg Saint-Germain en raffolent !": ["pnj-b03", 8.7] };
     L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
     let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
