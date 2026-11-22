@@ -1152,6 +1152,7 @@ function construireVosges(A, L, scene) {
       const hl = new THREE.Mesh(new THREE.CircleGeometry(.8, 32), new THREE.MeshBasicMaterial({ map: lueurV, color: 0xffc070, transparent: true, opacity: .5, depthWrite: false, fog: false })); hl.rotation.x = -Math.PI / 2; hl.position.y = -.53; G.add(hl);
       G.userData.anime = true; G.userData.masque = true; scene.add(G); return { G, e, sc, sp, x, z, y0, ph: k * 1.7, pris: false }; });
     AMB.push((tm) => { for (const E of ENV) { if (E.pris || E.vol) continue; E.G.position.y = E.y0 + .55 + Math.sin(tm / 700 + E.ph) * .06; E.G.rotation.y = tm / 2500 + E.ph; E.e.rotation.z = Math.sin(tm / 900 + E.ph) * .12; E.sp.material.opacity = .45 + Math.sin(tm / 500 + E.ph) * .15; } });
+    L.narJulD = { a1: 13.71, b1: 2.72, a2: 4.78, b2: 4.15, a3: 10.0, b3: 4.36, a4: 5.49, b4: 2.77, a5: 5.2, b5: 6.27 };   /* (10.210 : la voix du narrateur, pour chaque lettre ; ses durées) */
     const lire = (E) => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine || E.pris) return; E.vol = true; const LT = LETTRES[lu % LETTRES.length], num = lu; lu++;
       const t0 = performance.now(), c = M.camera, q = p.g.position, dx = E.x - q.x, dz = E.z - q.z, dl = Math.hypot(dx, dz) || 1, D = [dx / dl, dz / dl], Lp = new THREE.Vector3(E.x, E.y0 + 1.4, E.z), cote = Math.abs(E.x) > Math.abs(E.z), axe = cote ? [0, -Math.sign(E.z) || 1] : [-Math.sign(E.x) || 1, 0];   /* (la lettre monte sur place, à hauteur des yeux ; la caméra, dans la galerie, le long des arcades — jamais dans un pilier) */
       const camP = new THREE.Vector3(cote ? Math.sign(E.x) * (FA + 1.3) + axe[0] * 1.3 : E.x + axe[0] * 1.3, Lp.y + .18, cote ? E.z + axe[1] * 1.3 : Math.sign(E.z) * (FA + 1.3)), P0 = E.G.position.clone(), duck0 = window.__ndDuck; window.__ndDuck = .14;
@@ -1175,9 +1176,13 @@ function construireVosges(A, L, scene) {
         <div class="js" style="font:clamp(30px,5vw,44px)/1 'Mrs Saint Delafield',cursive;text-align:right;margin-top:6px;opacity:0;transition:opacity 1.4s;color:#3a1408"></div>
         <div style="position:absolute;right:14px;bottom:12px;font:600 11px Lato,sans-serif;color:rgba(80,50,20,.55)">Lettre ${num % 5 + 1} sur 5</div></div>`;
       C0.appendChild(W); const jp = W.querySelector(".jp"), jl = W.querySelector(".jl"), jt = W.querySelector(".jt"), js = W.querySelector(".js"); jl.textContent = LT.lieu; js.textContent = LT.sig;
-      let fin = false, dA = false, dB = false, ouv = false, sig = false, ferm = false; const EC = ecarter(E.x, E.z, 6, []);
-      M.cine = { gel: true, fov: [44, 52], maj: () => { const t = (performance.now() - t0) / 1000; EC.maj();
-          if (!dA && t > .4) { dA = true; sousTitre("", narJ(LT.a), num === 0 ? 7800 : 6000); } if (!dB && t > 15.6) { dB = true; sousTitre("", narJ(LT.b), 4200); }
+      let fin = false, dA = false, dB = false, ouv = false, sig = false, ferm = false, lu2 = false; const EC = ecarter(E.x, E.z, 6, []);
+      /* (10.210) la voix de Juliette lit sa lettre pendant que les mots s'écrivent (au même rythme) ; le narrateur parle avant et après — l'image attend qu'il ait fini */
+      const kL = num % 5 + 1, VD = [9.9, 8.83, 8.59, 9.12, 8.12][kL - 1], ND = (L.narJulD || {}), NA = ND["a" + kL] || LT.a.length / 14, NB = ND["b" + kL] || LT.b.length / 14, H = Math.max(0, .4 + NA + .3 - 2.6), Tf = 4.3 + VD + 1.6, TFIN = Math.max(Tf + 8, Tf + .8 + NB);
+      const SON = (n) => { try { const a = new Audio("sons/voix/" + n + ".mp3"); a.play().catch(() => {}); return a; } catch (e) { return null; } }; let sA = null, sB = null, sJ = null;
+      M.cine = { gel: true, fov: [44, 52], maj: () => { const tr = (performance.now() - t0) / 1000, t = tr < 2.4 ? tr : tr < 2.4 + H ? 2.4 : tr - H; EC.maj();
+          if (!dA && tr > .4) { dA = true; sousTitre("", narJ(LT.a), (NA + .4) * 1000); if (ND["a" + kL]) sA = SON("nar-jul-a" + kL); } if (!dB && t > Tf + .4) { dB = true; sousTitre("", narJ(LT.b), (NB + .5) * 1000); if (ND["b" + kL]) sB = SON("nar-jul-b" + kL); }
+          if (!lu2 && t > 4.3) { lu2 = true; sJ = SON("jul-" + kL); }
           c.position.lerp(camP, t < .3 ? .08 : .05); c.lookAt(Lp.x, Lp.y - .05, Lp.z);
           // la lettre vole vers Hugo, en tournant, de plus en plus lumineuse
           const u = Math.min(1, t / 2.4), e = u * u * (3 - 2 * u); if (t < 3.2) { E.G.position.lerpVectors(P0, Lp, e); E.G.position.y += Math.sin(u * Math.PI) * .2; E.G.rotation.y = t * 3; E.G.rotation.x = e * -1.2; E.sp.material.opacity = .5 + e * .4; E.sp.scale.setScalar(1.1 + e * .6); }
@@ -1185,13 +1190,13 @@ function construireVosges(A, L, scene) {
           for (const H of demi) if (H.m.visible) { const k = t - H.t; H.m.position.x += H.sg * .012; H.m.position.y -= k * .02; H.m.rotation.z += H.sg * .15; if (k > 1.2) H.m.visible = false; }
           ecl.material.opacity = t > 2.6 && t < 4.2 ? 1 - (t - 2.6) / 1.6 : 0; for (let i = 0; i < NE; i++) { const k = Math.max(0, t - 2.6); ep[i * 3] = Lp.x + ED[i].x * k * .5; ep[i * 3 + 1] = Lp.y + ED[i].y * k * .5 - k * k * .2; ep[i * 3 + 2] = Lp.z + ED[i].z * k * .5; } eg.attributes.position.needsUpdate = true;
           if (t > 3 && !ouv) { ouv = true; E.G.visible = false; jp.style.transition = "transform 1.3s cubic-bezier(.2,.8,.3,1), opacity .6s"; jp.style.transform = "none"; jp.style.opacity = "1"; }
-          if (ouv && !ferm) { const n = Math.floor(Math.max(0, t - 4.3) / 8.2 * LT.txt.length); jt.textContent = LT.txt.slice(0, Math.min(LT.txt.length, n)); }
-          if (!sig && t > 12.8) { sig = true; js.style.opacity = "1"; }
-          if (!ferm && t > 15.2) { ferm = true; jt.textContent = LT.txt; jp.style.transition = "transform 1.1s ease-in, opacity 1.1s"; jp.style.transform = "rotateX(88deg) scaleY(.2)"; jp.style.opacity = "0"; }
+          if (ouv && !ferm) { const n = Math.floor(Math.max(0, t - 4.3) / (VD - .4) * LT.txt.length); jt.textContent = LT.txt.slice(0, Math.min(LT.txt.length, n)); }
+          if (!sig && t > 4.3 + VD - 1.4) { sig = true; js.style.opacity = "1"; }
+          if (!ferm && t > Tf) { ferm = true; jt.textContent = LT.txt; jp.style.transition = "transform 1.1s ease-in, opacity 1.1s"; jp.style.transform = "rotateX(88deg) scaleY(.2)"; jp.style.opacity = "0"; }
           // la rose éclot, puis s'envole en pétales vers le ciel
-          const b = Math.min(1, Math.max(0, (t - 15.6) / 1.6)), bo = b * b * (3 - 2 * b), dep = Math.min(1, Math.max(0, (t - 19.2) / 1.8)); rose.scale.setScalar(.001 + bo * 1.8 * (1 - dep)); rose.rotation.y = t * .8; rose.position.y = Lp.y + dep * .6;
-          pet.material.opacity = Math.min(1, Math.max(0, (t - 16) / 1)) * (t > 21.5 ? Math.max(0, 1 - (t - 21.5) / 1.5) : 1); for (let i = 0; i < NR; i++) { const R = RD[i], a = R.a + t * R.v; rp[i * 3] = Lp.x + Math.cos(a) * R.r * (1 + dep * 2); rp[i * 3 + 1] = Lp.y - .1 + ((R.h + t * .2 * R.v) % .8) + dep * dep * 2.5 * R.v; rp[i * 3 + 2] = Lp.z + Math.sin(a) * R.r * (1 + dep * 2); } rg.attributes.position.needsUpdate = true;
-          if (t > 23.2 && !fin) { fin = true; E.pris = true; EC.fin();
+          const b = Math.min(1, Math.max(0, (t - Tf - .4) / 1.6)), bo = b * b * (3 - 2 * b), dep = Math.min(1, Math.max(0, (t - Tf - 4) / 1.8)); rose.scale.setScalar(.001 + bo * 1.8 * (1 - dep)); rose.rotation.y = t * .8; rose.position.y = Lp.y + dep * .6;
+          pet.material.opacity = Math.min(1, Math.max(0, (t - Tf - .8) / 1)) * (t > Tf + 6.3 ? Math.max(0, 1 - (t - Tf - 6.3) / 1.5) : 1); for (let i = 0; i < NR; i++) { const R = RD[i], a = R.a + t * R.v; rp[i * 3] = Lp.x + Math.cos(a) * R.r * (1 + dep * 2); rp[i * 3 + 1] = Lp.y - .1 + ((R.h + t * .2 * R.v) % .8) + dep * dep * 2.5 * R.v; rp[i * 3 + 2] = Lp.z + Math.sin(a) * R.r * (1 + dep * 2); } rg.attributes.position.needsUpdate = true;
+          if (t > TFIN && !fin) { fin = true; E.pris = true; EC.fin(); for (const a of [sA, sB, sJ]) try { a && a.pause(); } catch (e) {}
             { const NPt = 46, pgeo = new THREE.CircleGeometry(.035, 7); pgeo.scale(1, 1.4, 1); const im = new THREE.InstancedMesh(pgeo, mat({ color: 0xffffff, roughness: .6, side: THREE.DoubleSide }), NPt), mm = new THREE.Matrix4(), qq = new THREE.Quaternion(), cc = new THREE.Color();   /* (10.204 : à chaque lettre lue, des pétales de rose restent au sol) */
               for (let k = 0; k < NPt; k++) { const a = Math.random() * 6.28, r = Math.sqrt(Math.random()) * .9; qq.setFromEuler(new THREE.Euler(-Math.PI / 2 + (Math.random() - .5) * .3, 0, Math.random() * 6.28)); mm.compose(new THREE.Vector3(E.x + Math.cos(a) * r, E.y0 + .012 + k * .0004, E.z + Math.sin(a) * r), qq, new THREE.Vector3(1, 1, 1)); im.setMatrixAt(k, mm); im.setColorAt(k, cc.setHSL(.98 + Math.random() * .03, .8, .28 + Math.random() * .16)); }
               im.userData.anime = true; scene.add(im); } scene.remove(E.G); for (const o of [rose, pet, ecl, ...demi.map(H => H.m)]) scene.remove(o); W.remove(); window.__ndDuck = duck0; finCine(); placerCamera(true);
