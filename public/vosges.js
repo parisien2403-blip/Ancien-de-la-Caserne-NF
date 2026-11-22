@@ -1060,7 +1060,8 @@ function construireVosges(A, L, scene) {
       "Ma cousine a pris le métropolitain hier. Sous la terre ! Je n'oserais jamais.": ["pnj-d04", 5.2], "Avez-vous lu Le Petit Journal ? Toute la France ne parle que de l'Exposition.": ["pnj-d05", 5.1],
       "Avec l'électricité, bientôt plus besoin d'allumeurs de réverbères. Le progrès, ma chère !": ["pnj-d06", 6.4],
       "Tout de suite, monsieur !": ["pnj-e01", 1.4], "Et voilà : deux cafés, une limonade. Ce sera tout, messieurs-dames ?": ["pnj-e02", 3.7],
-      "Bonsoir, monsieur Hugo.": ["pnj-e03", 1.3], "Bonsoir, monsieur Hugo. Belle soirée pour la promenade.": ["pnj-e04", 3.1], "Mes respects, monsieur Hugo. Bonsoir.": ["pnj-e05", 2.3] };
+      "Bonsoir, monsieur Hugo.": ["pnj-e03", 1.3], "Bonsoir, monsieur Hugo. Belle soirée pour la promenade.": ["pnj-e04", 3.1], "Mes respects, monsieur Hugo. Bonsoir.": ["pnj-e05", 2.3],
+      "Bonjour, monsieur Hugo.": ["pnj-e06", 1.2], "Mes respects, monsieur Hugo.": ["pnj-e07", 1.6], "Bonjour, monsieur Hugo. Belle journée, n'est-ce pas ?": ["pnj-e08", 2.7] };
     L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
     let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
