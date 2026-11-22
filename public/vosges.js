@@ -1058,21 +1058,21 @@ function construireVosges(A, L, scene) {
      elle s'en va en pétales et en lumière vers les étoiles */
   { const B = L.bancLeo, F = [-19, 19]; let tAssis = 0, deja = false;
     const nar = (t) => `<span style="color:#f6eedc;font-weight:400;font-style:italic">${t}</span>`;
-    const LIG = [[.6, "", nar("Victor Hugo s'assoit au bord de la fontaine. Le murmure de l'eau éveille en lui un souvenir…"), 5600], [6.6, "Victor Hugo, à lui-même", "<i>Léopoldine… ma fille… mon enfant bien-aimée.</i>", 5200],
+    const LIG = [[.6, "", nar("Victor Hugo s'assoit au bord de la fontaine. Le murmure de l'eau éveille en lui un souvenir…"), 5600], [6.6, "Victor Hugo, à lui-même", "<i>Léopoldine… ma fille… mon enfant bien-aimée.</i>", 5000, "leo-01"],
       [12.2, "", nar("Léopoldine était la fille aînée de Victor Hugo. Il l'adorait : elle était sa joie, son rayon de soleil."), 6200],
       [18.6, "", nar("En septembre 1843, à dix-neuf ans, quelques mois après son mariage, elle s'est noyée dans la Seine, à Villequier, quand sa barque a chaviré. Son jeune mari, Charles Vacquerie, est mort en voulant la sauver."), 8400],
       [27.2, "", nar("Hugo était en voyage : il a appris la nouvelle par hasard, en lisant un journal. Ce chagrin ne l'a jamais quitté."), 6400],
-      [33.8, "Léopoldine", "Papa… ne pleure plus. Je suis là, dans chaque reflet de l'eau, dans chaque fleur que tu regardes.", 6400],
-      [40.4, "Victor Hugo", "Léopoldine… pardonne-moi. Je n'étais pas là. J'aurais dû être près de toi, ce jour-là, sur le fleuve.", 6000],
-      [46.6, "Léopoldine", "Ne t'en veux pas, mon père. Personne ne commande au fleuve, ni au vent qui renverse les barques. Prends ma main…", 6400],
-      [53.2, "Victor Hugo", "<i>Ta main est fraîche comme la rosée… Elle a la douceur de tes six ans, quand tu courais vers moi dans le jardin.</i>", 6400],
-      [59.8, "Léopoldine", "Écoute-moi : la mort n'est qu'une porte entrouverte. Un jour, tu la pousseras… et je serai là, de l'autre côté, à t'attendre, comme autrefois au bout de l'allée.", 7400],
-      [67.4, "Victor Hugo", "Alors je marcherai vers toi, mon enfant. Comme je l'ai écrit pour toi…", 4800],
-      [72.4, "Victor Hugo", "<i>Demain, dès l'aube, à l'heure où blanchit la campagne,<br>Je partirai. Vois-tu, je sais que tu m'attends.</i>", 6800],
-      [79.4, "Victor Hugo", "<i>Et quand j'arriverai, je mettrai sur ta tombe<br>Un bouquet de houx vert et de bruyère en fleur.</i>", 6800],
-      [86.4, "Léopoldine", "Au revoir, papa. Pas adieu… seulement au revoir.", 4600],
-      [91.4, "", nar("« Demain, dès l'aube… » : Victor Hugo a écrit ce poème pour Léopoldine, quatre ans après sa mort. C'est l'un des plus beaux poèmes de la langue française."), 7600],
-      [99.2, "Victor Hugo, à lui-même", "<i>Dors en paix, mon enfant. À bientôt.</i>", 4800]], DUR = 104;   /* (10.204 : un vrai échange ; elle lui tend la main ; le tourbillon de pétales de rose) */
+      [33.8, "Léopoldine", "Papa… ne pleure plus. Je suis là, dans chaque reflet de l'eau, dans chaque fleur que tu regardes.", 6700, "leo-02"],
+      [41.0, "Victor Hugo", "Léopoldine… pardonne-moi. Je n'étais pas là. J'aurais dû être près de toi, ce jour-là, sur le fleuve.", 7500, "leo-03"],
+      [49.0, "Léopoldine", "Ne t'en veux pas, mon père. Personne ne commande au fleuve, ni au vent qui renverse les barques. Prends ma main…", 6800, "leo-04"],
+      [56.4, "Victor Hugo", "<i>Ta main est fraîche comme la rosée… Elle a la douceur de tes six ans, quand tu courais vers moi dans le jardin.</i>", 6500, "leo-05"],
+      [63.4, "Léopoldine", "Écoute-moi : la mort n'est qu'une porte entrouverte. Un jour, tu la pousseras… et je serai là, de l'autre côté, à t'attendre, comme autrefois au bout de l'allée.", 10200, "leo-06"],
+      [74.3, "Victor Hugo", "Alors je marcherai vers toi, mon enfant. Comme je l'ai écrit pour toi…", 5600, "leo-07"],
+      [80.4, "Victor Hugo", "<i>Demain, dès l'aube, à l'heure où blanchit la campagne,<br>Je partirai. Vois-tu, je sais que tu m'attends.</i>", 8600, "leo-08"],
+      [89.4, "Victor Hugo", "<i>Et quand j'arriverai, je mettrai sur ta tombe<br>Un bouquet de houx vert et de bruyère en fleur.</i>", 6400, "leo-09"],
+      [96.4, "Léopoldine", "Au revoir, papa. Pas adieu… seulement au revoir.", 4000, "leo-10"],
+      [101.2, "", nar("« Demain, dès l'aube… » : Victor Hugo a écrit ce poème pour Léopoldine, quatre ans après sa mort. C'est l'un des plus beaux poèmes de la langue française."), 7600],
+      [109.4, "Victor Hugo, à lui-même", "<i>Dors en paix, mon enfant. À bientôt.</i>", 3600, "leo-11"]], DUR = 114;   /* (10.206 : les vraies voix — Victor Hugo et Léopoldine — et la scène calée sur elles) */   /* (10.204 : un vrai échange ; elle lui tend la main ; le tourbillon de pétales de rose) */
     const lancer = () => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; L.leoEnCours = true; const t0 = performance.now(), c = M.camera, ux = (B[0] - F[0]), uz = (B[1] - F[1]), ul = Math.hypot(ux, uz); const U = [ux / ul, uz / ul];
       const px = F[0] + U[0] * 3.2, pz = F[1] + U[1] * 3.2;   /* (devant le rideau d'eau, au bord de la vasque) */
       // la jeune fille de lumière : la robe blanche, les cheveux longs ; tout en lumière pâle, un peu transparente
@@ -1088,32 +1088,33 @@ function construireVosges(A, L, scene) {
       const TD = Array.from({ length: NT }, (_, i) => { const k2 = i % 4; tc2[i * 3] = 1; tc2[i * 3 + 1] = k2 === 0 ? .62 : k2 === 1 ? .16 : .34; tc2[i * 3 + 2] = k2 === 0 ? .7 : k2 === 1 ? .24 : .42; return { a: Math.random() * 6.28, h: Math.random(), v: .7 + Math.random() * .6, r: Math.random(), d: Math.random() * .25 }; });
       const torn = new THREE.Points(tg2, new THREE.PointsMaterial({ map: lueurV, size: .18, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); torn.frustumCulled = false; scene.add(torn);   /* (le courant d'air de pétales de rose qui tourbillonne et l'emporte) */
       const P2x = F[0] + U[0] * 4.45, P2z = F[1] + U[1] * 4.45; let fx = px, fz = pz;   /* (là où elle vient prendre la main de son père) */
-      let iL = 0, fin = false; const duck0 = window.__ndDuck; window.__ndDuck = .1; const EC = ecarter(F[0], F[1], 9, [fig]);
+      const VOIX = {}; for (const Lg of LIG) if (Lg[4]) { const a = new Audio("sons/voix/" + Lg[4] + ".mp3"); a.preload = "auto"; a.volume = 1; VOIX[Lg[4]] = a; }   /* (les voix, prêtes d'avance) */
+      let iL = 0, fin = false; const duck0 = window.__ndDuck; window.__ndDuck = .1; const EC = ecarter(F[0], F[1], 9, [fig]); quitterLieu.add(() => { for (const k in VOIX) try { VOIX[k].pause(); } catch (e) {} });
       const camA = new THREE.Vector3(B[0] + U[0] * 3.4 - U[1] * 1.2, 2.1, B[1] + U[1] * 3.4 + U[0] * 1.2), camB = new THREE.Vector3(B[0] - U[0] * .8 + U[1] * 3.2, 1.5, B[1] - U[1] * .8 - U[0] * 3.2), camC = new THREE.Vector3(B[0] + U[0] * 1.6 - U[1] * .7, 1.75, B[1] + U[1] * 1.6 + U[0] * .7), tmp = new THREE.Vector3(), cible = new THREE.Vector3();
       c.position.copy(camA);
       M.cine = { gel: true, fov: [46, 56], maj: () => { const t = (performance.now() - t0) / 1000, tm = performance.now(); EC.maj();
-          while (iL < LIG.length && t >= LIG[iL][0]) { const [, n, tx, ms] = LIG[iL++]; sousTitre(n, tx, ms); }
+          while (iL < LIG.length && t >= LIG[iL][0]) { const [, n, tx, ms, vx] = LIG[iL++]; sousTitre(n, tx, ms); if (vx && VOIX[vx]) { try { VOIX[vx].currentTime = 0; VOIX[vx].play().catch(() => {}); } catch (e) {} } }
           // elle vient vers lui pour lui prendre la main, puis retourne au bord de l'eau
-          const va = Math.min(1, Math.max(0, (t - 45) / 3.5)) * (1 - Math.min(1, Math.max(0, (t - 64) / 4))), ev = va * va * (3 - 2 * va); fx = px + (P2x - px) * ev; fz = pz + (P2z - pz) * ev;
+          const va = Math.min(1, Math.max(0, (t - 52) / 3.5)) * (1 - Math.min(1, Math.max(0, (t - 74.5) / 4))), ev = va * va * (3 - 2 * va); fx = px + (P2x - px) * ev; fz = pz + (P2z - pz) * ev;
           const mx = (fx + B[0]) / 2, mz = (fz + B[1]) / 2, qx = U[1], qz = -U[0];
           // la caméra : derrière Hugo, la fontaine devant ; de côté quand elle se lève ; tout près pour les mains ; sur son épaule pour le poème ; puis un peu en arrière pour le tourbillon
-          if (t < 20) { tmp.copy(camA); cible.set(F[0], 1.1, F[1]); } else if (t < 44) { tmp.copy(camB); cible.set((px + B[0]) / 2, 1.3, (pz + B[1]) / 2); }
-          else if (t < 66) { tmp.set(mx + qx * 3.1 - U[0] * .4, 1.75, mz + qz * 3.1 - U[1] * .4); cible.set(mx, 1.25, mz); } else if (t < 86) { tmp.copy(camC); cible.set(fx, 1.4, fz); }
-          else { tmp.set(mx + qx * 3.6 + U[0] * 1.2, 1.9, mz + qz * 3.6 + U[1] * 1.2); cible.set(fx, 1.3 + Math.max(0, t - 94) * .35, fz); }
+          if (t < 20) { tmp.copy(camA); cible.set(F[0], 1.1, F[1]); } else if (t < 51) { tmp.copy(camB); cible.set((px + B[0]) / 2, 1.3, (pz + B[1]) / 2); }
+          else if (t < 76) { tmp.set(mx + qx * 3.1 - U[0] * .4, 1.75, mz + qz * 3.1 - U[1] * .4); cible.set(mx, 1.25, mz); } else if (t < 97) { tmp.copy(camC); cible.set(fx, 1.4, fz); }
+          else { tmp.set(mx + qx * 3.6 + U[0] * 1.2, 1.9, mz + qz * 3.6 + U[1] * 1.2); cible.set(fx, 1.3 + Math.max(0, t - 105) * .35, fz); }
           c.position.lerp(tmp, .025); c.lookAt(cible);
           // l'eau s'illumine ; elle se lève de l'eau ; à la fin, le tourbillon de pétales l'efface
-          const montee = Math.min(1, Math.max(0, (t - 21) / 6)), e = montee * montee * (3 - 2 * montee), kT = Math.min(1, Math.max(0, (t - 88) / 8)), dis = Math.min(1, Math.max(0, (kT - .3) / .55));
+          const montee = Math.min(1, Math.max(0, (t - 21) / 6)), e = montee * montee * (3 - 2 * montee), kT = Math.min(1, Math.max(0, (t - 99) / 8)), dis = Math.min(1, Math.max(0, (kT - .3) / .55));
           eau.material.opacity = Math.min(.55, Math.max(0, (t - 16) / 5) * .55) * (1 - kT) * (.85 + Math.sin(t * 2.2) * .15);
           fig.position.set(fx, -1.7 + e * 2.32 + Math.sin(t * 1.3) * .03 * e + dis * .4, fz); fig.rotation.y = Math.atan2(B[0] - fx, B[1] - fz); const op = Math.min(.72, e * .72) * (1 - dis); for (const m of MG) m.opacity = op;
-          fig.userData.poser("debout", tm); { const P = fig.userData.parts; if (P && P.bras) { const tn = Math.min(1, Math.max(0, (t - 45.5) / 2)) * (1 - Math.min(1, Math.max(0, (t - 63.5) / 2))); P.bras[1].e.rotation.set(-.15 - 1.15 * tn, 0, 0); P.bras[1].c.rotation.x = -.15 * tn; P.bras[0].e.rotation.x = -.15; P.tete.rotation.x = -.08 + Math.sin(t * .8) * .04 + tn * .12; } }   /* (elle lui tend la main) */
+          fig.userData.poser("debout", tm); { const P = fig.userData.parts; if (P && P.bras) { const tn = Math.min(1, Math.max(0, (t - 52.5) / 2)) * (1 - Math.min(1, Math.max(0, (t - 74) / 2))); P.bras[1].e.rotation.set(-.15 - 1.15 * tn, 0, 0); P.bras[1].c.rotation.x = -.15 * tn; P.bras[0].e.rotation.x = -.15; P.tete.rotation.x = -.08 + Math.sin(t * .8) * .04 + tn * .12; } }   /* (elle lui tend la main) */
           aura.position.set(fx, fig.position.y + 1.05, fz); aura.material.opacity = op * .95 * (.85 + Math.sin(t * 3) * .15);
           pet.material.opacity = Math.min(1, Math.max(0, (t - 22) / 3)) * (1 - kT);
           for (let i = 0; i < NP; i++) { const D = PD[i], a = D.a + t * D.v * .6; pp[i * 3] = fx + Math.cos(a) * D.r; pp[i * 3 + 1] = fig.position.y + .2 + ((D.h + t * .25 * D.v) % 2.2); pp[i * 3 + 2] = fz + Math.sin(a) * D.r; } pg.attributes.position.needsUpdate = true;
           // le tourbillon : les pétales arrivent en spirale, se resserrent autour d'elle en tournant de plus en plus vite, puis s'envolent au ciel
-          torn.material.opacity = Math.min(1, kT * 4) * (t > 98 ? Math.max(0, 1 - (t - 98) / 3) : 1);
+          torn.material.opacity = Math.min(1, kT * 4) * (t > 109 ? Math.max(0, 1 - (t - 109) / 3) : 1);
           for (let i = 0; i < NT; i++) { const D = TD[i], ser = Math.min(1, kT * 1.6), lib = Math.max(0, kT - .72) / .28, a = D.a + t * D.v * (2.2 + kT * 5) + D.h * 9, r = (2.6 - ser * 2.0) * (.6 + D.r * .5) + lib * lib * (3 + D.r * 5), y = -1.7 + 2.32 + D.h * 2.1 + Math.sin(a * .5) * .15 + lib * lib * (4 + D.v * 6);
-            tp2[i * 3] = fx + Math.cos(a) * r; tp2[i * 3 + 1] = (t < 88 ? -99 : y); tp2[i * 3 + 2] = fz + Math.sin(a) * r; } tg2.attributes.position.needsUpdate = true;
-          if (t > DUR && !fin) { fin = true; EC.fin(); for (const o of [fig, aura, eau, pet, torn]) scene.remove(o); window.__ndDuck = duck0; L.leoEnCours = false; finCine(); placerCamera(true); } } }; };
+            tp2[i * 3] = fx + Math.cos(a) * r; tp2[i * 3 + 1] = (t < 99 ? -99 : y); tp2[i * 3 + 2] = fz + Math.sin(a) * r; } tg2.attributes.position.needsUpdate = true;
+          if (t > DUR && !fin) { fin = true; EC.fin(); for (const o of [fig, aura, eau, pet, torn]) scene.remove(o); for (const k in VOIX) try { VOIX[k].pause(); } catch (e) {} window.__ndDuck = duck0; L.leoEnCours = false; finCine(); placerCamera(true); } } }; };
     L.leopoldine = lancer;
     AMB.push((tm) => { const p = M && M.moiNum && M.gens.get(M.moiNum), T = p && Number.isInteger(p.info.assis) && (L.tabourets || [])[p.info.assis];
       if (!T || !B || Math.hypot(T[0] - B[0], T[1] - B[1]) > 1.4) { tAssis = 0; deja = false; return; }
