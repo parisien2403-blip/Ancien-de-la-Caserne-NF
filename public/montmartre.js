@@ -756,15 +756,15 @@ function construireTertre(A, L, scene) {
     const herbeD = mat({ color: 0x5a8a3a, roughness: .95, side: THREE.DoubleSide, fog: false });
     B(100, -YB, 118, pierreB, 0, YB / 2, -24);   // (la colline sous le parvis, et sous la rue qui fait le tour de la basilique)
     { const pt = paves(124); pt.repeat.set(100 / 2.4 / 1.15, 118 / 2.4 / 1.15); const sol = new THREE.Mesh(new THREE.PlaneGeometry(100, 118), mat({ map: pt, roughness: .75, fog: false })); sol.rotation.x = -Math.PI / 2; sol.position.set(0, .02, -24); g.add(sol); }   /* (les pavés du parvis et de la rue) */
-    B(27, 9, 3, blanc, 0, -4.5, 33.5); for (const x of [-8.4, 0, 8.4]) { baie(6.2, 7.4, noirA, x, -9, 35.02, 0, false); for (let k = 0; k < 13; k++) { const a = k / 12 * Math.PI, v = B(.2, 1.7, .25, creme, x + Math.cos(a) * 3.7, -4.7 + Math.sin(a) * 3.7, 35.1); v.rotation.z = a - Math.PI / 2; } }
-    for (let x = -13.2; x <= 13.3; x += .8) C(.12, .12, 1, blanc, x, .5, 34.9, 6); B(27, .3, .55, blanc, 0, 1.1, 34.9); for (const x of [-13.3, 0, 13.3]) B(.8, 1.4, .8, blanc, x, .7, 34.9);
-    const yl = (lz) => -9 + (lz - 35) / (LZ1 - 35) * (YB + 9);   // (la pelouse)
-    quad([-13, -9, 35.2], [13, -9, 35.2], [13, YB, LZ1], [-13, YB, LZ1], herbeD);
-    for (const lz of [40, 47, 54, 61, 67]) for (const lx of [-10, -4.5, 4.5, 10]) add(new THREE.ConeGeometry(.6, 1.8, 8), ifM, lx, yl(lz) + .85, lz, g);
+    const yS = (lz) => (lz - 35) / (LZ1 - 35) * YB, TZ = 47, yT = yS(TZ);   // (la ligne des marches ; la terrace avancée dans la pente, entre les deux escaliers)
+    B(27, -yT, TZ - 35, blanc, 0, yT / 2, (35 + TZ) / 2); { const pt = paves(124); pt.repeat.set(27 / 2.4, (TZ - 35) / 2.4); const so = new THREE.Mesh(new THREE.PlaneGeometry(27, TZ - 35), mat({ map: pt, roughness: .75, fog: false })); so.rotation.x = -Math.PI / 2; so.position.set(0, .03, (35 + TZ) / 2); g.add(so); }
+    for (const x of [-8.4, 0, 8.4]) { baie(4.8, -yT * .86, noirA, x, yT, TZ + .02, 0, false); const cy = yT - yT * .86 - 2.4; for (let k = 0; k < 13; k++) { const a = k / 12 * Math.PI, v = B(.2, 1.4, .25, creme, x + Math.cos(a) * 3.05, cy + Math.sin(a) * 3.05, TZ + .1); v.rotation.z = a - Math.PI / 2; } }
+    for (let x = -13.2; x <= 13.3; x += .8) C(.12, .12, 1, blanc, x, .5, TZ - .1, 6); B(27, .3, .55, blanc, 0, 1.1, TZ - .1); for (const x of [-13.3, 0, 13.3]) B(.8, 1.4, .8, blanc, x, .7, TZ - .1);
+    quad([-13.6, yT, TZ + .05], [13.6, yT, TZ + .05], [13.6, YB, LZ1], [-13.6, YB, LZ1], herbeD);   // (la pelouse, à fleur des marches)
+    for (const lz of [52, 57, 62, 67]) for (const lx of [-10, -4.5, 4.5, 10]) add(new THREE.ConeGeometry(.6, 1.8, 8), ifM, lx, yS(lz) + .85, lz, g);
     const N = 30, ru = (LZ1 - 35) / N, ri = -YB / N, ang = Math.atan2(-YB, LZ1 - 35), LL = Math.hypot(LZ1 - 35, YB);
     for (const sx of [-1, 1]) { for (let k = 0; k < N; k++) { const top = -k * ri, h = top - YB + .01; B(4.9, h, ru + .02, k % 2 ? creme : pierreB, sx * 16, YB + h / 2, 35 + (k + .5) * ru); }
-      for (const [lx, hh] of [[13.35, 10.5], [18.75, 1.6]]) { const w = B(.6, hh, LL, blanc, sx * lx, (YB + 0) / 2 + 1 - hh / 2 + .4, (35 + LZ1) / 2); w.rotation.x = ang; }   // (les murets, le long de l'escalier)
-      quad([sx * 19.05, 0, 35], [sx * 33, 0, 35], [sx * 33, YB, LZ1], [sx * 19.05, YB, LZ1], herbeD);   // (le talus)
+      quad([sx * 18.45, 0, 35], [sx * 33, 0, 35], [sx * 33, YB, LZ1], [sx * 18.45, YB, LZ1], herbeD);   // (le talus)
       for (let k = 0; k < 5; k++) { const lz = 38 + k * 8, x = sx * (23 + (k % 2) * 5), r = 3.6 + (k % 3) * .8; add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x5a7a2a][k % 3], roughness: .9, fog: false }), x, -(lz - 35) / (LZ1 - 35) * -YB + r * .8, lz, g); } }
     for (const [x, z, r] of [[-30, 20, 4.5], [-34, 4, 5], [30, 20, 4.4], [34, 2, 5.2], [-31, -16, 4.6], [31, -18, 4.4]]) add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x5a7a2a][Math.abs(x * 7) % 3], roughness: .9, fog: false }), x, r * .7, z, g);
     /* (10.222) tout autour de la basilique, la rue pavée du haut de la butte, et ses vieilles maisons (d'après la vue du ciel) */
@@ -926,8 +926,8 @@ function construireTertre(A, L, scene) {
   const SCloc = (x, z) => [(z - 20) / 1.15, (215 - x) / 1.15];
   const SCmarche = (x, z) => { if (x >= 50 && x < 113 && z > 9.2 && z < 14.8) return true; if (x >= 112 && x <= 132.4 && z > -12 && z < 52 && Math.hypot(x - 120.7, z - 45.3) > 6.4) return true;
     const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz > 34.6 && lz < 72.8 && a > 13.8 && a < 18.2) return true;
-    if (lz >= 21 && lz <= 35.2 && a < 24) return true; if (lz <= 35.2 && lz >= -70 && a >= 23.5 && a < 32.5) return true; if (lz < -55.5 && lz >= -70 && a < 32.5) return true; return false; };
-  const SChaut = (x, z) => { const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz <= 35.2 && lz > -80 && a < 40) return 18; if (lz > 35.2 && lz < 72.3 && a > 13.5 && a < 18.5) return 18 * (1 - (lz - 35) / 37.3); return null; };
+    if (lz >= 21 && lz <= 35.2 && a < 24) return true; if (lz > 35 && lz < 46.6 && a < 13.2) return true; if (lz <= 35.2 && lz >= -70 && a >= 23.5 && a < 32.5) return true; if (lz < -55.5 && lz >= -70 && a < 32.5) return true; return false; };
+  const SChaut = (x, z) => { const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz <= 35.2 && lz > -80 && a < 40) return 18; if (lz > 35 && lz < 47.2 && a < 13.6) return 18; if (lz > 35.2 && lz < 72.3 && a > 13.5 && a < 18.5) return 18 * (1 - (lz - 35) / 37.3); return null; };
   { const l0 = L.limites; L.limites = (x, z) => l0(x, z) || (x > 49 && SCmarche(x, z) && libre(x, z)); }
   L.hauteur = (x, z) => { if (x > 130) { const h = SChaut(x, z); if (h != null) return h; } return (x > SQ.x0 && x < SQ.x1 && z > SQ.z0 && z < SQ.z1) ? YS : hTrot(x, z); };
   L.depart = [L.metroAbbesses.x, L.metroAbbesses.z - .5]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
