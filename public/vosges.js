@@ -806,9 +806,16 @@ function construireVosges(A, L, scene) {
   { const a11 = L.anim; L.anim = (tm) => { try { a11 && a11(tm); } catch (e) {} if (!M || M.L !== L) return; const A2 = (window.__valseND = window.__valseND || (() => { const PL = ["sons/notredame-valse.mp3?v=3", "sons/notredame-2.mp3?v=1", "sons/notredame-3.mp3?v=1", "sons/notredame-4.mp3?v=1", "sons/notredame-5.mp3?v=1", "sons/notredame-6.mp3?v=1"], au = Object.assign(new Audio(PL[0]), { loop: false, preload: "auto" }); au._k = 0;
         au.addEventListener("ended", () => { au._k = (au._k + 1) % PL.length; au.src = PL[au._k]; au.play().catch(() => {}); }); return au; })());
       if (window.mxArcadeOn) { if (!A2.paused) A2.pause(); return; }
+      { const B = L.musBal; if (B) { const cv = window.__ndDuck ?? .35;   /* (10.205 : arrivé par le livre, l'accordéon du bal des quais prend le relais, en fondu enchaîné ; à la fin du morceau, la liste reprend) */
+          if (!A2.paused) { A2.volume = Math.max(0, A2.volume - .0035); if (A2.volume < .01) A2.pause(); }
+          if (!B.acc.paused) B.acc.volume = Math.max(0, Math.min(1, B.acc.volume + Math.max(-.01, Math.min(.0025, cv - B.acc.volume)))); return; } }
       if (A2.paused && !A2._essai && !A2._attente) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
       if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
-      if (!A2.paused) try { A2.volume = Math.max(0, Math.min(1, A2.volume + Math.max(-.01, Math.min(.006, .35 - A2.volume)))); } catch (e) {} };
+      if (!A2.paused) try { A2.volume = Math.max(0, Math.min(1, A2.volume + Math.max(-.01, Math.min(.006, (window.__ndDuck ?? .35) - A2.volume)))); } catch (e) {} };   /* (et le volume baisse pendant les scènes : Léopoldine, les lettres…) */
+    L.lancerBal = () => { if (L.musBal) return; const acc = new Audio("sons/montmartre-accordeon.mp3"); acc.loop = false; acc.volume = 0; const B = L.musBal = { acc };
+      acc.addEventListener("ended", () => { if (L.musBal !== B) return; L.musBal = null; const A2 = window.__valseND; if (A2 && M && M.L === L) { A2.volume = 0; A2.dispatchEvent(new Event("ended")); } });   /* (la liste reprend : le morceau suivant, en douceur) */
+      acc.play().catch(() => { const go = () => { removeEventListener("pointerdown", go); removeEventListener("keydown", go); if (L.musBal === B) acc.play().catch(() => { L.musBal = null; }); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }); };
+    quitterLieu.add(() => { if (L.musBal) { try { L.musBal.acc.pause(); } catch (e) {} L.musBal = null; } });
     quitterLieu.add(() => { const A2 = window.__valseND; if (window.__garderValse) { window.__garderValse = false; return; } if (A2) { A2.pause(); A2._attente = false; A2._essai = false; A2._ecoute = false; } }); }   /* (10.202 : pour que la musique reprenne bien aux quais) */
   /* (10.199) des enfants de 1900 qui jouent dans le square avec des ballons de baudruche rouges : les garçons en costume marin, béret à pompon ; les filles en robe, un grand nœud dans les cheveux ;
      ils courent en rond, le bras levé, le ballon rouge qui flotte au bout de sa ficelle */
@@ -1282,7 +1289,7 @@ function construireVosges(A, L, scene) {
      et s'envole ; la caméra le suit au-dessus de la place des Vosges (les arcades, les fontaines, les ballons rouges, la statue du roi, les tilleuls) ;
      puis il redescend en se balançant, et vient se poser, tout doucement, sur le genou de Victor Hugo assis sur un banc du square */
   { const ancienne = L.arriveeLivre;
-    L.arriveeLivre = (coul, hugo) => { if (!hugo) return ancienne(coul, hugo); const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || !L.roseHeros) return ancienne(coul, hugo); if (L.devenirHugo) L.devenirHugo();
+    L.arriveeLivre = (coul, hugo) => { if (!hugo) return ancienne(coul, hugo); try { L.lancerBal && L.lancerBal(); } catch (e) {} const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || !L.roseHeros) return ancienne(coul, hugo); if (L.devenirHugo) L.devenirHugo();
       // Hugo, assis sur un banc du square
       const T = L.tabourets || [], pris = new Set([...M.gens.values()].filter(q => Number.isInteger(q.info.assis)).map(q => q.info.assis)); let ib = -1, bd = 1e9; T.forEach(([x, z], k) => { if (pris.has(k) || Math.abs(x) > GR - 2 || Math.abs(z) > GR - 2 || (L.bancLeo && Math.hypot(x - L.bancLeo[0], z - L.bancLeo[1]) < 1.4)) return; const d = Math.hypot(x - 16.5, z + 2.6); if (d < bd) { bd = d; ib = k; } });
       if (ib < 0) return ancienne(coul, hugo); try { asseoir(p, ib); envoyerWS({ t: "aller", x: T[ib][0], z: T[ib][1] }); envoyerWS({ t: "assis", i: ib }); } catch (e) {}
