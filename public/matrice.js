@@ -8130,6 +8130,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     if (false) L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "corbier", arrivee: [54.5, 15], yaw: -Math.PI / 2, violet: true, pasApo: true });
     L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "notredame", arrivee: [-1, -40], yaw: Math.PI, violet: true, pasApo: true, admin: true });   // (10.195) le cercle violet de l'administrateur : tout droit sur le parvis de Notre-Dame   // (10.99) le cercle violet : Le Corbier, pour l'administrateur seul (le temps de le construire)
+    L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x - 6, z - 9) < .6, seuil: [6, 9], vers: "tertre", arrivee: [-83, 35.3], yaw: Math.PI, violet: true, pasApo: true, admin: true });   // (10.223) le second cercle violet de l'administrateur : tout droit au métro Abbesses, à Montmartre
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
   }
 
