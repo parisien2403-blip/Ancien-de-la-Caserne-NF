@@ -1056,7 +1056,9 @@ function construireVosges(A, L, scene) {
       "Et le pont Alexandre-III, vous l'avez vu ? Tout en or, on dirait un bijou posé sur la Seine.": ["pnj-c01", 7.8], "Monsieur Hugo, du numéro 6, reçoit tout Paris dans son salon. On dit qu'il écrit la nuit, debout !": ["pnj-c02", 8.4],
       "Ce soir, nous allons au Moulin-Rouge voir le french cancan. Mon mari est tout émoustillé !": ["pnj-c03", 7.8],
       "La tour Eiffel ? Moi, je l'aime bien, cette grande dame de fer. Elle est éclairée au gaz, le soir !": ["pnj-c04", 8.1], "Mon chapeau vient de chez Caroline Reboux, rue de la Paix. Quarante francs ! Ne le dites pas à mon mari.": ["pnj-c05", 8.0],
-      "Délicieuse, madame ! Bien meilleure que celle du café Tortoni.": ["pnj-d01", 4.1], "Je reviendrai demain, avec mon vélocipède. Gardez-m'en une à la fraise !": ["pnj-d02", 4.3], "Garçon ! Une absinthe, je vous prie.": ["pnj-d03", 2.6] };
+      "Délicieuse, madame ! Bien meilleure que celle du café Tortoni.": ["pnj-d01", 4.1], "Je reviendrai demain, avec mon vélocipède. Gardez-m'en une à la fraise !": ["pnj-d02", 4.3], "Garçon ! Une absinthe, je vous prie.": ["pnj-d03", 2.6],
+      "Ma cousine a pris le métropolitain hier. Sous la terre ! Je n'oserais jamais.": ["pnj-d04", 5.2], "Avez-vous lu Le Petit Journal ? Toute la France ne parle que de l'Exposition.": ["pnj-d05", 5.1],
+      "Avec l'électricité, bientôt plus besoin d'allumeurs de réverbères. Le progrès, ma chère !": ["pnj-d06", 6.4] };
     L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
     let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
