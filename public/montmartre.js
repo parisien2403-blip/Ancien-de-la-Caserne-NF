@@ -188,7 +188,7 @@ function construireTertre(A, L, scene) {
     for (const o of [...Q.children]) scene.attach(o); g.remove(Q); };
   const maison = (x, z, ry, W, H, o) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); g.userData.W = W; MAISONS.push({ g, W, D: 9 }); const D = 9;
     o.vitres3D = true; const cle = o.cache && [o.teinte, o.volets, o.etages, W, H, o.pierre, 3].join("|"), fM = cle ? (FCACHE.get(cle) || FCACHE.set(cle, facadeT(W, H, o)).get(cle)) : facadeT(W, H, o); const cleC = ["côté", o.teinte, o.volets, o.etages, H].join("|"), cM = o.pignon ? cote : (FCACHE.get(cleC) || FCACHE.set(cleC, facadeT(D, H, { teinte: o.teinte || "#ece6d8", volets: o.volets === false ? "#f2f2ee" : o.volets, etages: o.etages || 3, fen: 3, balcon: false, cache: true })).get(cleC));   // (les murs de côté, ceux qu'on voit dans les passages : des fenêtres aussi)
-    const salle = !!o.rdc && !o.pignon && !o.sansSalle, HR = 3.62, PR = 2.6;
+    const salle = !!o.rdc && !o.pignon && !o.sansSalle, HR = 3.62, PR = o.prof || 2.6;
     if (salle) { const haut = new THREE.BoxGeometry(W, H - HR, D), uv = haut.attributes.uv, k = HR / H; for (const gi of [0, 1, 4]) for (let v = gi * 4; v < gi * 4 + 4; v++) uv.setY(v, k + uv.getY(v) * (1 - k));   // (l'étage : l'image de la façade sans son bas)
       add(haut, [cM, cM, cote, cote, fM, cote], 0, HR + (H - HR) / 2, -D / 2, g); g.userData.salle = { HR, PR, D }; }
     else box(W, H, D, [cM, cM, cote, cote, fM, cote], 0, H / 2, -D / 2, g);
@@ -587,13 +587,23 @@ function construireTertre(A, L, scene) {
   /* (10.225) la petite place du bas, fermée tout autour comme une vraie place de Montmartre : boutiques, cafés, crêperie et souvenirs en rez-de-chaussée,
      des deux côtés de la rue qui débouche, et sur les deux longs côtés de la place jusqu'au pied de la butte */
   { const dv = (bois, txt, fond, o = {}) => (g, W) => devanture(g, W, { bois, travees: Math.max(2, Math.round(W / 2.2)), porte: 1, fondV: fond, store: [bois === 0x7a1a1a ? "#7a1a1a" : "#" + bois.toString(16).padStart(6, "0"), txt, "#f2ead8"], storeD: 1.4, storeW: Math.min(W - 1, 7.5), guirlande: !!o.g });
-    const B = (W, H, k, txt, bois, fond, o) => [W, H, txt ? { ...ordinaire(k), rdc: dv(bois, txt, fond, o) } : ordinaire(k)];
+    const B = (W, H, k, txt, bois, fond, o) => [W, H, txt ? { ...ordinaire(k), rdc: dv(bois, txt, fond, o), prof: o && o.g ? 5.6 : undefined } : ordinaire(k)];   // (les cafés : une salle profonde, son comptoir, son garçon)
     // le côté ouest de la place, de part et d'autre de la rue Saint-Éleuthère
-    rangee(112.15, -32.5, 0, 1, OUEST, [B(8, 11, 1, "CHEZ  GERMAINE", 0x2a4a3a, "#f0c070", { g: true }), B(6.5, 10, 2), B(9, 12, 3, "SOUVENIRS", 0x7a1a1a, "#f4d49a"), B(8.5, 10.5, 4), B(9, 10.5, 5, "FROMAGERIE", 0x3a3a1a, "#f4e0a0")]);   // (la dernière : la façade qui habille le pignon nu, au coin de la rue)
-    rangee(112.15, 15.5, 0, 1, OUEST, [B(9, 10.5, 3, "BISTROT  DE  LA  PLACE", 0x7a1a1a, "#f0c070", { g: true }), B(7, 10, 5, "CRÊPERIE", 0x1f3a5a, "#f0c070"), B(8.5, 11.5, 0), B(6.5, 9.5, 2, "TABAC", 0x5a2a1a, "#f0d090"), B(6.5, 10.5, 1)]);
+    rangee(112.15, -32.5, 0, 1, OUEST, [B(8, 11, 1, "CHEZ  GERMAINE", 0x2a4a3a, "#f0c070", { g: true }), B(6.5, 10, 2), B(9, 12, 3, "SOUVENIRS", 0x7a1a1a, "#f4d49a"), B(8.5, 10.5, 4), B(8.8, 10.5, 5, "FROMAGERIE", 0x3a3a1a, "#f4e0a0")]);   // (la dernière : la façade qui habille le pignon nu, au coin de la rue)
+    rangee(112.15, 15.7, 0, 1, OUEST, [B(8.8, 10.5, 3, "BISTROT  DE  LA  PLACE", 0x7a1a1a, "#f0c070", { g: true }), B(7, 10, 5, "CRÊPERIE", 0x1f3a5a, "#f0c070"), B(8.5, 11.5, 0), B(6.5, 9.5, 2, "TABAC", 0x5a2a1a, "#f0d090"), B(6.5, 10.5, 1)]);
     // le côté sud, derrière la gare basse du funiculaire, et le côté nord, derrière le manège
-    rangee(112, -32.5, 1, 0, NORD, [B(7, 10.5, 3, "LE  PETIT  MONTMARTRE", 0x7a1a1a, "#f0c070", { g: true }), B(8, 11, 4), B(6.5, 9.5, 0, "BOULANGERIE", 0x5a3a1a, "#f4d49a"), B(8, 12, 2), B(7, 10, 5)]);
-    rangee(112, 53, 1, 0, SUD, [B(8, 11, 0, "CAFÉ  DU  MANÈGE", 0x2a4a3a, "#f0c070", { g: true }), B(7, 10, 3), B(8.5, 12, 1, "GALERIE  D'ART", 0x1a1a1a, "#f4e0b0"), B(6, 9.5, 4), B(7, 10.5, 2, "SOUVENIRS", 0x7a1a1a, "#f4d49a")]); }
+    rangee(112, -32.5, 1, 0, NORD, [B(7, 10.5, 3, "LE  PETIT  MONTMARTRE", 0x7a1a1a, "#f0c070", { g: true }), B(7.5, 11, 4, "BOULANGERIE", 0x5a3a1a, "#f4d49a")]);
+    rangee(112, 53, 1, 0, SUD, [B(8, 11, 0, "CAFÉ  DU  MANÈGE", 0x2a4a3a, "#f0c070", { g: true }), B(6.5, 10, 1, "GALERIE  D'ART", 0x1a1a1a, "#f4e0b0")]);
+    /* (10.226) au pied de la pente, les deux coins : un grand mur de pierre nu, sans fenêtre ni porte, qui tient la butte (la rangée s'arrête là, plus de boutique coupée par le talus) */
+    { const murT = tT(256, 256, (c, w, h) => { c.fillStyle = "#d6ccb8"; c.fillRect(0, 0, w, h); for (let r = 0; r < 8; r++) for (let k = -1; k < 4; k++) { const v = 196 + al() * 34; c.fillStyle = `rgb(${v},${v - 6},${v - 18})`; c.fillRect(k * 80 + (r % 2) * 40 + 2, r * 32 + 2, 76, 28); }
+        c.fillStyle = "rgba(90,80,64,.18)"; for (let i = 0; i < 14; i++) c.fillRect(al() * w, al() * 60, 2 + al() * 3, 120 + al() * 80); }, 2, 3), murM = mat({ map: murT, roughness: .9 }), corM = mat({ color: 0xc8bea8, roughness: .85 });
+      for (const [z, sg] of [[-32.5, -1], [53, 1]]) { box(18.6, 12, 9, murM, 126.5 + 9.3, 6, z + sg * 4.5); box(18.8, .5, .4, corM, 126.5 + 9.3, 12.1, z - sg * .1); box(18.8, .8, .3, corM, 126.5 + 9.3, .4, z - sg * .05); } }
+    /* (10.226) les grandes terrasses des cafés de la place : trois rangs de guéridons et de chaises, un parasol planté au milieu de chaque table (jamais au-dessus d'une chaise) */
+    const pM = mat({ color: 0xd8d8d8, metalness: .5, roughness: .4 }), toileP = [0xf4f2ec, 0xb8202a, 0x2a4a3a, 0xf4f2ec, 0x1f3a5a];
+    const terrP = (x0, z0, ax, az, nx, nz, L2, rangs, rouge, kc) => { terrasse(x0, z0, ax, az, nx, nz, L2, rangs, rouge); for (let r = 0; r < rangs; r++) for (let t = .6, i = 0; t < L2 - .4; t += 1.25, i++) { if ((i + r) % 2) continue; const x = x0 + ax * t + nx * (.55 + r * 1.0), z = z0 + az * t + nz * (.55 + r * 1.0);
+        cyl(.022, .022, 2.35, pM, x, 1.2, z, scene, 6); const c = add(new THREE.ConeGeometry(1.15, .45, 12, 1, true), mat({ color: toileP[kc % toileP.length], side: THREE.DoubleSide, roughness: .85 }), x, 2.5, z); c.castShadow = true; add(new THREE.SphereGeometry(.04, 6, 4), pM, x, 2.75, z); } };
+    terrP(112.4, -27.2, 0, 1, 1, 0, 3.2, 3, true, 0); terrP(112.4, 15.9, 0, 1, 1, 0, 8.4, 3, false, 1); terrP(112.4, 24.9, 0, 1, 1, 0, 6.4, 2, true, 2);
+    terrP(115.4, -32.2, 1, 0, 0, 1, 6.6, 2, false, 3); terrP(112.4, 52.8, 1, 0, 0, -1, 7.6, 2, true, 4); }
   /* (10.88) le bout de la rue Saint-Éleuthère, côté nord : la rue ne s'ouvre plus sur le vide — une maison à fenêtres, ses plantes contre le mur */
   { const g = maison(XE + 31 + 2.75, 8.5, 0, 5.5, 9.5, { teinte: "#ece4d2", volets: "#6a8a9a", etages: 2, sansSalle: true, rdc: (g2, W) => { box(W - .4, .9, .1, mat({ color: 0x9a8a72, roughness: .9 }), 0, .45, .06, g2); for (const x of [-W / 2 + .5, -.9, .9, W / 2 - .5]) plante(g2, x, .45, x > 0 ? 0 : 2); bouquet(g2, -W / 2 + 1.5, .5, .4, 1); bouquet(g2, W / 2 - 1.5, .5, .4, 3); for (const x of [-W / 2 + 1.5, W / 2 - 1.5]) cyl(.2, .16, .45, mat({ color: 0xa85a3a, roughness: .8 }), x, .23, .4, g2, 10); } }); lierre(g, 5.5, 9.5, true, undefined, 0); OB.push([XE + 33.75, 9.2, 2.6]); }
   /* ---------- les platanes du carré, leurs grilles ; les réverbères à lanterne ---------- */
@@ -673,7 +683,7 @@ function construireTertre(A, L, scene) {
   tente(-12.6, -8.4, -2.2, 4.4, { toit: 0xa8141c, poteau: 0x8a1018, lamb: ["Café  Chez Eugène", "#a8141c", "#f6efe0"], nappe: true, fanions: true });
   tente(3.6, 12.6, 3.6, 8.6, { toit: 0x1a1a1c, poteau: 0x1a1a1c, lamb: ["", "#1a1a1c", "#1a1a1c"], nappe: false, rampe: true, lampes: true, fleurs: 6.1 });
 
-  const SC = { X: 240, Y: 28, S: 1.15, LZ1: 35 + (28 / 1.15) / .42 };   /* (10.224) le Sacré-Cœur au sommet de la butte : sa place, sa hauteur (28 m), son échelle, le bas des escaliers */
+  const SC = { X: 240, Y: 28, S: 1.15, LZ1: 35 + (28 / 1.15) / .42 }; SC.LZP = SC.LZ1 - 14; SC.LZE = SC.LZ1 - 9;   /* (10.226 : le palier à mi-pente, et le grand escalier en bas, sur toute la largeur) */   /* (10.224) le Sacré-Cœur au sommet de la butte : sa place, sa hauteur (28 m), son échelle, le bas des escaliers */
   /* ---------- (10.221) le Sacré-Cœur, refait d'après les photos, pierre par pierre : la basilique romano-byzantine en pierre blanche de Château-Landon —
      le porche aux trois grands arcs et ses deux saints à cheval en bronze vert (Jeanne d'Arc, Saint Louis), le Christ dans sa niche au-dessus, la grande baie ;
      les tours d'angle et leurs rosaces ; le grand dôme ovoïde couvert d'écailles, sur son tambour à arcades et sa galerie, sa lanterne à colonnettes et sa croix ;
@@ -802,10 +812,20 @@ function construireTertre(A, L, scene) {
       const cy = yT - yT * .86 - 2.4; for (let k = 0; k < 13; k++) { const a = k / 12 * Math.PI, v = B(.2, 1.4, .25, creme, x + Math.cos(a) * 3.05, cy + Math.sin(a) * 3.05, TZ + .1); v.rotation.z = a - Math.PI / 2; } }
     for (let x = -13.2; x <= 13.3; x += .8) C(.1, .1, .58, blanc, x, .29, TZ - .1, 6); B(27, .18, .45, blanc, 0, .66, TZ - .1); for (const x of [-13.3, 0, 13.3]) B(.6, .86, .6, blanc, x, .43, TZ - .1);   // (10.226 : la balustrade à hauteur d'appui, pour voir Paris par-dessus)
     for (const sx of [-1, 1]) { for (let lz = 35.4; lz < TZ - .3; lz += .8) C(.1, .1, .58, blanc, sx * 13.35, .29, lz, 6); B(.45, .18, TZ - 35, blanc, sx * 13.35, .66, (35 + TZ) / 2); B(.6, .86, .6, blanc, sx * 13.35, .43, 35.3); }   // (et sur les deux côtés, au-dessus des escaliers)
-    quad([-13.6, yT, TZ + .05], [13.6, yT, TZ + .05], [13.6, YB, LZ1], [-13.6, YB, LZ1], herbeD);   // (la pelouse, à fleur des marches)
-    for (let lz = TZ + 5; lz < LZ1 - 3; lz += 6.5) for (const lx of [-10.5, -4.5, 4.5, 10.5]) If(lx, yS(lz), lz, .9 + ((lz * 7 + lx) & 3) * .06);
+    const LZp = SC.LZP, LZe = SC.LZE, yP = yS(LZp);
+    quad([-13.6, yT, TZ + .05], [13.6, yT, TZ + .05], [13.6, yP, LZp], [-13.6, yP, LZp], herbeD);   // (la pelouse, à fleur des marches, jusqu'au palier)
+    /* (10.226) d'après la photo : à mi-pente, le palier pavé où l'on se promène, ses bancs verts tournés vers Paris ; dessous, le grand escalier qui prend toute la largeur jusqu'à la place */
+    { B(36.9, yP - YB, LZe - LZp, pierreB, 0, (yP + YB) / 2, (LZp + LZe) / 2); const pt = paves(124); pt.repeat.set(36.9 / 2.4, (LZe - LZp) / 2.4); const so = new THREE.Mesh(new THREE.PlaneGeometry(36.9, LZe - LZp), mat({ map: pt, roughness: .75, fog: false })); so.rotation.x = -Math.PI / 2; so.position.set(0, yP + .02, (LZp + LZe) / 2); g.add(so);
+      const NG = 20, rg = (LZ1 - LZe) / NG, rh = (yP - YB) / NG; for (let k = 0; k < NG; k++) { const top = yP - (k + 1) * rh + .01, h = top - YB; B(36.9, Math.max(.05, h), rg + .02, k % 2 ? creme : pierreB, 0, YB + h / 2, LZe + (k + .5) * rg); }
+      for (const sx of [-1, 1]) { const sh = new THREE.Shape(); sh.moveTo(LZp, YB); sh.lineTo(LZ1, YB); sh.lineTo(LZ1, YB + .7); sh.lineTo(LZe, yP + .7); sh.lineTo(LZp, yP + .7); sh.closePath();
+        const mu = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .7, bevelEnabled: false }), blanc); mu.rotation.y = -Math.PI / 2; mu.position.x = sx * 18.8 + .35; g.add(mu); }   // (les deux murs d'échiffre, de part et d'autre)
+      const bancV = mat({ color: 0x2e5a3a, roughness: .6, fog: false }), ferB = mat({ color: 0x1a1a1a, metalness: .5, roughness: .5, fog: false });
+      for (const bx of [-11, -6, 0, 6, 11]) { const bz = LZp + 1.3; for (let k = 0; k < 4; k++) B(1.7, .045, .1, bancV, bx, yP + .4, bz - .15 + k * .11); for (let k = 0; k < 3; k++) B(1.7, .09, .04, bancV, bx, yP + .55 + k * .12, bz - .24);
+        for (const dx of [-.75, .75]) { B(.05, .4, .05, ferB, bx + dx, yP + .2, bz + .12); B(.05, .78, .05, ferB, bx + dx, yP + .39, bz - .24); }
+        OB.push([SC.X - bz * SC.S, 20 + bx * SC.S, 1.1]); } }
+    for (let lz = TZ + 5; lz < LZp - 1; lz += 6.5) for (const lx of [-10.5, -4.5, 4.5, 10.5]) If(lx, yS(lz), lz, .9 + ((lz * 7 + lx) & 3) * .06);
     const N = 48, ru = (LZ1 - 35) / N, ri = -YB / N;
-    for (const sx of [-1, 1]) { for (let k = 0; k < N; k++) { const top = -k * ri, h = top - YB + .01; B(4.9, h, ru + .02, k % 2 ? creme : pierreB, sx * 16, YB + h / 2, 35 + (k + .5) * ru); }
+    for (const sx of [-1, 1]) { for (let k = 0; k < N; k++) { if (35 + (k + .5) * ru > LZp) break; const top = -k * ri, h = top - YB + .01; B(4.9, h, ru + .02, k % 2 ? creme : pierreB, sx * 16, YB + h / 2, 35 + (k + .5) * ru); }
       quad([sx * 18.45, 0, 35], [sx * 50, 0, 35], [sx * 50, YB, LZ1], [sx * 18.45, YB, LZ1], herbeD);   // (le talus, jusqu'au funiculaire)
       for (let k = 0; k < 7; k++) { const lz = 39 + k * 8, lx = sx * (24 + (k % 2) * 6), r = 3.4 + (k % 3) * .7; if (sx < 0 && lx < -33) continue; arbre(lx, yS(lz), lz, r); }
       for (let k = 0; k < 6; k++) { const lz = 41 + k * 9; If(sx * 20.2, yS(lz), lz, 1.1); } }
@@ -1049,8 +1069,8 @@ function construireTertre(A, L, scene) {
   const SCloc = (x, z) => [(z - 20) / SC.S, (SC.X - x) / SC.S];
   const SCmarche = (x, z) => { if (x >= 50 && x < 113 && z > 9.2 && z < 14.8) return true; if (x >= 112 && x <= SC.X - SC.LZ1 * SC.S + .4 && z > -31 && z < 52 && Math.hypot(x - 120.7, z - 45.3) > 6.4) return true;
     const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz > 34.6 && lz < SC.LZ1 + .5 && a > 13.8 && a < 18.2) return true; if (lx < -34 && lx > -44.5 && ((lz > 28 && lz < 35.2) || (lz > SC.LZ1 && lz < SC.LZ1 + 7))) return true;   /* (les quais des deux gares du funiculaire) */
-    if (lz >= 21 && lz <= 35.2 && a < 24) return true; if (lz >= 26.2 && lz <= 35.2 && lx < 0 && a < 44.5) return true;   /* (entre le parvis, la rue et le quai haut du funiculaire) */ if (lz > 35 && lz < 49.6 && a < 13.2) return true; if (lz <= 35.2 && lz >= -70 && a >= 23.5 && a < 32.5) return true; if (lz < -55.5 && lz >= -70 && a < 32.5) return true; return false; };
-  const SChaut = (x, z) => { const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz >= 20 && lz <= 32 && a <= 24) return SC.Y + .5 * SC.S;   /* (le parvis : la plate-forme de pierre, une marche au-dessus) */ if (lz <= 35.2 && lz > -80 && a < 50) return SC.Y; if (lz > 35 && lz < 50.2 && a < 13.6) return SC.Y; if (lz > 35.2 && lz < SC.LZ1 && a > 13.5 && a < 18.5) return SC.Y * (1 - (lz - 35) / (SC.LZ1 - 35)); return null; };
+    if (lz >= 21 && lz <= 35.2 && a < 24) return true; if (lz >= SC.LZP && lz < SC.LZ1 + .5 && a < 18.2) return true;   /* (le palier, le grand escalier) */ if (lz >= 26.2 && lz <= 35.2 && lx < 0 && a < 44.5) return true;   /* (entre le parvis, la rue et le quai haut du funiculaire) */ if (lz > 35 && lz < 49.6 && a < 13.2) return true; if (lz <= 35.2 && lz >= -70 && a >= 23.5 && a < 32.5) return true; if (lz < -55.5 && lz >= -70 && a < 32.5) return true; return false; };
+  const SChaut = (x, z) => { const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz >= 20 && lz <= 32 && a <= 24) return SC.Y + .5 * SC.S;   /* (le parvis : la plate-forme de pierre, une marche au-dessus) */ if (lz <= 35.2 && lz > -80 && a < 50) return SC.Y; if (lz > 35 && lz < 50.2 && a < 13.6) return SC.Y; const hP = SC.Y * (1 - (SC.LZP - 35) / (SC.LZ1 - 35)); if (lz >= SC.LZP - .2 && lz <= SC.LZ1 + .2 && a < 18.6) return lz <= SC.LZE ? hP : Math.max(0, hP * (SC.LZ1 - lz) / (SC.LZ1 - SC.LZE)); if (lz > 35.2 && lz < SC.LZ1 && a > 13.5 && a < 18.5) return SC.Y * (1 - (lz - 35) / (SC.LZ1 - 35)); return null; };
   { const l0 = L.limites; L.limites = (x, z) => l0(x, z) || (x > 49 && SCmarche(x, z) && libre(x, z)); }
   L.hauteur = (x, z) => { if (x > 133) { const h = SChaut(x, z); if (h != null) return h; } return (x > SQ.x0 && x < SQ.x1 && z > SQ.z0 && z < SQ.z1) ? YS : hTrot(x, z); };
   L.depart = [L.metroAbbesses.x, L.metroAbbesses.z - .5]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
