@@ -3,7 +3,15 @@
    le square Louis-XIII : la statue équestre du roi, les quatre fontaines, les pelouses, les tilleuls, la grille noire aux pointes dorées ; les pavés, les réverbères, les fiacres ;
    et, au numéro 6, la maison où vécut Victor Hugo. On y arrive par le vieux livre d'un bouquiniste des quais, ou en métro (Bastille).
    Chargé par la matrice (eval direct) la première fois qu'on y va. */
-function construireVosges(A, L, scene) {
+/* (10.220, fluidité sur téléphone) les formes arrondies (sphères, cylindres, cônes, anneaux) dessinées avec moins de facettes : à l'écran d'un téléphone on ne voit pas la différence, mais il y a quatre fois moins de triangles */
+const __T3V = () => { if (!(PETIT || MOBILE || GPU_MODESTE)) return THREE; const T = Object.assign({}, THREE), mn = (v, m) => Math.max(3, Math.min(v ?? m, m));
+  T.SphereGeometry = class extends THREE.SphereGeometry { constructor(r, w, h, ...a) { super(r, mn(w, 10), mn(h, 7), ...a); } };
+  T.CylinderGeometry = class extends THREE.CylinderGeometry { constructor(a, b, h, rs, hs, ...x) { super(a, b, h, mn(rs, 10), hs, ...x); } };
+  T.ConeGeometry = class extends THREE.ConeGeometry { constructor(r, h, rs, hs, ...x) { super(r, h, mn(rs, 8), hs, ...x); } };
+  T.TorusGeometry = class extends THREE.TorusGeometry { constructor(r, t, rs, ts, ...x) { super(r, t, mn(rs, 4), mn(ts, 14), ...x); } };
+  T.CapsuleGeometry = class extends THREE.CapsuleGeometry { constructor(r, l, c, rs) { super(r, l, mn(c, 3), mn(rs, 8)); } };
+  T.LatheGeometry = class extends THREE.LatheGeometry { constructor(p, sg, ...x) { super(p, mn(sg, 10), ...x); } }; return T; };
+function construireVosges(A, L, scene) { const THREE = __T3V();
   const ECH = PETIT ? .5 : (MOBILE || GPU_MODESTE) ? .7 : 1, PEU = PETIT || MOBILE || GPU_MODESTE;
   let graine = 1832; const al = () => (graine = (graine * 16807) % 2147483647) / 2147483647;
   const tT = (w, h, f, rx, ry) => { const c = document.createElement("canvas"); c.width = Math.max(8, Math.round(w * ECH)); c.height = Math.max(8, Math.round(h * ECH)); const x = c.getContext("2d"); x.scale(c.width / w, c.height / h); f(x, w, h);
@@ -369,7 +377,7 @@ function construireVosges(A, L, scene) {
   const REV = []; { const fonte = mat({ color: 0x1a201c, roughness: .45, metalness: .55 }), verreL = mat({ color: 0xf8f0d8, roughness: .05, metalness: .1, transparent: true, opacity: .35, side: THREE.DoubleSide });
     const fut = new THREE.LatheGeometry([[.0, 0], [.26, 0], [.26, .12], [.2, .2], [.2, .34], [.15, .42], [.11, .6], [.13, .66], [.09, .8], [.085, 3.2], [.11, 3.3], [.09, 3.4], [.07, 3.55], [.14, 3.62], [.0, 3.65]].map(([a, b]) => new THREE.Vector2(a, b)), 12);
     const rev = (x, z) => { add(fut, fonte, x, 0, z); for (let a = 0; a < 4; a++) { const v = new THREE.Mesh(new THREE.TorusGeometry(.13, .014, 4, 10, Math.PI), fonte); v.position.set(x + Math.cos(a * Math.PI / 2) * .1, 3.5, z + Math.sin(a * Math.PI / 2) * .1); v.rotation.y = -a * Math.PI / 2; scene.add(v); }
-      const L2 = new THREE.Group(); L2.position.set(x, 3.65, z); scene.add(L2); cyl(.17, .1, .06, fonte, 0, .03, 0, 6, L2); const vi = new THREE.Mesh(new THREE.CylinderGeometry(.24, .15, .55, 6, 1, true), verreL); vi.position.y = .34; L2.add(vi);
+      const L2 = new THREE.Group(); L2.position.set(x, 3.65, z); L2.userData.aplatir = true; scene.add(L2); cyl(.17, .1, .06, fonte, 0, .03, 0, 6, L2); const vi = new THREE.Mesh(new THREE.CylinderGeometry(.24, .15, .55, 6, 1, true), verreL); vi.position.y = .34; L2.add(vi);
       for (let a = 0; a < 6; a++) { const an = a / 6 * Math.PI * 2 + Math.PI / 6, mo = new THREE.Mesh(new THREE.BoxGeometry(.018, .58, .018), fonte); mo.position.set(Math.cos(an) * .2, .34, Math.sin(an) * .2); mo.rotation.z = Math.cos(an) * .15; mo.rotation.x = -Math.sin(an) * .15; L2.add(mo); }
       cyl(.27, .27, .04, fonte, 0, .63, 0, 6, L2); const cou = new THREE.Mesh(new THREE.ConeGeometry(.24, .26, 6), fonte); cou.position.y = .78; L2.add(cou); cyl(.03, .05, .12, fonte, 0, .95, 0, 6, L2); const bo = new THREE.Mesh(new THREE.SphereGeometry(.04, 6, 5), fonte); bo.position.y = 1.03; L2.add(bo);
       for (let a = 0; a < 6; a++) { const an = a / 6 * Math.PI * 2, fe = new THREE.Mesh(new THREE.ConeGeometry(.03, .09, 4), fonte); fe.position.set(Math.cos(an) * .26, .7, Math.sin(an) * .26); L2.add(fe); }
@@ -377,7 +385,7 @@ function construireVosges(A, L, scene) {
       REV.push({ x, z, fl, ha, on: false, ph: al() * 10 }); LAMPES.push([x, 3.9, z]); };
     for (let t = -48; t <= 48; t += 16) for (const s of [-1, 1]) { if (t !== 0 && Math.abs(t) < 48) { rev(t, s * (GR + 1.4)); rev(s * (GR + 1.4), t); }   /* (10.202 : plus les deux réverbères de chaque coin, en plein sur le chemin des calèches) */   /* (10.198 : rien devant les portes du square) */ rev(t + 8, s * (FA - 3.9)); rev(s * (FA - 3.9), t + 8); }
     /* (10.199 : plus de réverbères au milieu des allées autour de la statue) */
-    AMB.push((tm) => { const t = tm / 1000; for (const R of REV) { const on = (R.on && !!L.nuit) || R.bleu; if (R.fl.visible !== on) R.fl.visible = on; if (on) { const f = .85 + Math.sin(t * 9 + R.ph) * .08 + Math.sin(t * 23 + R.ph * 3) * .05; R.fl.scale.set(.7 * f, 1.6 * (2 - f), .7 * f); R.ha.material.opacity = .75 * f; } else R.ha.material.opacity = 0; } }); }
+    AMB.push((tm) => { const t = tm / 1000; for (const R of REV) { const on = (R.on && !!L.nuit) || R.bleu; if (R.fl.visible !== on) R.fl.visible = on; if (on) { const f = .85 + Math.sin(t * 9 + R.ph) * .08 + Math.sin(t * 23 + R.ph * 3) * .05; R.fl.scale.set(.7 * f, 1.6 * (2 - f), .7 * f); R.ha.material.opacity = .75 * f; } else R.ha.material.opacity = 0; if (R.ha.visible !== on) R.ha.visible = on; } }); }   /* (10.220 : le halo n'est dessiné que s'il brille) */
   L.becs = REV;
 
   /* ---------- la statue équestre de Louis XIII, en bronze, sur son piédestal de marbre blanc, dans sa petite grille ---------- */
@@ -559,8 +567,9 @@ function construireVosges(A, L, scene) {
       for (let i = 0; i < RQ.length; i++) { const a2 = RQ[i], b2 = RQ[(i + 1) % RQ.length], l = Math.hypot(b2[0] - a2[0], b2[1] - a2[1]) || 1, n = Math.max(1, Math.ceil(l / .8)), ex = (b2[0] - a2[0]) / l, ez = (b2[1] - a2[1]) / l;
         for (let k = 0; k < n; k++) { const x = a2[0] + (b2[0] - a2[0]) * k / n, z = a2[1] + (b2[1] - a2[1]) * k / n; if (ok(x, z, ex, ez)) { N.push([x, z]); continue; } for (const o of [.8, -.8, 1.6, -1.6, 2.4, -2.4, 3.2, -3.2, 4, -4]) if (ok(x - ez * o, z + ex * o, ex, ez)) { N.push([x - ez * o, z + ex * o]); break; } } }
       if (N.length > 4) { RQ = N; iq = 0; uq = 0; } };
-    AMB.push((tm, dt) => { if (!rqOk) fixRQ(); const ma = QS.userData.marchande, [tx, tz] = RQ[(iq + 1) % RQ.length], [sx, sz] = RQ[iq], l = Math.hypot(tx - sx, tz - sz), arret = Math.sin(tm / 9000) > .55; if (!arret) uq += dt * .55 / l; if (uq >= 1) { uq = 0; iq = (iq + 1) % RQ.length; }
-      const x = sx + (tx - sx) * uq, z = sz + (tz - sz) * uq, ry = Math.atan2(tx - sx, tz - sz); QS.position.set(x, 0, z); QS.rotation.y = ry + Math.PI / 2; const d = new THREE.Vector3(-Math.sin(ry), 0, -Math.cos(ry)); ma.position.set(x + d.x * 2.2, 0, z + d.z * 2.2); ma.rotation.y = ry; ma.userData.poser(arret ? "debout" : "marche", tm * .45); const P = ma.userData.parts; for (const b of P.bras) { b.e.rotation.x = -1.1; b.c.rotation.x = -.3; } P.buste.rotation.x = .18; });
+    AMB.push((tm, dt) => { if (!rqOk) fixRQ(); const ma = QS.userData.marchande, [tx, tz] = RQ[(iq + 1) % RQ.length], [sx, sz] = RQ[iq], l = Math.hypot(tx - sx, tz - sz), arret = Math.sin(tm / 9000) > .55; if (!arret) uq += dt * .55 / l; while (uq >= 1) { const lv = l; iq = (iq + 1) % RQ.length; const [ax, az] = RQ[iq], [bx, bz] = RQ[(iq + 1) % RQ.length]; uq = (uq - 1) * lv / (Math.hypot(bx - ax, bz - az) || 1); }   /* (10.220 : on garde l'élan d'un tronçon à l'autre — plus d'à-coups) */
+      const [tx2, tz2] = RQ[(iq + 1) % RQ.length], [sx2, sz2] = RQ[iq], x = sx2 + (tx2 - sx2) * uq, z = sz2 + (tz2 - sz2) * uq, ryC = Math.atan2(tx2 - sx2, tz2 - sz2); if (QS.userData.ry == null) QS.userData.ry = ryC; { let dr = ryC - QS.userData.ry; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); QS.userData.ry += dr * Math.min(1, (dt || .016) * 2.5); }   /* (elle tourne en douceur) */
+      const ry = QS.userData.ry; QS.position.set(x, 0, z); QS.rotation.y = ry + Math.PI / 2; const d = new THREE.Vector3(-Math.sin(ry), 0, -Math.cos(ry)); ma.position.set(x + d.x * 2.2, 0, z + d.z * 2.2); ma.rotation.y = ry; ma.userData.poser(arret ? "debout" : "marche", tm * .45); const P = ma.userData.parts; for (const b of P.bras) { b.e.rotation.x = -1.1; b.c.rotation.x = -.3; } P.buste.rotation.x = .18; });
     // le vitrier : le cadre de bois sur le dos, chargé de vitres
     { const v = gens(94); L.vitrier = v;   /* (10.202 : un homme, un ouvrier — plus une dame) */ const P = v.userData.parts, cad = new THREE.Group(); cad.position.set(0, .32, -.2); cad.rotation.x = .08; P.buste.add(cad); for (const sx of [-.22, .22]) box(.04, 1.4, .04, boisC, sx, .3, 0, 0, cad); for (let y = -.3; y < 1; y += .3) box(.48, .03, .04, boisC, 0, y, 0, 0, cad); box(.5, .2, .3, boisC, 0, -.38, .1, 0, cad);
       for (let i = 0; i < 4; i++) { const vi = new THREE.Mesh(new THREE.PlaneGeometry(.4, .9 - i * .12), mat({ color: 0xc8e0e8, roughness: .05, metalness: .3, transparent: true, opacity: .45, side: THREE.DoubleSide })); vi.position.set(0, .3, -.05 - i * .035); cad.add(vi); }
@@ -1403,7 +1412,7 @@ function construireVosges(A, L, scene) {
   if (!window.__voixPatch) { window.__voixPatch = true; const p0 = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { try { if (/\/sons\/voix\//.test(this.src || "")) { const a = this; const tick = () => { if (!a.paused && !a.ended) { window.__voixJusqua = performance.now() + 600; requestAnimationFrame(tick); } }; window.__voixJusqua = performance.now() + 600; requestAnimationFrame(tick); } } catch (e) {} return p0.apply(this, arguments); }; }
   /* (10.219, fluidité) les décors immobiles rangés en groupes (les bancs, la statue, la bouche de métro) : on les sort de leurs groupes, à leur place exacte, pour qu'ils soient fondus en quelques pièces seulement */
   { scene.updateMatrixWorld(true); const pp = new THREE.Vector3(), qq = new THREE.Quaternion(), ss = new THREE.Vector3();
-    for (const G of scene.children.slice()) { if (!G.isGroup || !G.userData.aplatir) continue; const ms = []; G.traverse(o => { if (o.isMesh) ms.push(o); });
+    for (const G of scene.children.slice()) { if (!G.isGroup || !G.userData.aplatir) continue; const ms = []; G.traverse(o => { if (o.isMesh || o.isSprite || o.isPoints || o.isLine) ms.push(o); });
       for (const o of ms) { o.matrixWorld.decompose(pp, qq, ss); o.parent.remove(o); o.position.copy(pp); o.quaternion.copy(qq); o.scale.copy(ss); scene.add(o); } scene.remove(G); } }
   fusionStatique(scene, L, 0);
   // (10.190) on arrive par le livre : dès que le bonhomme est là, la cinématique des pages ; puis le voile de lumière se dissipe

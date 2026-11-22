@@ -16588,7 +16588,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.retourFilm
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
   M.enCage = false; coupeCage().constant = 1e6;   // (la vue en coupe de la cage d'escalier ne nous suit pas ailleurs)
-  M.dPortePrec = 0; M.porteVisee = null; { const cap = id === "kingston" ? (MOBILE ? .9 : 1) : MOBILE && estApo(id) && !L.sh ? 1.3 : null; if (cap !== M.capRes) { M.capRes = cap; setTimeout(() => M && M.redim && M.redim(), 0); } }   /* (à l'arrivée, on ne repasse pas aussitôt la porte d'où l'on vient) */
+  M.dPortePrec = 0; M.porteVisee = null; { const cap = id === "kingston" ? (MOBILE ? .9 : 1) : id === "vosges" && MOBILE ? 1 : MOBILE && estApo(id) && !L.sh ? 1.3 : null; if (cap !== M.capRes) { M.capRes = cap; setTimeout(() => M && M.redim && M.redim(), 0); } }   /* (à l'arrivée, on ne repasse pas aussitôt la porte d'où l'on vient) */
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.yawDehors = 0; M.camE = M.camD = null; if (M.premiere) { M.fpYaw = yaw; M.fpPitch = 0; }   /* (à la première personne : on arrive en regardant devant soi) */   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
