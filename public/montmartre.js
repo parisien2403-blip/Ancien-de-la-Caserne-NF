@@ -663,26 +663,38 @@ function construireTertre(A, L, scene) {
   tente(-12.6, -8.4, -2.2, 4.4, { toit: 0xa8141c, poteau: 0x8a1018, lamb: ["Café  Chez Eugène", "#a8141c", "#f6efe0"], nappe: true, fanions: true });
   tente(3.6, 12.6, 3.6, 8.6, { toit: 0x1a1a1c, poteau: 0x1a1a1c, lamb: ["", "#1a1a1c", "#1a1a1c"], nappe: false, rampe: true, lampes: true, fleurs: 6.1 });
 
+  const SC = { X: 240, Y: 28, S: 1.15, LZ1: 35 + (28 / 1.15) / .42 };   /* (10.224) le Sacré-Cœur au sommet de la butte : sa place, sa hauteur (28 m), son échelle, le bas des escaliers */
   /* ---------- (10.221) le Sacré-Cœur, refait d'après les photos, pierre par pierre : la basilique romano-byzantine en pierre blanche de Château-Landon —
      le porche aux trois grands arcs et ses deux saints à cheval en bronze vert (Jeanne d'Arc, Saint Louis), le Christ dans sa niche au-dessus, la grande baie ;
      les tours d'angle et leurs rosaces ; le grand dôme ovoïde couvert d'écailles, sur son tambour à arcades et sa galerie, sa lanterne à colonnettes et sa croix ;
      les quatre dômes secondaires sur leurs tours carrées ; les petits dômes et les clochetons ; le chevet et ses chapelles rayonnantes ; le grand campanile carré
      et sa coupole ; et devant, la butte : la terrasse aux trois arcs rayonnants, sa balustrade, les deux escaliers, la pelouse en pente et ses ifs taillés ---------- */
-  { const g = new THREE.Group(); g.position.set(215, 18, 20); g.rotation.y = -Math.PI / 2; g.scale.setScalar(1.15); scene.add(g); L.sacreCoeur = g;
-    const blanc = lum(mat({ color: 0xf4f0e6, roughness: .72, emissive: 0xffe6c0, emissiveIntensity: 0, fog: false }), 0, .55), creme = lum(mat({ color: 0xe6dfd0, roughness: .8, emissive: 0xffe0b0, emissiveIntensity: 0, fog: false }), 0, .4),
-      noirA = mat({ color: 0x26262e, roughness: .9, fog: false }), vitre = lum(mat({ color: 0x2c3040, roughness: .4, emissive: 0xffc070, emissiveIntensity: 0, fog: false }), 0, .5), bronze = mat({ color: 0x5f8a7a, roughness: .45, metalness: .55, fog: false }),
+  { const g = new THREE.Group(); g.position.set(SC.X, SC.Y, 20); g.rotation.y = -Math.PI / 2; g.scale.setScalar(SC.S); scene.add(g); L.sacreCoeur = g;
+    /* (10.223) la pierre de Château-Landon, en vrai : les assises de blocs taillés et leurs joints, chaque bloc un peu différent, les coulures du temps ; et la même image en relief (la lumière accroche les joints) */
+    const pierreT = (() => { const c = document.createElement("canvas"); c.width = c.height = 256; const x = c.getContext("2d"); x.fillStyle = "#f1eee6"; x.fillRect(0, 0, 256, 256); const hR = 32;
+        for (let r = 0; r < 8; r++) { const dec = (r % 2) * 40; for (let k = -1; k < 4; k++) { const bx = k * 80 + dec, v = 234 + al() * 16; x.fillStyle = `rgb(${v},${v - 3},${v - 9})`; x.fillRect(bx + 1, r * hR + 1, 78, hR - 2);
+          for (let i = 0; i < 26; i++) { x.fillStyle = `rgba(${al() < .5 ? "150,140,120" : "255,252,240"},${.06 + al() * .08})`; x.fillRect(bx + al() * 78, r * hR + al() * hR, 1 + al() * 3, 1 + al() * 2); } } }
+        x.fillStyle = "rgba(150,142,126,.38)"; for (let r = 0; r <= 8; r++) x.fillRect(0, r * hR - 1, 256, 2); for (let r = 0; r < 8; r++) for (let k = -1; k < 4; k++) x.fillRect(k * 80 + (r % 2) * 40 - 1, r * hR, 2, hR);
+        for (let i = 0; i < 18; i++) { const gx = al() * 256, gr = x.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, "rgba(140,128,105,0)"); gr.addColorStop(1, "rgba(150,140,120,.07)"); x.fillStyle = gr; x.fillRect(gx, al() * 120, 2 + al() * 4, 140); }
+        const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; })();
+    const blanc = lum(mat({ color: 0xfaf6ee, map: pierreT, bumpMap: pierreT, bumpScale: .9, roughness: .78, emissive: 0xffe6c0, emissiveIntensity: 0, fog: false }), 0, .55), creme = lum(mat({ color: 0xece4d2, map: pierreT, bumpMap: pierreT, bumpScale: .9, roughness: .82, emissive: 0xffe0b0, emissiveIntensity: 0, fog: false }), 0, .4);
+    blanc.userData.ech = creme.userData.ech = 3.2;   /* (les blocs à leur vraie taille : l'image couvre 3,2 m de mur) */
+    const ajusteUV = (geo, m, dims) => { if (!m || !m.userData || !m.userData.ech) return geo; const e = m.userData.ech, uv = geo.attributes.uv; dims.forEach(([fu, fv], f) => { for (let v = f * 4; v < f * 4 + 4; v++) uv.setXY(v, uv.getX(v) * fu / e, uv.getY(v) * fv / e); }); return geo; };
+    const noirA = mat({ color: 0x26262e, roughness: .9, fog: false }), vitre = lum(mat({ color: 0x2c3040, roughness: .4, emissive: 0xffc070, emissiveIntensity: 0, fog: false }), 0, .5), bronze = mat({ color: 0x5f8a7a, roughness: .45, metalness: .55, fog: false }),
       herbe = mat({ color: 0x5a8a3a, roughness: .95, fog: false }), ifM = mat({ color: 0x2e5a26, roughness: .9, fog: false }), toitG = lum(mat({ color: 0xd6d0c2, roughness: .75, emissive: 0xffe0b0, emissiveIntensity: 0, fog: false }), 0, .35);
     // les écailles des dômes : des rangées de petites tuiles arrondies, comme sur les photos
     const ecailles = (() => { const c = document.createElement("canvas"); c.width = 128; c.height = 64; const x = c.getContext("2d"); x.fillStyle = "#f2eee4"; x.fillRect(0, 0, 128, 64);
       for (let r = 0; r < 2; r++) for (let k = -1; k < 5; k++) { const cx = k * 32 + (r ? 16 : 0), cy = r * 32 + 30; const gr = x.createLinearGradient(0, cy - 30, 0, cy); gr.addColorStop(0, "#f6f3ea"); gr.addColorStop(1, "#cfc7b6"); x.fillStyle = gr; x.beginPath(); x.arc(cx, cy - 14, 16, 0, Math.PI); x.lineTo(cx - 16, cy - 30); x.lineTo(cx + 16, cy - 30); x.fill(); x.strokeStyle = "rgba(120,110,95,.55)"; x.lineWidth = 1.5; x.beginPath(); x.arc(cx, cy - 14, 16, 0, Math.PI); x.stroke(); }
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t; })();
-    const domeM = (ru, rv) => { const t = ecailles.clone(); t.needsUpdate = true; t.repeat.set(ru, rv); return lum(mat({ map: t, roughness: .7, emissive: 0xffe6c0, emissiveIntensity: 0, fog: false }), 0, .5); };
+    const domeM = (ru, rv) => { const t = ecailles.clone(); t.needsUpdate = true; t.repeat.set(ru, rv); return lum(mat({ map: t, bumpMap: t, bumpScale: 1.4, roughness: .7, emissive: 0xffe6c0, emissiveIntensity: 0, fog: false }), 0, .5); };
     const P = (x, y, z, o) => { o.position.set(x, y, z); g.add(o); return o; };
-    const B = (w, h, d, m, x, y, z, ry = 0) => { const o = box(w, h, d, m, x, y, z, g); o.rotation.y = ry; return o; };
-    const C = (rt, rb, h, m, x, y, z, seg = 12) => cyl(rt, rb, h, m, x, y, z, g, seg);
+    const B = (w, h, d, m, x, y, z, ry = 0) => { const o = add(ajusteUV(new THREE.BoxGeometry(w, h, d), m, [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]]), m, x, y, z, g); o.rotation.y = ry; return o; };
+    const C = (rt, rb, h, m, x, y, z, seg = 12) => { const geo = new THREE.CylinderGeometry(rt, rb, h, seg); if (m && m.userData && m.userData.ech) { const uv = geo.attributes.uv, e = m.userData.ech, k = 2 * Math.PI * Math.max(rt, rb); for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * k / e, uv.getY(i) * h / e); } return add(geo, m, x, y, z, g); };
     // une baie en plein cintre (rectangle + demi-cercle), posée sur un mur ; ry : la direction où elle regarde
     const arcG = new Map(), baie = (w, h, m, x, y, z, ry = 0, encadre = true) => { const k = w + "|" + h; if (!arcG.has(k)) { const s = new THREE.Shape(); s.moveTo(-w / 2, 0); s.lineTo(w / 2, 0); s.lineTo(w / 2, h - w / 2); s.absarc(0, h - w / 2, w / 2, 0, Math.PI, false); s.lineTo(-w / 2, 0); arcG.set(k, new THREE.ShapeGeometry(s, 10)); }
-      const o = new THREE.Mesh(arcG.get(k), m); o.position.set(x, y, z); o.rotation.y = ry; g.add(o);
+      const o = new THREE.Mesh(arcG.get(k), m), sn = Math.sin(ry), cs = Math.cos(ry), pr = encadre ? Math.min(.45, w * .22) : 0; o.position.set(x - sn * pr, y, z - cs * pr); o.rotation.y = ry; g.add(o);   /* (10.223 : la baie creusée dans l'épaisseur du mur) */
+      if (encadre) { for (const sg of [-1, 1]) { const j = new THREE.Mesh(new THREE.BoxGeometry(.16, h - w / 2, pr + .05), creme); j.position.set(x + cs * sg * (w / 2 + .08) - sn * pr / 2, y + (h - w / 2) / 2, z - sn * sg * (w / 2 + .08) - cs * pr / 2); j.rotation.y = ry; g.add(j); }
+        const ap = new THREE.Mesh(new THREE.BoxGeometry(w + .5, .18, pr + .3), blanc); ap.position.set(x - sn * (pr / 2 - .12), y - .09, z - cs * (pr / 2 - .12)); ap.rotation.y = ry; g.add(ap); }
       if (encadre) { const r = new THREE.Mesh(new THREE.TorusGeometry(w / 2 + .12, .14, 4, 12, Math.PI), blanc); r.position.set(x + Math.sin(ry) * .08, y + h - w / 2, z + Math.cos(ry) * .08); r.rotation.y = ry; g.add(r); } return o; };
     const rosace = (r, x, y, z, ry = 0) => { const d = new THREE.Mesh(new THREE.CircleGeometry(r, 24), vitre); d.position.set(x, y, z); d.rotation.y = ry; g.add(d); const o = new THREE.Mesh(new THREE.TorusGeometry(r, .16, 5, 28), blanc); o.position.set(x + Math.sin(ry) * .05, y, z + Math.cos(ry) * .05); o.rotation.y = ry; g.add(o);
       const i2 = new THREE.Mesh(new THREE.TorusGeometry(r * .38, .1, 4, 16), blanc); i2.position.copy(o.position); i2.rotation.y = ry; g.add(i2); for (let k = 0; k < 8; k++) { const s = new THREE.Mesh(new THREE.BoxGeometry(.12, r * .62, .1), blanc); const a = k / 8 * Math.PI * 2; s.position.set(x + Math.cos(ry) * Math.cos(a) * r * .69 + Math.sin(ry) * .06, y + Math.sin(a) * r * .69, z - Math.sin(ry) * Math.cos(a) * r * .69 + Math.cos(ry) * .06); s.rotation.set(0, ry, a + Math.PI / 2); g.add(s); }
@@ -705,12 +717,21 @@ function construireTertre(A, L, scene) {
     for (const sx of [-1, 1]) { const t = B(1, 4, 40, toitG, sx * 15, 27.5, -8); t.rotation.z = sx * .5; }
     for (const sx of [-1, 1]) for (let z = -24; z <= 6; z += 5) { baie(2.2, 8, vitre, sx * 20.55, 4, z, sx * Math.PI / 2); baie(2.6, 7, vitre, sx * 17.05, 17, z, sx * Math.PI / 2); B(1, 18, 1.4, blanc, sx * 20.6, 9, z + 2.5); }   // (les baies des bas-côtés et de la nef, les contreforts)
     B(36, .8, 42, blanc, 0, 26.2, -8); B(42, .7, 42, blanc, 0, 18.2, -8);
+    B(35, .35, 41, creme, 0, 25.6, -8); B(37, .3, 43, blanc, 0, 26.75, -8); B(41, .3, 41.5, creme, 0, 17.7, -8); for (let z = -26; z <= 10; z += 2) for (const sx of [-1, 1]) B(.5, .45, .6, blanc, sx * 17.25, 25.2, z);   /* (10.223 : les corniches à moulures, les modillons sous la corniche de la nef) */
+    for (const sx of [-1, 1]) for (const [px, pz] of [[-4.55, 13.05], [4.55, 13.05]]) B(.9, 32, .9, creme, sx * 13.5 + px, 16, pz);   /* (les chaînes d'angle des tours de façade) */
     // les tours d'angle de la façade : leur rosace, leurs baies géminées, leurs petits dômes
     for (const sx of [-1, 1]) { const x = sx * 13.5; B(9, 32, 9, blanc, x, 16, 8.5); B(9.6, .7, 9.6, blanc, x, 32.3, 8.5); rosace(2.6, x, 13, 13.06); baie(1.4, 5, vitre, x - 1.2, 20, 13.06); baie(1.4, 5, vitre, x + 1.2, 20, 13.06); B(.5, 5.5, .4, blanc, x, 22.5, 13.1);
       baie(1.8, 6, vitre, x + sx * 4.55, 16, 8.5, sx * Math.PI / 2); for (const [px, pz] of [[-4.2, 12.7], [4.2, 12.7]]) pinacle(x + px, 32.6, pz, .9);
       tambour(3.3, 5, 32.6, x, 8.5, 10); dome(3.5, 7.5, 37.6, x, 8.5, 10, 4); lanterne(.9, 2.6, 45.2, x, 8.5, 6); croix(.6, x, 47.9, 8.5); }
     // le porche : les trois grands arcs sur colonnes, les portes de bronze, la frise, la balustrade et ses deux petits dômes
-    B(26, 15, 7, blanc, 0, 7.5, 16.5); for (const x of [-7.4, 0, 7.4]) { baie(5.4, 11, noirA, x, 0, 20.02, 0, false); const ar = new THREE.Mesh(new THREE.TorusGeometry(2.9, .4, 6, 18, Math.PI), blanc); ar.position.set(x, 8.3, 20.1); g.add(ar); for (const dx of [-3.1, 3.1]) C(.38, .42, 8.3, creme, x + dx, 4.15, 20.3, 10); B(4.6, 6.6, .2, mat({ color: 0x5a4a32, metalness: .4, roughness: .5, fog: false }), x, 3.3, 19.4); }
+    /* (10.223) le porche, creux pour de vrai : le mur du fond et ses portes de bronze, les piliers, les voûtes en berceau sous chaque arc, les écoinçons au-dessus ; on passe dessous */
+    B(26, 15, 1, blanc, 0, 7.5, 13.5); B(26, 4, 7, blanc, 0, 13, 16.5);
+    for (const [x0, x1] of [[-13, -10.1], [-4.7, -2.7], [2.7, 4.7], [10.1, 13]]) B(x1 - x0, 11, 7, blanc, (x0 + x1) / 2, 5.5, 16.5);
+    { const sh = new THREE.Shape(); sh.moveTo(-2.7, 0); sh.lineTo(-2.7, 2.7); sh.lineTo(2.7, 2.7); sh.lineTo(2.7, 0); sh.absarc(0, 0, 2.7, 0, Math.PI, false); const eco = new THREE.ExtrudeGeometry(sh, { depth: 7, bevelEnabled: false, curveSegments: 14 });
+      for (const x of [-7.4, 0, 7.4]) { const o = new THREE.Mesh(eco, blanc); o.position.set(x, 8.3, 13); g.add(o); const vt = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 2.7, 6, 16, 1, true, 0, Math.PI), creme); vt.material.side = THREE.DoubleSide; vt.rotation.set(Math.PI / 2, Math.PI / 2, 0); vt.position.set(x, 8.3, 17); g.add(vt);
+        const ar = new THREE.Mesh(new THREE.TorusGeometry(2.9, .4, 6, 18, Math.PI), blanc); ar.position.set(x, 8.3, 20.1); g.add(ar); for (const dx of [-3.1, 3.1]) C(.38, .42, 8.3, creme, x + dx, 4.15, 20.3, 10);
+        B(4.6, 6.6, .2, mat({ color: 0x6a5434, metalness: .5, roughness: .45, fog: false }), x, 3.3, 14.1); for (let r = 0; r < 3; r++) for (const sg of [-1, 1]) B(1.8, 1.7, .05, mat({ color: 0x84683e, metalness: .55, roughness: .4, fog: false }), x + sg * 1.05, 1.3 + r * 2.05, 14.22);
+        baie(4.6, 3.4, vitre, x, 7, 14.02, 0, false); } }   /* (les portes de bronze et leurs panneaux ; au-dessus, le tympan vitré) */
     B(27, 1, 7.6, blanc, 0, 15.5, 16.5); B(27.4, .5, 7.8, blanc, 0, 16.2, 16.5); for (let x = -13; x <= 13.1; x += .8) C(.14, .14, 1.1, blanc, x, 17, 20.2, 6); B(27, .3, .5, blanc, 0, 17.6, 20.2);
     for (let x = -12; x <= 12.1; x += 3) { const f = B(2, 2, .2, creme, x, 13.6, 20.06); f.rotation.z = Math.PI / 4; }   // (la frise de losanges)
     for (const sx of [-1, 1]) { B(3, 16, 3, blanc, sx * 9.8, 25, 12.6); tambour(1.6, 2.6, 33, sx * 9.8, 12.6, 8, false); dome(1.75, 3.8, 35.6, sx * 9.8, 12.6, 8, 3); croix(.35, sx * 9.8, 39.6, 12.6); for (const y of [20, 26]) baie(.8, 3, vitre, sx * 9.8, y, 14.12); }   /* (les deux tourelles qui encadrent le pignon, et leurs petits dômes) */
@@ -752,31 +773,55 @@ function construireTertre(A, L, scene) {
     tambour(5, 7, 54.8, 0, CZ, 12); dome(5.3, 12, 61.8, 0, CZ, 14, 5, .18); lanterne(1.2, 3.4, 73.4, 0, CZ, 8); croix(.8, 0, 76.9, CZ);
     /* (10.222) la butte, d'après la photo : la masse de la colline sous le parvis ; au milieu, la terrasse aux trois arcs rayonnants et sa balustrade ; de part et d'autre, les deux grands escaliers
        qui montent de la petite place jusqu'au parvis, entre leurs murets ; entre eux, la pelouse en pente et ses ifs taillés ; sur les côtés, les talus plantés d'arbres */
-    const YB = -18 / 1.15, LZ1 = 72.3, pierreB = mat({ color: 0xd8d0be, roughness: .85, fog: false }), quad = (a, b, c2, d, m) => { const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute([...a, ...b, ...c2, ...a, ...c2, ...d], 3)); geo.computeVertexNormals(); const o = new THREE.Mesh(geo, m); g.add(o); return o; };
-    const herbeD = mat({ color: 0x5a8a3a, roughness: .95, side: THREE.DoubleSide, fog: false });
+    const YB = -SC.Y / SC.S, LZ1 = SC.LZ1, pierreB = mat({ color: 0xd8d0be, map: pierreT, roughness: .85, fog: false }), quad = (a, b, c2, d, m, ech = 3) => { const geo = new THREE.BufferGeometry(); const P = [...a, ...b, ...c2, ...a, ...c2, ...d]; geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); const U = []; for (let i = 0; i < 6; i++) U.push(P[i * 3] / ech, P[i * 3 + 2] / ech); geo.setAttribute("uv", new THREE.Float32BufferAttribute(U, 2)); geo.computeVertexNormals(); const o = new THREE.Mesh(geo, m); g.add(o); return o; };
+    /* (10.224) l'herbe, en vrai : un gazon dense, ses brins, les bandes de tonte claires et foncées (comme sur la photo) ; les ifs taillés, leur feuillage serré ; les arbres de la butte, leur tronc et leurs masses de feuillage */
+    const cv = (w, h, f) => { const c = document.createElement("canvas"); c.width = w; c.height = h; f(c.getContext("2d"), w, h); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t; };
+    const gazonT = cv(256, 256, (x, w, h) => { for (let b = 0; b < 4; b++) { x.fillStyle = b % 2 ? "#5f9a3c" : "#6fac46"; x.fillRect(0, b * 64, w, 64); } for (let i = 0; i < 9000; i++) { const g2 = 80 + al() * 90; x.strokeStyle = `rgba(${g2 * .45 | 0},${g2 | 0},${g2 * .3 | 0},.55)`; const px = al() * w, py = al() * h; x.beginPath(); x.moveTo(px, py); x.lineTo(px + (al() - .5) * 2, py - 2 - al() * 4); x.stroke(); }
+      for (let i = 0; i < 60; i++) { x.fillStyle = ["#f4f0e0", "#f2d84a", "#ffffff"][i % 3]; x.fillRect(al() * w, al() * h, 1.5, 1.5); } });
+    const herbeD = mat({ map: gazonT, bumpMap: gazonT, bumpScale: .5, color: 0xffffff, roughness: .95, side: THREE.DoubleSide, fog: false });
+    const feuT = (base) => cv(128, 128, (x, w, h) => { x.fillStyle = base; x.fillRect(0, 0, w, h); for (let i = 0; i < 1400; i++) { const v = al(); x.fillStyle = v < .5 ? `rgba(20,40,14,${.25 + al() * .3})` : `rgba(150,190,90,${.18 + al() * .25})`; x.beginPath(); x.ellipse(al() * w, al() * h, 1.5 + al() * 3, 1 + al() * 2, al() * 3, 0, 7); x.fill(); } });
+    const ifMt = mat({ map: feuT("#2d5a24"), bumpMap: feuT("#2d5a24"), bumpScale: 1.2, roughness: .9, fog: false }), feuilleM = [mat({ map: feuT("#3f7a2e"), bumpMap: feuT("#3f7a2e"), bumpScale: 1, roughness: .9, fog: false }), mat({ map: feuT("#4f8a34"), roughness: .9, fog: false }), mat({ map: feuT("#356a28"), roughness: .9, fog: false })], ecorce = mat({ color: 0x5a4a3a, roughness: 1, fog: false });
+    const ifG = new THREE.ConeGeometry(.62, 2.1, 12, 4); { const p2 = ifG.attributes.position; for (let i = 0; i < p2.count; i++) { const y = p2.getY(i), r = 1 + Math.sin(y * 9 + i) * .04; p2.setX(i, p2.getX(i) * r); p2.setZ(i, p2.getZ(i) * r); } ifG.computeVertexNormals(); }
+    const If = (x, y, z, s2 = 1) => { const o = add(ifG, ifMt, x, y + 1.05 * s2, z, g); o.scale.setScalar(s2); add(new THREE.CylinderGeometry(.08, .1, .3, 6), ecorce, x, y + .1, z, g); };
+    const arbre = (x, y, z, r) => { C(r * .09, r * .14, r * 1.2, ecorce, x, y + r * .6, z, 7); for (let k = 0; k < 6; k++) { const a = k * 1.1 + x, rr = r * (.45 + al() * .3); add(new THREE.IcosahedronGeometry(rr, 1), feuilleM[(k + Math.abs(x | 0)) % 3], x + Math.cos(a) * r * .45, y + r * 1.35 + al() * r * .5, z + Math.sin(a) * r * .45, g); } };
     B(100, -YB, 118, pierreB, 0, YB / 2, -24);   // (la colline sous le parvis, et sous la rue qui fait le tour de la basilique)
     { const pt = paves(124); pt.repeat.set(100 / 2.4 / 1.15, 118 / 2.4 / 1.15); const sol = new THREE.Mesh(new THREE.PlaneGeometry(100, 118), mat({ map: pt, roughness: .75, fog: false })); sol.rotation.x = -Math.PI / 2; sol.position.set(0, .02, -24); g.add(sol); }   /* (les pavés du parvis et de la rue) */
-    const yS = (lz) => (lz - 35) / (LZ1 - 35) * YB, TZ = 47, yT = yS(TZ);   // (la ligne des marches ; la terrace avancée dans la pente, entre les deux escaliers)
+    const yS = (lz) => (lz - 35) / (LZ1 - 35) * YB, TZ = 50, yT = yS(TZ);   // (la ligne des marches ; la terrasse avancée dans la pente, entre les deux escaliers)
     B(27, -yT, TZ - 35, blanc, 0, yT / 2, (35 + TZ) / 2); { const pt = paves(124); pt.repeat.set(27 / 2.4, (TZ - 35) / 2.4); const so = new THREE.Mesh(new THREE.PlaneGeometry(27, TZ - 35), mat({ map: pt, roughness: .75, fog: false })); so.rotation.x = -Math.PI / 2; so.position.set(0, .03, (35 + TZ) / 2); g.add(so); }
-    for (const x of [-8.4, 0, 8.4]) { baie(4.8, -yT * .86, noirA, x, yT, TZ + .02, 0, false); const cy = yT - yT * .86 - 2.4; for (let k = 0; k < 13; k++) { const a = k / 12 * Math.PI, v = B(.2, 1.4, .25, creme, x + Math.cos(a) * 3.05, cy + Math.sin(a) * 3.05, TZ + .1); v.rotation.z = a - Math.PI / 2; } }
+    for (const x of [-8.4, 0, 8.4]) { baie(4.8, -yT * .86, mat({ color: 0xb8b0a0, roughness: .9, fog: false }), x, yT, TZ - .6, 0, false); { const nb = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, .66, 14, 1, true, 0, Math.PI), creme); nb.rotation.set(Math.PI / 2, Math.PI / 2, 0); nb.position.set(x, yT - yT * .86 - 2.4, TZ - .27); g.add(nb); for (const sg of [-1, 1]) B(.12, -yT * .86 - 2.4, .66, creme, x + sg * 2.4, yT + (-yT * .86 - 2.4) / 2, TZ - .27); }
+      const cy = yT - yT * .86 - 2.4; for (let k = 0; k < 13; k++) { const a = k / 12 * Math.PI, v = B(.2, 1.4, .25, creme, x + Math.cos(a) * 3.05, cy + Math.sin(a) * 3.05, TZ + .1); v.rotation.z = a - Math.PI / 2; } }
     for (let x = -13.2; x <= 13.3; x += .8) C(.12, .12, 1, blanc, x, .5, TZ - .1, 6); B(27, .3, .55, blanc, 0, 1.1, TZ - .1); for (const x of [-13.3, 0, 13.3]) B(.8, 1.4, .8, blanc, x, .7, TZ - .1);
     quad([-13.6, yT, TZ + .05], [13.6, yT, TZ + .05], [13.6, YB, LZ1], [-13.6, YB, LZ1], herbeD);   // (la pelouse, à fleur des marches)
-    for (const lz of [52, 57, 62, 67]) for (const lx of [-10, -4.5, 4.5, 10]) add(new THREE.ConeGeometry(.6, 1.8, 8), ifM, lx, yS(lz) + .85, lz, g);
-    const N = 30, ru = (LZ1 - 35) / N, ri = -YB / N, ang = Math.atan2(-YB, LZ1 - 35), LL = Math.hypot(LZ1 - 35, YB);
+    for (let lz = TZ + 5; lz < LZ1 - 3; lz += 6.5) for (const lx of [-10.5, -4.5, 4.5, 10.5]) If(lx, yS(lz), lz, .9 + ((lz * 7 + lx) & 3) * .06);
+    const N = 48, ru = (LZ1 - 35) / N, ri = -YB / N;
     for (const sx of [-1, 1]) { for (let k = 0; k < N; k++) { const top = -k * ri, h = top - YB + .01; B(4.9, h, ru + .02, k % 2 ? creme : pierreB, sx * 16, YB + h / 2, 35 + (k + .5) * ru); }
-      quad([sx * 18.45, 0, 35], [sx * 33, 0, 35], [sx * 33, YB, LZ1], [sx * 18.45, YB, LZ1], herbeD);   // (le talus)
-      for (let k = 0; k < 5; k++) { const lz = 38 + k * 8, x = sx * (23 + (k % 2) * 5), r = 3.6 + (k % 3) * .8; add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x5a7a2a][k % 3], roughness: .9, fog: false }), x, -(lz - 35) / (LZ1 - 35) * -YB + r * .8, lz, g); } }
-    for (const [x, z, r] of [[-30, 20, 4.5], [-34, 4, 5], [30, 20, 4.4], [34, 2, 5.2], [-31, -16, 4.6], [31, -18, 4.4]]) add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x5a7a2a][Math.abs(x * 7) % 3], roughness: .9, fog: false }), x, r * .7, z, g);
+      quad([sx * 18.45, 0, 35], [sx * 50, 0, 35], [sx * 50, YB, LZ1], [sx * 18.45, YB, LZ1], herbeD);   // (le talus, jusqu'au funiculaire)
+      for (let k = 0; k < 7; k++) { const lz = 39 + k * 8, lx = sx * (24 + (k % 2) * 6), r = 3.4 + (k % 3) * .7; if (sx < 0 && lx < -33) continue; arbre(lx, yS(lz), lz, r); }
+      for (let k = 0; k < 6; k++) { const lz = 41 + k * 9; If(sx * 20.2, yS(lz), lz, 1.1); } }
+    for (const [x, z, r] of [[-30, 20, 4.5], [30, 20, 4.4], [34, 2, 5.2], [31, -18, 4.4]]) arbre(x, 0, z, r);
+    /* (10.224) le funiculaire de Montmartre, d'après la photo : à gauche des escaliers, ses deux voies côte à côte sur leur lit de béton, les rails, le câble, les garde-corps ; la gare d'en bas et celle d'en haut */
+    { const beton = mat({ color: 0xc8c4bc, map: pierreT, roughness: .9, fog: false }), acier = mat({ color: 0x7a7e84, metalness: .7, roughness: .35, fog: false }), verreG = lum(mat({ color: 0x3a4a52, metalness: .3, roughness: .1, transparent: true, opacity: .55, emissive: 0xffe0a0, emissiveIntensity: 0, fog: false }), 0, .5);
+      const ang = Math.atan2(-YB, LZ1 - 35), LL = Math.hypot(LZ1 - 35, YB) + 6;
+      for (const lx of [-41, -37.4]) { const lit = B(3.1, .5, LL, beton, lx, (YB) / 2 - .2, (35 + LZ1) / 2); lit.rotation.x = ang; for (const dx of [-.55, .55]) { const r = B(.08, .1, LL, acier, lx + dx, YB / 2 + .12, (35 + LZ1) / 2); r.rotation.x = ang; } }
+      for (const lx of [-43, -35.4]) for (let lz = 37; lz < LZ1; lz += 3) { C(.04, .04, 1.1, acier, lx, yS(lz) + .55, lz, 4); } for (const lx of [-43, -35.4]) { const m2 = B(.05, .05, LL, acier, lx, YB / 2 + 1.15, (35 + LZ1) / 2); m2.rotation.x = ang; }
+      for (const [lz, ly] of [[LZ1 + 3.5, YB], [31.5, 0]]) { B(10, .4, 7, beton, -39.2, ly + 3.8, lz); for (const [dx, dz] of [[-4.6, -3.2], [4.6, -3.2], [-4.6, 3.2], [4.6, 3.2]]) C(.12, .12, 3.6, acier, -39.2 + dx, ly + 1.8, lz + dz, 6); B(9.6, 2.6, .08, verreG, -39.2, ly + 1.9, lz + (lz > 40 ? 3.3 : -3.3));
+        const pan = cv(512, 96, (x, w, h) => { x.fillStyle = "#1e3a5a"; x.fillRect(0, 0, w, h); x.fillStyle = "#f2ead8"; x.font = "bold 54px Georgia"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("FUNICULAIRE", w / 2, h / 2 + 3); }); B(6, 1.1, .1, lum(mat({ map: pan, emissive: 0xffffff, emissiveMap: pan, emissiveIntensity: 0, fog: false }), 0, .7), -39.2, ly + 4.6, lz + (lz > 40 ? 3.55 : -3.55)); } }
     /* (10.222) tout autour de la basilique, la rue pavée du haut de la butte, et ses vieilles maisons (d'après la vue du ciel) */
-    { let k = 0; const posee = (h) => { if (h) h.position.y = 18; }; const tour = (x0, x1, z, ry) => { let x = x0; while (x < x1 - 4) { const W = Math.min(x1 - x, 7 + (k * 5 % 4)), H = 9 + (k * 7 % 5); posee(maison(x + W / 2, z, ry, W, H, { ...ordinaire(k + 2), lierre: 0 })); x += W; k++; } };
-      tour(178, 296, -18.5, NORD); tour(178, 296, 58.5, SUD);
-      { let z = -18.5; while (z < 58 - 4) { const W = Math.min(58.5 - z, 8 + (k * 3 % 4)), H = 10 + (k % 4); posee(maison(297, z + W / 2, EST, W, H, { ...ordinaire(k + 1), lierre: 0 })); z += W; k++; } } }
+    { let k = 0; const posee = (h) => { if (h) h.position.y = SC.Y; }; const tour = (x0, x1, z, ry) => { let x = x0; while (x < x1 - 4) { const W = Math.min(x1 - x, 7 + (k * 5 % 4)), H = 9 + (k * 7 % 5); posee(maison(x + W / 2, z, ry, W, H, { ...ordinaire(k + 2), lierre: 0 })); x += W; k++; } };
+      tour(SC.X - 30, SC.X + 81, -18.5, NORD); tour(SC.X - 37, SC.X + 81, 58.5, SUD);
+      { let z = -18.5; while (z < 58 - 4) { const W = Math.min(58.5 - z, 8 + (k * 3 % 4)), H = 10 + (k % 4); posee(maison(SC.X + 82, z + W / 2, EST, W, H, { ...ordinaire(k + 1), lierre: 0 })); z += W; k++; } } }
     // le soir, le Sacré-Cœur est éclairé : sa pierre blanche brille sur le ciel noir
     if (!(MOBILE || GPU_MODESTE)) { const sp = new THREE.SpotLight(0xfff0d8, 0, 260, .55, .5, 1); sp.position.set(0, 10, 130); sp.target.position.set(0, 45, -8); g.add(sp); g.add(sp.target); NUIT.push([{ set emissiveIntensity(v) { sp.intensity = v; } }, 0, 2200]); }
     if (!L.apercuSC) { g.updateMatrixWorld(true); for (const o of [...g.children]) if (o.isMesh) scene.attach(o); } }   // (les pierres fondues avec le reste)
+  /* (10.223) les lampadaires parisiens, comme dans les rues de Montmartre : le long des deux grands escaliers, sur la petite place du bas, sur le parvis et dans la rue qui fait le tour ; allumés le soir */
+  { const W = (lx, lz) => [SC.X - lz * SC.S, 20 + lx * SC.S], hS = (lz) => SC.Y * (1 - Math.max(0, Math.min(1, (lz - 35) / (SC.LZ1 - 35))));
+    for (const sx of [-1, 1]) for (let lz = 40; lz < SC.LZ1; lz += 10) { const [x, z] = W(sx * 19, lz); lanterne(x, z, hS(lz)); }
+    for (const [x, z] of [[114, -6], [114, 30], [132, -12], [132, 50], [113, 18], [118, -27]]) lanterne(x, z, 0);
+    for (const sx of [-1, 1]) for (const lz of [34.4, 22]) { const [x, z] = W(sx * 22.8, lz); lanterne(x, z, SC.Y); }
+    for (const sx of [-1, 1]) for (let lz = 12; lz > -66; lz -= 13) { const [x, z] = W(sx * 32.4, lz); lanterne(x, z, SC.Y); } }
 
   /* (10.222) en bas de la butte, sur la petite place : le manège à l'ancienne — le toit vert à lambrequins, les colonnes torsadées dorées, les chevaux de bois qui montent et descendent, les lumières le soir */
-  { const G = new THREE.Group(); G.position.set(120.7, 0, 45.3); scene.add(G); const or = mat({ color: 0xd8b040, metalness: .7, roughness: .35 }), vert = mat({ color: 0x2f7a6a, roughness: .6 }), creme2 = mat({ color: 0xf2ead2, roughness: .7 });
+  { const G = new THREE.Group(); G.position.set(120.7, 0, 45.3); G.userData.anime = true; scene.add(G); const or = mat({ color: 0xd8b040, metalness: .7, roughness: .35 }), vert = mat({ color: 0x2f7a6a, roughness: .6 }), creme2 = mat({ color: 0xf2ead2, roughness: .7 });
     cyl(5.6, 5.8, .5, mat({ color: 0x7a2a2a, roughness: .7 }), 0, .25, 0, G, 28); cyl(5.65, 5.65, .12, or, 0, .52, 0, G, 28);
     const R = new THREE.Group(); R.position.y = .5; G.add(R); cyl(.8, .8, 3.6, mat({ color: 0xc8a060, roughness: .5 }), 0, 1.8, 0, R, 12);
     for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2, x = Math.cos(a) * 4.6, z = Math.sin(a) * 4.6; cyl(.06, .06, 3.6, or, x, 1.8, z, R, 6); const c = new THREE.Group(); c.position.set(x, 1, z); c.rotation.y = -a; R.add(c);
@@ -923,15 +968,85 @@ function construireTertre(A, L, scene) {
   L.limites = (x, z) => libre(x, z) && ((x > XO + .4 && x < XE - .4 && z > ZN + .4 && z < ZS - .4) || (x >= XE - 2 && x < XBUT - 5 && z > 9 && z < 15) || (x > -1.1 && x < 3.2 && z >= ZS - 2 && z < ZRu0 + 2)
     || (x > XSa0 + .4 && x < -19.5 && z > ZNo0 + .4 && z < ZNo1 - .4) || (x > XSa0 + .4 && x < XSa1 - .4 && z > ZSa0 + .4 && z < ZSa1 - .4) || (x > XSa0 + .4 && x < XBUT - 5 && z > ZRu0 + .4 && z < ZRu1 - .4));
   /* (10.222) jusqu'au Sacré-Cœur, à pied : la rue, la petite place du bas, les deux grands escaliers, le parvis, la rue qui fait le tour de la basilique */
-  const SCloc = (x, z) => [(z - 20) / 1.15, (215 - x) / 1.15];
-  const SCmarche = (x, z) => { if (x >= 50 && x < 113 && z > 9.2 && z < 14.8) return true; if (x >= 112 && x <= 132.4 && z > -12 && z < 52 && Math.hypot(x - 120.7, z - 45.3) > 6.4) return true;
-    const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz > 34.6 && lz < 72.8 && a > 13.8 && a < 18.2) return true;
-    if (lz >= 21 && lz <= 35.2 && a < 24) return true; if (lz > 35 && lz < 46.6 && a < 13.2) return true; if (lz <= 35.2 && lz >= -70 && a >= 23.5 && a < 32.5) return true; if (lz < -55.5 && lz >= -70 && a < 32.5) return true; return false; };
-  const SChaut = (x, z) => { const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz <= 35.2 && lz > -80 && a < 40) return 18; if (lz > 35 && lz < 47.2 && a < 13.6) return 18; if (lz > 35.2 && lz < 72.3 && a > 13.5 && a < 18.5) return 18 * (1 - (lz - 35) / 37.3); return null; };
+  const SCloc = (x, z) => [(z - 20) / SC.S, (SC.X - x) / SC.S];
+  const SCmarche = (x, z) => { if (x >= 50 && x < 113 && z > 9.2 && z < 14.8) return true; if (x >= 112 && x <= SC.X - SC.LZ1 * SC.S + .4 && z > -31 && z < 52 && Math.hypot(x - 120.7, z - 45.3) > 6.4) return true;
+    const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz > 34.6 && lz < SC.LZ1 + .5 && a > 13.8 && a < 18.2) return true; if (lx < -34 && lx > -44.5 && ((lz > 28 && lz < 35.2) || (lz > SC.LZ1 && lz < SC.LZ1 + 7))) return true;   /* (les quais des deux gares du funiculaire) */
+    if (lz >= 21 && lz <= 35.2 && a < 24) return true; if (lz > 35 && lz < 49.6 && a < 13.2) return true; if (lz <= 35.2 && lz >= -70 && a >= 23.5 && a < 32.5) return true; if (lz < -55.5 && lz >= -70 && a < 32.5) return true; return false; };
+  const SChaut = (x, z) => { const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz <= 35.2 && lz > -80 && a < 50) return SC.Y; if (lz > 35 && lz < 50.2 && a < 13.6) return SC.Y; if (lz > 35.2 && lz < SC.LZ1 && a > 13.5 && a < 18.5) return SC.Y * (1 - (lz - 35) / (SC.LZ1 - 35)); return null; };
   { const l0 = L.limites; L.limites = (x, z) => l0(x, z) || (x > 49 && SCmarche(x, z) && libre(x, z)); }
-  L.hauteur = (x, z) => { if (x > 130) { const h = SChaut(x, z); if (h != null) return h; } return (x > SQ.x0 && x < SQ.x1 && z > SQ.z0 && z < SQ.z1) ? YS : hTrot(x, z); };
+  L.hauteur = (x, z) => { if (x > 133) { const h = SChaut(x, z); if (h != null) return h; } return (x > SQ.x0 && x < SQ.x1 && z > SQ.z0 && z < SQ.z1) ? YS : hTrot(x, z); };
   L.depart = [L.metroAbbesses.x, L.metroAbbesses.z - .5]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
-  L.zone = [XSa0 - 1, 298, ZSa0 - 1, ZSa1 + 15];   /* (seulement là où l'on marche : la carte des passages reste petite) */ L.cam = { pos: [-83, 4, 30], vise: [-83, 3, 10] };
+  /* (10.224) le funiculaire de Montmartre : deux cabines argentées et vitrées (d'après la photo), qui se croisent à mi-pente ; on monte en bas, on descend en haut — le petit voyage, filmé de côté */
+  { const W3 = (lx, lz, ly) => new THREE.Vector3(SC.X - lz * SC.S, SC.Y + ly * SC.S, 20 + lx * SC.S), YB = -SC.Y / SC.S, LZ1 = SC.LZ1, yS = (lz) => lz <= 35 ? 0 : lz >= LZ1 ? YB : (lz - 35) / (LZ1 - 35) * YB;
+    const pos = (lx, u) => { const lz = (LZ1 + 3.5) + (31.5 - (LZ1 + 3.5)) * u; return W3(lx, lz, yS(lz)); }, pente = Math.atan2(SC.Y, (LZ1 - 35) * SC.S);
+    const argent = mat({ color: 0xdfe3e8, metalness: .2, roughness: .35 }), gris = mat({ color: 0x5a5e66, metalness: .5, roughness: .4 }), noirC = mat({ color: 0x1a1c20, roughness: .6 }), vitreC = lum(mat({ color: 0x2a3440, metalness: .4, roughness: .08, transparent: true, opacity: .7, emissive: 0xffd890, emissiveIntensity: .02 }), .02, .9), feu = lum(mat({ color: 0xffd070, emissive: 0xffc050, emissiveIntensity: .4 }), .4, 2);
+    /* (10.224) la cabine à l'ancienne, d'après les photos : une caisse de bois peint en vert tendre, filets blancs sur chaque panneau, montée en gradins sur son châssis noir en coin,
+       deux plateformes ouvertes aux bouts (garde-corps, colonne et volant du frein à main), deux compartiments vitrés au milieu, boiseries chaudes dedans, et le grand toit galbé qui déborde */
+    const panT = (() => { const c = document.createElement("canvas"); c.width = 256; c.height = 128; const x = c.getContext("2d"); x.fillStyle = "#79a253"; x.fillRect(0, 0, 256, 128);
+      for (let k = 0; k < 900; k++) { x.fillStyle = `rgba(${al() < .5 ? "40,60,20" : "200,230,160"},${.04 + al() * .05})`; x.fillRect(al() * 256, al() * 128, 1 + al() * 3, 1); }
+      x.strokeStyle = "#f2f2e8"; x.lineWidth = 3; for (const k of [0, 1]) x.strokeRect(14 + k * 121, 14, 107, 100); x.strokeStyle = "rgba(30,50,15,.5)"; x.lineWidth = 2; x.strokeRect(1, 1, 254, 126);
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; })();
+    const panT2 = panT.clone(); panT2.wrapS = panT2.wrapT = THREE.RepeatWrapping; panT2.repeat.set(1 / 1.15, 1 / .66); panT2.offset.set(0, .2); panT2.needsUpdate = true;
+    const vertP = mat({ map: panT, roughness: .7 }), vertP2 = mat({ map: panT2, roughness: .7 }), vertU = mat({ color: 0x79a253, roughness: .7 }), toitV = mat({ color: 0x9fb594, roughness: .45, metalness: .25 }), boisI = mat({ color: 0xa8683a, roughness: .7 }),
+      vitreA = mat({ color: 0xbfd2d8, roughness: .05, metalness: .3, transparent: true, opacity: .32 }), fer = mat({ color: 0x15171a, roughness: .5, metalness: .4 }), blancF = mat({ color: 0xf2f2e8, roughness: .6 });
+    const tp = Math.tan(pente), NC = 4, LC = 2.3, LG = 2.3;   // (quatre compartiments en gradins, de 2,3 de long, 2,3 de large)
+    const cabine = () => { const G = new THREE.Group(); G.userData.anime = true; scene.add(G); const C2 = new THREE.Group(); G.add(C2);
+      const mince = (w, h, d, m, x, y, z) => box(w, h, d, m, x, y, z, C2);
+      const L0 = NC * LC, xh = L0 / 2, yh = (x) => x * tp + LC / 2 * tp + 1.05 + 3.35;
+      const trap = (x0, x1, yb, ep, m, z, d = .03) => { const sh = new THREE.Shape(); sh.moveTo(x0, yb); sh.lineTo(x1, yb); sh.lineTo(x1, yh(x1) - d); sh.lineTo(x0, yh(x0) - d); sh.closePath();
+        const o = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: ep, bevelEnabled: false }), m); o.position.z = z - ep / 2; C2.add(o); return o; };   // (un pan de mur qui monte jusque sous le toit en pente)
+      for (let i = 0; i < NC; i++) { const cx = (i - (NC - 1) / 2) * LC, x0 = cx - LC / 2, x1 = cx + LC / 2, f = x1 * tp + 1.05, ouvert = i === 0 || i === NC - 1, bout = i === 0 ? -1 : 1;
+        // le châssis en coin, noir, qui rattrape la pente sous le plancher horizontal
+        const sh = new THREE.Shape(); sh.moveTo(x0, x0 * tp + .35); sh.lineTo(x1, x1 * tp + .35); sh.lineTo(x1, f); sh.lineTo(x0, f); sh.closePath();
+        const cg = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: LG - .3, bevelEnabled: false }), fer); cg.position.z = -(LG - .3) / 2; C2.add(cg);
+        mince(LC + .02, .12, LG - .12, fer, cx, f + .02, 0);   // (le plancher, sa tranche noire)
+        // le soubassement : les panneaux verts à filets blancs, sur les deux flancs
+        if (ouvert) { const eb = (cx + bout * LC / 2) * tp + .45, eh = f + 1.12; mince(.07, eh - eb, LG + .14, vertP2, cx + bout * (LC / 2 + .035), (eb + eh) / 2, 0);   // (le bout de la plateforme, jusqu'au bas droit de la caisse)
+          for (const sz of [-1, 1]) { mince(LC, .05, .05, fer, cx, f + 2.05, sz * (LG / 2 - .02)); for (let k = 0; k < 7; k++) mince(.03, .9, .03, fer, x0 + .2 + k * .32, f + 1.6, sz * (LG / 2 - .02)); }
+          mince(.05, .05, LG, fer, cx + bout * LC / 2, f + 2.05, 0); for (let k = 0; k < 6; k++) mince(.03, .9, .03, fer, cx + bout * LC / 2, f + 1.6, -LG / 2 + .25 + k * .36);
+          // la colonne du frein à main et son volant
+          const fx = cx + bout * (LC / 2 - .35); mince(.12, 1.5, .12, fer, fx, f + .85, -.45); mince(.35, .9, .4, fer, fx + bout * .05, f + 1.05, .25);
+          const vo = add(new THREE.TorusGeometry(.26, .025, 6, 18), fer, fx, f + 1.65, -.45, C2); vo.rotation.x = Math.PI / 2;
+          for (let k = 0; k < 3; k++) { const r = mince(.5, .02, .02, fer, fx, f + 1.65, -.45); r.rotation.y = k * Math.PI / 3; }
+          for (const sz of [-1, 1]) { const px = cx + bout * (LC / 2 - .04), ht = yh(px) - f; mince(.08, ht, .08, fer, px, f + ht / 2, sz * (LG / 2 - .04)); }   // (les montants de fer qui tiennent le toit)
+        } else {
+          // le compartiment vitré : la haute caisse, ses fenêtres, ses montants, les boiseries dedans
+          for (const sz of [-1, 1]) { trap(x0, x1, f + 2.25, .07, vertU, sz * LG / 2); mince(LC - .1, 1.1, .03, vitreA, cx, f + 1.7, sz * LG / 2);
+            for (const dx of [-LC / 2, 0, LC / 2]) mince(.12, 1.15, .09, vertU, cx + dx, f + 1.7, sz * LG / 2); mince(LC, .07, .1, blancF, cx, f + 1.14, sz * LG / 2); mince(LC, .05, .1, blancF, cx, f + 2.27, sz * (LG / 2 + .01)); }
+          trap(x0 + .05, x1 - .05, f + .1, LG - .3, boisI, 0, .08);
+          for (const sz of [-.55, .55]) mince(LC * .7, .45, .45, boisI, cx, f + .55, sz);
+        }
+        // les cloisons de bout entre gradins (le haut de la marche est vert, à filets)
+        if (i > 0) { const fp = (x0 - LC) * 0 + (x0) * tp + 1.05; mince(.07, f - fp + .05, LG, vertP, x0, (f + fp) / 2, 0); }
+      }
+      // le flanc vert d'un seul tenant : le bas est une ligne droite, parallèle à la voie ; le haut suit les appuis des fenêtres, marche par marche
+      for (const sz of [-1, 1]) { const sk = new THREE.Shape(); sk.moveTo(-xh, -xh * tp + .45); sk.lineTo(xh, xh * tp + .45);
+        for (let i = NC - 1; i >= 0; i--) { const cx = (i - (NC - 1) / 2) * LC, ff = (cx + LC / 2) * tp + 1.05 + 1.12; sk.lineTo(cx + LC / 2, ff); sk.lineTo(cx - LC / 2, ff); }
+        sk.closePath(); const o = new THREE.Mesh(new THREE.ExtrudeGeometry(sk, { depth: .07, bevelEnabled: false }), vertP2); o.position.z = sz * LG / 2 - .035; C2.add(o);
+        const ls = mince(L0, .05, .02, blancF, 0, .52, sz * (LG / 2 + .045)); ls.rotation.z = pente; }   // (le filet blanc le long du bas)
+      // le grand toit galbé, d'un seul tenant, qui suit la pente et déborde aux deux bouts, relevé en visière
+      const tg = new THREE.Shape(); tg.moveTo(-xh - .5, yh(-xh - .5)); tg.quadraticCurveTo(-xh - .9, yh(-xh - .5) + .15, -xh - 1.05, yh(-xh - .5) + .45); tg.lineTo(-xh - 1.0, yh(-xh - .5) + .5);
+      tg.quadraticCurveTo(-xh - .8, yh(-xh - .5) + .25, -xh - .5, yh(-xh - .5) + .12); tg.lineTo(xh + .5, yh(xh + .5) + .12); tg.quadraticCurveTo(xh + .8, yh(xh + .5) + .1, xh + 1.05, yh(xh + .5) + .35); tg.lineTo(xh + 1.1, yh(xh + .5) + .3);
+      tg.quadraticCurveTo(xh + .85, yh(xh + .5) - .02, xh + .5, yh(xh + .5)); tg.closePath();
+      const toit = new THREE.Mesh(new THREE.ExtrudeGeometry(tg, { depth: LG + .5, bevelEnabled: false }), toitV); toit.position.z = -(LG + .5) / 2; C2.add(toit);
+      for (const sz of [-1, 1]) { const fr = mince(L0 + .9, .06, .04, blancF, 0, yh(0) + .02, sz * (LG / 2 + .26)); fr.rotation.z = pente; }
+      // les roues et l'essieu sous le châssis, et le gros tube du frein le long du bas
+      for (const sx of [-xh + .9, xh - .9]) for (const sz of [-.6, .6]) { const r = add(new THREE.CylinderGeometry(.32, .32, .14, 14), fer, sx, sx * tp + .3, sz, C2); r.rotation.x = Math.PI / 2; }
+      const tb = mince(L0 - .6, .22, .22, mat({ color: 0x8d9298, metalness: .6, roughness: .35 }), 0, .55, .75); tb.rotation.z = pente;
+      // la petite lanterne de bout, pour la nuit
+      for (const sx of [-1, 1]) mince(.08, .16, .2, feu, sx * (xh + .05), (sx * xh) * tp + 1.0, 0);
+      return G; };
+    const A = cabine(), Bc = cabine(); let u = 0, enCours = false; const placer = (uu) => { const pa = pos(-41, uu), pb = pos(-37.4, 1 - uu); A.position.copy(pa); Bc.position.copy(pb); for (const [G, uv] of [[A, uu], [Bc, 1 - uu]]) { const lz = (LZ1 + 3.5) + (31.5 - (LZ1 + 3.5)) * uv; G.children[0].rotation.z = lz > 35 && lz < LZ1 ? 0 : 0; } }; placer(0);
+    const titre = (t, ms) => { try { const C0 = (M && M.ctx && M.ctx.conteneur) || document.body, d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;bottom:17%;transform:translateX(-50%);z-index:58;width:min(88vw,760px);text-align:center;pointer-events:none;color:#ffb627;font:700 20px/1.35 Lato,Arial,sans-serif;text-shadow:0 2px 4px rgba(0,0,0,.9)"; d.textContent = t; C0.appendChild(d); setTimeout(() => d.remove(), ms); } catch (e) {} };
+    const voyage = (monter) => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine || enCours) return; enCours = true; p.g.visible = false; const t0 = performance.now(), c = M.camera, D = 15, u0 = monter ? 0 : 1, u1 = monter ? 1 : 0;
+      titre(monter ? "Le funiculaire de Montmartre… en route vers le Sacré-Cœur !" : "Le funiculaire redescend vers la place…", 4000);
+      M.cine = { gel: true, fov: [52, 62], maj: () => { const t = (performance.now() - t0) / 1000, k = Math.min(1, t / D), e = k * k * (3 - 2 * k); u = u0 + (u1 - u0) * e; placer(u); const q = A.position;
+          c.position.lerp(new THREE.Vector3(q.x - 7, q.y + 4.5, q.z + 10), t < .2 ? 1 : .08); c.lookAt(q.x + 1.5, q.y + 1.8, q.z);
+          if (t > D + .8 && enCours) { enCours = false; const dest = monter ? W3(-39.2, 30.5, 0) : W3(-39.2, LZ1 + 5.5, YB); p.g.position.set(dest.x, 0, dest.z); p.g.visible = true; try { envoyerWS({ t: "aller", x: dest.x, z: dest.z }); } catch (e) {} finCine(); placerCamera(true); } } }; };
+    const gb = W3(-39.2, LZ1 + 4.5, YB), gh = W3(-39.2, 31.5, 0);
+    const a0f = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0f && a0f(x, z, moi); if (r) return r; if (enCours) return null; if (Math.hypot(x - gb.x, z - gb.z) < 4.5) return { type: "lieu", id: "funiH", label: "🚡 Monter en funiculaire", faire: () => voyage(true) }; if (Math.hypot(x - gh.x, z - gh.z) < 4.5) return { type: "lieu", id: "funiB", label: "🚡 Descendre en funiculaire", faire: () => voyage(false) }; return null; };
+    const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} if (!M || M.L !== L || enCours) return; const k = (Math.sin(tm / 9000) + 1) / 2; placer(k); }; }   /* (sans voyageur, les deux cabines font la navette, tranquillement) */
+  L.zone = [XSa0 - 1, SC.X + 84, ZSa0 - 1, ZSa1 + 15];   /* (seulement là où l'on marche : la carte des passages reste petite) */ L.cam = { pos: [-83, 4, 30], vise: [-83, 3, 10] };
 
   /* ---------- l'animation : le soir qui s'allume, les peintres au pinceau, les dîneurs, les promeneurs ---------- */
   let nV = null, tp = 0;
