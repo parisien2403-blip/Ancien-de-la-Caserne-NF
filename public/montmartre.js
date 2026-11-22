@@ -422,7 +422,7 @@ function construireTertre(A, L, scene) {
   /* (10.88) autour de la bouche du métro Abbesses : plus de boutiques ni de terrasses — les immeubles parisiens, leurs plantes, de petits arbres le long des murs */
   const verdureM = (g, W) => { for (let x = -W / 2 + .7; x < W / 2 - .5; x += 1.6) plante(g, x, .45, (x * 3 | 0) & 1 ? 0 : 2); for (let x = -W / 2 + 1.5; x < W / 2 - 1; x += 3.6) { cyl(.07, .1, 2.6, tronc0, x, 1.3, .7, g, 6); for (let k = 0; k < 3; k++) add(new THREE.IcosahedronGeometry(.75 - k * .12, 1), [vertJ, mat({ color: 0x4a7a30, roughness: .9 }), mat({ color: 0x2e5a22, roughness: .9 })][k], x + (k - 1) * .25, 2.9 + k * .45, .7 + (k % 2) * .15, g); cyl(.4, .4, .05, mat({ color: 0x2a2a2a, metalness: .5 }), x, .03, .7, g, 12); } box(W - .4, .5, .35, mat({ color: 0x9a8a72, roughness: .9 }), 0, .25, .2, g); for (let x = -W / 2 + .5; x < W / 2 - .4; x += .4) add(new THREE.IcosahedronGeometry(.2, 0), [vertJ, mat({ color: 0x4a7a30 })][(x * 5 | 0) & 1], x, .6, .2, g); };
   const tronc0 = mat({ color: 0x5a4a3a, roughness: .9 });
-  const rangee = (ax, az, dx, dz, ry, liste) => { let t = 0; for (const [W, H, o] of liste) { { const cx = ax + dx * (t + W / 2), cz = az + dz * (t + W / 2); if (cx > -95 && cx < -71 && cz > 30 && cz < 50) { o.rdc = verdureM; o.sansSalle = true; o.jard = true; } }   // (autour du métro)
+  const rangee = (ax, az, dx, dz, ry, liste) => { let t = 0; for (const [W, H, o] of liste) { if (o.vide) { t += W; continue; } { const cx = ax + dx * (t + W / 2), cz = az + dz * (t + W / 2); if (cx > -95 && cx < -71 && cz > 30 && cz < 50) { o.rdc = verdureM; o.sansSalle = true; o.jard = true; } }   // (autour du métro)
       if (!o.rdc && W > 3 && !o.nue) o.rdc = boutique; if (o.rdc && W > 3) { const r0 = o.rdc; o.rdc = (g, W2) => { r0(g, W2); pots(g, W2); }; } const x = ax + dx * (t + W / 2), z = az + dz * (t + W / 2); const g = maison(x, z, ry, W, H, o);
       if (o.lierre) lierre(g, W, H, o.lierre === 2, undefined, o.rdc ? 4.5 : 0); if (o.jard && !(MOBILE || GPU_MODESTE)) jardinieres(g, W, H, o.etages, o.fen); if (o.lanterne !== false) { const nx = Math.sin(ry), nz = Math.cos(ry); lanterneMur(x + dx * (W / 2 - .6), 4.6, z + dz * (W / 2 - .6), nx, nz); }
       t += W; } };
@@ -579,8 +579,11 @@ function construireTertre(A, L, scene) {
   rangee(15.4, ZN, 1, 0, 0, [[4.1, 12.5, { ...ordinaire(47), jard: true, rdc: (g, W) => devanture(g, W, { bois: 0x6a1a1a, travees: 2, porte: 0, porteC: 0x5a1414, fondV: "#f0b060", genre: "cafe", store: ["#a01a20", "BISTROT", "#f2ead8"], storeD: 1.0, storeW: 2.0, storeX: -.9 }) }]]);   /* (10.93) le store du coin, étroit et décalé : il ne passe plus sous celui de La Mère Catherine */ rangee(-21.5, ZS, 1, 0, Math.PI, [[1.5, 13, { ...ordinaire(48), lanterne: false }]]);
 
   /* ---------- le bout des rues, vers l'est : fermé par de petites maisons basses (leur boutique, le lierre) ; au-dessus des toits, au loin, les dômes du Sacré-Cœur ---------- */
-  rangee(XBUT, 4.5, 0, 1, EST, [[4.5, 8.6, { teinte: "#f0ece2", volets: "#7a9a6a", etages: 1, lierre: 2, jard: true, nue: true, sansSalle: true }], [6.5, 8.6, { teinte: "#f0ece2", volets: "#7a9a6a", etages: 1, jard: true, rdc: (g, W) => devanture(g, W, { bois: 0x2a4a3a, travees: 4, porte: 1, fondV: "#f0c070", store: ["#2a4a3a", "AU  PIED  DE  LA  BUTTE", "#f2ead8"], storeD: 1.4, storeW: 5.6, guirlande: true }) }],
+  rangee(XBUT, 4.5, 0, 1, EST, [[4.5, 8.6, { teinte: "#f0ece2", volets: "#7a9a6a", etages: 1, lierre: 2, jard: true, nue: true, sansSalle: true }], [6.5, 8.6, { vide: true, teinte: "#f0ece2", volets: "#7a9a6a", etages: 1, jard: true, rdc: (g, W) => devanture(g, W, { bois: 0x2a4a3a, travees: 4, porte: 1, fondV: "#f0c070", store: ["#2a4a3a", "AU  PIED  DE  LA  BUTTE", "#f2ead8"], storeD: 1.4, storeW: 5.6, guirlande: true }) }],
     [10.5, 9, { teinte: "#e8e0cc", volets: "#f2f2ee", etages: 2, jard: true }], [7, 8.2, { teinte: "#f2efe6", volets: "#6a8a9a", etages: 1, lierre: 1, rdc: (g, W) => devanture(g, W, { bois: 0x8a1418, travees: 3, porte: 1, fondV: "#f0a050", store: ["#b01820", "LE  PETIT  MONTMARTRE", "#f2ead8"], storeD: 1.3, storeW: 2.8, guirlande: true }) }]]);   /* (10.88) le store étroit : il ne croise plus celui du coin */
+  /* (10.222) la rue Saint-Éleuthère continue vers l'est, jusqu'au pied de la butte : de part et d'autre, les vieilles maisons de Montmartre, leurs boutiques ; au bout, la petite place et le manège, puis les grands escaliers du Sacré-Cœur */
+  rangee(XBUT + 9, 8.5, 1, 0, NORD, [[8, 10.5, ordinaire(2)], [9, 11, { ...ordinaire(3), rdc: (g, W) => devanture(g, W, { bois: 0x2a4a3a, travees: 4, porte: 1, fondV: "#f0c070", store: ["#2a4a3a", "AU  PIED  DE  LA  BUTTE", "#f2ead8"], storeD: 1.4, storeW: 7, guirlande: true }) }], [7.5, 9.5, ordinaire(1)], [10, 12, ordinaire(4)], [7, 10, ordinaire(5)], [5.5, 9, ordinaire(3)]]);
+  rangee(XBUT + 9, 15.5, 1, 0, SUD, [[9, 11, ordinaire(3)], [7, 10, ordinaire(0)], [8.5, 12, ordinaire(1)], [10, 10.5, ordinaire(2)], [6.5, 9.5, ordinaire(4)], [6, 9, ordinaire(5)]]);
   /* (10.88) le bout de la rue Saint-Éleuthère, côté nord : la rue ne s'ouvre plus sur le vide — une maison à fenêtres, ses plantes contre le mur */
   { const g = maison(XE + 31 + 2.75, 8.5, 0, 5.5, 9.5, { teinte: "#ece4d2", volets: "#6a8a9a", etages: 2, sansSalle: true, rdc: (g2, W) => { box(W - .4, .9, .1, mat({ color: 0x9a8a72, roughness: .9 }), 0, .45, .06, g2); for (const x of [-W / 2 + .5, -.9, .9, W / 2 - .5]) plante(g2, x, .45, x > 0 ? 0 : 2); bouquet(g2, -W / 2 + 1.5, .5, .4, 1); bouquet(g2, W / 2 - 1.5, .5, .4, 3); for (const x of [-W / 2 + 1.5, W / 2 - 1.5]) cyl(.2, .16, .45, mat({ color: 0xa85a3a, roughness: .8 }), x, .23, .4, g2, 10); } }); lierre(g, 5.5, 9.5, true, undefined, 0); OB.push([XE + 33.75, 9.2, 2.6]); }
   /* ---------- les platanes du carré, leurs grilles ; les réverbères à lanterne ---------- */
@@ -665,7 +668,7 @@ function construireTertre(A, L, scene) {
      les tours d'angle et leurs rosaces ; le grand dôme ovoïde couvert d'écailles, sur son tambour à arcades et sa galerie, sa lanterne à colonnettes et sa croix ;
      les quatre dômes secondaires sur leurs tours carrées ; les petits dômes et les clochetons ; le chevet et ses chapelles rayonnantes ; le grand campanile carré
      et sa coupole ; et devant, la butte : la terrasse aux trois arcs rayonnants, sa balustrade, les deux escaliers, la pelouse en pente et ses ifs taillés ---------- */
-  { const g = new THREE.Group(); g.position.set(215, 4, 20); g.rotation.y = -Math.PI / 2; g.scale.setScalar(1.15); scene.add(g); L.sacreCoeur = g;
+  { const g = new THREE.Group(); g.position.set(215, 18, 20); g.rotation.y = -Math.PI / 2; g.scale.setScalar(1.15); scene.add(g); L.sacreCoeur = g;
     const blanc = lum(mat({ color: 0xf4f0e6, roughness: .72, emissive: 0xffe6c0, emissiveIntensity: 0, fog: false }), 0, .55), creme = lum(mat({ color: 0xe6dfd0, roughness: .8, emissive: 0xffe0b0, emissiveIntensity: 0, fog: false }), 0, .4),
       noirA = mat({ color: 0x26262e, roughness: .9, fog: false }), vitre = lum(mat({ color: 0x2c3040, roughness: .4, emissive: 0xffc070, emissiveIntensity: 0, fog: false }), 0, .5), bronze = mat({ color: 0x5f8a7a, roughness: .45, metalness: .55, fog: false }),
       herbe = mat({ color: 0x5a8a3a, roughness: .95, fog: false }), ifM = mat({ color: 0x2e5a26, roughness: .9, fog: false }), toitG = lum(mat({ color: 0xd6d0c2, roughness: .75, emissive: 0xffe0b0, emissiveIntensity: 0, fog: false }), 0, .35);
@@ -696,7 +699,7 @@ function construireTertre(A, L, scene) {
     const pinacle = (x, y, z, s = 1) => { C(.45 * s, .5 * s, 1.6 * s, blanc, x, y + .8 * s, z, 8); add(new THREE.SphereGeometry(.5 * s, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), blanc, x, y + 1.6 * s, z, g); C(.05 * s, .12 * s, .9 * s, blanc, x, y + 2.4 * s, z, 6); };
 
     // la plate-forme et le parvis
-    B(60, 4, 96, creme, 0, -2, -20); B(48, .5, 12, blanc, 0, .25, 26);
+    B(48, .5, 12, blanc, 0, .25, 26);
     // la nef, les bas-côtés, les toits en pente douce
     B(34, 26, 40, blanc, 0, 13, -8); for (const sx of [-1, 1]) { B(4, 18, 40, creme, sx * 18.5, 9, -8); }
     for (const sx of [-1, 1]) { const t = B(1, 4, 40, toitG, sx * 15, 27.5, -8); t.rotation.z = sx * .5; }
@@ -710,18 +713,23 @@ function construireTertre(A, L, scene) {
     B(26, 15, 7, blanc, 0, 7.5, 16.5); for (const x of [-7.4, 0, 7.4]) { baie(5.4, 11, noirA, x, 0, 20.02, 0, false); const ar = new THREE.Mesh(new THREE.TorusGeometry(2.9, .4, 6, 18, Math.PI), blanc); ar.position.set(x, 8.3, 20.1); g.add(ar); for (const dx of [-3.1, 3.1]) C(.38, .42, 8.3, creme, x + dx, 4.15, 20.3, 10); B(4.6, 6.6, .2, mat({ color: 0x5a4a32, metalness: .4, roughness: .5, fog: false }), x, 3.3, 19.4); }
     B(27, 1, 7.6, blanc, 0, 15.5, 16.5); B(27.4, .5, 7.8, blanc, 0, 16.2, 16.5); for (let x = -13; x <= 13.1; x += .8) C(.14, .14, 1.1, blanc, x, 17, 20.2, 6); B(27, .3, .5, blanc, 0, 17.6, 20.2);
     for (let x = -12; x <= 12.1; x += 3) { const f = B(2, 2, .2, creme, x, 13.6, 20.06); f.rotation.z = Math.PI / 4; }   // (la frise de losanges)
-    for (const sx of [-1, 1]) { tambour(1.6, 2.6, 17.8, sx * 11, 16.5, 8, false); dome(1.75, 3.6, 20.4, sx * 11, 16.5, 8, 3); croix(.35, sx * 11, 24.2, 16.5); }
+    for (const sx of [-1, 1]) { B(3, 16, 3, blanc, sx * 9.8, 25, 12.6); tambour(1.6, 2.6, 33, sx * 9.8, 12.6, 8, false); dome(1.75, 3.8, 35.6, sx * 9.8, 12.6, 8, 3); croix(.35, sx * 9.8, 39.6, 12.6); for (const y of [20, 26]) baie(.8, 3, vitre, sx * 9.8, y, 14.12); }   /* (les deux tourelles qui encadrent le pignon, et leurs petits dômes) */
     // au-dessus du porche, le grand pignon : la baie, le Christ dans sa niche, l'inscription, le fronton
     B(18, 16, 3, blanc, 0, 25, 12.5); baie(4.2, 8, vitre, 0, 18.5, 14.02); for (const dx of [-3.4, 3.4]) baie(1.5, 5.5, vitre, dx, 19, 14.02);
     baie(2.6, 5, creme, 0, 27.4, 14.03, 0, true); { const ch = new THREE.Group(); ch.position.set(0, 27.6, 14.3); g.add(ch); const robe = new THREE.Mesh(new THREE.CylinderGeometry(.45, .75, 3, 10), blanc); robe.position.y = 1.5; ch.add(robe); const tete = new THREE.Mesh(new THREE.SphereGeometry(.34, 10, 8), blanc); tete.position.y = 3.3; ch.add(tete); for (const sx of [-1, 1]) { const b2 = new THREE.Mesh(new THREE.CapsuleGeometry(.14, 1.1, 3, 6), blanc); b2.position.set(sx * .55, 2.3, .15); b2.rotation.z = sx * .6; ch.add(b2); } }
     B(14, .9, .4, creme, 0, 23.2, 14.15); { const sh = new THREE.Shape(); sh.moveTo(-9.5, 0); sh.lineTo(9.5, 0); sh.lineTo(0, 4.2); sh.lineTo(-9.5, 0); const fr = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 3, bevelEnabled: false }), blanc); fr.position.set(0, 33, 11); g.add(fr); } pinacle(0, 37, 12.5, 1.1);
-    for (const sx of [-1, 1]) pinacle(sx * 9, 33, 13.5, .8);
-    // les deux saints à cheval, en bronze vert, sur leurs piédestaux
-    for (const sx of [-1, 1]) { const x = sx * 10.2; B(3, 3.6, 3, blanc, x, 1.8, 22.4); B(3.4, .4, 3.4, blanc, x, 3.8, 22.4); const S = new THREE.Group(); S.position.set(x, 4, 22.4); S.rotation.y = sx * .25; g.add(S);
+    // les deux saints à cheval, en bronze vert (Jeanne d'Arc à gauche, l'épée levée ; Saint Louis à droite, le sceptre), perchés sur leurs socles au niveau du toit du porche, de part et d'autre du pignon
+    for (const sx of [-1, 1]) { const x = sx * 13.2; B(3.6, 2.2, 3.6, blanc, x, 17.7, 17.6); B(4, .4, 4, blanc, x, 18.95, 17.6); const S = new THREE.Group(); S.position.set(x, 19.15, 17.6); S.rotation.y = sx * .18; S.scale.setScalar(1.25); g.add(S);
       const ad = (geo, px, py, pz, rx = 0, rz = 0) => { const o = new THREE.Mesh(geo, bronze); o.position.set(px, py, pz); o.rotation.set(rx, 0, rz); S.add(o); return o; };
-      ad(new THREE.CapsuleGeometry(.5, 1.3, 4, 10), 0, 1.7, 0, Math.PI / 2); ad(new THREE.CapsuleGeometry(.25, .7, 3, 8), 0, 2.4, .85, -.6); ad(new THREE.CapsuleGeometry(.18, .45, 3, 8), 0, 2.75, 1.25, -1.6);
-      for (const [lx, lz, rx] of [[-.25, .7, -.6], [.25, .7, 0], [-.25, -.7, .1], [.25, -.7, -.1]]) ad(new THREE.CapsuleGeometry(.11, 1.1, 3, 6), lx, .75, lz, rx); ad(new THREE.CapsuleGeometry(.1, .7, 3, 6), 0, 1.6, -1.15, .6);
-      ad(new THREE.CapsuleGeometry(.24, .6, 3, 8), 0, 2.7, -.1); ad(new THREE.SphereGeometry(.2, 8, 6), 0, 3.35, -.1); ad(new THREE.CapsuleGeometry(.07, 1.2, 3, 6), sx * -.3, 3.1, .3, -.3, sx * .2); ad(new THREE.CylinderGeometry(.025, .025, 2.6, 4), sx * .35, 3.6, .2, -.2); }
+      ad(new THREE.CapsuleGeometry(.42, 1.1, 5, 12), 0, 1.55, 0, Math.PI / 2).scale.set(1, 1, 1.1); ad(new THREE.SphereGeometry(.47, 12, 10), 0, 1.6, .55); ad(new THREE.SphereGeometry(.45, 12, 10), 0, 1.6, -.55);   // (le corps, le poitrail, la croupe)
+      ad(new THREE.CapsuleGeometry(.2, .65, 4, 10), 0, 2.15, .95, -.75); ad(new THREE.CapsuleGeometry(.14, .42, 4, 8), 0, 2.45, 1.32, -1.75); ad(new THREE.BoxGeometry(.08, .35, .55), 0, 2.3, .9, -.75);   // (l'encolure arquée, la tête, la crinière)
+      for (const sx2 of [-1, 1]) ad(new THREE.ConeGeometry(.04, .14, 4), sx2 * .07, 2.68, 1.18);
+      for (const [lx, lz, rx, l] of [[-.2, .6, -.9, .9], [.2, .6, 0, 1.05], [-.2, -.6, .15, 1.05], [.2, -.6, -.1, 1.05]]) { const j2 = ad(new THREE.CapsuleGeometry(.09, l, 3, 6), lx, .62, lz, rx); if (rx < -.5) j2.position.set(lx, 1.0, lz + .3); }   // (l'antérieur gauche levé)
+      ad(new THREE.CapsuleGeometry(.08, .75, 3, 6), 0, 1.45, -1.1, .55);   // (la queue)
+      ad(new THREE.CapsuleGeometry(.2, .45, 4, 8), 0, 2.45, -.1); ad(new THREE.SphereGeometry(.15, 10, 8), 0, 2.95, -.08); for (const sx2 of [-1, 1]) ad(new THREE.CapsuleGeometry(.08, .55, 3, 6), sx2 * .25, 1.95, .05, -.25);   // (le cavalier, ses jambes)
+      ad(new THREE.CapsuleGeometry(.06, .5, 3, 6), -sx * .22, 2.45, .2, -.6); const bras = ad(new THREE.CapsuleGeometry(.06, .55, 3, 6), sx * .25, 2.95, .1, 0, sx * -.5); void bras; ad(new THREE.CylinderGeometry(.025, .025, 1.6, 4), sx * .55, 3.75, .12, 0, sx * -.15);   // (le bras levé, l'épée ou le sceptre)
+      if (sx < 0) ad(new THREE.SphereGeometry(.16, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0, 3.0, -.08); else { ad(new THREE.CylinderGeometry(.16, .14, .1, 8), 0, 3.12, -.08); }   // (le casque de Jeanne ; la couronne de Saint Louis)
+    }
     // la croisée : la grande tour carrée, la galerie, le tambour à arcades, le grand dôme d'écailles, la lanterne, la croix
     const DZ = -8; B(23, 10, 23, blanc, 0, 31, DZ); B(24, .9, 24, blanc, 0, 36.4, DZ); for (const [px, pz] of [[-11.5, -11.5], [11.5, -11.5], [-11.5, 11.5], [11.5, 11.5]]) pinacle(px, 36.8, DZ + pz, 1);
     for (const [dx, dz, ry] of [[0, 11.55, 0], [0, -11.55, Math.PI], [11.55, 0, Math.PI / 2], [-11.55, 0, -Math.PI / 2]]) for (const o of [-6, 0, 6]) baie(2.2, 6, vitre, dx + (dz ? o : 0), 29, DZ + dz + (dx ? o : 0), ry);
@@ -742,17 +750,46 @@ function construireTertre(A, L, scene) {
     for (const [dx, dz, ry] of [[0, 5.52, 0], [0, -5.52, Math.PI], [5.52, 0, Math.PI / 2], [-5.52, 0, -Math.PI / 2]]) { baie(1.6, 14, vitre, dx, 20, CZ + dz, ry); for (const o of [-2.3, 0, 2.3]) baie(1.5, 8.5, noirA, dx + (dz ? o : 0), 43, CZ + dz + (dx ? o : 0), ry); baie(1.3, 5, vitre, dx, 8, CZ + dz, ry); }
     for (const y of [16, 36, 54.4]) B(12.4, .8, 12.4, blanc, 0, y, CZ); for (const [px, pz] of [[-5.6, -5.6], [5.6, -5.6], [-5.6, 5.6], [5.6, 5.6]]) pinacle(px, 54.8, CZ + pz, 1.2);
     tambour(5, 7, 54.8, 0, CZ, 12); dome(5.3, 12, 61.8, 0, CZ, 14, 5, .18); lanterne(1.2, 3.4, 73.4, 0, CZ, 8); croix(.8, 0, 76.9, CZ);
-    // devant, la butte : la terrasse aux trois arcs rayonnants, sa balustrade, les deux escaliers, la pelouse en pente, les ifs
-    B(56, 9, 4, blanc, 0, -4.5, 33); for (const x of [-12, 0, 12]) { baie(7, 7.5, noirA, x, -9, 35.02, 0, false); for (let k = 0; k < 13; k++) { const a = k / 12 * Math.PI, v = B(.18, 1.6, .2, creme, x + Math.cos(a) * 4.1, -5 + Math.sin(a) * 4.1, 35.1); v.rotation.z = a - Math.PI / 2; } }
-    for (let x = -27.5; x <= 27.6; x += .9) C(.12, .12, 1, blanc, x, .5, 34.9, 6); B(56, .3, .5, blanc, 0, 1.1, 34.9); for (let x = -27; x <= 27.1; x += 9) B(.7, 1.3, .7, blanc, x, .65, 34.9);
-    const pente = new THREE.Mesh(new THREE.PlaneGeometry(26, 34), herbe); pente.rotation.x = -Math.PI / 2 + .42; pente.position.set(0, -15.5, 51); g.add(pente);
-    for (const sx of [-1, 1]) { for (let k = 0; k < 26; k++) B(5, .5, 1.25, creme, sx * 16, -9.2 - k * .52, 36 + k * 1.25); B(.6, 1.2, 34, blanc, sx * 13.4, -15, 52); B(.6, 1.2, 34, blanc, sx * 18.6, -15, 52); }
-    for (const [x, z] of [[-9, 40], [9, 40], [-9, 48], [9, 48], [-9, 56], [9, 56], [-9, 64], [9, 64], [-4, 44], [4, 44], [-4, 60], [4, 60]]) { const y = -9.3 - (z - 36) * .45; add(new THREE.ConeGeometry(.6, 1.8, 8), ifM, x, y + .9, z, g); }
-    for (const [x, z, r] of [[-30, 30, 4.5], [-34, 14, 5], [30, 30, 4.4], [34, 12, 5.2], [-31, -6, 4.6], [31, -8, 4.4], [-26, 48, 5], [26, 50, 5.4], [-29, 62, 4.8], [29, 64, 5]]) add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x5a7a2a][Math.abs(x * 7) % 3], roughness: .9, fog: false }), x, z > 36 ? -12 - (z - 36) * .3 + r * .6 : r * .7, z, g);
+    /* (10.222) la butte, d'après la photo : la masse de la colline sous le parvis ; au milieu, la terrasse aux trois arcs rayonnants et sa balustrade ; de part et d'autre, les deux grands escaliers
+       qui montent de la petite place jusqu'au parvis, entre leurs murets ; entre eux, la pelouse en pente et ses ifs taillés ; sur les côtés, les talus plantés d'arbres */
+    const YB = -18 / 1.15, LZ1 = 72.3, pierreB = mat({ color: 0xd8d0be, roughness: .85, fog: false }), quad = (a, b, c2, d, m) => { const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute([...a, ...b, ...c2, ...a, ...c2, ...d], 3)); geo.computeVertexNormals(); const o = new THREE.Mesh(geo, m); g.add(o); return o; };
+    const herbeD = mat({ color: 0x5a8a3a, roughness: .95, side: THREE.DoubleSide, fog: false });
+    B(100, -YB, 118, pierreB, 0, YB / 2, -24);   // (la colline sous le parvis, et sous la rue qui fait le tour de la basilique)
+    { const pt = paves(124); pt.repeat.set(100 / 2.4 / 1.15, 118 / 2.4 / 1.15); const sol = new THREE.Mesh(new THREE.PlaneGeometry(100, 118), mat({ map: pt, roughness: .75, fog: false })); sol.rotation.x = -Math.PI / 2; sol.position.set(0, .02, -24); g.add(sol); }   /* (les pavés du parvis et de la rue) */
+    B(27, 9, 3, blanc, 0, -4.5, 33.5); for (const x of [-8.4, 0, 8.4]) { baie(6.2, 7.4, noirA, x, -9, 35.02, 0, false); for (let k = 0; k < 13; k++) { const a = k / 12 * Math.PI, v = B(.2, 1.7, .25, creme, x + Math.cos(a) * 3.7, -4.7 + Math.sin(a) * 3.7, 35.1); v.rotation.z = a - Math.PI / 2; } }
+    for (let x = -13.2; x <= 13.3; x += .8) C(.12, .12, 1, blanc, x, .5, 34.9, 6); B(27, .3, .55, blanc, 0, 1.1, 34.9); for (const x of [-13.3, 0, 13.3]) B(.8, 1.4, .8, blanc, x, .7, 34.9);
+    const yl = (lz) => -9 + (lz - 35) / (LZ1 - 35) * (YB + 9);   // (la pelouse)
+    quad([-13, -9, 35.2], [13, -9, 35.2], [13, YB, LZ1], [-13, YB, LZ1], herbeD);
+    for (const lz of [40, 47, 54, 61, 67]) for (const lx of [-10, -4.5, 4.5, 10]) add(new THREE.ConeGeometry(.6, 1.8, 8), ifM, lx, yl(lz) + .85, lz, g);
+    const N = 30, ru = (LZ1 - 35) / N, ri = -YB / N, ang = Math.atan2(-YB, LZ1 - 35), LL = Math.hypot(LZ1 - 35, YB);
+    for (const sx of [-1, 1]) { for (let k = 0; k < N; k++) { const top = -k * ri, h = top - YB + .01; B(4.9, h, ru + .02, k % 2 ? creme : pierreB, sx * 16, YB + h / 2, 35 + (k + .5) * ru); }
+      for (const [lx, hh] of [[13.35, 10.5], [18.75, 1.6]]) { const w = B(.6, hh, LL, blanc, sx * lx, (YB + 0) / 2 + 1 - hh / 2 + .4, (35 + LZ1) / 2); w.rotation.x = ang; }   // (les murets, le long de l'escalier)
+      quad([sx * 19.05, 0, 35], [sx * 33, 0, 35], [sx * 33, YB, LZ1], [sx * 19.05, YB, LZ1], herbeD);   // (le talus)
+      for (let k = 0; k < 5; k++) { const lz = 38 + k * 8, x = sx * (23 + (k % 2) * 5), r = 3.6 + (k % 3) * .8; add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x5a7a2a][k % 3], roughness: .9, fog: false }), x, -(lz - 35) / (LZ1 - 35) * -YB + r * .8, lz, g); } }
+    for (const [x, z, r] of [[-30, 20, 4.5], [-34, 4, 5], [30, 20, 4.4], [34, 2, 5.2], [-31, -16, 4.6], [31, -18, 4.4]]) add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x5a7a2a][Math.abs(x * 7) % 3], roughness: .9, fog: false }), x, r * .7, z, g);
+    /* (10.222) tout autour de la basilique, la rue pavée du haut de la butte, et ses vieilles maisons (d'après la vue du ciel) */
+    { let k = 0; const posee = (h) => { if (h) h.position.y = 18; }; const tour = (x0, x1, z, ry) => { let x = x0; while (x < x1 - 4) { const W = Math.min(x1 - x, 7 + (k * 5 % 4)), H = 9 + (k * 7 % 5); posee(maison(x + W / 2, z, ry, W, H, { ...ordinaire(k + 2), lierre: 0 })); x += W; k++; } };
+      tour(178, 296, -18.5, NORD); tour(178, 296, 58.5, SUD);
+      { let z = -18.5; while (z < 58 - 4) { const W = Math.min(58.5 - z, 8 + (k * 3 % 4)), H = 10 + (k % 4); posee(maison(297, z + W / 2, EST, W, H, { ...ordinaire(k + 1), lierre: 0 })); z += W; k++; } } }
     // le soir, le Sacré-Cœur est éclairé : sa pierre blanche brille sur le ciel noir
     if (!(MOBILE || GPU_MODESTE)) { const sp = new THREE.SpotLight(0xfff0d8, 0, 260, .55, .5, 1); sp.position.set(0, 10, 130); sp.target.position.set(0, 45, -8); g.add(sp); g.add(sp.target); NUIT.push([{ set emissiveIntensity(v) { sp.intensity = v; } }, 0, 2200]); }
     if (!L.apercuSC) { g.updateMatrixWorld(true); for (const o of [...g.children]) if (o.isMesh) scene.attach(o); } }   // (les pierres fondues avec le reste)
 
+  /* (10.222) en bas de la butte, sur la petite place : le manège à l'ancienne — le toit vert à lambrequins, les colonnes torsadées dorées, les chevaux de bois qui montent et descendent, les lumières le soir */
+  { const G = new THREE.Group(); G.position.set(120.7, 0, 45.3); scene.add(G); const or = mat({ color: 0xd8b040, metalness: .7, roughness: .35 }), vert = mat({ color: 0x2f7a6a, roughness: .6 }), creme2 = mat({ color: 0xf2ead2, roughness: .7 });
+    cyl(5.6, 5.8, .5, mat({ color: 0x7a2a2a, roughness: .7 }), 0, .25, 0, G, 28); cyl(5.65, 5.65, .12, or, 0, .52, 0, G, 28);
+    const R = new THREE.Group(); R.position.y = .5; G.add(R); cyl(.8, .8, 3.6, mat({ color: 0xc8a060, roughness: .5 }), 0, 1.8, 0, R, 12);
+    for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2, x = Math.cos(a) * 4.6, z = Math.sin(a) * 4.6; cyl(.06, .06, 3.6, or, x, 1.8, z, R, 6); const c = new THREE.Group(); c.position.set(x, 1, z); c.rotation.y = -a; R.add(c);
+      const coul = mat({ color: [0xf2ead8, 0x8a5a3a, 0xf2ead8, 0x4a4a52][i % 4], roughness: .5 }); const corps = new THREE.Mesh(new THREE.CapsuleGeometry(.28, .7, 4, 8), coul); corps.rotation.x = Math.PI / 2; corps.position.y = .9; c.add(corps);
+      const cou = new THREE.Mesh(new THREE.CapsuleGeometry(.13, .45, 3, 6), coul); cou.position.set(0, 1.25, .45); cou.rotation.x = -.6; c.add(cou); const tete = new THREE.Mesh(new THREE.CapsuleGeometry(.1, .3, 3, 6), coul); tete.position.set(0, 1.5, .68); tete.rotation.x = -1.6; c.add(tete);
+      for (const [lx, lz] of [[-.13, .35], [.13, .35], [-.13, -.35], [.13, -.35]]) { const j = new THREE.Mesh(new THREE.CapsuleGeometry(.05, .45, 3, 4), coul); j.position.set(lx, .45, lz); j.rotation.x = lz > 0 ? -.5 : .4; c.add(j); }
+      const selle = new THREE.Mesh(new THREE.BoxGeometry(.32, .08, .4), mat({ color: 0xb01828, roughness: .5 })); selle.position.y = 1.18; c.add(selle); c.userData.ph = i * .8; }
+    const toit = add(new THREE.ConeGeometry(6.4, 2.4, 24), vert, 0, 5.3, 0, G); void toit; cyl(6.4, 6.4, .8, creme2, 0, 3.9, 0, G, 24);
+    for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2, l = add(new THREE.ConeGeometry(.3, .5, 4), vert, Math.cos(a) * 6.4, 3.3, Math.sin(a) * 6.4, G); l.rotation.x = Math.PI; }
+    add(new THREE.SphereGeometry(.3, 10, 8), or, 0, 6.6, 0, G); { const ch = add(new THREE.ConeGeometry(.12, .9, 6), or, 0, 7.1, 0, G); void ch; }
+    const ampM = lum(mat({ color: 0xfff0c8, emissive: 0xffc870, emissiveIntensity: .1 }), .1, 2.2); for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; add(new THREE.SphereGeometry(.09, 6, 5), ampM, Math.cos(a) * 6.42, 3.9, Math.sin(a) * 6.42, G); }
+    OB.push([120.7, 45.3, 6.2]);
+    const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} if (!M || M.L !== L) return; const c = M.camera && M.camera.position; if (c && (c.x - 120.7) ** 2 + (c.z - 45.3) ** 2 > 9000) return; R.rotation.y = tm / 4200; for (const ch of R.children) if (ch.userData.ph != null) ch.position.y = 1 + Math.sin(tm / 520 + ch.userData.ph) * .25; }; }
   /* ---------- les promeneurs : les touristes qui font le tour du carré, regardent les peintres, remontent la rue Saint-Éleuthère ---------- */
   const ROUTES = [[[-78, -12.9], [-23, -12.9]], [[-83, -40], [-83, 34]], [[-78, 29], [54, 29]], [[1, 12], [1, 29], [-40, 29]], [[-23, -12], [-60, -12], [-82, -13], [-82, 28], [-20, 28.5]], [[-70, 30.5], [40, 30.5]],[[-16, -12], [16, -12], [16, 12], [-16, 12], [-16, -12]], [[-17, 12.5], [-17, -12.5], [15, -12.5], [15, 12.5], [-17, 12.5]], [[16, 12], [42, 12]], [[1, ZS - .5], [1, 11], [-15, 11], [-15, -11.5]], [[-12.6, -8.6], [12.6, -8.6], [12.6, 2], [-12.6, 2]]];
   /* le joueur d'accordéon, dans un coin de la place : la casquette, le gilet, l'accordéon dont le soufflet s'ouvre et se ferme ; son étui ouvert par terre, quelques pièces */
@@ -885,9 +922,16 @@ function construireTertre(A, L, scene) {
   const libre = (x, z) => { const l = CASES.get(Math.floor(x / 2) * 4096 + Math.floor(z / 2)); if (l) for (const [a, b, r] of l) if ((x - a) ** 2 + (z - b) ** 2 < r * r) return false; return true; };
   L.limites = (x, z) => libre(x, z) && ((x > XO + .4 && x < XE - .4 && z > ZN + .4 && z < ZS - .4) || (x >= XE - 2 && x < XBUT - 5 && z > 9 && z < 15) || (x > -1.1 && x < 3.2 && z >= ZS - 2 && z < ZRu0 + 2)
     || (x > XSa0 + .4 && x < -19.5 && z > ZNo0 + .4 && z < ZNo1 - .4) || (x > XSa0 + .4 && x < XSa1 - .4 && z > ZSa0 + .4 && z < ZSa1 - .4) || (x > XSa0 + .4 && x < XBUT - 5 && z > ZRu0 + .4 && z < ZRu1 - .4));
-  L.hauteur = (x, z) => (x > SQ.x0 && x < SQ.x1 && z > SQ.z0 && z < SQ.z1) ? YS : hTrot(x, z);
+  /* (10.222) jusqu'au Sacré-Cœur, à pied : la rue, la petite place du bas, les deux grands escaliers, le parvis, la rue qui fait le tour de la basilique */
+  const SCloc = (x, z) => [(z - 20) / 1.15, (215 - x) / 1.15];
+  const SCmarche = (x, z) => { if (x >= 50 && x < 113 && z > 9.2 && z < 14.8) return true; if (x >= 112 && x <= 132.4 && z > -12 && z < 52 && Math.hypot(x - 120.7, z - 45.3) > 6.4) return true;
+    const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz > 34.6 && lz < 72.8 && a > 13.8 && a < 18.2) return true;
+    if (lz >= 21 && lz <= 35.2 && a < 24) return true; if (lz <= 35.2 && lz >= -70 && a >= 23.5 && a < 32.5) return true; if (lz < -55.5 && lz >= -70 && a < 32.5) return true; return false; };
+  const SChaut = (x, z) => { const [lx, lz] = SCloc(x, z), a = Math.abs(lx); if (lz <= 35.2 && lz > -80 && a < 40) return 18; if (lz > 35.2 && lz < 72.3 && a > 13.5 && a < 18.5) return 18 * (1 - (lz - 35) / 37.3); return null; };
+  { const l0 = L.limites; L.limites = (x, z) => l0(x, z) || (x > 49 && SCmarche(x, z) && libre(x, z)); }
+  L.hauteur = (x, z) => { if (x > 130) { const h = SChaut(x, z); if (h != null) return h; } return (x > SQ.x0 && x < SQ.x1 && z > SQ.z0 && z < SQ.z1) ? YS : hTrot(x, z); };
   L.depart = [L.metroAbbesses.x, L.metroAbbesses.z - .5]; L.taille = 1.85; L.suivi = { d: 6.5, h: 4.5, av: 3, vy: 2 }; L.fov = [60, 72];
-  L.zone = [XSa0 - 1, XBUT - 4, ZSa0 - 1, ZSa1 + 1];   /* (seulement là où l'on marche : la carte des passages reste petite) */ L.cam = { pos: [-83, 4, 30], vise: [-83, 3, 10] };
+  L.zone = [XSa0 - 1, 298, ZSa0 - 1, ZSa1 + 15];   /* (seulement là où l'on marche : la carte des passages reste petite) */ L.cam = { pos: [-83, 4, 30], vise: [-83, 3, 10] };
 
   /* ---------- l'animation : le soir qui s'allume, les peintres au pinceau, les dîneurs, les promeneurs ---------- */
   let nV = null, tp = 0;
@@ -941,7 +985,7 @@ function construireTertre(A, L, scene) {
     for (let x = -76; x < -24; x += 13) lampadaire(x, ZNo1 - .55);   // rue Norvins
     for (let z = -38; z < ZSa1 - 4; z += 13) lampadaire(XSa1 - .55, z, "z");   // rue des Saules
     for (let x = -72, k = 0; x < XBUT - 4; x += 12, k++) lampadaire(x, k % 2 ? ZRu0 + .55 : ZRu1 - .55);   // rue Saint-Rustique
-    for (let x = XE + 6; x < XBUT - 4; x += 12) lampadaire(x, 9.55); }   // rue Saint-Éleuthère
+    for (let x = XE + 6; x < XBUT - 4; x += 12) lampadaire(x, 9.55); for (let x = XBUT + 14; x < 110; x += 13) lampadaire(x, 9.55); }   // rue Saint-Éleuthère
   /* le soir, au-dessus de la place : les guirlandes d'ampoules tendues d'une façade à l'autre, qui pendent un peu ; une lumière douce, orangée */
   { const fils = [], amp = [], brin = (ax, az, bx, bz, y, fl) => { const l = Math.hypot(bx - ax, bz - az), n = Math.max(6, Math.round(l / 1.05)); let px = 0, py = 0, pz = 0; for (let i = 0; i <= n; i++) { const t = i / n, x = ax + (bx - ax) * t, z = az + (bz - az) * t, yy = y - fl * 4 * t * (1 - t); if (i) fils.push(px, py, pz, x, yy, z); if (i && i < n) amp.push(x, yy - .07, z); px = x; py = yy; pz = z; } };
     for (let z = ZN + 3.5, i = 0; z < ZS - 2; z += 4.2, i++) brin(XO + .3, z + (i % 2 ? 1.2 : -1.2), XE - .3, z + (i % 2 ? -1.2 : 1.2), 6.2, 1.2);
