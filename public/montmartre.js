@@ -1304,7 +1304,8 @@ function construireTertre(A, L, scene) {
   L.jour = JOUR; L.sansMusique = true;
   /* la musique : l'accordéon, en boucle, tant qu'on est à Montmartre ; elle monte doucement, s'arrête quand on repart */
   L.sansMusique = true;
-  { const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) { try { M && M.signalerErreur && M.signalerErreur(e); } catch (x) {} } if (!M || M.L !== L) return; const A2 = (window.__accordeon = window.__accordeon || Object.assign(new Audio("sons/montmartre-accordeon.mp3"), { loop: true, preload: "auto" }));
+  { const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) { try { M && M.signalerErreur && M.signalerErreur(e); } catch (x) {} } if (!M || M.L !== L) return; const A2 = (window.__accordeon = window.__accordeon || (() => { const PL = ["sons/montmartre-accordeon.mp3", "sons/notredame-valse.mp3?v=3", "sons/notredame-2.mp3?v=1", "sons/notredame-3.mp3?v=1", "sons/notredame-4.mp3?v=1", "sons/notredame-5.mp3?v=1", "sons/notredame-6.mp3?v=1"], au = Object.assign(new Audio(PL[0]), { loop: false, preload: "auto" }); au._k = 0;   /* (10.228 : après l'accordéon de Montmartre, la liste des musiques de Notre-Dame, puis on recommence) */
+        au.addEventListener("ended", () => { au._k = (au._k + 1) % PL.length; au.src = PL[au._k]; au.play().catch(() => {}); }); return au; })());
       if (A2.paused && !A2._essai && !A2._attente) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
       if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
       if (!A2.paused) try { A2.volume = Math.min(.5, A2.volume + .006); } catch (e) {} };
