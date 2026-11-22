@@ -999,7 +999,7 @@ function construireVosges(A, L, scene) {
     PARIS = G; return G; };
   L.paris1900 = () => paris1900(); { const p0 = paris1900; paris1900 = () => { const G = p0(), n = !!L.nuit; for (const m of G.userData.murs || []) m.emissiveIntensity = n ? .9 : 0; if (G.userData.becs) G.userData.becs.visible = n; return G; }; }   /* (le soir : fenêtres et becs de gaz allumés) */
   { let enCours = false; const deja = new Map();
-    const voler = (E) => { const p = moiV(); if (!p || enCours) return; enCours = true; sousTitre("L'enfant", "Oh non ! Je l'ai lâché !", 3000); E.lache = true; E.fg.attributes.position.setXYZ(0, 0, -99, 0); E.fg.attributes.position.setXYZ(1, 0, -99, 0); E.fg.attributes.position.needsUpdate = true;
+    const voler = (E) => { const p = moiV(); if (!p || enCours) return; enCours = true; sousTitre("L'enfant", "Oh non ! Je l'ai lâché !", 3000); try { new Audio("sons/voix/pnj-f03.mp3").play().catch(() => {}); } catch (e) {} E.lache = true; E.fg.attributes.position.setXYZ(0, 0, -99, 0); E.fg.attributes.position.setXYZ(1, 0, -99, 0); E.fg.attributes.position.needsUpdate = true;
       const b = E.bal, x0 = b.position.x, y0 = b.position.y, z0 = b.position.z, t0 = performance.now(), TP = 18, DUR = 40, c = M.camera, far0 = c.far, fog0 = scene.fog ? [scene.fog.near, scene.fog.far] : null, PA = paris1900(); PA.visible = true; c.far = 7000; c.updateProjectionMatrix(); if (scene.fog && scene.fog.far !== undefined) { scene.fog.near = 400; scene.fog.far = 5200; }
       const R = L.regard360(Math.atan2(-x0, -z0), -.5), fab = window.__fabEspace, ESP = fab ? fab(scene) : null; let dansEsp = false, flash = null, dit = 0, fin = false; p.g.visible = false;
       const finir = () => { if (fin) return; fin = true; R.fini(); const v = voileV("#fff"); setTimeout(() => { if (dansEsp && ESP) ESP.sortir(); if (flash) flash.remove(); PA.visible = false; c.far = far0; c.near = .1; c.updateProjectionMatrix(); if (fog0) { scene.fog.near = fog0[0]; scene.fog.far = fog0[1]; } p.g.visible = true; finCine(); placerCamera(true); E.lache = false; E.arret = false; E.bp = null; v.sortir(); enCours = false; }, 1200); };
@@ -1016,7 +1016,7 @@ function construireVosges(A, L, scene) {
             if (dit < 3 && ts > 3) { dit = 3; sousTitre("", "Le ballon rouge est monté si haut… qu'il a quitté la Terre.", 5000); } if (dit < 4 && ts > 10) { dit = 4; sousTitre("Le petit voyageur", "Bonjour ! Un ballon rouge, venu de la place des Vosges… je le garderai près de ma rose.", 7000); }
             if (t > DUR) finir(); } } }; };
     const demander = (E) => { if (enCours || M.cine) return; const p = moiV(); E.arret = true; E.m.rotation.y = Math.atan2(p.g.position.x - E.m.position.x, p.g.position.z - E.m.position.z); deja.set(E, performance.now() + 60000);
-      sousTitre("L'enfant", "Bonjour monsieur ! Tu veux le toucher, mon ballon ?", 4000); menuOuiNon("« Tu veux le toucher, mon ballon rouge ? »", () => voler(E), "🎈 Oui, je le touche", "Non, je passe mon chemin");
+      sousTitre("L'enfant", "Tu veux le toucher, mon ballon ?", 3000); try { new Audio("sons/voix/pnj-f02.mp3").play().catch(() => {}); } catch (e) {} menuOuiNon("« Tu veux le toucher, mon ballon rouge ? »", () => voler(E), "🎈 Oui, je le touche", "Non, je passe mon chemin");
       const att = setInterval(() => { if (!M.manMenu || !M.manMenu.d || !M.manMenu.d.isConnected) { clearInterval(att); if (!enCours) E.arret = false; } }, 300); };
     const a0e = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0e && a0e(x, z, moi); if (r) return r; if (M.cine || enCours) return null; const E = (L.enfants || []).find(E => E.m.visible && !E.arret && !E.lache && Math.hypot(E.m.position.x - x, E.m.position.z - z) < 1.8); return E ? { type: "lieu", id: "ballon" + L.enfants.indexOf(E), label: "🎈 Parler à l'enfant au ballon", faire: () => demander(E) } : null; }; }   /* (10.207 : c'est nous qui allons vers l'enfant — plus l'enfant qui vient vers nous) */
   /* (10.199) les gens parlent, quand on s'approche : le camelot et ses nouvelles de 1900, la marchande de glaces et son client, la marchande des quatre-saisons,
@@ -1061,7 +1061,8 @@ function construireVosges(A, L, scene) {
       "Avec l'électricité, bientôt plus besoin d'allumeurs de réverbères. Le progrès, ma chère !": ["pnj-d06", 6.4],
       "Tout de suite, monsieur !": ["pnj-e01", 1.4], "Et voilà : deux cafés, une limonade. Ce sera tout, messieurs-dames ?": ["pnj-e02", 3.7],
       "Bonsoir, monsieur Hugo.": ["pnj-e03", 1.3], "Bonsoir, monsieur Hugo. Belle soirée pour la promenade.": ["pnj-e04", 3.1], "Mes respects, monsieur Hugo. Bonsoir.": ["pnj-e05", 2.3],
-      "Bonjour, monsieur Hugo.": ["pnj-e06", 1.2], "Mes respects, monsieur Hugo.": ["pnj-e07", 1.6], "Bonjour, monsieur Hugo. Belle journée, n'est-ce pas ?": ["pnj-e08", 2.7] };
+      "Bonjour, monsieur Hugo.": ["pnj-e06", 1.2], "Mes respects, monsieur Hugo.": ["pnj-e07", 1.6], "Bonjour, monsieur Hugo. Belle journée, n'est-ce pas ?": ["pnj-e08", 2.7],
+      "M'sieur, m'sieur ! C'est vrai que la tour Eiffel, ils voulaient la démonter ?": ["pnj-f01", 3.8] };
     L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
     let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
