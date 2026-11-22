@@ -1058,21 +1058,21 @@ function construireVosges(A, L, scene) {
      elle s'en va en pétales et en lumière vers les étoiles */
   { const B = L.bancLeo, F = [-19, 19]; let tAssis = 0, deja = false;
     const nar = (t) => `<span style="color:#f6eedc;font-weight:400;font-style:italic">${t}</span>`;
-    const LIG = [[.6, "", nar("Victor Hugo s'assoit au bord de la fontaine. Le murmure de l'eau éveille en lui un souvenir…"), 5600], [6.6, "Victor Hugo, à lui-même", "<i>Léopoldine… ma fille… mon enfant bien-aimée.</i>", 5000, "leo-01"],
-      [12.2, "", nar("Léopoldine était la fille aînée de Victor Hugo. Il l'adorait : elle était sa joie, son rayon de soleil."), 6200],
-      [18.6, "", nar("En septembre 1843, à dix-neuf ans, quelques mois après son mariage, elle s'est noyée dans la Seine, à Villequier, quand sa barque a chaviré. Son jeune mari, Charles Vacquerie, est mort en voulant la sauver."), 8400],
-      [27.2, "", nar("Hugo était en voyage : il a appris la nouvelle par hasard, en lisant un journal. Ce chagrin ne l'a jamais quitté."), 6400],
-      [33.8, "Léopoldine", "Papa… ne pleure plus. Je suis là, dans chaque reflet de l'eau, dans chaque fleur que tu regardes.", 6700, "leo-02"],
-      [41.0, "Victor Hugo", "Léopoldine… pardonne-moi. Je n'étais pas là. J'aurais dû être près de toi, ce jour-là, sur le fleuve.", 7500, "leo-03"],
-      [49.0, "Léopoldine", "Ne t'en veux pas, mon père. Personne ne commande au fleuve, ni au vent qui renverse les barques. Prends ma main…", 6800, "leo-04"],
-      [56.4, "Victor Hugo", "<i>Ta main est fraîche comme la rosée… Elle a la douceur de tes six ans, quand tu courais vers moi dans le jardin.</i>", 6500, "leo-05"],
-      [63.4, "Léopoldine", "Écoute-moi : la mort n'est qu'une porte entrouverte. Un jour, tu la pousseras… et je serai là, de l'autre côté, à t'attendre, comme autrefois au bout de l'allée.", 10200, "leo-06"],
-      [74.3, "Victor Hugo", "Alors je marcherai vers toi, mon enfant. Comme je l'ai écrit pour toi…", 5600, "leo-07"],
-      [80.4, "Victor Hugo", "<i>Demain, dès l'aube, à l'heure où blanchit la campagne,<br>Je partirai. Vois-tu, je sais que tu m'attends.</i>", 8600, "leo-08"],
-      [89.4, "Victor Hugo", "<i>Et quand j'arriverai, je mettrai sur ta tombe<br>Un bouquet de houx vert et de bruyère en fleur.</i>", 6400, "leo-09"],
-      [96.4, "Léopoldine", "Au revoir, papa. Pas adieu… seulement au revoir.", 4000, "leo-10"],
-      [101.2, "", nar("« Demain, dès l'aube… » : Victor Hugo a écrit ce poème pour Léopoldine, quatre ans après sa mort. C'est l'un des plus beaux poèmes de la langue française."), 7600],
-      [109.4, "Victor Hugo, à lui-même", "<i>Dors en paix, mon enfant. À bientôt.</i>", 3600, "leo-11"]], DUR = 114;   /* (10.206 : les vraies voix — Victor Hugo et Léopoldine — et la scène calée sur elles) */   /* (10.204 : un vrai échange ; elle lui tend la main ; le tourbillon de pétales de rose) */
+    const LIG = [[.6, "", nar("Victor Hugo s'assoit au bord de la fontaine. Le murmure de l'eau éveille en lui un souvenir…"), 5800, "nar-leo-1"], [6.6, "Victor Hugo, à lui-même", "<i>Léopoldine… ma fille… mon enfant bien-aimée.</i>", 5000, "leo-01"],
+      [12.2, "", nar("Léopoldine était la fille aînée de Victor Hugo. Il l'adorait : elle était sa joie, son rayon de soleil."), 6500, "nar-leo-2"],
+      [18.8, "", nar("En septembre 1843, à dix-neuf ans, quelques mois après son mariage, elle s'est noyée dans la Seine, à Villequier, quand sa barque a chaviré. Son jeune mari, Charles Vacquerie, est mort en voulant la sauver."), 12800, "nar-leo-3"],
+      [31.8, "", nar("Hugo était en voyage : il a appris la nouvelle par hasard, en lisant un journal. Ce chagrin ne l'a jamais quitté."), 6700, "nar-leo-4"],
+      [39.3, "Léopoldine", "Papa… ne pleure plus. Je suis là, dans chaque reflet de l'eau, dans chaque fleur que tu regardes.", 6700, "leo-02"],
+      [46.5, "Victor Hugo", "Léopoldine… pardonne-moi. Je n'étais pas là. J'aurais dû être près de toi, ce jour-là, sur le fleuve.", 7500, "leo-03"],
+      [54.5, "Léopoldine", "Ne t'en veux pas, mon père. Personne ne commande au fleuve, ni au vent qui renverse les barques. Prends ma main…", 6800, "leo-04"],
+      [61.9, "Victor Hugo", "<i>Ta main est fraîche comme la rosée… Elle a la douceur de tes six ans, quand tu courais vers moi dans le jardin.</i>", 6500, "leo-05"],
+      [68.9, "Léopoldine", "Écoute-moi : la mort n'est qu'une porte entrouverte. Un jour, tu la pousseras… et je serai là, de l'autre côté, à t'attendre, comme autrefois au bout de l'allée.", 10200, "leo-06"],
+      [79.8, "Victor Hugo", "Alors je marcherai vers toi, mon enfant. Comme je l'ai écrit pour toi…", 5600, "leo-07"],
+      [85.9, "Victor Hugo", "<i>Demain, dès l'aube, à l'heure où blanchit la campagne,<br>Je partirai. Vois-tu, je sais que tu m'attends.</i>", 8600, "leo-08"],
+      [94.9, "Victor Hugo", "<i>Et quand j'arriverai, je mettrai sur ta tombe<br>Un bouquet de houx vert et de bruyère en fleur.</i>", 6400, "leo-09"],
+      [101.9, "Léopoldine", "Au revoir, papa. Pas adieu… seulement au revoir.", 4000, "leo-10"],
+      [106.7, "", nar("« Demain, dès l'aube… » : Victor Hugo a écrit ce poème pour Léopoldine, quatre ans après sa mort. C'est l'un des plus beaux poèmes de la langue française."), 9300, "nar-leo-5"],
+      [116.3, "Victor Hugo, à lui-même", "<i>Dors en paix, mon enfant. À bientôt.</i>", 3600, "leo-11"]], DUR = 114;   /* (10.206 : les vraies voix — Victor Hugo et Léopoldine — et la scène calée sur elles) */   /* (10.204 : un vrai échange ; elle lui tend la main ; le tourbillon de pétales de rose) */
     const lancer = () => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; L.leoEnCours = true; const t0 = performance.now(), c = M.camera, ux = (B[0] - F[0]), uz = (B[1] - F[1]), ul = Math.hypot(ux, uz); const U = [ux / ul, uz / ul];
       const px = F[0] + U[0] * 3.2, pz = F[1] + U[1] * 3.2;   /* (devant le rideau d'eau, au bord de la vasque) */
       // la jeune fille de lumière : la robe blanche, les cheveux longs ; tout en lumière pâle, un peu transparente
@@ -1088,12 +1088,12 @@ function construireVosges(A, L, scene) {
       const TD = Array.from({ length: NT }, (_, i) => { const k2 = i % 4; tc2[i * 3] = 1; tc2[i * 3 + 1] = k2 === 0 ? .62 : k2 === 1 ? .16 : .34; tc2[i * 3 + 2] = k2 === 0 ? .7 : k2 === 1 ? .24 : .42; return { a: Math.random() * 6.28, h: Math.random(), v: .7 + Math.random() * .6, r: Math.random(), d: Math.random() * .25 }; });
       const torn = new THREE.Points(tg2, new THREE.PointsMaterial({ map: lueurV, size: .18, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); torn.frustumCulled = false; scene.add(torn);   /* (le courant d'air de pétales de rose qui tourbillonne et l'emporte) */
       const P2x = F[0] + U[0] * 4.45, P2z = F[1] + U[1] * 4.45; let fx = px, fz = pz;   /* (là où elle vient prendre la main de son père) */
-      const VOIX = {}; for (const Lg of LIG) if (Lg[4]) { const a = new Audio("sons/voix/" + Lg[4] + ".mp3"); a.preload = "auto"; a.volume = 1; VOIX[Lg[4]] = a; }   /* (les voix, prêtes d'avance) */
+      const VOIX = {}; for (const Lg of LIG) if (Lg[4] && !VOIX[Lg[4]]) { const a = new Audio("sons/voix/" + Lg[4] + ".mp3"); a.preload = "auto"; a.volume = 1; VOIX[Lg[4]] = a; }   /* (les voix, prêtes d'avance) */
       let iL = 0, fin = false; const duck0 = window.__ndDuck; window.__ndDuck = .1; const EC = ecarter(F[0], F[1], 9, [fig]); quitterLieu.add(() => { for (const k in VOIX) try { VOIX[k].pause(); } catch (e) {} });
       const camA = new THREE.Vector3(B[0] + U[0] * 3.4 - U[1] * 1.2, 2.1, B[1] + U[1] * 3.4 + U[0] * 1.2), camB = new THREE.Vector3(B[0] - U[0] * .8 + U[1] * 3.2, 1.5, B[1] - U[1] * .8 - U[0] * 3.2), camC = new THREE.Vector3(B[0] + U[0] * 1.6 - U[1] * .7, 1.75, B[1] + U[1] * 1.6 + U[0] * .7), tmp = new THREE.Vector3(), cible = new THREE.Vector3();
       c.position.copy(camA);
-      M.cine = { gel: true, fov: [46, 56], maj: () => { const t = (performance.now() - t0) / 1000, tm = performance.now(); EC.maj();
-          while (iL < LIG.length && t >= LIG[iL][0]) { const [, n, tx, ms, vx] = LIG[iL++]; sousTitre(n, tx, ms); if (vx && VOIX[vx]) { try { VOIX[vx].currentTime = 0; VOIX[vx].play().catch(() => {}); } catch (e) {} } }
+      M.cine = { gel: true, fov: [46, 56], maj: () => { const tr = (performance.now() - t0) / 1000, t = tr < 20 ? tr : tr < 25.5 ? 20 : tr - 5.5, tm = performance.now(); EC.maj();   /* (10.209 : l'image attend un peu, le temps que le narrateur finisse) */
+          while (iL < LIG.length && tr >= LIG[iL][0]) { const [, n, tx, ms, vx] = LIG[iL++]; sousTitre(n, tx, ms); if (vx && VOIX[vx]) { try { VOIX[vx].currentTime = 0; VOIX[vx].play().catch(() => {}); } catch (e) {} } }
           // elle vient vers lui pour lui prendre la main, puis retourne au bord de l'eau
           const va = Math.min(1, Math.max(0, (t - 52) / 3.5)) * (1 - Math.min(1, Math.max(0, (t - 74.5) / 4))), ev = va * va * (3 - 2 * va); fx = px + (P2x - px) * ev; fz = pz + (P2z - pz) * ev;
           const mx = (fx + B[0]) / 2, mz = (fz + B[1]) / 2, qx = U[1], qz = -U[0];
@@ -1205,14 +1205,14 @@ function construireVosges(A, L, scene) {
     const AX = RA.x, AZ = RA.z - 1.6;   /* (le pied du réverbère, côté chaussée) */
     const hA = new THREE.Mesh(new THREE.CircleGeometry(1.05, 40), new THREE.MeshBasicMaterial({ map: lueurV, color: 0xffd23a, transparent: true, opacity: 0, depthWrite: false, fog: false })); hA.rotation.x = -Math.PI / 2; hA.position.set(AX, (L.hauteur ? L.hauteur(AX, AZ) : 0) + .03, AZ); hA.userData.anime = true; scene.add(hA);
     let enCours = false; AMB.push((tm) => { hA.visible = !!L.nuit && !!L.estHugo && !enCours; hA.material.opacity = .55 + Math.sin(tm / 600) * .2; });
-    const LIGA = [[.5, "", narA("Sous le réverbère, Victor Hugo s'arrête. La flamme vacille… et dans sa lumière apparaît une silhouette qu'il connaît depuis l'enfance."), 6400],
-      [7.2, "", narA("Adèle Foucher. Enfants, ils jouaient ensemble dans le grand jardin des Feuillantines. Ils se sont mariés en 1822 : il avait vingt ans, elle dix-neuf."), 7400],
-      [14.8, "Adèle", "Victor… tu te souviens ? Tu m'avais promis une valse.", 4300, "ade-01"], [19.2, "Victor Hugo", "Toute ma vie, Adèle. Viens.", 3000, "ade-02"],
-      [23, "", narA("Elle lui a donné cinq enfants : Léopold, Léopoldine, Charles, François-Victor et Adèle."), 6000],
-      [29.4, "", narA("Leur amour a connu des orages et des chagrins, mais Hugo ne l'a jamais oubliée. Adèle est morte en 1868, à Bruxelles."), 7000],
-      [37, "Adèle", "Tu te souviens de tes lettres, Victor, quand nous étions fiancés ? Je les ai toutes gardées.", 5200, "ade-03"],
-      [43, "", narA("Avant leur mariage, Victor lui avait écrit des dizaines de lettres d'amour. On les a publiées bien plus tard, sous le titre « Lettres à la fiancée »."), 7400],
-      [51, "Adèle", "Ne m'oublie pas, mon Victor…", 4200, "ade-04"], [61.5, "Victor Hugo", "<i>Jamais, Adèle. Jamais.</i>", 4400, "ade-05"]], DUR = 68;   /* (10.204 : la valse dure plus longtemps) */
+    const LIGA = [[.5, "", narA("Sous le réverbère, Victor Hugo s'arrête. La flamme vacille… et dans sa lumière apparaît une silhouette qu'il connaît depuis l'enfance."), 9000, "nar-ade-1"],
+      [9.5, "", narA("Adèle Foucher. Enfants, ils jouaient ensemble dans le grand jardin des Feuillantines. Ils se sont mariés en 1822 : il avait vingt ans, elle dix-neuf."), 10600, "nar-ade-2"],
+      [22.8, "Adèle", "Victor… tu te souviens ? Tu m'avais promis une valse.", 4300, "ade-01"], [27.2, "Victor Hugo", "Toute ma vie, Adèle. Viens.", 3000, "ade-02"],
+      [31, "", narA("Elle lui a donné cinq enfants : Léopold, Léopoldine, Charles, François-Victor et Adèle."), 6400, "nar-ade-3"],
+      [37.4, "", narA("Leur amour a connu des orages et des chagrins, mais Hugo ne l'a jamais oubliée. Adèle est morte en 1868, à Bruxelles."), 8400, "nar-ade-5"],
+      [45.9, "Adèle", "Tu te souviens de tes lettres, Victor, quand nous étions fiancés ? Je les ai toutes gardées.", 5200, "ade-03"],
+      [51, "", narA("Avant leur mariage, Victor lui avait écrit des dizaines de lettres d'amour. On les a publiées bien plus tard, sous le titre « Lettres à la fiancée »."), 8300, "nar-ade-4"],
+      [59.5, "Adèle", "Ne m'oublie pas, mon Victor…", 4200, "ade-04"], [69.5, "Victor Hugo", "<i>Jamais, Adèle. Jamais.</i>", 4400, "ade-05"]], DUR = 68;   /* (10.204 : la valse dure plus longtemps) */
     const valser = () => { const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine || enCours) return; enCours = true; const t0 = performance.now(), c = M.camera, y0 = L.hauteur ? L.hauteur(AX, AZ) : 0, CX = AX, CZ = AZ - .9;
       const VH = fabriqueVH(); VH.position.set(p.g.position.x, y0, p.g.position.z); scene.add(VH); p.g.visible = false; const VH0 = VH.position.clone();
       const ad = personne3D({ taille: 1.6, peau: "#ffffff", ch: "#ffffff", haut: "#ffffff", bas: "#ffffff", chaussures: "#ffffff", coif: "long", robe: true }), MA = [];
@@ -1226,8 +1226,8 @@ function construireVosges(A, L, scene) {
       let iL = 0, fin = false; const duck0 = window.__ndDuck; window.__ndDuck = .3; const tmp = new THREE.Vector3(); const EC = ecarter(AX, AZ - 2, 40, [VH, ad]); const FI = (L.dbgFiacres || []).map(F => [F, F.G.visible]); for (const [F] of FI) { F.G.visible = false; if (F.H && F.H.G) F.H.G.visible = false; }   /* (10.204 : pendant la valse, plus un passant ni une calèche) */
       const NS = PEU ? 260 : 520, sp = new Float32Array(NS * 3), sg = new THREE.BufferGeometry(); sg.setAttribute("position", new THREE.BufferAttribute(sp, 3)); const SD = Array.from({ length: NS }, () => ({ o: null, t: -9, v: new THREE.Vector3() })); let iS = 0, dS = 0;
       const etoi = new THREE.Points(sg, new THREE.PointsMaterial({ map: lueurV, color: 0xfff0c8, size: .2, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); etoi.frustumCulled = false; scene.add(etoi);   /* (la poussière d'étoiles qu'elle laisse en s'envolant) */
-      M.cine = { gel: true, fov: [50, 60], maj: () => { const t = (performance.now() - t0) / 1000, tm = performance.now(); EC.maj();
-          while (iL < LIGA.length && t >= LIGA[iL][0]) { const [, n, tx, ms, vx] = LIGA[iL++]; sousTitre(n, tx, ms); if (vx && VOIXA[vx]) { try { VOIXA[vx].currentTime = 0; VOIXA[vx].play().catch(() => {}); } catch (e) {} } }
+      M.cine = { gel: true, fov: [50, 60], maj: () => { const tr = (performance.now() - t0) / 1000, t = tr < 9 ? tr : tr < 17 ? 9 : tr - 8, tm = performance.now(); EC.maj();   /* (10.209 : l'image attend le narrateur) */
+          while (iL < LIGA.length && tr >= LIGA[iL][0]) { const [, n, tx, ms, vx] = LIGA[iL++]; sousTitre(n, tx, ms); if (vx && VOIXA[vx]) { try { VOIXA[vx].currentTime = 0; VOIXA[vx].play().catch(() => {}); } catch (e) {} } }
           // la flamme qui grandit, le rayon de lumière ; Adèle qui se forme dans la lumière
           const app = Math.min(1, Math.max(0, (t - 2.5) / 4)), dep = Math.min(1, Math.max(0, (t - 56) / 5.5)), ea = app * app * (3 - 2 * app), lv0 = Math.min(1, Math.max(0, (t - 25) / 6)) * (1 - Math.min(1, Math.max(0, (t - 55) / 4))), lev = lv0 * lv0 * (3 - 2 * lv0) * 1.1;   /* (ils s'élèvent doucement en valsant, puis Hugo redescend) */
           RA.fl.visible = true; RA.fl.scale.setScalar(1 + (1 - dep) * Math.min(1, t / 2) * 1.2); rayon.material.opacity = (Math.min(1, t / 2.5) * .35 + Math.sin(t * 3) * .04) * (1 - Math.min(1, Math.max(0, (t - 8) / 3)) * .7) * (1 - dep);
@@ -1311,16 +1311,17 @@ function construireVosges(A, L, scene) {
       // le chemin du vent au-dessus de la place
       const V3 = (x, y, z) => new THREE.Vector3(x, y, z), CH = new THREE.CatmullRomCurve3([S.clone(), V3(FLX + .6, 2.3, FLZ + 1.4), V3(-20, 3.4, 47), V3(-11, 4.2, 50.5), V3(-3.5, 3.4, 47.5), V3(0, 2.4, 42.5), V3(0, 2.0, 38.6), V3(1.2, 2.1, 33.5), V3(6, 2.5, 28.8), V3(12.5, 2.3, 25.6), V3(17.5, 1.95, 25.2), V3(23.3, 2.0, 23.4), V3(25.6, 2.6, 17.2), V3(20.5, 4.2, 10), V3(12, 5.8, 6.5), V3(5, 8.6, 4), V3(1.5, 10.3, -2.5), V3(-4, 10.8, -1), V3(-2.5, 12.2, -8),
         V3((K.x - 2) * .6, 11, (K.z - 7) * .8), K.clone().add(V3(-2.5, 5.2, 2.6)), K.clone().add(V3(1.6, 2.8, 1.4)), K.clone().add(V3(-.7, 1.3, .8)), K.clone().add(V3(.25, .45, .2)), K.clone().add(V3(0, .03, 0))], false, "centripetal");
+      const VN = {}; for (const k of [1, 2, 3, 4, 5, 6]) { const a = new Audio("sons/voix/nar-pet-" + k + ".mp3"); a.preload = "auto"; VN["nar-pet-" + k] = a; }   /* (10.209 : la voix du narrateur) */
       const Kd = V3(0, 0, 0), LCH = CH.getLength(), c = M.camera, t0 = performance.now(), DUR = 47, T1 = 7.2, T2 = 39.5, tmp = V3(0, 0, 0), vise = V3(0, 0, 0), side = V3(0, 0, 0);
       const EC1 = ecarter(FLX, FLZ, 5, [L.fleuriste]), EC2 = ecarter(bx, bz, 6, []); let iL = 0, fin = false, posee = false;
       const nar = (t) => `<span style="color:#f6eedc;font-weight:400;font-style:italic">${t}</span>`;
-      const LIG = [[1.6, "", nar("Place des Vosges, un soir de 1900. Chez la fleuriste, les roses du matin attendent les promeneurs…"), 5200], [7, "", nar("Un souffle de vent…"), 2600],
-        [11, "", nar("Un pétale de rose s'envole, et danse au-dessus de la place des Vosges…"), 5200], [17.5, "", nar("Il longe les arcades, frôle l'eau des fontaines et les ballons rouges des enfants…"), 5400],
-        [24.5, "", nar("Il tourne autour du roi Louis XIII, monte au-dessus des tilleuls… puis redescend, en se balançant, comme s'il cherchait quelqu'un."), 7000],
-        [38.6, "", nar("…et il se pose, tout doucement, sur le genou de Victor Hugo."), 4600], [43.2, "Victor Hugo, à lui-même", "<i>Un pétale de rose… Le printemps m'écrit une lettre.</i>", 4600]];
+      const LIG = [[.3, "", nar("Place des Vosges, un soir de 1900. Chez la fleuriste, les roses du matin attendent les promeneurs…"), 7600, "nar-pet-1"], [7.9, "", nar("Un souffle de vent…"), 2200, "nar-pet-2"],
+        [11, "", nar("Un pétale de rose s'envole, et danse au-dessus de la place des Vosges…"), 4600, "nar-pet-3"], [17.5, "", nar("Il longe les arcades, frôle l'eau des fontaines et les ballons rouges des enfants…"), 5300, "nar-pet-4"],
+        [24.5, "", nar("Il tourne autour du roi Louis XIII, monte au-dessus des tilleuls… puis redescend, en se balançant, comme s'il cherchait quelqu'un."), 8400, "nar-pet-5"],
+        [38.6, "", nar("…et il se pose, tout doucement, sur le genou de Victor Hugo."), 4500, "nar-pet-6"], [43.2, "Victor Hugo, à lui-même", "<i>Un pétale de rose… Le printemps m'écrit une lettre.</i>", 4600]];
       // le battement du pétale, comme une plume : il se balance de gauche à droite en tombant, il tourne lentement sur lui-même
       M.cine = { gel: true, fov: [44, 56], maj: () => { const t = (performance.now() - t0) / 1000, tm = performance.now(); EC1.maj(); EC2.maj();
-          while (iL < LIG.length && t >= LIG[iL][0]) { const [, n, tx, ms] = LIG[iL++]; sousTitre(n, tx, ms); }
+          while (iL < LIG.length && t >= LIG[iL][0]) { const [, n, tx, ms, vx] = LIG[iL++]; sousTitre(n, tx, ms); if (vx) try { const a = VN[vx] || new Audio("sons/voix/" + vx + ".mp3"); a.currentTime = 0; a.play().catch(() => {}); } catch (e) {} }
           L.brise = t > 5.5 && t < 9 ? Math.sin((t - 5.5) / 3.5 * Math.PI) : 0;
           let P, tg; const Kr = (() => { const J = L.vhParts && L.vhParts.jambes && L.vhParts.jambes[0]; if (!J) return null; const w = J.gen.getWorldPosition(V3(0, 0, 0)); w.y += .05; return w; })();   /* (10.207 : le vrai genou de Hugo, tel qu'il est assis) */
           if (Kr && t > T2 - 9) { const d0 = Kr.clone().sub(K); if (d0.length() < 1) Kd.copy(d0); }
