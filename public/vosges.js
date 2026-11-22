@@ -1050,7 +1050,9 @@ function construireVosges(A, L, scene) {
       "Glaces à la vanille, au café, à la fraise ! Deux sous le cornet, rafraîchissez-vous !": ["pnj-b01", 7.1], "Ma glace vient des glacières du bois de Boulogne, monsieur, gardée tout l'hiver dans la paille !": ["pnj-b02", 7.0],
       "Le sorbet au citron, c'est la mode depuis l'Exposition. Même les dames du faubourg Saint-Germain en raffolent !": ["pnj-b03", 8.7],
       "Des carottes, des poireaux, des beaux choux ! À la fraîche, à la fraîche, mes légumes !": ["pnj-b04", 4.7], "Je pousse ma charrette depuis cinq heures du matin, depuis les Halles !": ["pnj-b05", 4.2],
-      "Des pommes de Normandie, des poires bien juteuses ! Qui veut ma belle salade ?": ["pnj-b06", 6.2], "Les cerises, deux sous la livre, mes jolies dames ! Le temps des cerises, ça ne dure pas !": ["pnj-b07", 5.5] };
+      "Des pommes de Normandie, des poires bien juteuses ! Qui veut ma belle salade ?": ["pnj-b06", 6.2], "Les cerises, deux sous la livre, mes jolies dames ! Le temps des cerises, ça ne dure pas !": ["pnj-b07", 5.5],
+      "Des roses, des belles roses ! Fleurissez vos dames, messieurs !": ["pnj-b08", 5.0], "Violettes de Parme, muguet du bois de Meudon… deux sous le petit bouquet !": ["pnj-b09", 5.8],
+      "Une rose pour la boutonnière, monsieur Hugo ? Elle vous ira comme à un jeune homme !": ["pnj-b10", 5.0], "Mes roses ont été coupées ce matin, elles sentent encore la rosée.": ["pnj-b11", 4.4] };
     L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
     let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
