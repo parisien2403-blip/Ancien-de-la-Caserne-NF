@@ -1048,7 +1048,9 @@ function construireVosges(A, L, scene) {
       "Sous la terre, le métro ? Très peu pour moi, j'ai mes jambes !": ["pnj-a09", 4.4],
       "Vi-i-i-trier ! Vitrieeer !": ["pnj-a10", 3.2], "Au vitrier ! Carreaux cassés, carreaux remis !": ["pnj-a11", 5.0], "Vi-i-trier ! Voilà l'vitrier ! Qui veut des vitres ?": ["pnj-a12", 5.4],
       "Glaces à la vanille, au café, à la fraise ! Deux sous le cornet, rafraîchissez-vous !": ["pnj-b01", 7.1], "Ma glace vient des glacières du bois de Boulogne, monsieur, gardée tout l'hiver dans la paille !": ["pnj-b02", 7.0],
-      "Le sorbet au citron, c'est la mode depuis l'Exposition. Même les dames du faubourg Saint-Germain en raffolent !": ["pnj-b03", 8.7] };
+      "Le sorbet au citron, c'est la mode depuis l'Exposition. Même les dames du faubourg Saint-Germain en raffolent !": ["pnj-b03", 8.7],
+      "Des carottes, des poireaux, des beaux choux ! À la fraîche, à la fraîche, mes légumes !": ["pnj-b04", 4.7], "Je pousse ma charrette depuis cinq heures du matin, depuis les Halles !": ["pnj-b05", 4.2],
+      "Des pommes de Normandie, des poires bien juteuses ! Qui veut ma belle salade ?": ["pnj-b06", 6.2], "Les cerises, deux sous la livre, mes jolies dames ! Le temps des cerises, ça ne dure pas !": ["pnj-b07", 5.5] };
     L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
     let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
