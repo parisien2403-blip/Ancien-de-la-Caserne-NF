@@ -1042,7 +1042,10 @@ function construireVosges(A, L, scene) {
     /* (10.211) les vraies voix des passants : chaque réplique enregistrée a son fichier ; le sous-titre dure le temps de la voix ; on s'éloigne, la voix se tait */
     const VPNJ = { "Approchez, approchez, mesdames et messieurs ! L'Exposition universelle a ouvert ses portes : cinquante millions de visiteurs attendus !": ["pnj-a01", 10.1],
       "Le métropolitain ! La toute première ligne, de la porte de Vincennes à la porte Maillot. Paris traversé sous la terre en vingt-cinq minutes !": ["pnj-a02", 10.7],
-      "Le cinématographe des frères Lumière ! Des images qui bougent, sur un écran géant, à la galerie des Machines !": ["pnj-a03", 8.3] };
+      "Le cinématographe des frères Lumière ! Des images qui bougent, sur un écran géant, à la galerie des Machines !": ["pnj-a03", 8.3],
+      "La fée Électricité, messieurs-dames ! Au Palais de l'Électricité, cinq mille lampes s'allument d'un seul coup, chaque soir !": ["pnj-a04", 9.1],
+      "Le trottoir roulant ! On monte dessus, et il vous promène tout seul autour de l'Exposition. Voilà le siècle nouveau !": ["pnj-a05", 9.0],
+      "Les Jeux olympiques sont à Paris cette année ! Allez voir courir les athlètes au bois de Boulogne !": ["pnj-a06", 6.5] };
     L.voixPnj = VPNJ; let sonZ = null; const taire = () => { if (sonZ) { try { sonZ.pause(); } catch (e) {} sonZ = null; } };
     let zone = null, iL = 0, prochain = 0, verif = 0; const efface = () => { if (L.stEl) { L.stEl.remove(); L.stEl = null; } taire(); }; quitterLieu.add(taire);
     AMB.push((tm) => { if (tm - verif < 250) return; verif = tm; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p || M.cine) return; const x = p.g.position.x, z = p.g.position.z;
