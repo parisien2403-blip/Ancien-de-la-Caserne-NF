@@ -1311,14 +1311,14 @@ function construireVosges(A, L, scene) {
       // le chemin du vent au-dessus de la place
       const V3 = (x, y, z) => new THREE.Vector3(x, y, z), CH = new THREE.CatmullRomCurve3([S.clone(), V3(FLX + .6, 2.3, FLZ + 1.4), V3(-20, 3.4, 47), V3(-11, 4.2, 50.5), V3(-3.5, 3.4, 47.5), V3(0, 2.4, 42.5), V3(0, 2.0, 38.6), V3(1.2, 2.1, 33.5), V3(6, 2.5, 28.8), V3(12.5, 2.3, 25.6), V3(17.5, 1.95, 25.2), V3(23.3, 2.0, 23.4), V3(25.6, 2.6, 17.2), V3(20.5, 4.2, 10), V3(12, 5.8, 6.5), V3(5, 8.6, 4), V3(1.5, 10.3, -2.5), V3(-4, 10.8, -1), V3(-2.5, 12.2, -8),
         V3((K.x - 2) * .6, 11, (K.z - 7) * .8), K.clone().add(V3(-2.5, 5.2, 2.6)), K.clone().add(V3(1.6, 2.8, 1.4)), K.clone().add(V3(-.7, 1.3, .8)), K.clone().add(V3(.25, .45, .2)), K.clone().add(V3(0, .03, 0))], false, "centripetal");
-      const VN = {}; for (const k of [1, 2, 3, 4, 5, 6]) { const a = new Audio("sons/voix/nar-pet-" + k + ".mp3"); a.preload = "auto"; VN["nar-pet-" + k] = a; }   /* (10.209 : la voix du narrateur) */
+      const VN = {}; for (const k of [1, 2, 3, 4, 5, 6]) { const a = new Audio("sons/voix/nar-pet-" + k + ".mp3"); a.preload = "auto"; VN["nar-pet-" + k] = a; } VN["pet-hugo"] = Object.assign(new Audio("sons/voix/pet-hugo.mp3"), { preload: "auto" });   /* (10.209 : la voix du narrateur) */
       const Kd = V3(0, 0, 0), LCH = CH.getLength(), c = M.camera, t0 = performance.now(), DUR = 47, T1 = 7.2, T2 = 39.5, tmp = V3(0, 0, 0), vise = V3(0, 0, 0), side = V3(0, 0, 0);
       const EC1 = ecarter(FLX, FLZ, 5, [L.fleuriste]), EC2 = ecarter(bx, bz, 6, []); let iL = 0, fin = false, posee = false;
       const nar = (t) => `<span style="color:#f6eedc;font-weight:400;font-style:italic">${t}</span>`;
       const LIG = [[.3, "", nar("Place des Vosges, un soir de 1900. Chez la fleuriste, les roses du matin attendent les promeneurs…"), 7600, "nar-pet-1"], [7.9, "", nar("Un souffle de vent…"), 2200, "nar-pet-2"],
         [11, "", nar("Un pétale de rose s'envole, et danse au-dessus de la place des Vosges…"), 4600, "nar-pet-3"], [17.5, "", nar("Il longe les arcades, frôle l'eau des fontaines et les ballons rouges des enfants…"), 5300, "nar-pet-4"],
         [24.5, "", nar("Il tourne autour du roi Louis XIII, monte au-dessus des tilleuls… puis redescend, en se balançant, comme s'il cherchait quelqu'un."), 8400, "nar-pet-5"],
-        [38.6, "", nar("…et il se pose, tout doucement, sur le genou de Victor Hugo."), 4500, "nar-pet-6"], [43.2, "Victor Hugo, à lui-même", "<i>Un pétale de rose… Le printemps m'écrit une lettre.</i>", 4600]];
+        [38.6, "", nar("…et il se pose, tout doucement, sur le genou de Victor Hugo."), 4500, "nar-pet-6"], [43.2, "Victor Hugo, à lui-même", "<i>Un pétale de rose… Le printemps m'écrit une lettre.</i>", 4600, "pet-hugo"]];
       // le battement du pétale, comme une plume : il se balance de gauche à droite en tombant, il tourne lentement sur lui-même
       M.cine = { gel: true, fov: [44, 56], maj: () => { const t = (performance.now() - t0) / 1000, tm = performance.now(); EC1.maj(); EC2.maj();
           while (iL < LIG.length && t >= LIG[iL][0]) { const [, n, tx, ms, vx] = LIG[iL++]; sousTitre(n, tx, ms); if (vx) try { const a = VN[vx] || new Audio("sons/voix/" + vx + ".mp3"); a.currentTime = 0; a.play().catch(() => {}); } catch (e) {} }
