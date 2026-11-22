@@ -660,41 +660,98 @@ function construireTertre(A, L, scene) {
   tente(-12.6, -8.4, -2.2, 4.4, { toit: 0xa8141c, poteau: 0x8a1018, lamb: ["Café  Chez Eugène", "#a8141c", "#f6efe0"], nappe: true, fanions: true });
   tente(3.6, 12.6, 3.6, 8.6, { toit: 0x1a1a1c, poteau: 0x1a1a1c, lamb: ["", "#1a1a1c", "#1a1a1c"], nappe: false, rampe: true, lampes: true, fleurs: 6.1 });
 
-  /* ---------- le Sacré-Cœur, au-dessus des toits : le grand dôme ovoïde sur son tambour à colonnes, sa lanterne, les quatre petits dômes,
-     le porche aux trois arcs, et le campanile ; la pierre blanche de Château-Landon, qui reste blanche ---------- */
-  { const g = new THREE.Group(); g.position.set(215, 4, 20); g.rotation.y = -Math.PI / 2; g.scale.setScalar(1.3); scene.add(g);
-    const blanc = lum(mat({ color: 0xf6f3ea, roughness: .75, emissive: 0xffe4b8, emissiveIntensity: 0, fog: false }), 0, .62), ombre = mat({ color: 0xd8d2c4, roughness: .8, fog: false }), noirA = mat({ color: 0x2a2a30, fog: false });   /* (net, malgré la brume du lointain) */
-    const dome = (r, h, y, x = 0, z = 0) => { const pts = []; for (let i = 0; i <= 16; i++) { const t = i / 16, a = t * Math.PI / 2; pts.push(new THREE.Vector2(Math.cos(a) * r * (1 - .12 * t * t), Math.sin(a) * h)); } return add(new THREE.LatheGeometry(pts, 28), blanc, x, y, z, g); };
-    const tambour = (r, h, y, x = 0, z = 0, n = 16) => { cyl(r * .92, r * .92, h, ombre, x, y + h / 2, z, g, 24); for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; cyl(r * .06, r * .06, h * .86, blanc, x + Math.cos(a) * r, y + h / 2, z + Math.sin(a) * r, g, 6); } cyl(r * 1.04, r * 1.04, h * .1, blanc, x, y + h - h * .05, z, g, 24); cyl(r * 1.04, r * 1.04, h * .08, blanc, x, y + h * .04, z, g, 24);
-      for (let i = 0; i < n; i += 2) { const a = (i + .5) / n * Math.PI * 2; const f = box(r * .16, h * .5, .1, noirA, x + Math.cos(a) * r * .93, y + h * .5, z + Math.sin(a) * r * .93, g); f.rotation.y = -a + Math.PI / 2; } };
-    // la nef, le transept, le chevet
-    box(30, 22, 40, blanc, 0, 11, -6, g); box(44, 18, 18, blanc, 0, 9, -8, g); box(26, 26, 22, blanc, 0, 13, -6, g); cyl(13, 13, 20, blanc, 0, 10, -26, g, 20);
-    // la base du grand dôme, son tambour, le dôme ovoïde, la lanterne, la croix
-    box(22, 6, 22, blanc, 0, 29, -6, g); tambour(9, 13, 32, 0, -6, 20); dome(9.4, 17, 45, 0, -6); tambour(2.6, 5, 61.5, 0, -6, 10); dome(2.8, 3.6, 66.5, 0, -6); cyl(.25, .4, 5, blanc, 0, 72, -6, g, 8); box(.3, 1.8, .3, blanc, 0, 75.5, -6, g); box(1.2, .3, .3, blanc, 0, 75.9, -6, g);
-    // les quatre petits dômes autour
-    for (const [x, z] of [[-11, 3], [11, 3], [-11, -15], [11, -15]]) { box(7, 4, 7, blanc, x, 28, z, g); tambour(3, 6, 30, x, z, 10); dome(3.2, 5.6, 36, x, z); cyl(.5, .7, 2, blanc, x, 42.2, z, g, 8); add(new THREE.SphereGeometry(.6, 10, 8), blanc, x, 43.6, z, g); }
-    // le porche : trois arcs, deux petits dômes, les deux statues équestres
-    box(24, 15, 6, blanc, 0, 7.5, 16, g); for (const x of [-7, 0, 7]) { box(4.4, 8, .4, noirA, x, 4.5, 19.05, g); add(new THREE.CylinderGeometry(2.2, 2.2, .4, 16, 1, false, 0, Math.PI), noirA, x, 8.5, 19.05, g).rotation.set(Math.PI / 2, 0, 0); }
-    box(25, 1.2, 6.6, blanc, 0, 15.6, 16, g); for (const x of [-9, 9]) { tambour(2.2, 4, 16.2, x, 16, 8); dome(2.4, 4.2, 20.2, x, 16); }
-    for (const x of [-10.5, 10.5]) { box(2.6, 4, 2.6, blanc, x, 2, 21.5, g); box(1.2, 1.6, 2.2, mat({ color: 0x5a7a6a, metalness: .5, roughness: .4 }), x, 4.8, 21.5, g); }
-    // le parvis, la colline et ses pelouses
-    // le campanile, derrière
-    box(11, 50, 11, blanc, 0, 25, -40, g); for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) for (let e = 0; e < 3; e++) box(dx ? .2 : 2.2, 6, dz ? .2 : 2.2, noirA, dx * 5.6, 34 + e * 5, -40 + dz * 5.6, g);
-    tambour(4.8, 10, 50, 0, -40, 12); dome(5, 9, 60, 0, -40); cyl(.4, .6, 6, blanc, 0, 71, -40, g, 8); box(.3, 2.4, .3, blanc, 0, 75, -40, g); box(1.4, .3, .3, blanc, 0, 75.5, -40, g);
-    /* (10.86) les détails, d'après les photos : les côtes des dômes, la galerie à balustres au pied du grand dôme, les fenêtres en plein cintre de la nef, les clochetons,
-       la grande baie au-dessus du porche, la terrasse aux arcades et sa balustrade, les arbres de la butte */
-    const cotes = (r, h, y, x, z, n, e) => { for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, P = []; for (let j = 0; j <= 10; j++) { const t = j / 10, b = t * Math.PI / 2, rr = Math.cos(b) * r * (1 - .12 * t * t) + e * .5; P.push(new THREE.Vector3(x + Math.cos(a) * rr, y + Math.sin(b) * h + e * .3, z + Math.sin(a) * rr)); } add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P), 12, e, 4), blanc, 0, 0, 0, g); } };
-    cotes(9.4, 17, 45, 0, -6, 16, .24); cotes(5, 9, 60, 0, -40, 10, .14); for (const [x, z] of [[-11, 3], [11, 3], [-11, -15], [11, -15]]) cotes(3.2, 5.6, 36, x, z, 8, .1);
-    { const tb = add(new THREE.TorusGeometry(10.1, .16, 4, 48), blanc, 0, 45.9, -6, g); tb.rotation.x = Math.PI / 2; for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2; cyl(.08, .08, .8, blanc, Math.cos(a) * 10.1, 45.45, -6 + Math.sin(a) * 10.1, g, 4); } }
-    for (const sx of [-15.05, 15.05]) for (let z = -22; z <= 10; z += 4) { box(.3, 5, 1.8, noirA, sx, 11.5, z, g); const ar = cyl(.9, .9, .3, noirA, sx, 14, z, g, 10); ar.rotation.z = Math.PI / 2; box(.5, .3, 2.3, blanc, sx, 8.8, z, g); }
-    box(4, 4, .3, noirA, 0, 18, 14.05, g); { const ar = cyl(2, 2, .3, noirA, 0, 20, 14.05, g, 14); ar.rotation.x = Math.PI / 2; } box(5, .4, .6, blanc, 0, 15.9, 14.2, g);
-    for (const [x, z] of [[-13, 5], [13, 5], [-13, -17], [13, -17], [-12, 19], [12, 19]]) { cyl(.5, .5, 2, blanc, x, z > 15 ? 16.2 : 27, z, g, 8); add(new THREE.ConeGeometry(.6, 2.6, 8), blanc, x, z > 15 ? 18.5 : 29.3, z, g); }
-    box(46, 6, 6, blanc, 0, -3, 25, g); for (let x = -19.8; x <= 20; x += 4.4) { box(2.6, 3.2, .3, noirA, x, -4, 28.05, g); const ar = cyl(1.3, 1.3, .3, noirA, x, -2.4, 28.05, g, 10); ar.rotation.x = Math.PI / 2; }
-    box(46, .18, .4, blanc, 0, .9, 27.8, g); for (let x = -22.6; x <= 23; x += .9) cyl(.09, .09, .9, blanc, x, .45, 27.8, g, 4);
-    for (const [x, z, r] of [[-26, 22, 3], [-29, 10, 3.6], [27, 21, 3.2], [29, 8, 3.8], [-25, -8, 3.4], [26, -10, 3.2]]) add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x6a7a2a][(x * 7 & 3) % 3], roughness: .9, fog: false }), x, r * .6 - 1, z, g);
+  /* ---------- (10.221) le Sacré-Cœur, refait d'après les photos, pierre par pierre : la basilique romano-byzantine en pierre blanche de Château-Landon —
+     le porche aux trois grands arcs et ses deux saints à cheval en bronze vert (Jeanne d'Arc, Saint Louis), le Christ dans sa niche au-dessus, la grande baie ;
+     les tours d'angle et leurs rosaces ; le grand dôme ovoïde couvert d'écailles, sur son tambour à arcades et sa galerie, sa lanterne à colonnettes et sa croix ;
+     les quatre dômes secondaires sur leurs tours carrées ; les petits dômes et les clochetons ; le chevet et ses chapelles rayonnantes ; le grand campanile carré
+     et sa coupole ; et devant, la butte : la terrasse aux trois arcs rayonnants, sa balustrade, les deux escaliers, la pelouse en pente et ses ifs taillés ---------- */
+  { const g = new THREE.Group(); g.position.set(215, 4, 20); g.rotation.y = -Math.PI / 2; g.scale.setScalar(1.15); scene.add(g); L.sacreCoeur = g;
+    const blanc = lum(mat({ color: 0xf4f0e6, roughness: .72, emissive: 0xffe6c0, emissiveIntensity: 0, fog: false }), 0, .55), creme = lum(mat({ color: 0xe6dfd0, roughness: .8, emissive: 0xffe0b0, emissiveIntensity: 0, fog: false }), 0, .4),
+      noirA = mat({ color: 0x26262e, roughness: .9, fog: false }), vitre = lum(mat({ color: 0x2c3040, roughness: .4, emissive: 0xffc070, emissiveIntensity: 0, fog: false }), 0, .5), bronze = mat({ color: 0x5f8a7a, roughness: .45, metalness: .55, fog: false }),
+      herbe = mat({ color: 0x5a8a3a, roughness: .95, fog: false }), ifM = mat({ color: 0x2e5a26, roughness: .9, fog: false }), toitG = lum(mat({ color: 0xd6d0c2, roughness: .75, emissive: 0xffe0b0, emissiveIntensity: 0, fog: false }), 0, .35);
+    // les écailles des dômes : des rangées de petites tuiles arrondies, comme sur les photos
+    const ecailles = (() => { const c = document.createElement("canvas"); c.width = 128; c.height = 64; const x = c.getContext("2d"); x.fillStyle = "#f2eee4"; x.fillRect(0, 0, 128, 64);
+      for (let r = 0; r < 2; r++) for (let k = -1; k < 5; k++) { const cx = k * 32 + (r ? 16 : 0), cy = r * 32 + 30; const gr = x.createLinearGradient(0, cy - 30, 0, cy); gr.addColorStop(0, "#f6f3ea"); gr.addColorStop(1, "#cfc7b6"); x.fillStyle = gr; x.beginPath(); x.arc(cx, cy - 14, 16, 0, Math.PI); x.lineTo(cx - 16, cy - 30); x.lineTo(cx + 16, cy - 30); x.fill(); x.strokeStyle = "rgba(120,110,95,.55)"; x.lineWidth = 1.5; x.beginPath(); x.arc(cx, cy - 14, 16, 0, Math.PI); x.stroke(); }
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t; })();
+    const domeM = (ru, rv) => { const t = ecailles.clone(); t.needsUpdate = true; t.repeat.set(ru, rv); return lum(mat({ map: t, roughness: .7, emissive: 0xffe6c0, emissiveIntensity: 0, fog: false }), 0, .5); };
+    const P = (x, y, z, o) => { o.position.set(x, y, z); g.add(o); return o; };
+    const B = (w, h, d, m, x, y, z, ry = 0) => { const o = box(w, h, d, m, x, y, z, g); o.rotation.y = ry; return o; };
+    const C = (rt, rb, h, m, x, y, z, seg = 12) => cyl(rt, rb, h, m, x, y, z, g, seg);
+    // une baie en plein cintre (rectangle + demi-cercle), posée sur un mur ; ry : la direction où elle regarde
+    const arcG = new Map(), baie = (w, h, m, x, y, z, ry = 0, encadre = true) => { const k = w + "|" + h; if (!arcG.has(k)) { const s = new THREE.Shape(); s.moveTo(-w / 2, 0); s.lineTo(w / 2, 0); s.lineTo(w / 2, h - w / 2); s.absarc(0, h - w / 2, w / 2, 0, Math.PI, false); s.lineTo(-w / 2, 0); arcG.set(k, new THREE.ShapeGeometry(s, 10)); }
+      const o = new THREE.Mesh(arcG.get(k), m); o.position.set(x, y, z); o.rotation.y = ry; g.add(o);
+      if (encadre) { const r = new THREE.Mesh(new THREE.TorusGeometry(w / 2 + .12, .14, 4, 12, Math.PI), blanc); r.position.set(x + Math.sin(ry) * .08, y + h - w / 2, z + Math.cos(ry) * .08); r.rotation.y = ry; g.add(r); } return o; };
+    const rosace = (r, x, y, z, ry = 0) => { const d = new THREE.Mesh(new THREE.CircleGeometry(r, 24), vitre); d.position.set(x, y, z); d.rotation.y = ry; g.add(d); const o = new THREE.Mesh(new THREE.TorusGeometry(r, .16, 5, 28), blanc); o.position.set(x + Math.sin(ry) * .05, y, z + Math.cos(ry) * .05); o.rotation.y = ry; g.add(o);
+      const i2 = new THREE.Mesh(new THREE.TorusGeometry(r * .38, .1, 4, 16), blanc); i2.position.copy(o.position); i2.rotation.y = ry; g.add(i2); for (let k = 0; k < 8; k++) { const s = new THREE.Mesh(new THREE.BoxGeometry(.12, r * .62, .1), blanc); const a = k / 8 * Math.PI * 2; s.position.set(x + Math.cos(ry) * Math.cos(a) * r * .69 + Math.sin(ry) * .06, y + Math.sin(a) * r * .69, z - Math.sin(ry) * Math.cos(a) * r * .69 + Math.cos(ry) * .06); s.rotation.set(0, ry, a + Math.PI / 2); g.add(s); }
+      for (let k = 0; k < 8; k++) { const a = (k + .5) / 8 * Math.PI * 2, l = new THREE.Mesh(new THREE.TorusGeometry(r * .17, .07, 4, 10), blanc); l.position.set(x + Math.cos(ry) * Math.cos(a) * r * .69 + Math.sin(ry) * .06, y + Math.sin(a) * r * .69, z - Math.sin(ry) * Math.cos(a) * r * .69 + Math.cos(ry) * .06); l.rotation.y = ry; g.add(l); } };
+    // le profil ovoïde, un peu pointu, des dômes du Sacré-Cœur
+    const dome = (R, H, y, x, z, ru, rv, top = .14) => { const pts = []; for (let i = 0; i <= 22; i++) { const t = i / 22; pts.push(new THREE.Vector2(Math.max(R * top, R * (1 + .07 * Math.sin(Math.PI * t * .9)) * Math.pow(1 - Math.pow(t, 2.3), .55)), t * H)); } return add(new THREE.LatheGeometry(pts, 32), domeM(ru, rv), x, y, z, g); };
+    // un tambour à arcades : le cylindre, ses fenêtres en plein cintre entre des colonnettes, la corniche
+    const tambour = (r, h, y, x, z, n, fen = true) => { C(r * .97, r * .97, h, creme, x, y + h / 2, z, 28); C(r * 1.06, r * 1.06, h * .08, blanc, x, y + h * .04, z, 28); C(r * 1.08, r * 1.04, h * .1, blanc, x, y + h * .95, z, 28);
+      for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a); C(r * .045, r * .045, h * .82, blanc, x + ca * r * 1.02, y + h * .5, z + sa * r * 1.02, 6);
+        if (fen) { const b = (i + .5) / n * Math.PI * 2; baie(r * .28, h * .55, vitre, x + Math.cos(b) * r * .99, y + h * .2, z + Math.sin(b) * r * .99, Math.PI / 2 - b, false); } } };
+    const lanterne = (r, h, y, x, z, n) => { C(r, r * 1.08, h * .12, blanc, x, y + h * .06, z, 16); for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; C(r * .09, r * .09, h * .7, blanc, x + Math.cos(a) * r * .85, y + h * .47, z + Math.sin(a) * r * .85, 6); }
+      C(r * .7, r * .7, h * .7, noirA, x, y + h * .47, z, 12); C(r * 1.1, r * 1.02, h * .14, blanc, x, y + h * .88, z, 16); };
+    const croix = (s, x, y, z) => { B(.18 * s, 2 * s, .18 * s, blanc, x, y + s, z); B(1.1 * s, .18 * s, .18 * s, blanc, x, y + 1.4 * s, z); add(new THREE.SphereGeometry(.28 * s, 10, 8), blanc, x, y, z, g); };
+    const pinacle = (x, y, z, s = 1) => { C(.45 * s, .5 * s, 1.6 * s, blanc, x, y + .8 * s, z, 8); add(new THREE.SphereGeometry(.5 * s, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), blanc, x, y + 1.6 * s, z, g); C(.05 * s, .12 * s, .9 * s, blanc, x, y + 2.4 * s, z, 6); };
+
+    // la plate-forme et le parvis
+    B(60, 4, 96, creme, 0, -2, -20); B(48, .5, 12, blanc, 0, .25, 26);
+    // la nef, les bas-côtés, les toits en pente douce
+    B(34, 26, 40, blanc, 0, 13, -8); for (const sx of [-1, 1]) { B(4, 18, 40, creme, sx * 18.5, 9, -8); }
+    for (const sx of [-1, 1]) { const t = B(1, 4, 40, toitG, sx * 15, 27.5, -8); t.rotation.z = sx * .5; }
+    for (const sx of [-1, 1]) for (let z = -24; z <= 6; z += 5) { baie(2.2, 8, vitre, sx * 20.55, 4, z, sx * Math.PI / 2); baie(2.6, 7, vitre, sx * 17.05, 17, z, sx * Math.PI / 2); B(1, 18, 1.4, blanc, sx * 20.6, 9, z + 2.5); }   // (les baies des bas-côtés et de la nef, les contreforts)
+    B(36, .8, 42, blanc, 0, 26.2, -8); B(42, .7, 42, blanc, 0, 18.2, -8);
+    // les tours d'angle de la façade : leur rosace, leurs baies géminées, leurs petits dômes
+    for (const sx of [-1, 1]) { const x = sx * 13.5; B(9, 32, 9, blanc, x, 16, 8.5); B(9.6, .7, 9.6, blanc, x, 32.3, 8.5); rosace(2.6, x, 13, 13.06); baie(1.4, 5, vitre, x - 1.2, 20, 13.06); baie(1.4, 5, vitre, x + 1.2, 20, 13.06); B(.5, 5.5, .4, blanc, x, 22.5, 13.1);
+      baie(1.8, 6, vitre, x + sx * 4.55, 16, 8.5, sx * Math.PI / 2); for (const [px, pz] of [[-4.2, 12.7], [4.2, 12.7]]) pinacle(x + px, 32.6, pz, .9);
+      tambour(3.3, 5, 32.6, x, 8.5, 10); dome(3.5, 7.5, 37.6, x, 8.5, 10, 4); lanterne(.9, 2.6, 45.2, x, 8.5, 6); croix(.6, x, 47.9, 8.5); }
+    // le porche : les trois grands arcs sur colonnes, les portes de bronze, la frise, la balustrade et ses deux petits dômes
+    B(26, 15, 7, blanc, 0, 7.5, 16.5); for (const x of [-7.4, 0, 7.4]) { baie(5.4, 11, noirA, x, 0, 20.02, 0, false); const ar = new THREE.Mesh(new THREE.TorusGeometry(2.9, .4, 6, 18, Math.PI), blanc); ar.position.set(x, 8.3, 20.1); g.add(ar); for (const dx of [-3.1, 3.1]) C(.38, .42, 8.3, creme, x + dx, 4.15, 20.3, 10); B(4.6, 6.6, .2, mat({ color: 0x5a4a32, metalness: .4, roughness: .5, fog: false }), x, 3.3, 19.4); }
+    B(27, 1, 7.6, blanc, 0, 15.5, 16.5); B(27.4, .5, 7.8, blanc, 0, 16.2, 16.5); for (let x = -13; x <= 13.1; x += .8) C(.14, .14, 1.1, blanc, x, 17, 20.2, 6); B(27, .3, .5, blanc, 0, 17.6, 20.2);
+    for (let x = -12; x <= 12.1; x += 3) { const f = B(2, 2, .2, creme, x, 13.6, 20.06); f.rotation.z = Math.PI / 4; }   // (la frise de losanges)
+    for (const sx of [-1, 1]) { tambour(1.6, 2.6, 17.8, sx * 11, 16.5, 8, false); dome(1.75, 3.6, 20.4, sx * 11, 16.5, 8, 3); croix(.35, sx * 11, 24.2, 16.5); }
+    // au-dessus du porche, le grand pignon : la baie, le Christ dans sa niche, l'inscription, le fronton
+    B(18, 16, 3, blanc, 0, 25, 12.5); baie(4.2, 8, vitre, 0, 18.5, 14.02); for (const dx of [-3.4, 3.4]) baie(1.5, 5.5, vitre, dx, 19, 14.02);
+    baie(2.6, 5, creme, 0, 27.4, 14.03, 0, true); { const ch = new THREE.Group(); ch.position.set(0, 27.6, 14.3); g.add(ch); const robe = new THREE.Mesh(new THREE.CylinderGeometry(.45, .75, 3, 10), blanc); robe.position.y = 1.5; ch.add(robe); const tete = new THREE.Mesh(new THREE.SphereGeometry(.34, 10, 8), blanc); tete.position.y = 3.3; ch.add(tete); for (const sx of [-1, 1]) { const b2 = new THREE.Mesh(new THREE.CapsuleGeometry(.14, 1.1, 3, 6), blanc); b2.position.set(sx * .55, 2.3, .15); b2.rotation.z = sx * .6; ch.add(b2); } }
+    B(14, .9, .4, creme, 0, 23.2, 14.15); { const sh = new THREE.Shape(); sh.moveTo(-9.5, 0); sh.lineTo(9.5, 0); sh.lineTo(0, 4.2); sh.lineTo(-9.5, 0); const fr = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 3, bevelEnabled: false }), blanc); fr.position.set(0, 33, 11); g.add(fr); } pinacle(0, 37, 12.5, 1.1);
+    for (const sx of [-1, 1]) pinacle(sx * 9, 33, 13.5, .8);
+    // les deux saints à cheval, en bronze vert, sur leurs piédestaux
+    for (const sx of [-1, 1]) { const x = sx * 10.2; B(3, 3.6, 3, blanc, x, 1.8, 22.4); B(3.4, .4, 3.4, blanc, x, 3.8, 22.4); const S = new THREE.Group(); S.position.set(x, 4, 22.4); S.rotation.y = sx * .25; g.add(S);
+      const ad = (geo, px, py, pz, rx = 0, rz = 0) => { const o = new THREE.Mesh(geo, bronze); o.position.set(px, py, pz); o.rotation.set(rx, 0, rz); S.add(o); return o; };
+      ad(new THREE.CapsuleGeometry(.5, 1.3, 4, 10), 0, 1.7, 0, Math.PI / 2); ad(new THREE.CapsuleGeometry(.25, .7, 3, 8), 0, 2.4, .85, -.6); ad(new THREE.CapsuleGeometry(.18, .45, 3, 8), 0, 2.75, 1.25, -1.6);
+      for (const [lx, lz, rx] of [[-.25, .7, -.6], [.25, .7, 0], [-.25, -.7, .1], [.25, -.7, -.1]]) ad(new THREE.CapsuleGeometry(.11, 1.1, 3, 6), lx, .75, lz, rx); ad(new THREE.CapsuleGeometry(.1, .7, 3, 6), 0, 1.6, -1.15, .6);
+      ad(new THREE.CapsuleGeometry(.24, .6, 3, 8), 0, 2.7, -.1); ad(new THREE.SphereGeometry(.2, 8, 6), 0, 3.35, -.1); ad(new THREE.CapsuleGeometry(.07, 1.2, 3, 6), sx * -.3, 3.1, .3, -.3, sx * .2); ad(new THREE.CylinderGeometry(.025, .025, 2.6, 4), sx * .35, 3.6, .2, -.2); }
+    // la croisée : la grande tour carrée, la galerie, le tambour à arcades, le grand dôme d'écailles, la lanterne, la croix
+    const DZ = -8; B(23, 10, 23, blanc, 0, 31, DZ); B(24, .9, 24, blanc, 0, 36.4, DZ); for (const [px, pz] of [[-11.5, -11.5], [11.5, -11.5], [-11.5, 11.5], [11.5, 11.5]]) pinacle(px, 36.8, DZ + pz, 1);
+    for (const [dx, dz, ry] of [[0, 11.55, 0], [0, -11.55, Math.PI], [11.55, 0, Math.PI / 2], [-11.55, 0, -Math.PI / 2]]) for (const o of [-6, 0, 6]) baie(2.2, 6, vitre, dx + (dz ? o : 0), 29, DZ + dz + (dx ? o : 0), ry);
+    tambour(9.6, 14, 36.8, 0, DZ, 20);
+    C(10.6, 10.6, .8, blanc, 0, 51.4, DZ, 32); for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2; C(.1, .1, 1.1, blanc, Math.cos(a) * 10.4, 52.3, DZ + Math.sin(a) * 10.4, 4); } { const bal = new THREE.Mesh(new THREE.TorusGeometry(10.4, .12, 4, 48), blanc); bal.rotation.x = Math.PI / 2; bal.position.set(0, 52.9, DZ); g.add(bal); }
+    tambour(9.2, 4, 51.8, 0, DZ, 32);   /* (la galerie haute, ses petites arcades) */
+    dome(10, 21, 55.8, 0, DZ, 28, 9, .2);
+    lanterne(2.3, 6, 76.2, 0, DZ, 12); dome(2.6, 3.4, 82.1, 0, DZ, 8, 2, .2); C(.25, .45, 2.4, blanc, 0, 86.2, DZ, 8); croix(1, 0, 87.6, DZ);
+    // les quatre dômes secondaires, sur leurs tours carrées percées de baies géminées
+    for (const [x, z] of [[-13.5, 0], [13.5, 0], [-13.5, -16], [13.5, -16]]) { B(8, 12, 8, blanc, x, 32, z); B(8.6, .6, 8.6, blanc, x, 38.3, z); for (const [dx, dz, ry] of [[0, 4.02, 0], [0, -4.02, Math.PI], [4.02, 0, Math.PI / 2], [-4.02, 0, -Math.PI / 2]]) { baie(1.2, 4.2, vitre, x + dx + (dz ? -1 : 0), 31.5, z + dz + (dx ? -1 : 0), ry); baie(1.2, 4.2, vitre, x + dx + (dz ? 1 : 0), 31.5, z + dz + (dx ? 1 : 0), ry); }
+      tambour(3.4, 5, 38.6, x, z, 10); dome(3.6, 8, 43.6, x, z, 10, 4); lanterne(.95, 2.8, 51.6, x, z, 6); croix(.6, x, 54.5, z); }
+    // le chevet : l'abside ronde, ses chapelles rayonnantes coiffées de petits dômes, ses baies
+    C(14, 14, 26, blanc, 0, 13, -28, 28); C(14.6, 14.6, .8, blanc, 0, 26.4, -28, 28); { const t = add(new THREE.SphereGeometry(14, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), toitG, 0, 26.6, -28, g); t.scale.y = .32; }
+    for (let k = 0; k < 7; k++) { const a = Math.PI + (k + .5) / 7 * Math.PI, cx = Math.cos(a) * 14.4, cz = -28 + Math.sin(a) * 14.4; C(3.6, 3.6, 16, blanc, cx, 8, cz, 16); dome(3.8, 4.6, 16, cx, cz, 8, 3); croix(.3, cx, 20.7, cz);
+      baie(1.4, 6, vitre, cx + Math.cos(a) * 3.62, 4, cz + Math.sin(a) * 3.62, Math.PI / 2 - a); baie(2, 7, vitre, Math.cos(a + .22) * 14.03, 16, -28 + Math.sin(a + .22) * 14.03, Math.PI / 2 - a - .22); }
+    // le campanile : la haute tour carrée, ses contreforts d'angle, ses longues baies, la chambre des cloches, la coupole et sa croix
+    const CZ = -48; B(11, 54, 11, blanc, 0, 27, CZ); for (const [px, pz] of [[-5.2, -5.2], [5.2, -5.2], [-5.2, 5.2], [5.2, 5.2]]) B(1.6, 56, 1.6, creme, px, 28, CZ + pz);
+    for (const [dx, dz, ry] of [[0, 5.52, 0], [0, -5.52, Math.PI], [5.52, 0, Math.PI / 2], [-5.52, 0, -Math.PI / 2]]) { baie(1.6, 14, vitre, dx, 20, CZ + dz, ry); for (const o of [-2.3, 0, 2.3]) baie(1.5, 8.5, noirA, dx + (dz ? o : 0), 43, CZ + dz + (dx ? o : 0), ry); baie(1.3, 5, vitre, dx, 8, CZ + dz, ry); }
+    for (const y of [16, 36, 54.4]) B(12.4, .8, 12.4, blanc, 0, y, CZ); for (const [px, pz] of [[-5.6, -5.6], [5.6, -5.6], [-5.6, 5.6], [5.6, 5.6]]) pinacle(px, 54.8, CZ + pz, 1.2);
+    tambour(5, 7, 54.8, 0, CZ, 12); dome(5.3, 12, 61.8, 0, CZ, 14, 5, .18); lanterne(1.2, 3.4, 73.4, 0, CZ, 8); croix(.8, 0, 76.9, CZ);
+    // devant, la butte : la terrasse aux trois arcs rayonnants, sa balustrade, les deux escaliers, la pelouse en pente, les ifs
+    B(56, 9, 4, blanc, 0, -4.5, 33); for (const x of [-12, 0, 12]) { baie(7, 7.5, noirA, x, -9, 35.02, 0, false); for (let k = 0; k < 13; k++) { const a = k / 12 * Math.PI, v = B(.18, 1.6, .2, creme, x + Math.cos(a) * 4.1, -5 + Math.sin(a) * 4.1, 35.1); v.rotation.z = a - Math.PI / 2; } }
+    for (let x = -27.5; x <= 27.6; x += .9) C(.12, .12, 1, blanc, x, .5, 34.9, 6); B(56, .3, .5, blanc, 0, 1.1, 34.9); for (let x = -27; x <= 27.1; x += 9) B(.7, 1.3, .7, blanc, x, .65, 34.9);
+    const pente = new THREE.Mesh(new THREE.PlaneGeometry(26, 34), herbe); pente.rotation.x = -Math.PI / 2 + .42; pente.position.set(0, -15.5, 51); g.add(pente);
+    for (const sx of [-1, 1]) { for (let k = 0; k < 26; k++) B(5, .5, 1.25, creme, sx * 16, -9.2 - k * .52, 36 + k * 1.25); B(.6, 1.2, 34, blanc, sx * 13.4, -15, 52); B(.6, 1.2, 34, blanc, sx * 18.6, -15, 52); }
+    for (const [x, z] of [[-9, 40], [9, 40], [-9, 48], [9, 48], [-9, 56], [9, 56], [-9, 64], [9, 64], [-4, 44], [4, 44], [-4, 60], [4, 60]]) { const y = -9.3 - (z - 36) * .45; add(new THREE.ConeGeometry(.6, 1.8, 8), ifM, x, y + .9, z, g); }
+    for (const [x, z, r] of [[-30, 30, 4.5], [-34, 14, 5], [30, 30, 4.4], [34, 12, 5.2], [-31, -6, 4.6], [31, -8, 4.4], [-26, 48, 5], [26, 50, 5.4], [-29, 62, 4.8], [29, 64, 5]]) add(new THREE.IcosahedronGeometry(r, 1), mat({ color: [0x3a6a2a, 0x4a7a32, 0x5a7a2a][Math.abs(x * 7) % 3], roughness: .9, fog: false }), x, z > 36 ? -12 - (z - 36) * .3 + r * .6 : r * .7, z, g);
     // le soir, le Sacré-Cœur est éclairé : sa pierre blanche brille sur le ciel noir
-    if (!(MOBILE || GPU_MODESTE)) { const sp = new THREE.SpotLight(0xfff0d8, 0, 220, .5, .5, 1); sp.position.set(0, 10, 120); sp.target.position.set(0, 40, -6); g.add(sp); g.add(sp.target); NUIT.push([{ set emissiveIntensity(v) { sp.intensity = v; } }, 0, 1800]); }
-    g.updateMatrixWorld(true); for (const o of [...g.children]) if (o.isMesh) scene.attach(o); }   // (les pierres fondues avec le reste)
+    if (!(MOBILE || GPU_MODESTE)) { const sp = new THREE.SpotLight(0xfff0d8, 0, 260, .55, .5, 1); sp.position.set(0, 10, 130); sp.target.position.set(0, 45, -8); g.add(sp); g.add(sp.target); NUIT.push([{ set emissiveIntensity(v) { sp.intensity = v; } }, 0, 2200]); }
+    if (!L.apercuSC) { g.updateMatrixWorld(true); for (const o of [...g.children]) if (o.isMesh) scene.attach(o); } }   // (les pierres fondues avec le reste)
 
   /* ---------- les promeneurs : les touristes qui font le tour du carré, regardent les peintres, remontent la rue Saint-Éleuthère ---------- */
   const ROUTES = [[[-78, -12.9], [-23, -12.9]], [[-83, -40], [-83, 34]], [[-78, 29], [54, 29]], [[1, 12], [1, 29], [-40, 29]], [[-23, -12], [-60, -12], [-82, -13], [-82, 28], [-20, 28.5]], [[-70, 30.5], [40, 30.5]],[[-16, -12], [16, -12], [16, 12], [-16, 12], [-16, -12]], [[-17, 12.5], [-17, -12.5], [15, -12.5], [15, 12.5], [-17, 12.5]], [[16, 12], [42, 12]], [[1, ZS - .5], [1, 11], [-15, 11], [-15, -11.5]], [[-12.6, -8.6], [12.6, -8.6], [12.6, 2], [-12.6, 2]]];
