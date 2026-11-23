@@ -7,17 +7,26 @@ function construireTertre(A, L, scene) {
      chaque enseigne, façade ou vitrine n'en lit que sa case. Seules les images qui se répètent (les pavés, la pierre) et celles qu'on peint plus tard (les tableaux) restent à part) */
   const PAGE = 2048, PAD = 4, PAGES = []; let pg = null;
   const casier = (w, h) => { if (w > PAGE - 2 * PAD || h > PAGE - 2 * PAD) return null;
-    if (!pg) { const c = document.createElement("canvas"); c.width = c.height = PAGE; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; pg = { c, x: PAD, y: PAD, hl: 0, t }; PAGES.push(pg); }
+    if (!pg) { const c = document.createElement("canvas"); c.width = c.height = PAGE; { const x0 = c.getContext("2d"); x0.fillStyle = "#d8cfbf"; x0.fillRect(0, 0, PAGE, PAGE); }   /* (en attendant d'être peinte : une teinte de pierre, pas du noir) */ const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; pg = { c, x: PAD, y: PAD, hl: 0, t }; PAGES.push(pg); }
     if (pg.x + w + PAD > PAGE) { pg.x = PAD; pg.y += pg.hl + PAD; pg.hl = 0; }
     if (pg.y + h + PAD > PAGE) { pg = null; return casier(w, h); }
     const r = { pg, x: pg.x, y: pg.y }; pg.x += w + PAD; pg.hl = Math.max(pg.hl, h); return r; };
+  /* (10.233) les images de Montmartre (façades, devantures, enseignes, vitrines) ne se dessinent plus toutes d'un coup à la construction — ce qui bloquait le métro
+     une vingtaine de secondes sur téléphone : chacune est réservée tout de suite, puis peinte un peu à chaque instant, en tâche de fond, pendant le trajet */
+  const JOBS = []; let pompe = false; const pomper = () => { const t0 = performance.now(), B = (MOBILE || GPU_MODESTE) ? 9 : 14; while (JOBS.length && performance.now() - t0 < B) { try { JOBS.shift()(); } catch (e) {} }
+    if (!JOBS.length || t0 - (L.__flushT || 0) > 700) { L.__flushT = t0; for (const P of PAGES) if (P.sale && P.tex) { P.sale = false; P.tex.needsUpdate = true; } }   /* (les planches renvoyées à la carte graphique de temps en temps, pas à chaque image peinte) */
+    if (JOBS.length) setTimeout(pomper, 6); else pompe = false; };
+  const differer = (j) => { JOBS.push(j); if (!pompe) { pompe = true; setTimeout(pomper, 0); } };
+  L.__peintureFinie = () => JOBS.length === 0;
   const tT = (w, h, f, rx, ry, ech = 1, aPart = false) => { const cw = Math.max(8, Math.round(w * ECH * ech)), ch = Math.max(8, Math.round(h * ECH * ech)), place = rx || aPart ? null : casier(cw, ch);
-    if (!place) { const c = document.createElement("canvas"); c.width = cw; c.height = ch; const x = c.getContext("2d", { willReadFrequently: true }); x.scale(cw / w, ch / h); f(x, w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || rx); } return t; }
-    const x = place.pg.c.getContext("2d", { willReadFrequently: true }); x.save(); x.translate(place.x, place.y); x.beginPath(); x.rect(0, 0, cw, ch); x.clip(); x.scale(cw / w, ch / h); f(x, w, h); x.restore();
+    if (!place) { const c = document.createElement("canvas"); c.width = cw; c.height = ch; { const x0 = c.getContext("2d", { willReadFrequently: true }); x0.fillStyle = "#d8cfbf"; x0.fillRect(0, 0, cw, ch); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || rx); }
+      differer(() => { const x = c.getContext("2d", { willReadFrequently: true }); x.scale(cw / w, ch / h); f(x, w, h); t.needsUpdate = true; }); return t; }
+    const t = place.pg.t.clone(); t.offset.set(place.x / PAGE, 1 - (place.y + ch) / PAGE); t.repeat.set(cw / PAGE, ch / PAGE); t.needsUpdate = true; place.pg.tex = t;
+    differer(() => { const x = place.pg.c.getContext("2d", { willReadFrequently: true }); x.save(); x.translate(place.x, place.y); x.beginPath(); x.rect(0, 0, cw, ch); x.clip(); x.scale(cw / w, ch / h); f(x, w, h); x.restore();
     // les bords recopiés tout autour (sinon, de loin, la case voisine déteint sur les bords)
     for (const [sx, sy, sw, sh, dx, dy, dw, dh] of [[place.x, place.y, cw, 1, place.x, place.y - PAD, cw, PAD], [place.x, place.y + ch - 1, cw, 1, place.x, place.y + ch, cw, PAD], [place.x, place.y - PAD, 1, ch + 2 * PAD, place.x - PAD, place.y - PAD, PAD, ch + 2 * PAD], [place.x + cw - 1, place.y - PAD, 1, ch + 2 * PAD, place.x + cw, place.y - PAD, PAD, ch + 2 * PAD]])
       try { x.drawImage(place.pg.c, sx, sy, sw, sh, dx, dy, dw, dh); } catch (e) {}
-    const t = place.pg.t.clone(); t.offset.set(place.x / PAGE, 1 - (place.y + ch) / PAGE); t.repeat.set(cw / PAGE, ch / PAGE); t.needsUpdate = true; return t; };
+      place.pg.sale = true; }); return t; };
   const mat = (o) => new THREE.MeshStandardMaterial({ roughness: .85, ...o });
   const add = (geo, m, x, y, z, par = scene, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.receiveShadow = true; par.add(o); return o; };
   const box = (w, h, d, m, x, y, z, par = scene, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, par, ry);
@@ -1601,7 +1610,7 @@ function construireTertre(A, L, scene) {
   fusionStatique(scene, L, 0);
   /* (le blocage sur téléphone : tout se figeait quelques secondes — l'image, les pigeons, le texte — quand une façade, une enseigne ou une vitrine entrait pour la première fois dans le champ :
      le téléphone envoyait alors son image à la carte graphique et préparait sa matière. On fait tout cela dès l'arrivée, une fois pour toutes, pendant le chargement) */
-  { let fait = false; const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) { try { M && M.signalerErreur && M.signalerErreur(e); } catch (x) {} } if (fait || !M || M.L !== L || !M.rendu || !M.camera) return; fait = true;
+  { let fait = false; const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) { try { M && M.signalerErreur && M.signalerErreur(e); } catch (x) {} } if (fait || !M || M.L !== L || !M.rendu || !M.camera || JOBS.length) return; fait = true;   /* (une fois toutes les images peintes) */
       try { const R = M.rendu, vus = new Set(); scene.traverse(o => { for (const m of [].concat(o.material || [])) if (m) for (const k of ["map", "emissiveMap", "normalMap", "alphaMap"]) { const t = m[k]; if (t && t.isTexture && !vus.has(t)) { vus.add(t); try { R.initTexture(t); } catch (e) {} } } });
         R.compile(scene, M.camera); M.dbgPrep = vus.size; for (const P of PAGES) { P.c.width = P.c.height = 1; }   /* (les planches sont dans la carte graphique : on libère leur copie dans la mémoire du téléphone — 100 Mo) */ } catch (e) { console.warn("préparation", e); } }; }   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
 }
