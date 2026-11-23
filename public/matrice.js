@@ -18108,7 +18108,7 @@ function preparerVoisin() {
   const now = performance.now(); if (!M || !M.L || M.preparation || M.cine || now < (M.prepT || 0)) return; M.prepT = now + 700;   // (jamais pendant une cinématique)
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; M.prets = M.prets || {};
   let best = null, bd = 14;
-  for (const q of [...(M.L.portails || []), ...(M.L.raccourcis || [])]) { if (!q.vers || q.vers === M.lieu || M.prets[q.vers] || !LIEUX[baseLieu(q.vers)]) continue;
+  for (const q of [...(M.L.portails || []), ...(M.L.raccourcis || [])]) { if (!q.vers || q.vers === M.lieu || M.prets[q.vers] || !LIEUX[baseLieu(q.vers)]) continue; if (q.admin) continue;   /* (10.228 : les cercles violets de l'administrateur — Notre-Dame, Abbesses — jamais préparés d'avance : sinon, à l'arrivée dans la cour, tout Montmartre se construisait en coulisse, et l'image restait figée) */
     if (modeRE() && !q.continu) continue;   /* (Resident Evil : le lieu suivant se prépare derrière la porte qui s'ouvre — plus pendant qu'on joue, où l'image se figeait d'un coup ; seuls les passages sans porte sont préparés à l'avance) */
     const c = q.seuil || q.centre || (q.dans ? centrePortail(q) : null) || q.marche; if (!c) continue;
     const d = Math.hypot(c[0] - moi.g.position.x, c[1] - moi.g.position.z); if (d < bd) { bd = d; best = q.vers; } }
