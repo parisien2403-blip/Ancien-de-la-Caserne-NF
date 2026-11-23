@@ -1914,8 +1914,8 @@ function construireNotreDame(A, L, scene) {
           const non = document.createElement("button"); non.type = "button"; non.textContent = "Non merci"; non.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:600 14px Lato,Arial"; non.onclick = (e) => { e.stopPropagation(); fermer(); };
           d.appendChild(go); d.appendChild(non); (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer }; };
         L.__luciolesPhoto = (img, nom, femme, mot) => scene2(img, nom, femme, mot);
-        AMB.push((tm) => { cer.visible = !!L.nuit && !L.enHaut && !enCours; RM.opacity = .35 + Math.sin(tm / 500) * .2; });
-        const a0lp = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0lp && a0lp(x, z, moi); if (r) return r; return !L.enHaut && L.nuit && !enCours && Math.hypot(x - LX, z - LZ) < 1.8 ? { type: "lieu", id: "luciolesPhoto", label: "✨ Faire revenir quelqu'un", faire: demander } : null; };
+        AMB.push((tm) => { cer.visible = !!L.nuit && !L.enHaut && !enCours && estAdmin(); RM.opacity = .35 + Math.sin(tm / 500) * .2; });
+        const a0lp = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0lp && a0lp(x, z, moi); if (r) return r; return !L.enHaut && L.nuit && !enCours && estAdmin() && Math.hypot(x - LX, z - LZ) < 1.8 ? { type: "lieu", id: "luciolesPhoto", label: "✨ Faire revenir quelqu'un", faire: demander } : null; };
         quitterLieu.add(() => { enCours = false; }); }
       // — la pluie de pétales : de temps en temps, le jour, un coup de vent fait tomber des pétales roses tout autour de nous —
       { const N = (MOBILE || GPU_MODESTE) ? 140 : 260, pg = new THREE.PlaneGeometry(.07, .05), pm = new THREE.MeshStandardMaterial({ color: 0xf4b0c4, roughness: .7, side: THREE.DoubleSide, emissive: 0x6a2a3a, emissiveIntensity: .15 }), IM2 = new THREE.InstancedMesh(pg, pm, N); IM2.frustumCulled = false; IM2.visible = false; scene.add(IM2);
