@@ -609,7 +609,7 @@ function construireTertre(A, L, scene) {
   /* ---------- les platanes du carré, leurs grilles ; les réverbères à lanterne ---------- */
   const ecorceT = tT(64, 128, (c, w, h) => { c.fillStyle = "#8a8a7a"; c.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { c.fillStyle = ["#a8a890", "#6a6a5a", "#c8c4a8", "#5a5a4a"][i % 4]; c.beginPath(); c.ellipse(al() * w, al() * h, 4 + al() * 8, 6 + al() * 12, 0, 0, 7); c.fill(); } }, 1, 2);
   const tronc = mat({ map: ecorceT }), feuilles = [mat({ color: 0x4a6a2a, roughness: .9 }), mat({ color: 0x5a7a32, roughness: .9 }), mat({ color: 0x3a5a24, roughness: .9 })], grille = mat({ color: 0x2a2a2a, metalness: .6 });
-  const platane = (x, z) => { const y0 = YS; cyl(.18, .26, 7.5, tronc, x, y0 + 3.75, z, scene, 8); for (let b = 0; b < 3; b++) { const a = b * 2.1 + al(), br = cyl(.08, .12, 3, tronc, x + Math.cos(a) * .7, y0 + 7.3, z + Math.sin(a) * .7, scene, 6); br.rotation.set(Math.sin(a) * .5, 0, -Math.cos(a) * .5); }
+  const platane = (x, z, y0 = YS) => { cyl(.18, .26, 7.5, tronc, x, y0 + 3.75, z, scene, 8); for (let b = 0; b < 3; b++) { const a = b * 2.1 + al(), br = cyl(.08, .12, 3, tronc, x + Math.cos(a) * .7, y0 + 7.3, z + Math.sin(a) * .7, scene, 6); br.rotation.set(Math.sin(a) * .5, 0, -Math.cos(a) * .5); }
     for (let k = 0; k < 8; k++) { const r = 1.0 + al() * .9; add(new THREE.IcosahedronGeometry(r, 1), feuilles[k % 3], x + (al() - .5) * 3.6, y0 + 8.6 + al() * 2.4, z + (al() - .5) * 3.6); }
     LEDC.push([x, z]); const gr = add(new THREE.RingGeometry(.35, .75, 16), grille, x, y0 + .01, z); gr.rotation.x = -Math.PI / 2; OB.push([x, z, .4]); };
   for (const x of [-10, -3.5, 3.5, 10]) for (const z of [-6, 0.5, 6.5]) if (!(x > 2 && z > 3) && !(x > 2 && z < -3) && !(x < -8 && Math.abs(z) < 3)) platane(x + (al() - .5), z + (al() - .5));
@@ -639,13 +639,13 @@ function construireTertre(A, L, scene) {
   const chevalet = (x, z, ry, k, y0 = YS, portr = null) => { const g = new THREE.Group(); g.position.set(x, y0, z); g.rotation.y = ry; scene.add(g); for (const sg of [-1, 1]) { const l = box(.035, 1.7, .035, boisC, sg * .28, .82, -.05, g); l.rotation.z = -sg * .1; } const ar = box(.035, 1.7, .035, boisC, 0, .8, .32, g); ar.rotation.x = -.35;   /* (10.92) le pied arrière derrière la toile, loin du peintre */
     box(.62, .04, .06, boisC, 0, .82, -.1, g); const t = box(.56, .7, .03, [linM, linM, linM, linM, portr ? linM : TABL[k % TABL.length], portr || TABL[k % TABL.length]], 0, 1.2, -.1, g); t.rotation.x = .08; return g; };
   let kP = 0; const nPeint = !GENS ? 0 : PETIT ? 3 : (MOBILE || GPU_MODESTE) ? 4 : 8, MODELES = [];
-  const coin = (x, z, ry, k) => { chevalet(x, z, ry, k, YS, kP < nPeint && kP < 3 ? PORTM[kP] : null); { const ps = k % 2 ? -1 : 1; parasol(x + Math.cos(ry) * ps * .85 - Math.sin(ry) * 1.15, z - Math.sin(ry) * ps * .85 - Math.cos(ry) * 1.15, k); }   // (le mât à côté, derrière l'épaule du peintre : jamais devant son visage)
-    { const sg = k % 2 ? 1 : -1, B = new THREE.Group(); B.position.set(x + Math.cos(ry) * 1.25 * sg, YS, z - Math.sin(ry) * 1.25 * sg); B.rotation.y = ry; scene.add(B);   // le bac à toiles : un casier de bois sur pieds ; les toiles debout dedans, un peu penchées, qu'on feuillette
+  const coin = (x, z, ry, k, y0 = YS, force = false) => { chevalet(x, z, ry, k, y0, kP < nPeint && kP < 3 ? PORTM[kP] : null); { const ps = k % 2 ? -1 : 1; parasol(x + Math.cos(ry) * ps * .85 - Math.sin(ry) * 1.15, z - Math.sin(ry) * ps * .85 - Math.cos(ry) * 1.15, k, y0); }   // (le mât à côté, derrière l'épaule du peintre : jamais devant son visage)
+    { const sg = k % 2 ? 1 : -1, B = new THREE.Group(); B.position.set(x + Math.cos(ry) * 1.25 * sg, y0, z - Math.sin(ry) * 1.25 * sg); B.rotation.y = ry; scene.add(B);   // le bac à toiles : un casier de bois sur pieds ; les toiles debout dedans, un peu penchées, qu'on feuillette
       for (const [dx, dz] of [[-.36, -.2], [.36, -.2], [-.36, .2], [.36, .2]]) box(.04, .62, .04, boisC, dx, .31, dz, B);
       box(.78, .03, .44, boisC, 0, .3, 0, B); for (const dz of [-.21, .21]) box(.78, .3, .025, boisC, 0, .45, dz, B); for (const dx of [-.38, .38]) box(.025, .3, .44, boisC, dx, .45, 0, B);
       for (let i = 0; i < 4; i++) { const tb = box(.66, .5, .02, TABL[(k * 3 + i + 7) % TABL.length], 0, .55 + (i % 2) * .02, -.15 + i * .09, B); tb.rotation.x = -.18 - i * .05; } OB.push([B.position.x, B.position.z, .5]); }
-    const pl = new THREE.Group(); pl.position.set(x - Math.sin(ry) * .75, YS, z - Math.cos(ry) * .75); pl.rotation.y = ry; scene.add(pl); box(.4, .04, .34, mat({ color: 0x3a3a3a }), 0, .44, 0, pl); for (const sg of [-1, 1]) { const p = box(.02, .5, .02, fonteM, sg * .16, .22, 0, pl); p.rotation.x = sg * .4; }
-    if (kP < nPeint) { const m = gens(kP * 5 + 1, { haut: ["#e8e2d6", "#3a5a8a", "#e8e2d6", "#5a4636"][kP % 4], pantalon: true, robe: false, coif: "court" }); m.position.copy(pl.position); m.position.y = YS + .48 - m.userData.hipY; m.rotation.y = ry; m.userData.poser("assis", 0); scene.add(m);
+    const pl = new THREE.Group(); pl.position.set(x - Math.sin(ry) * .75, y0, z - Math.cos(ry) * .75); pl.rotation.y = ry; scene.add(pl); box(.4, .04, .34, mat({ color: 0x3a3a3a }), 0, .44, 0, pl); for (const sg of [-1, 1]) { const p = box(.02, .5, .02, fonteM, sg * .16, .22, 0, pl); p.rotation.x = sg * .4; }
+    if (kP < nPeint || force) { const m = gens(kP * 5 + 1, { haut: ["#e8e2d6", "#3a5a8a", "#e8e2d6", "#5a4636"][kP % 4], pantalon: true, robe: false, coif: "court" }); m.position.copy(pl.position); m.position.y = y0 + .48 - m.userData.hipY; m.rotation.y = ry; m.userData.poser("assis", 0); scene.add(m);
       const P = m.userData.parts, beret = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .045, 16), mat({ color: kP % 2 ? 0x1a1a24 : 0x8a1a1a, roughness: .9 })); beret.position.set(.02, .1, -.01); beret.rotation.z = .25; P.tete.add(beret);   // le béret
       const blouse = new THREE.Mesh(new THREE.CylinderGeometry(.16, .24, .5, 10, 1, true), mat({ color: kP % 2 ? 0x3a5a8a : 0xece6da, side: THREE.DoubleSide, roughness: .9 })); blouse.position.y = .12; P.buste.add(blouse);   // la blouse de peintre
       const pal = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .015, 14), mat({ color: 0xb08a5a, roughness: .6 })); pal.position.set(0, -.3, .08); pal.rotation.x = Math.PI / 2; P.bras[0].c.add(pal);   // la palette
@@ -654,7 +654,7 @@ function construireTertre(A, L, scene) {
       PEINT.push({ m, k: kP }); JOUR.push(m);
       if (kP < 3) { let mx = x + Math.sin(ry) * 1.7, mz = z + Math.cos(ry) * 1.7; for (const [d2, lt] of [[1.7, 0], [2.1, 0], [1.7, .7], [1.7, -.7], [2.2, .9], [2.2, -.9], [1.4, 1.1], [1.4, -1.1]]) { const cx = x + Math.sin(ry) * d2 + Math.cos(ry) * lt, cz = z + Math.cos(ry) * d2 - Math.sin(ry) * lt; if (LEDC.every(([tx, tz]) => (tx - cx) ** 2 + (tz - cz) ** 2 > 1.3)) { mx = cx; mz = cz; break; } }   /* (10.92) le modèle jamais dans un arbre */ const rM = Math.atan2(pl.position.x - mx, pl.position.z - mz);
         const f = kP !== 1, mo = gens(kP * 7 + 4, { robe: f, pantalon: !f, coif: f ? "long" : "court", haut: ["#c83a5a", "#2a4a3a", "#e8c040"][kP], parle: false });   // le modèle, assis sur un tabouret, qui pose
-        chaise(mx, mz, rM).position.y = YS; mo.position.set(mx, YS + .5 - mo.userData.hipY, mz); mo.rotation.y = rM; mo.userData.poser("assis", 0); scene.add(mo); MODELES.push({ m: mo, k: kP }); JOUR.push(mo); OB.push([mx, mz, .45]); }
+        chaise(mx, mz, rM).position.y = y0; mo.position.set(mx, y0 + .5 - mo.userData.hipY, mz); mo.rotation.y = rM; mo.userData.poser("assis", 0); scene.add(mo); MODELES.push({ m: mo, k: kP }); JOUR.push(mo); OB.push([mx, mz, .45]); }
       kP++; }
     OB.push([x, z, .55], [pl.position.x, pl.position.z, .45]); };
   for (const [x, z, ry, k] of [[-11, -7.4, Math.PI * .25, 0], [-7.2, -7.8, 0, 1], [-1.6, -7.6, -.2, 2], [2.4, -7.9, .3, 3], [-6, -2.6, Math.PI, 7], [0.6, -2.4, Math.PI * .8, 8], [-5.6, 3.2, .4, 9], [-1, 7.4, Math.PI, 10], [-8.6, 7.4, Math.PI, 11], [-11.8, 7.0, Math.PI / 2, 5], [11.6, -1.2, -Math.PI / 2, 12], [5.5, -1.5, -.4, 6]]) coin(x, z, ry, k);
@@ -878,6 +878,29 @@ function construireTertre(A, L, scene) {
             for (const sg of [-1, 1]) { const ch = chaise(x + sg * .45, z, Math.atan2(-sg, 0)); ch.position.y = Y; }
             if (!((i + r) % 2)) { cyl(.022, .022, 2.35, pM, x, Y + 1.2, z, scene, 6); const c = add(new THREE.ConeGeometry(1.1, .45, 12, 1, true), mat({ color: toile[kp++ % toile.length], side: THREE.DoubleSide, roughness: .85 }), x, Y + 2.5, z); c.castShadow = true; } } };
         for (let x = SC.X - 26; x < SC.X + 76; x += 15) { terrH(x, -18.5, 1, 6.4); terrH(x + 6, 58.5, -1, 6.4); } }
+      /* (10.228) les deux grandes places, comme la place du Tertre : sur la petite place du bas (devant les escaliers) et dans la rue large derrière la basilique —
+         des platanes, des bancs, des peintres à leur chevalet sous leur parasol, des terrasses, et des guirlandes d'ampoules tendues d'un mât à l'autre */
+      { const vB = mat({ color: 0x2e5a3a, roughness: .55 }), fB = mat({ color: 0x1a1a1a, metalness: .5, roughness: .45 }), mat2 = mat({ color: 0x1a1a1a, metalness: .4, roughness: .5 }), ampM = lum(mat({ color: 0xfff2c8, emissive: 0xffd890, emissiveIntensity: .05 }), .05, 2.6);
+        const banc = (x, z, ry, y) => { const b = new THREE.Group(); b.position.set(x, y, z); b.rotation.y = ry; scene.add(b); for (let i = 0; i < 4; i++) box(1.8, .045, .1, vB, 0, .44, .2 - i * .11, b); for (let i = 0; i < 3; i++) box(1.8, .09, .04, vB, 0, .6 + i * .13, -.24, b);
+          for (const dx of [-.8, .8]) { box(.06, .44, .06, fB, dx, .22, .15, b); box(.06, .86, .06, fB, dx, .43, -.24, b); } OB.push([x, z, 1.0]); };
+        const mat3 = (x, z, y, h = 5) => { cyl(.06, .08, h, mat2, x, y + h / 2, z, scene, 8); add(new THREE.SphereGeometry(.1, 8, 6), mat2, x, y + h, z); OB.push([x, z, .3]); };
+        const guirl = (x0, z0, x1, z1, y, h = 4.8) => { const L2 = Math.hypot(x1 - x0, z1 - z0), n = Math.max(4, Math.round(L2 / .7)), pts = []; for (let i = 0; i <= n; i++) { const t = i / n; pts.push(new THREE.Vector3(x0 + (x1 - x0) * t, y + h - Math.sin(Math.PI * t) * Math.min(1.4, L2 * .06), z0 + (z1 - z0) * t)); }
+          scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x222222 }))); for (let i = 1; i < n; i++) { const p2 = pts[i]; add(new THREE.SphereGeometry(.07, 6, 5), ampM, p2.x, p2.y - .1, p2.z); } };
+        const terr = (x0, z0, ax, az, nx, nz, L2, rangs, y, kc) => { for (let r = 0; r < rangs; r++) for (let t = .6, i = 0; t < L2 - .4; t += 1.3, i++) { const x = x0 + ax * t + nx * (.8 + r * 1.15), z = z0 + az * t + nz * (.8 + r * 1.15);
+            cyl(.32, .32, .03, (i + r) % 3 ? plateau : nappe, x, y + .74, z); cyl(.025, .025, .72, fonteM, x, y + .37, z, scene, 6); cyl(.2, .22, .03, fonteM, x, y + .02, z);
+            for (const sg of [-1, 1]) { const ch = chaise(x + ax * sg * .45, z + az * sg * .45, Math.atan2(-ax * sg, -az * sg)); ch.position.y = y; }
+            if (!((i + r) % 2)) parasol(x, z, kc + i, y, 1.1); } };
+        // la petite place du bas
+        for (const [x, z] of [[127.5, -14], [127.5, 1.5], [127.5, 27], [122, 36]]) platane(x, z, 0);
+        for (const [x, z, ry] of [[124.8, -14, -Math.PI / 2], [124.8, 1.5, -Math.PI / 2], [124.8, 27, -Math.PI / 2], [117.6, -8, Math.PI / 2], [117.6, 30, Math.PI / 2]]) banc(x, z, ry, 0);
+        coin(121, -18, Math.PI * .3, 13, 0, true); coin(122.5, 20, -Math.PI * .6, 14, 0, true); coin(130, -7, -Math.PI / 2, 15, 0, true);
+        for (const [x, z] of [[117, -24], [131.5, -24], [117, 4.5], [131.5, 4.5], [117, 19.5], [131.5, 19.5], [116.5, 39]]) mat3(x, z, 0);
+        guirl(117, -24, 131.5, -24, 0); guirl(117, 4.5, 131.5, 4.5, 0); guirl(117, 19.5, 131.5, 19.5, 0); guirl(117, -24, 131.5, 4.5, 0); guirl(131.5, -24, 117, 4.5, 0); guirl(117, 19.5, 116.5, 39, 0); guirl(131.5, 19.5, 116.5, 39, 0);
+        // la rue large derrière la basilique : au milieu, une allée de platanes, des bancs, deux peintres, une terrasse le long des boutiques, les guirlandes
+        { const Y = SC.Y, XM = 311.5; for (let z = -10; z <= 50; z += 12) platane(XM, z, Y); for (let z = -4; z <= 44; z += 12) { banc(XM - 1.6, z, Math.PI / 2, Y); banc(XM + 1.6, z, -Math.PI / 2, Y); }
+          coin(307, 2, Math.PI / 2, 16, Y, true); coin(307, 38, Math.PI / 2, 17, Y, true);
+          terr(321.8, -12, 0, 1, -1, 0, 20, 2, Y, 0); terr(321.8, 22, 0, 1, -1, 0, 22, 2, Y, 2);
+          for (let z = -14; z <= 54; z += 17) { mat3(305, z, Y); mat3(318.5, z, Y); guirl(305, z, 318.5, z, Y); if (z + 17 <= 54) { guirl(305, z, 318.5, z + 17, Y); guirl(318.5, z, 305, z + 17, Y); } } } }
       /* (10.227) contre le mur d'en face, sur le quai haut : un banc de square, et au-dessus une longue jardinière d'où retombent des plantes en cascade */
       { const Y = SC.Y, X = SC.X - 30 - .05, Z = -30.2, vB = mat({ color: 0x2e5a3a, roughness: .55 }), fB = mat({ color: 0x1a1a1a, metalness: .5, roughness: .45 });
         const bc = new THREE.Group(); bc.position.set(X - .55, Y, Z); bc.rotation.y = -Math.PI / 2; scene.add(bc);
