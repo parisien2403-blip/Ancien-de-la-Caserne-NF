@@ -1396,14 +1396,15 @@ function fusionStatique(scene, L, depuis = 0) {
       m.transparent, m.opacity, m.side, m.emissive && m.emissive.getHexString(), m.vertexColors, m.alphaTest, m.depthWrite, m.fog].join(",");   // (deux matières identiques comptent pour une)
     const cle = sig + "|" + at + "|" + (o.castShadow ? 1 : 0);
     (groupes.get(cle) || groupes.set(cle, []).get(cle)).push(o); }
-  let n = 0;
+  let n = 0; const retires = new Set();   /* (10.236 : on retire tout d'un coup à la fin — un par un, c'était des millions de comparaisons, des secondes figées à Montmartre) */
   for (const liste of groupes.values()) { if (liste.length < 2) continue;
     const parts = liste.map(o => { o.updateMatrixWorld(true); const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()); g.applyMatrix4(o.matrixWorld); return g; });
     const noms = Object.keys(parts[0].attributes), tot = parts.reduce((a, g) => a + g.attributes.position.count, 0), out = new THREE.BufferGeometry();
-    for (const nm of noms) { const it = parts[0].attributes[nm].itemSize, arr = new Float32Array(tot * it); let off = 0; for (const g of parts) { const a = g.attributes[nm]; for (let i = 0; i < a.count; i++) for (let c = 0; c < it; c++) arr[(off + i) * it + c] = a.getComponent(i, c); off += a.count; } out.setAttribute(nm, new THREE.BufferAttribute(arr, it)); }
+    for (const nm of noms) { const it = parts[0].attributes[nm].itemSize, arr = new Float32Array(tot * it); let off = 0; for (const g of parts) { const a = g.attributes[nm]; if (!a.isInterleavedBufferAttribute && !a.normalized && a.itemSize === it && a.array.length >= a.count * it) arr.set(a.array.subarray(0, a.count * it), off * it); else for (let i = 0; i < a.count; i++) for (let c = 0; c < it; c++) arr[(off + i) * it + c] = a.getComponent(i, c); off += a.count; } out.setAttribute(nm, new THREE.BufferAttribute(arr, it)); }
     out.computeBoundingSphere(); out.computeBoundingBox();
     const m = new THREE.Mesh(out, liste[0].material); m.castShadow = liste[0].castShadow; m.receiveShadow = true; m.matrixAutoUpdate = false; scene.add(m);
-    for (const o of liste) { scene.remove(o); o.geometry.dispose(); } parts.forEach(g => g.dispose()); n += liste.length; }
+    for (const o of liste) { retires.add(o); o.geometry.dispose(); } parts.forEach(g => g.dispose()); n += liste.length; }
+  if (retires.size) { scene.children = scene.children.filter(c => !retires.has(c)); for (const o of retires) { o.parent = null; o.dispatchEvent({ type: "removed" }); } }
   return n;
 }
 /* --- sols et ciel --- */

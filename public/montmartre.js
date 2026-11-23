@@ -14,7 +14,6 @@ function construireTertre(A, L, scene) {
   /* (10.233) les images de Montmartre (façades, devantures, enseignes, vitrines) ne se dessinent plus toutes d'un coup à la construction — ce qui bloquait le métro
      une vingtaine de secondes sur téléphone : chacune est réservée tout de suite, puis peinte un peu à chaque instant, en tâche de fond, pendant le trajet */
   const JOBS = []; let pompe = false; const pomper = () => { const t0 = performance.now(), B = (MOBILE || GPU_MODESTE) ? 9 : 14; while (JOBS.length && performance.now() - t0 < B) { try { JOBS.shift()(); } catch (e) {} }
-    if (!JOBS.length || t0 - (L.__flushT || 0) > 700) { L.__flushT = t0; for (const P of PAGES) if (P.sale && P.tex) { P.sale = false; P.tex.needsUpdate = true; } }   /* (les planches renvoyées à la carte graphique de temps en temps, pas à chaque image peinte) */
     if (JOBS.length) setTimeout(pomper, 6); else pompe = false; };
   const differer = (j) => { JOBS.push(j); if (!pompe) { pompe = true; setTimeout(pomper, 0); } };
   L.__peintureFinie = () => JOBS.length === 0;
@@ -22,12 +21,12 @@ function construireTertre(A, L, scene) {
     if (!place) { const c = document.createElement("canvas"); c.width = cw; c.height = ch; if (cw >= 100 && ch >= 100) { const x0 = c.getContext("2d", { willReadFrequently: true }); x0.fillStyle = "#d8cfbf"; x0.fillRect(0, 0, cw, ch); }   /* (les grandes images seulement — façades, devantures : une teinte de pierre en attendant ; les petites, les halos de lumière, restent transparentes) */ const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || rx); }
       differer(() => { const x = c.getContext("2d", { willReadFrequently: true }); x.clearRect(0, 0, cw, ch); x.scale(cw / w, ch / h);   /* (on efface la teinte d'attente avant de peindre : sinon les halos restaient des carrés blancs) */ f(x, w, h); t.needsUpdate = true; }); return t; }
     if (cw >= 100 && ch >= 100) { const x0 = place.pg.c.getContext("2d", { willReadFrequently: true }); x0.fillStyle = "#d8cfbf"; x0.fillRect(place.x, place.y, cw, ch); }
-    const t = place.pg.t.clone(); t.offset.set(place.x / PAGE, 1 - (place.y + ch) / PAGE); t.repeat.set(cw / PAGE, ch / PAGE); t.needsUpdate = true; place.pg.tex = t;
+    const t = place.pg.t.clone(); t.offset.set(place.x / PAGE, 1 - (place.y + ch) / PAGE); t.repeat.set(cw / PAGE, ch / PAGE); t.needsUpdate = true; place.pg.tex = t; place.pg.att = (place.pg.att || 0) + 1;
     differer(() => { const x = place.pg.c.getContext("2d", { willReadFrequently: true }); x.clearRect(place.x, place.y, cw, ch); x.save(); x.translate(place.x, place.y); x.beginPath(); x.rect(0, 0, cw, ch); x.clip(); x.scale(cw / w, ch / h); f(x, w, h); x.restore();
     // les bords recopiés tout autour (sinon, de loin, la case voisine déteint sur les bords)
     for (const [sx, sy, sw, sh, dx, dy, dw, dh] of [[place.x, place.y, cw, 1, place.x, place.y - PAD, cw, PAD], [place.x, place.y + ch - 1, cw, 1, place.x, place.y + ch, cw, PAD], [place.x, place.y - PAD, 1, ch + 2 * PAD, place.x - PAD, place.y - PAD, PAD, ch + 2 * PAD], [place.x + cw - 1, place.y - PAD, 1, ch + 2 * PAD, place.x + cw, place.y - PAD, PAD, ch + 2 * PAD]])
       try { x.drawImage(place.pg.c, sx, sy, sw, sh, dx, dy, dw, dh); } catch (e) {}
-      place.pg.sale = true; }); return t; };
+      if (--place.pg.att <= 0) place.pg.tex.needsUpdate = true; }); return t; };   /* (la planche n'est renvoyée à la carte graphique qu'une fois, quand toutes ses images sont peintes) */
   const mat = (o) => new THREE.MeshStandardMaterial({ roughness: .85, ...o });
   const add = (geo, m, x, y, z, par = scene, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.receiveShadow = true; par.add(o); return o; };
   const box = (w, h, d, m, x, y, z, par = scene, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, par, ry);
@@ -1606,13 +1605,17 @@ function construireTertre(A, L, scene) {
     quitterLieu.add(() => { if (coupe) for (const o of coupe) o.castShadow = true; coupe = null; }); }
   /* (fluidité) les maisons, les devantures, les lanternes étaient rangées en groupes : chaque pièce se dessinait à part (plus de 2 000 dessins par image).
      On les sort de leurs groupes, à leur place exacte, pour que tout ce qui se ressemble soit fondu en une seule pièce */
-  { const garder = new Set(); scene.updateMatrixWorld(true);
-    for (const g of scene.children.slice()) { if (!g.isGroup || garder.has(g) || g.userData.anime || g.userData.poser || g.userData.parts) continue;   /* (10.93) LA cause des gens figés : les personnages étaient démontés ici, leurs bras et leurs jambes fondus dans le décor — comme les pigeons autrefois */ const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) scene.attach(m); if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) scene.remove(g); } }
+  { const garder = new Set(), vides = new Set(); scene.updateMatrixWorld(true);
+    for (const g of scene.children.slice()) { if (!g.isGroup || garder.has(g) || g.userData.anime || g.userData.poser || g.userData.parts) continue;   /* (10.93) LA cause des gens figés : les personnages étaient démontés ici, leurs bras et leurs jambes fondus dans le décor — comme les pigeons autrefois */ const ms = []; g.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) ms.push(o); }); for (const m of ms) { const par = m.parent; if (par) { const i = par.children.indexOf(m); if (i >= 0) par.children.splice(i, 1); } m.matrixWorld.decompose(m.position, m.quaternion, m.scale); m.parent = scene; scene.children.push(m); m.updateMatrixWorld(true); } if (!g.children.some(c => c.isMesh || c.isGroup || c.isLight)) vides.add(g); } if (vides.size) { scene.children = scene.children.filter(c => !vides.has(c)); for (const g of vides) g.parent = null; } }   /* (10.236 : sans parcourir toute la scène à chaque pièce — c'était des secondes figées) */
   fusionStatique(scene, L, 0);
   /* (le blocage sur téléphone : tout se figeait quelques secondes — l'image, les pigeons, le texte — quand une façade, une enseigne ou une vitrine entrait pour la première fois dans le champ :
      le téléphone envoyait alors son image à la carte graphique et préparait sa matière. On fait tout cela dès l'arrivée, une fois pour toutes, pendant le chargement) */
   { let fait = false; const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) { try { M && M.signalerErreur && M.signalerErreur(e); } catch (x) {} } if (fait || !M || M.L !== L || !M.rendu || !M.camera || JOBS.length) return; fait = true;   /* (une fois toutes les images peintes) */
-      try { const R = M.rendu, vus = new Set(); scene.traverse(o => { for (const m of [].concat(o.material || [])) if (m) for (const k of ["map", "emissiveMap", "normalMap", "alphaMap"]) { const t = m[k]; if (t && t.isTexture && !vus.has(t)) { vus.add(t); try { R.initTexture(t); } catch (e) {} } } });
-        R.compile(scene, M.camera); M.dbgPrep = vus.size; for (const P of PAGES) { P.c.width = P.c.height = 1; }   /* (les planches sont dans la carte graphique : on libère leur copie dans la mémoire du téléphone — 100 Mo) */ } catch (e) { console.warn("préparation", e); } }; }   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
+      try { const R = M.rendu, vus = new Set(), liste = []; scene.traverse(o => { for (const m of [].concat(o.material || [])) if (m) for (const k of ["map", "emissiveMap", "normalMap", "alphaMap"]) { const t = m[k]; if (t && t.isTexture && !vus.has(t)) { vus.add(t); liste.push(t); } } });
+        /* (10.236) un peu à chaque instant, plus d'un coup : on envoyait toutes les images et préparait toutes les matières en une fois — une dizaine de secondes figées à l'arrivée */
+        const fin = () => { M.dbgPrep = vus.size; for (const P of PAGES) { P.c.width = P.c.height = 1; } };   /* (les planches sont dans la carte graphique : on libère leur copie dans la mémoire du téléphone — 100 Mo) */
+        const etape = () => { if (!M || M.L !== L) return; const t0 = performance.now(); while (liste.length && performance.now() - t0 < 10) { try { R.initTexture(liste.shift()); } catch (e) {} } if (liste.length) { setTimeout(etape, 16); return; }
+          try { if (R.compileAsync) R.compileAsync(scene, M.camera).then(fin, fin); else { R.compile(scene, M.camera); fin(); } } catch (e) { fin(); } };
+        setTimeout(etape, 16); } catch (e) { console.warn("préparation", e); } }; }   // (tout ce qui ne bouge pas, regroupé : fluide sur téléphone)
 }
 ({ construireTertre })
