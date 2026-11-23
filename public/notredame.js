@@ -1846,6 +1846,77 @@ function construireNotreDame(A, L, scene) {
             const dx = x - q.x, dz = z - q.z, d = Math.hypot(dx, dz); if (d < 4.5) { const a = Math.atan2(dz, dx) + t * .9 * (i % 2 ? 1 : -1), r = 1 + (d / 4.5) * 1.4, k = 1 - d / 4.5; x = x * (1 - k) + (q.x + Math.cos(a) * r) * k; z = z * (1 - k) + (q.z + Math.sin(a) * r) * k; y = y * (1 - k) + (.8 + Math.sin(t * 2 + i) * .6) * k; }
             pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; const l = Math.max(0, Math.sin(t * 1.7 + b.cl)) ** 2 * .9 + .1; col[i * 3] = l; col[i * 3 + 1] = l * .95; col[i * 3 + 2] = l * .45; }
           geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true; }); }
+      /* — (10.238) les lucioles qui ramènent quelqu'un : dans le square, le soir, on confie aux lucioles la photo d'une personne aimée ; elles s'assemblent en silhouette,
+         la silhouette se défait, et la personne est là, fantôme de lumière, avec son visage ; elle nous dit « Je t'aime… », puis redevient lucioles et s'envole vers les étoiles.
+         La photo reste sur le téléphone : rien n'est envoyé, et personne d'autre ne voit la scène — */
+      { const LX = -28, LZ = -150, sousT = (nom, t, ms) => sousTitre(nom, t, ms);
+        const RM = new THREE.MeshBasicMaterial({ color: 0xffe6a0, transparent: true, opacity: .5, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }), cer = new THREE.Mesh(new THREE.RingGeometry(.55, .7, 40), RM); cer.rotation.x = -Math.PI / 2; cer.position.set(LX, .04, LZ); scene.add(cer);
+        let enCours = false;
+        // le visage : la photo, recadrée en ovale, adoucie, un peu bleutée et dorée, les bords qui s'effacent dans la lumière
+        const visage = (img) => { const W = 256, H = 320, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d"); const ar = img.width / img.height, s2 = Math.max(W / img.width, H / img.height) * 1.05, w2 = img.width * s2, h2 = img.height * s2;
+          x.filter = "brightness(1.12) contrast(1.05) saturate(.75)"; x.drawImage(img, (W - w2) / 2, (H - h2) / 2 - H * .04, w2, h2); x.filter = "none"; void ar;
+          x.globalCompositeOperation = "soft-light"; const tg = x.createLinearGradient(0, 0, 0, H); tg.addColorStop(0, "rgba(255,230,170,.55)"); tg.addColorStop(1, "rgba(150,200,255,.55)"); x.fillStyle = tg; x.fillRect(0, 0, W, H);
+          x.globalCompositeOperation = "destination-in"; const g = x.createRadialGradient(W / 2, H * .47, W * .2, W / 2, H * .47, W * .52); g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(.7, "rgba(0,0,0,.85)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.save(); x.scale(1, H / W * .95); x.fillStyle = g; x.fillRect(0, 0, W, W / .95); x.restore();
+          const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+        const scene2 = (img, nom, femme, mot) => { const p = moiM(); if (!p || enCours) return; enCours = true; p.g.position.set(LX, p.g.position.y, LZ); p.cible = null; p.chemin = []; p.g.rotation.y = Math.PI; const q = p.g.position.clone(), yaw = Math.PI, F = new THREE.Vector3(q.x + Math.sin(yaw) * 2.8, 0, q.z + Math.cos(yaw) * 2.8);   /* (dans l'allée du square, côté gauche de la cathédrale : on regarde le long de l'allée) */
+          // la silhouette : un corps de lumière (robe ou pantalon), la tête remplacée par le visage
+          const fig = personne3D({ taille: femme ? 1.64 : 1.76, peau: "#fff", ch: "#fff", haut: "#fff", bas: "#fff", chaussures: "#fff", coif: femme ? "long" : "court", robe: femme, pantalon: !femme }), MG = [];
+          fig.traverse(o => { if (o.isMesh) { const m = new THREE.MeshBasicMaterial({ color: 0xf2e6c8, transparent: true, opacity: 0, depthWrite: false, fog: false }); o.material = m; MG.push(m); o.castShadow = false; } });
+          fig.position.copy(F); fig.rotation.y = yaw + Math.PI; fig.userData.masque = true; scene.add(fig); fig.userData.poser("debout", 0); const PT = fig.userData.parts; for (const o of PT.tete.children) o.visible = false;
+          const vis = new THREE.Sprite(new THREE.SpriteMaterial({ map: visage(img), transparent: true, opacity: 0, depthWrite: false, fog: false })); vis.scale.set(.34, .425, 1); vis.position.y = .02; PT.tete.add(vis);
+          const aura = new THREE.Sprite(new THREE.SpriteMaterial({ map: lueurT, color: 0xffe2a8, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); aura.scale.set(2.4, 3.6, 1); scene.add(aura);
+          // les lucioles de la scène : elles viennent de partout, tournoient, se posent sur la silhouette, puis s'en détachent
+          fig.updateMatrixWorld(true); const cibles = []; fig.traverse(o => { if (!o.isMesh || !o.geometry.attributes.position) return; const pa = o.geometry.attributes.position, v = new THREE.Vector3(); for (let i = 0; i < pa.count; i += Math.max(1, (pa.count / 14) | 0)) { v.fromBufferAttribute(pa, i).applyMatrix4(o.matrixWorld); cibles.push(v.clone()); } });
+          const N = (MOBILE || GPU_MODESTE) ? 220 : 420, pos = new Float32Array(N * 3), col = new Float32Array(N * 3), D = [];
+          for (let i = 0; i < N; i++) { const a = al() * 6.28, r = 5 + al() * 9; D.push({ o: new THREE.Vector3(F.x + Math.cos(a) * r, .3 + al() * 3.5, F.z + Math.sin(a) * r), c: cibles[i % cibles.length].clone().add(new THREE.Vector3((al() - .5) * .06, (al() - .5) * .06, (al() - .5) * .06)), ph: al() * 6.28, v: new THREE.Vector3((al() - .5) * 2, 1.5 + al() * 2.5, (al() - .5) * 2) }); }
+          const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3)); geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+          const pts = new THREE.Points(geo, new THREE.PointsMaterial({ map: lueurT, size: .22, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); pts.frustumCulled = false; scene.add(pts);
+          const t0 = performance.now(), DUR = 40, eo = (k) => k * k * (3 - 2 * k), lp = (a, b, k) => a + (b - a) * k; let dit = 0;
+          const anim = (tm) => { const t = (performance.now() - t0) / 1000;
+            for (let i = 0; i < N; i++) { const d = D[i]; let x, y, z, l = .6 + Math.sin(tm / 260 + d.ph) * .4;
+              if (t < 12) { const k = eo(Math.max(0, Math.min(1, (t - 1 - (i % 30) * .05) / 9))), a = (1 - k) * 6 + d.ph, rr = (1 - k) * .8; x = lp(d.o.x, d.c.x, k) + Math.cos(a) * rr; y = lp(d.o.y, d.c.y, k) + Math.sin(t * 2 + d.ph) * .2 * (1 - k); z = lp(d.o.z, d.c.z, k) + Math.sin(a) * rr; }   // (elles se rassemblent en tourbillonnant)
+              else if (t < 16) { x = d.c.x + Math.sin(tm / 300 + d.ph) * .02; y = d.c.y + Math.cos(tm / 300 + d.ph) * .02; z = d.c.z; l = 1; }   // (la silhouette de lumière)
+              else if (t < 31) { const k = Math.min(1, (t - 16) / 4); x = d.c.x + Math.cos(d.ph) * k * 1.4; y = d.c.y + k * 1.2 + Math.sin(tm / 500 + d.ph) * .2; z = d.c.z + Math.sin(d.ph) * k * 1.4; l *= Math.max(.25, 1 - k * .75); }   // (elle se défait : les lucioles flottent autour)
+              else { const k = (t - 31); x = d.c.x + Math.cos(d.ph) * 1.4 + d.v.x * k * .4; y = d.c.y + 1.2 + d.v.y * k; z = d.c.z + Math.sin(d.ph) * 1.4 + d.v.z * k * .4; l = Math.max(0, 1 - k / 9); }   // (puis s'envolent vers les étoiles)
+              pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; col[i * 3] = l; col[i * 3 + 1] = l * .93; col[i * 3 + 2] = l * .55; }
+            geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true;
+            // le fantôme : il naît de la silhouette, flotte doucement, s'approche un peu, puis redevient lumière
+            const op = t < 14 ? 0 : t < 18 ? (t - 14) / 4 : t < 30 ? 1 : Math.max(0, 1 - (t - 30) / 3.5), fl = Math.sin(tm / 900) * .05;
+            for (const m of MG) m.opacity = op * .5; vis.material.opacity = op * .95; aura.material.opacity = op * .7 * (.85 + Math.sin(tm / 400) * .15);
+            const av = t < 20 ? 0 : Math.min(1, (t - 20) / 6) * .9; fig.position.set(F.x - Math.sin(yaw) * av, .08 + fl + (t > 30 ? (t - 30) * .25 : 0), F.z - Math.cos(yaw) * av); aura.position.set(fig.position.x, fig.position.y + 1.05, fig.position.z);
+            PT.bras[1].e.rotation.set(t > 22 && t < 30 ? -.7 : 0, 0, t > 22 && t < 30 ? -.25 : 0);   // (elle tend la main vers nous)
+            if (dit === 0 && t > 21) { dit = 1; sousT(nom || "", "Je t'aime…", 5200); }
+            if (dit === 1 && t > 26.5 && mot) { dit = 2; sousT(nom || "", mot, 4800); }
+            if (t > DUR + 4) { const i = AMB.indexOf(anim); if (i >= 0) AMB.splice(i, 1); scene.remove(fig); scene.remove(pts); scene.remove(aura); geo.dispose(); } };
+          AMB.push(anim);
+          const tete = () => { const v = new THREE.Vector3(); PT.tete.getWorldPosition(v); return v; };
+          M.cine = { gel: true, fov: [48, 62], maj: () => { const t = (performance.now() - t0) / 1000, c = M.camera, h = tete();
+              if (t < 17) { const k = eo(Math.min(1, t / 17)), a = yaw + Math.PI + .9 - k * .7, R = 4.2 - k * .8; c.position.set(F.x + Math.sin(a) * R, 1.6 + (1 - k) * .8, F.z + Math.cos(a) * R); c.lookAt(F.x, 1 + k * .45, F.z); }   // (on voit les lucioles se rassembler, de côté)
+              else if (t < 31) { const k = eo(Math.min(1, (t - 17) / 5)), b = q.clone().add(new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)).multiplyScalar(.35 + k * .5)); c.position.set(b.x, 1.62, b.z); c.lookAt(h.x, h.y - .05, h.z); }   // (face à face, à hauteur des yeux)
+              else { const k = Math.min(1, (t - 31) / 9); c.position.set(q.x - Math.sin(yaw) * (.5 + k * 3), 1.6 + k * 2, q.z - Math.cos(yaw) * (.5 + k * 3)); c.lookAt(F.x, 2 + k * 9, F.z); }   // (on lève les yeux : elles montent vers les étoiles)
+              if (t > DUR && enCours) { enCours = false; finCine(); placerCamera(true); } } }; };
+        // la fenêtre : la photo, le prénom, une silhouette de femme ou d'homme, un mot à soi (facultatif)
+        const demander = () => { if (enCours || (M.manMenu && M.manMenu.d && M.manMenu.d.isConnected)) return; if (!L.nuit) { sousT("", "Revenez ce soir, quand les lucioles dansent dans le square…", 4200); return; }
+          const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;background:rgba(18,22,40,.96);color:#fff;border-radius:16px;padding:16px 18px;width:310px;max-width:92vw;box-shadow:0 8px 30px rgba(0,0,0,.5);font:15px Lato,Arial,sans-serif;text-align:center";
+          const fermer = () => { d.remove(); if (M.manMenu && M.manMenu.d === d) M.manMenu = null; };
+          d.innerHTML = `<div style="font:italic 17px Georgia,serif;margin-bottom:10px">Les lucioles du square gardent la lumière de ceux qu'on aime… Confiez-leur le visage de quelqu'un qui vous est cher.</div>
+            <label style="display:block;padding:10px;border-radius:10px;background:#c8902a;font-weight:700;cursor:pointer;margin-bottom:6px">📷 Choisir une photo<input type="file" accept="image/*" style="display:none"></label><div class="lp-ok" style="font-size:13px;opacity:.75;margin-bottom:6px">Aucune photo choisie</div>
+            <input class="lp-nom" type="text" maxlength="30" placeholder="Son prénom (facultatif)" style="width:100%;box-sizing:border-box;padding:9px 10px;border-radius:10px;border:0;color:#222;margin-bottom:6px">
+            <div style="display:flex;gap:6px;margin-bottom:6px"><button type="button" class="lp-f" style="flex:1;padding:8px;border:0;border-radius:10px;background:#5a4a8a;color:#fff;font:600 14px Lato,Arial">Une femme</button><button type="button" class="lp-h" style="flex:1;padding:8px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:600 14px Lato,Arial">Un homme</button></div>
+            <input class="lp-mot" type="text" maxlength="80" placeholder="Un mot de sa part, après « Je t'aime » (facultatif)" style="width:100%;box-sizing:border-box;padding:9px 10px;border-radius:10px;border:0;color:#222;margin-bottom:6px">
+            <div style="font-size:12px;opacity:.6;margin-bottom:8px">La photo reste sur votre téléphone : elle n'est envoyée nulle part, et vous seul voyez la scène.</div>`;
+          let img = null, femme = true; const fi = d.querySelector("input[type=file]"), ok = d.querySelector(".lp-ok"), bF = d.querySelector(".lp-f"), bH = d.querySelector(".lp-h");
+          const sexe = (f) => { femme = f; bF.style.background = f ? "#5a4a8a" : "rgba(255,255,255,.12)"; bH.style.background = f ? "rgba(255,255,255,.12)" : "#5a4a8a"; }; bF.onclick = (e) => { e.stopPropagation(); sexe(true); }; bH.onclick = (e) => { e.stopPropagation(); sexe(false); };
+          for (const i2 of d.querySelectorAll("input[type=text]")) i2.addEventListener("keydown", (e) => e.stopPropagation());
+          const go = document.createElement("button"); go.type = "button"; go.textContent = "✨ Faire venir les lucioles"; go.disabled = true; go.style.cssText = "display:block;width:100%;margin-top:4px;padding:11px;border:0;border-radius:10px;background:#3a6aa8;color:#fff;font:700 15px Lato,Arial;opacity:.5";
+          fi.onchange = () => { const f = fi.files && fi.files[0]; if (!f) return; const u = URL.createObjectURL(f), im = new Image(); im.onload = () => { img = im; ok.textContent = "✓ Photo choisie"; go.disabled = false; go.style.opacity = "1"; }; im.onerror = () => { ok.textContent = "Cette image ne s'ouvre pas, essayez-en une autre"; }; im.src = u; };
+          go.onclick = (e) => { e.stopPropagation(); if (!img) return; const nom = d.querySelector(".lp-nom").value.trim(), mot = d.querySelector(".lp-mot").value.trim(); fermer(); scene2(img, nom, femme, mot); };
+          const non = document.createElement("button"); non.type = "button"; non.textContent = "Non merci"; non.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:600 14px Lato,Arial"; non.onclick = (e) => { e.stopPropagation(); fermer(); };
+          d.appendChild(go); d.appendChild(non); (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer }; };
+        L.__luciolesPhoto = (img, nom, femme, mot) => scene2(img, nom, femme, mot);
+        AMB.push((tm) => { cer.visible = !!L.nuit && !L.enHaut && !enCours; RM.opacity = .35 + Math.sin(tm / 500) * .2; });
+        const a0lp = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0lp && a0lp(x, z, moi); if (r) return r; return !L.enHaut && L.nuit && !enCours && Math.hypot(x - LX, z - LZ) < 1.8 ? { type: "lieu", id: "luciolesPhoto", label: "✨ Faire revenir quelqu'un", faire: demander } : null; };
+        quitterLieu.add(() => { enCours = false; }); }
       // — la pluie de pétales : de temps en temps, le jour, un coup de vent fait tomber des pétales roses tout autour de nous —
       { const N = (MOBILE || GPU_MODESTE) ? 140 : 260, pg = new THREE.PlaneGeometry(.07, .05), pm = new THREE.MeshStandardMaterial({ color: 0xf4b0c4, roughness: .7, side: THREE.DoubleSide, emissive: 0x6a2a3a, emissiveIntensity: .15 }), IM2 = new THREE.InstancedMesh(pg, pm, N); IM2.frustumCulled = false; IM2.visible = false; scene.add(IM2);
         const P2 = [], m4 = new THREE.Matrix4(), qq = new THREE.Quaternion(), ee = new THREE.Euler(), sc = new THREE.Vector3(), vv = new THREE.Vector3(); let actif = 0, prochain = 50 + al() * 60, vent = 0;
