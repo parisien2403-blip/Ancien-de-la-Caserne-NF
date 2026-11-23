@@ -13246,7 +13246,7 @@ function choixBus(B) { if (M.choixBusEl) M.choixBusEl.remove(); const d = docume
 /* (10.53) le métro parisien : devant une bouche de métro, on choisit sa station ; puis la cinématique, debout dans la rame (une MF 67 de 1990 : la caisse crème,
    les banquettes bleues, les barres inox, les néons), au milieu des voyageurs ; le quai de départ, le tunnel, ses lampes qui défilent, le quai d'arrivée, et l'on ressort là-haut */
 const METRO_STATIONS = { rex: { nom: "Bonne Nouvelle", ligne: "8 · 9", lieu: "rex", arrivee: [-66.6, 9.8], yaw: -Math.PI / 2, libelle: "Bonne Nouvelle — les Grands Boulevards, le Grand Rex" },
-  tertre: { nom: "Abbesses", ligne: "12", admin: true, lieu: "tertre", arrivee: [-83, 35.3], yaw: 0, libelle: "Abbesses — Montmartre, la place du Tertre" },
+  tertre: { nom: "Abbesses", ligne: "12", lieu: "tertre", arrivee: [-83, 35.3], yaw: 0, libelle: "Abbesses — Montmartre, la place du Tertre" },
   notredame: { nom: "Saint-Michel – Notre-Dame", ligne: "4 · RER B C", lieu: "notredame", arrivee: [-66.2, 41.9], yaw: Math.PI / 2, libelle: "Saint-Michel – Notre-Dame — les quais de Seine, Notre-Dame" },
   /* (10.192 : pas de station pour la place des Vosges — on n'y va que par le livre des Misérables ; on en repart en métro) */
   corbier: { nom: "Le Corbier", lieu: "corbier", arrivee: [-26, 13.8], yaw: Math.PI, libelle: "🚌 Le Corbier — en car, jusqu'à la station (Savoie)", car: true } };
