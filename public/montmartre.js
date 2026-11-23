@@ -7,7 +7,7 @@ function construireTertre(A, L, scene) {
      chaque enseigne, façade ou vitrine n'en lit que sa case. Seules les images qui se répètent (les pavés, la pierre) et celles qu'on peint plus tard (les tableaux) restent à part) */
   const PAGE = 2048, PAD = 4, PAGES = []; let pg = null;
   const casier = (w, h) => { if (w > PAGE - 2 * PAD || h > PAGE - 2 * PAD) return null;
-    if (!pg) { const c = document.createElement("canvas"); c.width = c.height = PAGE; { const x0 = c.getContext("2d"); x0.fillStyle = "#d8cfbf"; x0.fillRect(0, 0, PAGE, PAGE); }   /* (en attendant d'être peinte : une teinte de pierre, pas du noir) */ const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; pg = { c, x: PAD, y: PAD, hl: 0, t }; PAGES.push(pg); }
+    if (!pg) { const c = document.createElement("canvas"); c.width = c.height = PAGE; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; pg = { c, x: PAD, y: PAD, hl: 0, t }; PAGES.push(pg); }
     if (pg.x + w + PAD > PAGE) { pg.x = PAD; pg.y += pg.hl + PAD; pg.hl = 0; }
     if (pg.y + h + PAD > PAGE) { pg = null; return casier(w, h); }
     const r = { pg, x: pg.x, y: pg.y }; pg.x += w + PAD; pg.hl = Math.max(pg.hl, h); return r; };
@@ -19,10 +19,11 @@ function construireTertre(A, L, scene) {
   const differer = (j) => { JOBS.push(j); if (!pompe) { pompe = true; setTimeout(pomper, 0); } };
   L.__peintureFinie = () => JOBS.length === 0;
   const tT = (w, h, f, rx, ry, ech = 1, aPart = false) => { const cw = Math.max(8, Math.round(w * ECH * ech)), ch = Math.max(8, Math.round(h * ECH * ech)), place = rx || aPart ? null : casier(cw, ch);
-    if (!place) { const c = document.createElement("canvas"); c.width = cw; c.height = ch; { const x0 = c.getContext("2d", { willReadFrequently: true }); x0.fillStyle = "#d8cfbf"; x0.fillRect(0, 0, cw, ch); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || rx); }
-      differer(() => { const x = c.getContext("2d", { willReadFrequently: true }); x.scale(cw / w, ch / h); f(x, w, h); t.needsUpdate = true; }); return t; }
+    if (!place) { const c = document.createElement("canvas"); c.width = cw; c.height = ch; if (cw >= 100 && ch >= 100) { const x0 = c.getContext("2d", { willReadFrequently: true }); x0.fillStyle = "#d8cfbf"; x0.fillRect(0, 0, cw, ch); }   /* (les grandes images seulement — façades, devantures : une teinte de pierre en attendant ; les petites, les halos de lumière, restent transparentes) */ const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry || rx); }
+      differer(() => { const x = c.getContext("2d", { willReadFrequently: true }); x.clearRect(0, 0, cw, ch); x.scale(cw / w, ch / h);   /* (on efface la teinte d'attente avant de peindre : sinon les halos restaient des carrés blancs) */ f(x, w, h); t.needsUpdate = true; }); return t; }
+    if (cw >= 100 && ch >= 100) { const x0 = place.pg.c.getContext("2d", { willReadFrequently: true }); x0.fillStyle = "#d8cfbf"; x0.fillRect(place.x, place.y, cw, ch); }
     const t = place.pg.t.clone(); t.offset.set(place.x / PAGE, 1 - (place.y + ch) / PAGE); t.repeat.set(cw / PAGE, ch / PAGE); t.needsUpdate = true; place.pg.tex = t;
-    differer(() => { const x = place.pg.c.getContext("2d", { willReadFrequently: true }); x.save(); x.translate(place.x, place.y); x.beginPath(); x.rect(0, 0, cw, ch); x.clip(); x.scale(cw / w, ch / h); f(x, w, h); x.restore();
+    differer(() => { const x = place.pg.c.getContext("2d", { willReadFrequently: true }); x.clearRect(place.x, place.y, cw, ch); x.save(); x.translate(place.x, place.y); x.beginPath(); x.rect(0, 0, cw, ch); x.clip(); x.scale(cw / w, ch / h); f(x, w, h); x.restore();
     // les bords recopiés tout autour (sinon, de loin, la case voisine déteint sur les bords)
     for (const [sx, sy, sw, sh, dx, dy, dw, dh] of [[place.x, place.y, cw, 1, place.x, place.y - PAD, cw, PAD], [place.x, place.y + ch - 1, cw, 1, place.x, place.y + ch, cw, PAD], [place.x, place.y - PAD, 1, ch + 2 * PAD, place.x - PAD, place.y - PAD, PAD, ch + 2 * PAD], [place.x + cw - 1, place.y - PAD, 1, ch + 2 * PAD, place.x + cw, place.y - PAD, PAD, ch + 2 * PAD]])
       try { x.drawImage(place.pg.c, sx, sy, sw, sh, dx, dy, dw, dh); } catch (e) {}
