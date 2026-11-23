@@ -1168,16 +1168,17 @@ function construireTertre(A, L, scene) {
     const lacher = (qui) => { const p = moiL(); if (!p || enCours) return; if (!L.nuit) { bulle("« Revenez ce soir, quand il fera nuit : c'est là qu'elles sont les plus belles. »"); return; } enCours = true;
       bulle(qui ? "« Pour " + qui + "… Qu'elle monte jusqu'à toi, là-haut. »" : "« Pensez fort à eux… et laissez-la s'envoler. »", 5000);
       const N = PEU ? 120 : 280, LS = [], G = new THREE.Group(); G.userData.anime = true; scene.add(G); if (VOL) scene.remove(VOL); VOL = G;
-      const q = p.g.position.clone(), notre = uneLanterne(.8); notre.position.set(q.x + .5, 1.5, q.z - .3); G.add(notre); LS.push({ o: notre, x: notre.position.x, y: 1.5, z: notre.position.z, t0: 2.5, v: .8, ph: 0, s: .8 });
-      for (let i = 0; i < N; i++) { const o = uneLanterne(.6 + al() * .45); let x, z; const r = al();
-        if (r < .28) { x = 114 + al() * 19; z = -26 + al() * 76; }   // la place du bas
-        else if (r < .58) { x = 134 + al() * 64; z = 20 + (al() - .5) * 2 * 52; }   // les escaliers, la pelouse, les talus
-        else if (r < .78) { x = 184 + al() * 34; z = -6 + al() * 52; }   // la terrasse, le parvis
-        else { const a = al() * Math.PI * 2; x = 255 + Math.cos(a) * (55 + al() * 15); z = 20 + Math.sin(a) * 36; }   // tout autour de la basilique
-        const y = hS(x, z) + 1; o.position.set(x, -80, z); o.visible = false; G.add(o); LS.push({ o, x, y, z, t0: 3 + al() * 16, v: .7 + al() * .8, ph: al() * 6.28, s: o.scale.x }); }
+      const q = p.g.position.clone(), notre = uneLanterne(.8); notre.position.set(q.x + .5, 1.5, q.z - .3); G.add(notre); LS.push({ o: notre, x: notre.position.x, y: 1.5, z: notre.position.z, t0: 2.5, v: 1.7, ph: 0, s: .8 });
+      for (let i = 0; i < N; i++) { const o = uneLanterne(.6 + al() * .45); let x, z, t0, v; const r = al();
+        /* (10.232) d'abord la place du bas, tout autour de nous : elles montent avec la nôtre ; puis, à mesure qu'on s'élève, les escaliers, la pelouse, la terrasse, le parvis, et tout autour de la basilique */
+        if (r < .45) { const a = al() * Math.PI * 2, rr = 2 + Math.sqrt(al()) * 16; x = Math.max(113, Math.min(133, q.x + Math.cos(a) * rr)); z = q.z + Math.sin(a) * rr * 1.6; t0 = 2.6 + al() * 6; v = 1.4 + al() * 1.1; }
+        else if (r < .78) { x = 134 + al() * 64; z = 20 + (al() - .5) * 2 * 50; t0 = 5 + (x - 134) / 64 * 9 + al() * 3; v = 1 + al() * .8; }
+        else if (r < .9) { x = 184 + al() * 34; z = -6 + al() * 52; t0 = 13 + al() * 5; v = .9 + al() * .7; }
+        else { const a = al() * Math.PI * 2; x = 255 + Math.cos(a) * (55 + al() * 15); z = 20 + Math.sin(a) * 36; t0 = 16 + al() * 6; v = .9 + al() * .7; }
+        const y = hS(x, z) + 1; o.position.set(x, -80, z); o.visible = false; G.add(o); LS.push({ o, x, y, z, t0, v, ph: al() * 6.28, s: o.scale.x }); }
       const t0 = performance.now(), DUR = 44000; let finiC = false;
       const anim = (tm) => { const t = (performance.now() - t0) / 1000; for (const l of LS) { const u = t - l.t0; if (u < 0) { l.o.visible = false; continue; } l.o.visible = true; const h = l.y + u * l.v + Math.min(u, 3) * .1;
-          l.o.position.set(l.x + Math.sin(u * .4 + l.ph) * .9 + u * .12, h, l.z + Math.cos(u * .33 + l.ph) * .9); l.o.rotation.y = u * .2 + l.ph; l.o.children[1].scale.x = 1 + Math.sin(tm / 80 + l.ph * 9) * .2; const f = h > 190 ? Math.max(0, 1 - (h - 190) / 30) : 1; l.o.scale.setScalar(l.s * f); }
+          l.o.position.set(l.x + Math.sin(u * .4 + l.ph) * .9 + u * .12, h, l.z + Math.cos(u * .33 + l.ph) * .9); l.o.rotation.y = u * .2 + l.ph; l.o.children[1].scale.x = 1 + Math.sin(tm / 80 + l.ph * 9) * .2; const f = h > 210 ? Math.max(0, 1 - (h - 210) / 30) : 1; l.o.scale.setScalar(l.s * f); }
         const f = Math.min(1, Math.max(0, (t - 2) / 6)) * (t > DUR / 1000 + 40 ? Math.max(0, 1 - (t - DUR / 1000 - 40) / 30) : 1); hemi.intensity = f * .08; if (facL) facL.intensity = f * 300 * (1 + Math.sin(tm / 300) * .05);
         LUMS.forEach((l, k) => { const s2 = LS[1 + ((k * 37 + ((t / 6) | 0) * 11) % (LS.length - 1))] || LS[0], ps = s2.o.position; l.position.set(ps.x, Math.max(2, ps.y - 3), ps.z); l.intensity = f * (k === 0 ? 140 : 90) * (1 + Math.sin(tm / 120 + k) * .08); }); if (LUMS[0]) LUMS[0].position.copy(notre.position);
         if (t > DUR / 1000 + 70) { const i = AMBL.indexOf(anim); if (i >= 0) AMBL.splice(i, 1); scene.remove(G); if (VOL === G) VOL = null; hemi.intensity = 0; if (facL) facL.intensity = 0; for (const l of LUMS) l.intensity = 0; } };
@@ -1186,8 +1187,8 @@ function construireTertre(A, L, scene) {
       const SCV = new THREE.Vector3(249, 62, 20);
       M.cine = { gel: true, fov: [52, 62], maj: () => { const t = (performance.now() - t0) / 1000, c = M.camera;
           if (t < 7) { const k = t / 7; c.position.set(q.x - 1.8, 1.7 + k * .6, q.z + 2.2); c.lookAt(notre.position.x, Math.max(1.8, notre.position.y + .3), notre.position.z); }
-          else if (t < 24) { const k = (t - 7) / 17, e = k * k * (3 - 2 * k), A = new THREE.Vector3(q.x - 1.8, 2.3, q.z + 2.2), B2 = new THREE.Vector3(168, 36, 20); c.position.lerpVectors(A, B2, e); c.position.y = 2.3 + 34 * Math.sqrt(e); c.lookAt(new THREE.Vector3(notre.position.x, notre.position.y, notre.position.z).lerp(new THREE.Vector3(205, 30, 20), e)); }   // (on regarde les lanternes monter des escaliers, la façade au-dessus)
-          else { const k = (t - 24) / 20, a = k * .9 - .45; c.position.set(249 - Math.cos(a) * 86, 36 + k * 18, 20 + Math.sin(a) * 86); c.lookAt(SCV.x, SCV.y + k * 18, SCV.z); }
+          else if (t < 24) { const k = (t - 7) / 17, e = k * k * (3 - 2 * k), A = new THREE.Vector3(q.x - 1.8, 2.3, q.z + 2.2), B2 = new THREE.Vector3(96, 0, 18); c.position.lerpVectors(A, B2, e); c.position.y = 2.3 + 30 * Math.sqrt(e); c.lookAt(new THREE.Vector3(notre.position.x, notre.position.y + 1, notre.position.z).lerp(new THREE.Vector3(200, 42, 20), e)); }   /* (on recule en montant : tout le nuage de lanternes s'élève devant le Sacré-Cœur) */   // (on monte avec notre lanterne, au milieu des autres ; puis le regard glisse vers le Sacré-Cœur)
+          else { const k = (t - 24) / 20, e2 = k * k * (3 - 2 * k), a = e2 * .9 - .45, P = new THREE.Vector3(249 - Math.cos(a) * 86, 36 + k * 18, 20 + Math.sin(a) * 86); c.position.lerpVectors(new THREE.Vector3(96, 32.3, 20), P, Math.min(1, k * 2.2)); c.lookAt(new THREE.Vector3(200, 42, 20).lerp(new THREE.Vector3(SCV.x, SCV.y + k * 18, SCV.z), Math.min(1, k * 2))); }
           if (t >= DUR / 1000 && !finiC) { finiC = true; finCine(); placerCamera(true); enCours = false; bulle("« Elles emportent nos vœux jusqu'aux étoiles… »", 4500); } } }; };
     const demander = () => { if (enCours || (M.manMenu && M.manMenu.d && M.manMenu.d.isConnected)) return; if (!L.nuit) { bulle("« Revenez ce soir, quand il fera nuit : c'est là qu'elles sont les plus belles. »"); return; }
       const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;background:rgba(40,24,14,.95);color:#fff;border-radius:16px;padding:16px 18px;width:300px;box-shadow:0 8px 30px rgba(0,0,0,.5);font:15px Lato,Arial,sans-serif;text-align:center";
