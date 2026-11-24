@@ -309,15 +309,16 @@
   .mx-presents { position: absolute; left: 10px; top: 10px; right: 56px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; z-index: 1; }
   .mx-presents span { background: rgba(31,42,55,.78); color: #fff; border-radius: 99px; padding: 4px 10px; font: 700 12px "Lato", sans-serif; }
   .mx-presents span.moi { background: #c4694a; }
-  .mx-presents span.ailleurs { background: rgba(255,255,255,.88); color: #3a2a44; border: 2px dashed #8a6ab8; pointer-events: auto; cursor: pointer; }
-  .mx-presents span.ailleurs i { font-style: normal; font-weight: 400; opacity: .75; margin-left: 4px; }
-  .mx-voir { position: absolute; left: 14px; top: 58px; z-index: 30; width: min(320px, 78vw); background: #fffdf6; border: 3px solid #2a2230; border-radius: 46% 54% 50% 50% / 38% 40% 60% 62%; padding: 18px 18px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.35); text-align: center; font: 700 13px "Lato", sans-serif; color: #2a2230; cursor: pointer; }
-  .mx-voir[hidden] { display: none !important; }
-  .mx-voir img { width: 100%; aspect-ratio: 384 / 240; object-fit: cover; border-radius: 40% / 30%; display: block; background: #ddd8cc; }
-  .mx-voir .q { margin-top: 6px; }
-  .mx-voir::before, .mx-voir::after { content: ""; position: absolute; background: #fffdf6; border: 3px solid #2a2230; border-radius: 50%; }
-  .mx-voir::before { width: 18px; height: 14px; left: 28px; top: -22px; }
-  .mx-voir::after { width: 10px; height: 8px; left: 18px; top: -38px; }
+  .mx-presents span.tel { position: relative; background: #141416; pointer-events: auto; cursor: pointer; padding: 3px 10px; font-size: 15px; line-height: 1.2; }
+  .mx-presents span.tel b { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: #e0302a; color: #fff; font: 800 11px/18px "Lato", sans-serif; text-align: center; padding: 0 4px; box-sizing: border-box; }
+  .mx-telmenu { position: absolute; left: 10px; top: 44px; z-index: 31; background: #141416; color: #fff; border-radius: 16px; padding: 8px; min-width: 210px; box-shadow: 0 8px 24px rgba(0,0,0,.4); font: 600 14px "Lato", sans-serif; }
+  .mx-telmenu[hidden] { display: none !important; }
+  .mx-telmenu div { padding: 9px 12px; border-radius: 10px; cursor: pointer; }
+  .mx-telmenu div:hover { background: #2a2e3a; }
+  .mx-telmenu small { display: block; color: #9aa4b8; font-weight: 400; }
+  .mx-notif { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 32; background: rgba(20,20,22,.94); color: #fff; border-radius: 18px; padding: 10px 16px; font: 600 14px "Lato", sans-serif; box-shadow: 0 6px 20px rgba(0,0,0,.4); display: flex; gap: 10px; align-items: center; transition: opacity .4s; }
+  .mx-notif[hidden] { display: none !important; }
+  .mx-notif small { color: #9aa4b8; font-weight: 400; display: block; }
   .mx-info { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(31,42,55,.88); color: #fff; padding: 8px 14px; border-radius: 12px; font: 700 13px "Lato", sans-serif; z-index: 3; max-width: 90%; text-align: center; }
   .mx-plein { position: absolute; right: 10px; top: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(31,42,55,.7); color: #fff; font-size: 18px; cursor: pointer; z-index: 3; }
   .mx-tourner { top: 56px; font-size: 20px; }
@@ -1478,7 +1479,7 @@
         <div class="mx-scene" id="mxScene">
           <div class="mx-voile" id="mxVoile"><span>Ouverture des grilles…</span></div>
           <div class="mx-presents" id="mxPresents"></div>
-          <div class="mx-voir" id="mxVoir" hidden><img id="mxVoirImg" alt=""><div class="q" id="mxVoirTxt"></div></div>
+          <div class="mx-telmenu" id="mxTelMenu" hidden></div><div class="mx-notif" id="mxNotif" hidden></div>
           <div class="mx-info" id="mxInfo" hidden></div>
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-3d" id="mx3D" type="button" title="Relief 3D (lunettes XREAL…)" aria-label="Relief 3D pour lunettes" hidden>👓</button>
@@ -2474,8 +2475,8 @@
           else if (avant && document.fullscreenElement === sc && !mxPleinVoulu) document.exitFullscreen().catch(() => {}); },   /* (on ne quitte le plein écran que si le relief était vraiment allumé : en lançant Resident Evil, il s'éteint d'office — et l'on perdait le plein écran) */   // (le fichier d'un titre : le clip vidéo, pour le grand écran de la scène)
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { mxIci = liste.filter(p => !p.pnj); dessinerPresents(); },
-        surTous: liste => { mxTous = liste || []; dessinerPresents(); },
-        surVoir: m => { if (!mxVoirQui || Number(m.de) !== mxVoirQui) return; $("mxVoirImg").src = m.img; const l = MX && MX.LIEUX && MX.LIEUX[m.lieu]; $("mxVoirTxt").textContent = "💭 " + m.nom + (l ? " — " + l.icone + " " + l.nom : ""); if (!mxVoirFin) mxVoirFin = setTimeout(fermerVoir, 10000); },
+        surTous: liste => { mxTous = liste || []; const moiN = Number(MXmoi()), autres = mxTous.filter(p => Number(p.numero) !== moiN); if (mxConnus) for (const p of autres) if (!mxConnus.has(Number(p.numero))) notifConnexion(p); mxConnus = new Set(autres.map(p => Number(p.numero))); dessinerPresents(); },
+
         surComptes: c => { mxComptes = c; dessinerLieux(m); },
         surFil: fil => { mxFilListe = fil; dessinerFil(); },
         surInfo: t => infoMatrice(t),
@@ -2772,16 +2773,17 @@
     $("djEnvoi").hidden = true; chargerDisco();
   };
 
-  /* (10.245) les noms d'en haut : ceux d'ici, puis ceux qui sont ailleurs (en pointillés) ; on touche un nom d'ailleurs : une bulle de pensée le montre, là où il est, dix secondes */
-  let mxIci = [], mxTous = [], mxVoirQui = null, mxVoirFin = null, mxVoirAttente = null;
-  function dessinerPresents() { const ici = new Set(mxIci.map(p => Number(p.numero))), moiN = Number(MXmoi());
-    const loin = mxTous.filter(p => !ici.has(Number(p.numero)) && Number(p.numero) !== moiN);
-    $("mxPresents").innerHTML = mxIci.map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join("") + loin.map(p => { const l = MX && MX.LIEUX && MX.LIEUX[p.lieu]; return `<span class="ailleurs" data-n="${Number(p.numero)}" title="Voir où il se trouve">💭 ${esc(p.nom)}<i>${l ? l.icone : ""}</i></span>`; }).join("");
-    for (const s of $("mxPresents").querySelectorAll("span.ailleurs")) s.onclick = e => { e.stopPropagation(); voirQuelquun(Number(s.dataset.n), s.textContent.replace("💭 ", "")); }; }
-  function voirQuelquun(n, nom) { if (!MX || !MX.voir) return; fermerVoir(); mxVoirQui = n; $("mxVoirImg").removeAttribute("src"); $("mxVoirTxt").textContent = "💭 " + nom + "…"; $("mxVoir").hidden = false; MX.voir(n);
-    mxVoirAttente = setTimeout(() => { if (mxVoirQui === n && !$("mxVoirImg").getAttribute("src")) { $("mxVoirTxt").textContent = "💭 " + nom + " ne répond pas (son écran est peut-être éteint)"; mxVoirFin = setTimeout(fermerVoir, 3000); } }, 5000); }
-  function fermerVoir() { clearTimeout(mxVoirFin); clearTimeout(mxVoirAttente); mxVoirFin = mxVoirAttente = null; mxVoirQui = null; $("mxVoir").hidden = true; }
-  $("mxVoir").onclick = e => { e.stopPropagation(); fermerVoir(); };
+  /* (10.245) les noms d'en haut : ceux d'ici ; et, à côté du nôtre, le téléphone : un « 1 » rouge dès que quelqu'un est connecté ailleurs (et une notification à son arrivée).
+     On touche le téléphone, on choisit la personne : on le sort de sa poche, il s'ouvre, et l'on voit où elle se trouve */
+  let mxIci = [], mxTous = [], mxConnus = null, mxNotifT = null;
+  const lieuDe = p => { const l = MX && MX.LIEUX && MX.LIEUX[p.lieu]; return l ? l.icone + " " + l.nom : ""; };
+  function dessinerPresents() { const moiN = Number(MXmoi()), autres = mxTous.filter(p => Number(p.numero) !== moiN);
+    $("mxPresents").innerHTML = mxIci.map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join("") + (autres.length ? `<span class="tel" id="mxTel" title="Qui est connecté ?">📱<b>${autres.length}</b></span>` : "");
+    if ($("mxTel")) $("mxTel").onclick = e => { e.stopPropagation(); const m = $("mxTelMenu"); if (!m.hidden) { m.hidden = true; return; }
+      m.innerHTML = autres.map(p => `<div data-n="${Number(p.numero)}">${esc(p.nom)}<small>${esc(lieuDe(p))}</small></div>`).join(""); m.hidden = false;
+      for (const d of m.querySelectorAll("div")) d.onclick = ev => { ev.stopPropagation(); m.hidden = true; const p = autres.find(q => Number(q.numero) === Number(d.dataset.n)); if (p && MX && MX.telephone) MX.telephone(p.numero, p.nom, lieuDe(p)); }; }; }
+  function notifConnexion(p) { const n = $("mxNotif"); n.innerHTML = `<span style="font-size:22px">📱</span><div>${esc(p.nom)} est connecté<small>${esc(lieuDe(p))}</small></div>`; n.hidden = false; clearTimeout(mxNotifT); mxNotifT = setTimeout(() => { n.hidden = true; }, 4500); }
+  document.addEventListener("click", () => { const m = $("mxTelMenu"); if (m) m.hidden = true; });
   function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; bruitAudio.pause(); hifiAudio.pause(); messAudio.pause(); $("mxScene").classList.remove("plein-css"); document.body.style.overflow = ""; window.fermerConsole && window.fermerConsole(); djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
   /* la discussion : sous la scène les derniers messages (une heure au plus), chacun peut retirer les siens, l'administrateur tous ;
      en plein écran, un message ne reste affiché qu'une minute */

@@ -9332,6 +9332,7 @@ export async function ouvrir(ctx) {
     else if (M.porteRE) { M.porteRE.maj(performance.now()); if (M.porteRE) rendu.render(M.porteRE.sc, M.porteRE.cam); }   /* (la porte qui s'ouvre, à la place du jeu) */
     else if (M.apoIntro && !M.cine && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) { const cc = rendu.getClearColor(new THREE.Color()), ca = rendu.getClearAlpha(); rendu.setClearColor(0x000000, 1); rendu.clear(); rendu.setClearColor(cc, ca); }   /* (Resident Evil, l'arrivée : écran noir jusqu'au début de la cinématique — pas d'image fugace avant) */
     else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera); M.dbgRendu = (M.dbgRendu || 0) + 1; { const np = (rendu.info.programs ? rendu.info.programs.length : 0) - prog0, nt = rendu.info.memory.textures - tex0; M.dbgDessin = { np, nt }; seg("dessin" + (np ? " +" + np + " matières" : "") + (nt ? " +" + nt + " images" : "")); }   /* (à Resident Evil : avec les effets d'image) */
+    if (M.tel && !rendu.xr.isPresenting) try { M.tel.dessiner(rendu, performance.now()); } catch (e) { M.telErr = String(e && e.stack); M.tel = null; }   /* (10.245 : le téléphone pliant, dessiné par-dessus, au premier plan) */
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
   M.redim();
@@ -18201,6 +18202,49 @@ export async function micro(on) { if (!M) return false;
     VX.on = true; VX.salle = salleVoixDe(M.lieu); VX.ws = M.ws; envoyerWS({ t: "voix", on: true }); voixEcoute(); voixInfo(); return true; }
   VX.on = false; clearInterval(VX.niveauT); VX.moiParle = VX.autreParle = false; voixToutFermer(); if (VX.flux) for (const t of VX.flux.getTracks()) t.stop(); VX.flux = null; VX.salle = null; envoyerWS({ t: "voix", on: false }); voixInfo(); return false; }
 /* (10.245) la bulle de pensée : quelqu'un, ailleurs, a touché notre nom — on filme notre bonhomme là où il est (comme le voit notre caméra), une image toutes les 0,6 s pendant dix secondes */
+/* (10.245) le téléphone pliant noir : on passe en première personne ; la main l'amène devant soi, il s'ouvre en deux, et l'on voit, en direct, dix secondes, où se trouve celui qu'on a choisi ; puis il se replie et redescend */
+export function telephone(numero, nom, lieuNom) { if (!M || !THREE || M.tel || M.cine) return; numero = Number(numero);
+  const TS = new THREE.Scene(), TC = new THREE.PerspectiveCamera(50, 1, .01, 5); TS.add(new THREE.HemisphereLight(0xffffff, 0x404050, 2.2)); const dl = new THREE.DirectionalLight(0xffffff, 1.6); dl.position.set(.3, .6, .5); TS.add(dl);
+  const noir = new THREE.MeshStandardMaterial({ color: 0x141416, metalness: .6, roughness: .35 }), cadre = new THREE.MeshStandardMaterial({ color: 0x2a2a2e, metalness: .8, roughness: .25 });
+  const W = 576, H = 640, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const x = cv.getContext("2d"), tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  let img = null, tAcc = 0, tPrec = 0, tImg = 0;
+  const peindre = () => { x.fillStyle = "#0b0d12"; x.fillRect(0, 0, W, H); x.fillStyle = "#fff"; x.font = "600 22px Lato, Arial, sans-serif"; const d = new Date(); x.fillText(String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"), 24, 36); x.textAlign = "right"; x.fillText("5G ▮▮▮▯", W - 24, 36); x.textAlign = "left";
+    x.font = "700 34px Lato, Arial, sans-serif"; x.fillText(nom || "", 24, 100); x.font = "400 24px Lato, Arial, sans-serif"; x.fillStyle = "#b8c0d0"; x.fillText(lieuNom || "", 24, 136);
+    const iy = 170, ih = Math.round(W * 240 / 384) - 48, iw = W - 48; x.fillStyle = "#1c2230"; x.fillRect(24, iy, iw, ih);
+    if (img && img.complete) x.drawImage(img, 24, iy, iw, ih); else { x.fillStyle = "#8a94a8"; x.font = "400 26px Lato, Arial, sans-serif"; x.textAlign = "center"; x.fillText("Connexion…", W / 2, iy + ih / 2); x.textAlign = "left"; }
+    if (img) { x.fillStyle = "#e0302a"; x.beginPath(); x.arc(46, iy + ih + 40, 9, 0, 7); x.fill(); x.fillStyle = "#fff"; x.font = "700 24px Lato, Arial, sans-serif"; x.fillText("EN DIRECT", 64, iy + ih + 48); }
+    x.fillStyle = "#3a4256"; x.fillRect(W / 2 - 70, H - 26, 140, 6); tex.needsUpdate = true; };
+  peindre();
+  // les deux moitiés, la charnière au milieu ; l'écran intérieur, d'un seul tenant, à cheval sur les deux
+  const LW = .068, LH = .155, EP = .0045, P = new THREE.Group(); TS.add(P);
+  const moitie = (sx) => { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(LW, LH, EP), [cadre, cadre, cadre, cadre, noir, noir]); b.position.x = sx * LW / 2; g.add(b);
+    const geo = new THREE.PlaneGeometry(LW - .004, LH - .006), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, sx < 0 ? uv.getX(i) * .5 : .5 + uv.getX(i) * .5);
+    const e = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex })); e.position.set(sx * LW / 2, 0, EP / 2 + .0002); g.add(e); return g; };
+  const G1 = moitie(-1), G2 = moitie(1); P.add(G1, G2);
+  { const ch = new THREE.Mesh(new THREE.CylinderGeometry(.003, .003, LH, 10), cadre); P.add(ch);
+    const cov = new THREE.Mesh(new THREE.PlaneGeometry(LW - .008, LH - .012), new THREE.MeshBasicMaterial({ color: 0x10131a })); cov.rotation.y = Math.PI; cov.position.set(LW / 2, 0, -EP / 2 - .0002); G2.add(cov);
+    for (const [cx, cy] of [[-.05, .06], [-.05, .045], [-.05, .03]]) { const o = new THREE.Mesh(new THREE.CylinderGeometry(.0045, .0045, .002, 16), noir); o.rotation.x = Math.PI / 2; o.position.set(cx, cy, -EP / 2 - .001); G1.add(o); } }
+  // la main qui le tient (la manche, le poignet, la paume derrière, le pouce devant, les doigts sur la tranche)
+  const moi = M.gens.get(M.moiNum), peau = new THREE.MeshStandardMaterial({ color: (moi && moi.info && moi.info.peau) || 0xe2b894, roughness: .7 }), manche = new THREE.MeshStandardMaterial({ color: (moi && moi.info && moi.info.couleur) || 0x22324f, roughness: .8 });
+  const MAIN = new THREE.Group(); P.add(MAIN); const cap = (r, l, m, px, py, pz, rx, rz) => { const o = new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 6, 10), m); o.position.set(px, py, pz); o.rotation.set(rx || 0, 0, rz || 0); MAIN.add(o); return o; };
+  { const pa = new THREE.Mesh(new THREE.BoxGeometry(.075, .085, .022), peau); pa.position.set(-.04, -.03, -.016); MAIN.add(pa);
+    cap(.011, .05, peau, -.072, -.03, .002, 0, -.4); for (let k = 0; k < 4; k++) cap(.0085, .03, peau, -.074, .025 - k * .022, -.004, 0, Math.PI / 2);
+    cap(.026, .13, peau, -.07, -.13, -.03, .35, -.5); cap(.036, .3, manche, -.14, -.3, -.07, .35, -.55); }
+  P.add(MAIN);
+  const ouvrirT = 1.3, monteT = .8, voirT = 10, fin = monteT + ouvrirT + voirT, total = fin + 1.4;
+  const mode0 = { premiere: M.premiere }; if (!M.premiere) { const f = M.camera.getWorldDirection(new THREE.Vector3()); M.fpYaw = Math.atan2(-f.x, -f.z); M.fpPitch = 0; M.premiere = true; }
+  envoyerWS({ t: "voir_demande", numero }); let redemande = performance.now();
+  const ease = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
+  M.tel = { qui: numero, image: (m) => { const im = new Image(); im.onload = () => { img = im; peindre(); }; im.src = m.img; if (!tImg) tImg = performance.now(); },
+    dessiner: (R, now) => { tAcc += tPrec ? Math.min(.1, (now - tPrec) / 1000) : 0; tPrec = now; const t = tAcc;   /* (le temps avance image par image : un téléphone qui rame ne saute rien) */ const cvs = R.domElement; TC.aspect = cvs.clientWidth / Math.max(1, cvs.clientHeight); TC.updateProjectionMatrix();
+      if (t > monteT + ouvrirT && performance.now() - redemande > 9000 && t < fin) { redemande = performance.now(); envoyerWS({ t: "voir_demande", numero }); }
+      if (Math.floor(t * 2) !== Math.floor((t - .016) * 2)) peindre();
+      const up = t < fin ? ease(t / monteT) : 1 - ease((t - fin - .7) / .7), ouv = t < fin ? ease((t - monteT) / ouvrirT) : 1 - ease((t - fin) / .7);
+      const portrait = TC.aspect < 1, dist = portrait ? .36 : .28;
+      P.position.set(.0 + (1 - up) * .08, -.012 - (1 - up) * .35, -dist); P.rotation.set(-.12 + (1 - up) * .9, (1 - up) * .5 - ouv * .0, (1 - up) * -.3);
+      G2.rotation.y = -Math.PI * (1 - ouv) * .995; P.position.x += (1 - ouv) * 0 - LW * .0;
+      const ac = R.autoClear; R.autoClear = false; R.clearDepth(); R.render(TS, TC); R.autoClear = ac;
+      if (t > total) { M.tel = null; tex.dispose(); if (!mode0.premiere) { M.premiere = false; const p = M.gens.get(M.moiNum); if (p) { p.g.visible = true; placerCamera(true); } } } } }; }
 export function voir(numero) { envoyerWS({ t: "voir_demande", numero: Number(numero) }); }
 function filmerMoi(pour, nom) { if (!M || !M.rendu || !THREE) return; const F = M.filme || (M.filme = { pour: new Map() }); F.pour.set(pour, performance.now() + 10000);
   try { bulle("💭 " + (nom || "Quelqu'un") + " pense à toi", 2500); } catch (e) {}
@@ -18267,7 +18311,7 @@ function connecter() {
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { const pos = p.g.position.clone(), q = ajouterAncien({ ...p.info, ...m.p }); if (q) q.g.position.copy(pos); } }
     else if (m.t === "comptes") { M.comptes = m.lieux; M.qui = m.qui || {}; M.tous = m.tous || []; ctx.surComptes && ctx.surComptes(m.lieux); ctx.surTous && ctx.surTous(M.tous); if (M.vfMenu) M.vfMenu.maj(); }
     else if (m.t === "voir_demande") filmerMoi(m.de, m.nom);
-    else if (m.t === "voir_img") { ctx.surVoir && ctx.surVoir(m); }
+    else if (m.t === "voir_img") { if (M.tel && M.tel.qui === Number(m.de)) M.tel.image(m); else ctx.surVoir && ctx.surVoir(m); }
     else if (m.t === "occupe") { const u = universDe(m.lieu); if (universDe(M.lieu) === u) { if (M.cine) finCine(); M.comptes = { ...(M.comptes || {}), [m.lieu]: 1 }; changerLieu(u === "lb" ? "rue" : "grande", u === "lb" ? [19.1, 5.2] : undefined, u === "lb" ? Math.PI : 0); } bulle(`🔒 Quelqu'un est déjà à ${NOM_UNIVERS[u]}. Une seule personne à la fois : reviens un peu plus tard.`, 5000); }
     else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
     else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }
