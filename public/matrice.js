@@ -18233,11 +18233,19 @@ export function telephone(numero, nom, lieuNom) { if (!M || !THREE || M.tel || M
   P.add(MAIN);
   const ouvrirT = 1.3, monteT = .8, voirT = 10, fin = monteT + ouvrirT + voirT, total = fin + 1.4;
   const mode0 = { premiere: M.premiere }; if (!M.premiere) { const f = M.camera.getWorldDirection(new THREE.Vector3()); M.fpYaw = Math.atan2(-f.x, -f.z); M.fpPitch = 0; M.premiere = true; }
-  envoyerWS({ t: "voir_demande", numero }); let redemande = performance.now();
+  if (numero >= 0) envoyerWS({ t: "voir_demande", numero }); let redemande = performance.now();
+  if (numero === -1) (async () => {   /* (l'essai de l'administrateur : le vieux monsieur sur son banc, devant Notre-Dame — la scène préparée en coulisses, filmée ici) */
+    if (M.lieu !== "notredame") await preparerLieu("notredame"); const q = M.lieu === "notredame" ? { scene: M.scene } : M.prets && M.prets.notredame; if (!q || !M.tel || M.tel.qui !== -1) return;
+    const W2 = 384, H2 = 240, rt = new THREE.WebGLRenderTarget(W2, H2), cam = new THREE.PerspectiveCamera(50, W2 / H2, .1, 300), px = new Uint8Array(W2 * H2 * 4), c2 = document.createElement("canvas"); c2.width = W2; c2.height = H2; const x2 = c2.getContext("2d"), im2 = x2.createImageData(W2, H2);
+    rt.texture.colorSpace = THREE.SRGBColorSpace; let a = 0;
+    const go = () => { if (!M || !M.tel || M.tel.qui !== -1) { clearInterval(iv); rt.dispose(); return; } a += .03; cam.position.set(-8.45 + Math.sin(.5 + a) * 3.2, 1.7, -37 + Math.cos(.5 + a) * 3.2); cam.lookAt(-8.45, .85, -37);
+      const R = M.rendu, av = R.getRenderTarget(); R.setRenderTarget(rt); R.render(q.scene, cam); R.readRenderTargetPixels(rt, 0, 0, W2, H2, px); R.setRenderTarget(av);
+      for (let y = 0; y < H2; y++) im2.data.set(px.subarray((H2 - 1 - y) * W2 * 4, (H2 - y) * W2 * 4), y * W2 * 4); x2.putImageData(im2, 0, 0); M.tel.image({ img: c2.toDataURL("image/jpeg", .7) }); };
+    const iv = setInterval(go, 600); go(); })();
   const ease = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
   M.tel = { qui: numero, image: (m) => { const im = new Image(); im.onload = () => { img = im; peindre(); }; im.src = m.img; if (!tImg) tImg = performance.now(); },
     dessiner: (R, now) => { tAcc += tPrec ? Math.min(.1, (now - tPrec) / 1000) : 0; tPrec = now; const t = tAcc;   /* (le temps avance image par image : un téléphone qui rame ne saute rien) */ const cvs = R.domElement; TC.aspect = cvs.clientWidth / Math.max(1, cvs.clientHeight); TC.updateProjectionMatrix();
-      if (t > monteT + ouvrirT && performance.now() - redemande > 9000 && t < fin) { redemande = performance.now(); envoyerWS({ t: "voir_demande", numero }); }
+      if (numero >= 0 && t > monteT + ouvrirT && performance.now() - redemande > 9000 && t < fin) { redemande = performance.now(); envoyerWS({ t: "voir_demande", numero }); }
       if (Math.floor(t * 2) !== Math.floor((t - .016) * 2)) peindre();
       const up = t < fin ? ease(t / monteT) : 1 - ease((t - fin - .7) / .7), ouv = t < fin ? ease((t - monteT) / ouvrirT) : 1 - ease((t - fin) / .7);
       const portrait = TC.aspect < 1, dist = portrait ? .36 : .28;

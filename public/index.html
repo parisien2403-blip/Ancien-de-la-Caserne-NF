@@ -2778,10 +2778,11 @@
   let mxIci = [], mxTous = [], mxConnus = null, mxNotifT = null;
   const lieuDe = p => { const l = MX && MX.LIEUX && MX.LIEUX[p.lieu]; return l ? l.icone + " " + l.nom : ""; };
   function dessinerPresents() { const moiN = Number(MXmoi()), autres = mxTous.filter(p => Number(p.numero) !== moiN);
-    $("mxPresents").innerHTML = mxIci.map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join("") + (autres.length ? `<span class="tel" id="mxTel" title="Qui est connecté ?">📱<b>${autres.length}</b></span>` : "");
+    const essai = moi && moi.admin ? [{ numero: -1, nom: "Le vieux monsieur (essai)", lieu: "notredame" }] : [], liste = [...autres, ...essai];   /* (l'administrateur : un contact d'essai, le vieux monsieur devant Notre-Dame) */
+    $("mxPresents").innerHTML = mxIci.map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join("") + (liste.length ? `<span class="tel" id="mxTel" title="Qui est connecté ?">📱${autres.length ? `<b>${autres.length}</b>` : ""}</span>` : "");
     if ($("mxTel")) $("mxTel").onclick = e => { e.stopPropagation(); const m = $("mxTelMenu"); if (!m.hidden) { m.hidden = true; return; }
-      m.innerHTML = autres.map(p => `<div data-n="${Number(p.numero)}">${esc(p.nom)}<small>${esc(lieuDe(p))}</small></div>`).join(""); m.hidden = false;
-      for (const d of m.querySelectorAll("div")) d.onclick = ev => { ev.stopPropagation(); m.hidden = true; const p = autres.find(q => Number(q.numero) === Number(d.dataset.n)); if (p && MX && MX.telephone) MX.telephone(p.numero, p.nom, lieuDe(p)); }; }; }
+      m.innerHTML = liste.map(p => `<div data-n="${Number(p.numero)}">${esc(p.nom)}<small>${esc(lieuDe(p))}</small></div>`).join(""); m.hidden = false;
+      for (const d of m.querySelectorAll("div")) d.onclick = ev => { ev.stopPropagation(); m.hidden = true; const p = liste.find(q => Number(q.numero) === Number(d.dataset.n)); if (p && MX && MX.telephone) MX.telephone(p.numero, p.nom, lieuDe(p)); }; }; }
   function notifConnexion(p) { const n = $("mxNotif"); n.innerHTML = `<span style="font-size:22px">📱</span><div>${esc(p.nom)} est connecté<small>${esc(lieuDe(p))}</small></div>`; n.hidden = false; clearTimeout(mxNotifT); mxNotifT = setTimeout(() => { n.hidden = true; }, 4500); }
   document.addEventListener("click", () => { const m = $("mxTelMenu"); if (m) m.hidden = true; });
   function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; bruitAudio.pause(); hifiAudio.pause(); messAudio.pause(); $("mxScene").classList.remove("plein-css"); document.body.style.overflow = ""; window.fermerConsole && window.fermerConsole(); djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
