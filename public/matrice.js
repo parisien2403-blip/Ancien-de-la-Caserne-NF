@@ -18204,55 +18204,55 @@ export async function micro(on) { if (!M) return false;
 /* (10.245) la bulle de pensée : quelqu'un, ailleurs, a touché notre nom — on filme notre bonhomme là où il est (comme le voit notre caméra), une image toutes les 0,6 s pendant dix secondes */
 /* (10.245) le téléphone pliant noir : on passe en première personne ; la main l'amène devant soi, il s'ouvre en deux, et l'on voit, en direct, dix secondes, où se trouve celui qu'on a choisi ; puis il se replie et redescend */
 export function telephone(numero, nom, lieuNom) { if (!M || !THREE || M.tel || M.cine) return; numero = Number(numero);
-  const TS = new THREE.Scene(), TC = new THREE.PerspectiveCamera(50, 1, .01, 5); TS.add(new THREE.HemisphereLight(0xffffff, 0x404050, 2.2)); const dl = new THREE.DirectionalLight(0xffffff, 1.6); dl.position.set(.3, .6, .5); TS.add(dl);
-  const noir = new THREE.MeshStandardMaterial({ color: 0x141416, metalness: .6, roughness: .35 }), cadre = new THREE.MeshStandardMaterial({ color: 0x2a2a2e, metalness: .8, roughness: .25 });
+  /* (10.246) refait : la vraie main (celle qui descend du ciel à l'arrivée) tient le téléphone par la tranche ; l'écran, une fois ouvert, d'un seul tenant (plus de trait à la pliure) ;
+     l'image en direct posée telle quelle sur l'écran, sans relecture de pixels (c'était lent) */
+  const TS = new THREE.Scene(), TC = new THREE.PerspectiveCamera(50, 1, .01, 5); TS.add(new THREE.HemisphereLight(0xffffff, 0x50505a, 2.4)); const dl = new THREE.DirectionalLight(0xffffff, 1.5); dl.position.set(.3, .6, .5); TS.add(dl);
+  const noir = new THREE.MeshStandardMaterial({ color: 0x141416, metalness: .55, roughness: .35 }), cadre = new THREE.MeshStandardMaterial({ color: 0x232327, metalness: .8, roughness: .25 });
   const W = 576, H = 640, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const x = cv.getContext("2d"), tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-  let img = null, tAcc = 0, tPrec = 0, tImg = 0;
-  const peindre = () => { x.fillStyle = "#0b0d12"; x.fillRect(0, 0, W, H); x.fillStyle = "#fff"; x.font = "600 22px Lato, Arial, sans-serif"; const d = new Date(); x.fillText(String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"), 24, 36); x.textAlign = "right"; x.fillText("5G ▮▮▮▯", W - 24, 36); x.textAlign = "left";
-    x.font = "700 34px Lato, Arial, sans-serif"; x.fillText(nom || "", 24, 100); x.font = "400 24px Lato, Arial, sans-serif"; x.fillStyle = "#b8c0d0"; x.fillText(lieuNom || "", 24, 136);
-    const iy = 170, ih = Math.round(W * 240 / 384) - 48, iw = W - 48; x.fillStyle = "#1c2230"; x.fillRect(24, iy, iw, ih);
-    if (img && img.complete) x.drawImage(img, 24, iy, iw, ih); else { x.fillStyle = "#8a94a8"; x.font = "400 26px Lato, Arial, sans-serif"; x.textAlign = "center"; x.fillText("Connexion…", W / 2, iy + ih / 2); x.textAlign = "left"; }
-    if (img) { x.fillStyle = "#e0302a"; x.beginPath(); x.arc(46, iy + ih + 40, 9, 0, 7); x.fill(); x.fillStyle = "#fff"; x.font = "700 24px Lato, Arial, sans-serif"; x.fillText("EN DIRECT", 64, iy + ih + 48); }
+  let direct = false; const IY = 170, IH = 312;   // (la zone de l'image, en pixels de l'écran)
+  const peindre = () => { x.fillStyle = "#07080c"; x.fillRect(0, 0, W, H); x.fillStyle = "#fff"; x.font = "600 22px Lato, Arial, sans-serif"; const d = new Date(); x.fillText(String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"), 26, 38);
+    x.textAlign = "right"; x.fillText("5G", W - 26, 38); x.textAlign = "left"; x.font = "700 34px Lato, Arial, sans-serif"; x.fillText(nom || "", 26, 104); x.font = "400 24px Lato, Arial, sans-serif"; x.fillStyle = "#aab4c8"; x.fillText(lieuNom || "", 26, 140);
+    x.fillStyle = "#151a26"; x.fillRect(26, IY, W - 52, IH); if (!direct) { x.fillStyle = "#8a94a8"; x.font = "400 26px Lato, Arial, sans-serif"; x.textAlign = "center"; x.fillText("Connexion…", W / 2, IY + IH / 2); x.textAlign = "left"; }
+    else { x.fillStyle = "#e0302a"; x.beginPath(); x.arc(46, IY + IH + 42, 9, 0, 7); x.fill(); x.fillStyle = "#fff"; x.font = "700 24px Lato, Arial, sans-serif"; x.fillText("EN DIRECT", 64, IY + IH + 50); }
     x.fillStyle = "#3a4256"; x.fillRect(W / 2 - 70, H - 26, 140, 6); tex.needsUpdate = true; };
   peindre();
-  // les deux moitiés, la charnière au milieu ; l'écran intérieur, d'un seul tenant, à cheval sur les deux
   const LW = .068, LH = .155, EP = .0045, P = new THREE.Group(); TS.add(P);
+  const ecranM = new THREE.MeshBasicMaterial({ map: tex });
   const moitie = (sx) => { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(LW, LH, EP), [cadre, cadre, cadre, cadre, noir, noir]); b.position.x = sx * LW / 2; g.add(b);
-    const geo = new THREE.PlaneGeometry(LW - .004, LH - .006), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, sx < 0 ? uv.getX(i) * .5 : .5 + uv.getX(i) * .5);
-    const e = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex })); e.position.set(sx * LW / 2, 0, EP / 2 + .0002); g.add(e); return g; };
+    const geo = new THREE.PlaneGeometry(LW - .003, LH - .006), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, sx < 0 ? uv.getX(i) * .5 : .5 + uv.getX(i) * .5);
+    const e = new THREE.Mesh(geo, ecranM); e.position.set(sx * LW / 2 + (sx < 0 ? .0015 : -.0015), 0, EP / 2 + .0003); g.add(e); g.userData.e = e; return g; };
   const G1 = moitie(-1), G2 = moitie(1); P.add(G1, G2);
-  { const ch = new THREE.Mesh(new THREE.CylinderGeometry(.003, .003, LH, 10), cadre); P.add(ch);
-    const cov = new THREE.Mesh(new THREE.PlaneGeometry(LW - .008, LH - .012), new THREE.MeshBasicMaterial({ color: 0x10131a })); cov.rotation.y = Math.PI; cov.position.set(LW / 2, 0, -EP / 2 - .0002); G2.add(cov);
-    for (const [cx, cy] of [[-.05, .06], [-.05, .045], [-.05, .03]]) { const o = new THREE.Mesh(new THREE.CylinderGeometry(.0045, .0045, .002, 16), noir); o.rotation.x = Math.PI / 2; o.position.set(cx, cy, -EP / 2 - .001); G1.add(o); } }
-  // la main qui le tient (la manche, le poignet, la paume derrière, le pouce devant, les doigts sur la tranche)
-  const moi = M.gens.get(M.moiNum), peau = new THREE.MeshStandardMaterial({ color: (moi && moi.info && moi.info.peau) || 0xe2b894, roughness: .7 }), manche = new THREE.MeshStandardMaterial({ color: (moi && moi.info && moi.info.couleur) || 0x22324f, roughness: .8 });
-  const MAIN = new THREE.Group(); P.add(MAIN); const cap = (r, l, m, px, py, pz, rx, rz) => { const o = new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 6, 10), m); o.position.set(px, py, pz); o.rotation.set(rx || 0, 0, rz || 0); MAIN.add(o); return o; };
-  { const pa = new THREE.Mesh(new THREE.BoxGeometry(.075, .085, .022), peau); pa.position.set(-.04, -.03, -.016); MAIN.add(pa);
-    cap(.011, .05, peau, -.072, -.03, .002, 0, -.4); for (let k = 0; k < 4; k++) cap(.0085, .03, peau, -.074, .025 - k * .022, -.004, 0, Math.PI / 2);
-    cap(.026, .13, peau, -.07, -.13, -.03, .35, -.5); cap(.036, .3, manche, -.14, -.3, -.07, .35, -.55); }
-  P.add(MAIN);
-  const ouvrirT = 1.3, monteT = .8, voirT = 10, fin = monteT + ouvrirT + voirT, total = fin + 1.4;
+  // l'écran entier (ouvert) : une seule plaque, et l'image en direct posée dessus
+  const SW = 2 * LW - .006, SH = LH - .006, plein = new THREE.Mesh(new THREE.PlaneGeometry(SW, SH), ecranM); plein.position.z = EP / 2 + .0004; plein.visible = false; P.add(plein);
+  const vidM = new THREE.MeshBasicMaterial({ color: 0xffffff }), vid = new THREE.Mesh(new THREE.PlaneGeometry(SW * (W - 52) / W, SH * IH / H), vidM); vid.position.set(0, SH / 2 - SH * (IY + IH / 2) / H, .0002); vid.visible = false; plein.add(vid);
+  { const cov = new THREE.Mesh(new THREE.PlaneGeometry(LW - .008, LH - .012), new THREE.MeshBasicMaterial({ color: 0x0c0e14 })); cov.rotation.y = Math.PI; cov.position.set(LW / 2, 0, -EP / 2 - .0003); G2.add(cov);
+    for (const [cx, cy] of [[-.05, .06], [-.05, .046], [-.05, .032]]) { const o = new THREE.Mesh(new THREE.CylinderGeometry(.0045, .0045, .002, 16), cadre); o.rotation.x = Math.PI / 2; o.position.set(cx, cy, -EP / 2 - .001); G1.add(o); } }
+  // la main : celle de l'arrivée, à demi fermée sur la tranche gauche, le pouce devant
+  let HM = null; chargerMainPince().then(Hm => { if (!Hm || !M || !M.tel || M.cine) return; HM = Hm; const g = Hm.grp; if (g.parent) g.parent.remove(g); Hm.doigts.forEach((j, i) => j.quaternion.copy(Hm.ouverte[i]).slerp(Hm.fermee[i], .62));
+    g.scale.setScalar(.19); g.rotation.set(0, Math.PI / 2, 0); g.position.set(-LW + .026, -.03, .004); P.add(g); }).catch(() => {});
+  const ouvrirT = 1.1, monteT = .7, voirT = 10, fin = monteT + ouvrirT + voirT, total = fin + 1.2;
   const mode0 = { premiere: M.premiere }; if (!M.premiere) { const f = M.camera.getWorldDirection(new THREE.Vector3()); M.fpYaw = Math.atan2(-f.x, -f.z); M.fpPitch = 0; M.premiere = true; }
-  if (numero >= 0) envoyerWS({ t: "voir_demande", numero }); let redemande = performance.now();
-  if (numero === -1) (async () => {   /* (l'essai de l'administrateur : le vieux monsieur sur son banc, devant Notre-Dame — la scène préparée en coulisses, filmée ici) */
-    if (M.lieu !== "notredame") await preparerLieu("notredame"); const q = M.lieu === "notredame" ? { scene: M.scene } : M.prets && M.prets.notredame; if (!q || !M.tel || M.tel.qui !== -1) return;
-    const W2 = 384, H2 = 240, rt = new THREE.WebGLRenderTarget(W2, H2), cam = new THREE.PerspectiveCamera(50, W2 / H2, .1, 300), px = new Uint8Array(W2 * H2 * 4), c2 = document.createElement("canvas"); c2.width = W2; c2.height = H2; const x2 = c2.getContext("2d"), im2 = x2.createImageData(W2, H2);
-    rt.texture.colorSpace = THREE.SRGBColorSpace; let a = 0;
-    const go = () => { if (!M || !M.tel || M.tel.qui !== -1) { clearInterval(iv); rt.dispose(); return; } a += .03; cam.position.set(-8.45 + Math.sin(.5 + a) * 3.2, 1.7, -37 + Math.cos(.5 + a) * 3.2); cam.lookAt(-8.45, .85, -37);
-      const R = M.rendu, av = R.getRenderTarget(); R.setRenderTarget(rt); R.render(q.scene, cam); R.readRenderTargetPixels(rt, 0, 0, W2, H2, px); R.setRenderTarget(av);
-      for (let y = 0; y < H2; y++) im2.data.set(px.subarray((H2 - 1 - y) * W2 * 4, (H2 - y) * W2 * 4), y * W2 * 4); x2.putImageData(im2, 0, 0); M.tel.image({ img: c2.toDataURL("image/jpeg", .7) }); };
-    const iv = setInterval(go, 600); go(); })();
+  if (numero >= 0) envoyerWS({ t: "voir_demande", numero }); let redemande = performance.now(), vidTex = null, local = null;
+  const montrer = (t2) => { if (vidTex && vidTex !== t2 && !vidTex.isRenderTargetTexture) vidTex.dispose(); vidTex = t2; vidM.map = t2; vidM.needsUpdate = true; if (!direct) { direct = true; peindre(); } };
+  if (numero === -1) (async () => {   /* (l'essai de l'administrateur : le vieux monsieur sur son banc, devant Notre-Dame — la scène préparée en coulisses, filmée directement sur l'écran) */
+    if (M.lieu !== "notredame") await preparerLieu("notredame"); const q = M.lieu === "notredame" ? { scene: M.scene } : M.prets && M.prets.notredame; if (!q || !M.tel) return;
+    const rt = new THREE.WebGLRenderTarget(480, 300); rt.texture.colorSpace = THREE.SRGBColorSpace; const cam = new THREE.PerspectiveCamera(50, 1.6, .1, 300); local = { rt, cam, q, a: 0, n: 0 }; })();
   const ease = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
-  M.tel = { qui: numero, image: (m) => { const im = new Image(); im.onload = () => { img = im; peindre(); }; im.src = m.img; if (!tImg) tImg = performance.now(); },
-    dessiner: (R, now) => { tAcc += tPrec ? Math.min(.1, (now - tPrec) / 1000) : 0; tPrec = now; const t = tAcc;   /* (le temps avance image par image : un téléphone qui rame ne saute rien) */ const cvs = R.domElement; TC.aspect = cvs.clientWidth / Math.max(1, cvs.clientHeight); TC.updateProjectionMatrix();
+  let tAcc = 0, tPrec = 0, minute = -1;
+  M.tel = { qui: numero, image: (m) => { const im = new Image(); im.onload = () => { if (!M || !M.tel) return; const t2 = new THREE.Texture(im); t2.colorSpace = THREE.SRGBColorSpace; t2.needsUpdate = true; montrer(t2); }; im.src = m.img; },
+    dessiner: (R, now) => { tAcc += tPrec ? Math.min(.1, (now - tPrec) / 1000) : 0; tPrec = now; const t = tAcc;   /* (le temps avance image par image : un téléphone qui rame ne saute rien) */
+      const cvs = R.domElement; TC.aspect = cvs.clientWidth / Math.max(1, cvs.clientHeight); TC.updateProjectionMatrix();
       if (numero >= 0 && t > monteT + ouvrirT && performance.now() - redemande > 9000 && t < fin) { redemande = performance.now(); envoyerWS({ t: "voir_demande", numero }); }
-      if (Math.floor(t * 2) !== Math.floor((t - .016) * 2)) peindre();
-      const up = t < fin ? ease(t / monteT) : 1 - ease((t - fin - .7) / .7), ouv = t < fin ? ease((t - monteT) / ouvrirT) : 1 - ease((t - fin) / .7);
-      const portrait = TC.aspect < 1, dist = portrait ? .36 : .28;
-      P.position.set(.0 + (1 - up) * .08, -.012 - (1 - up) * .35, -dist); P.rotation.set(-.12 + (1 - up) * .9, (1 - up) * .5 - ouv * .0, (1 - up) * -.3);
-      G2.rotation.y = -Math.PI * (1 - ouv) * .995; P.position.x += (1 - ouv) * 0 - LW * .0;
-      const ac = R.autoClear; R.autoClear = false; R.clearDepth(); R.render(TS, TC); R.autoClear = ac;
-      if (t > total) { M.tel = null; tex.dispose(); if (!mode0.premiere) { M.premiere = false; const p = M.gens.get(M.moiNum); if (p) { p.g.visible = true; placerCamera(true); } } } } }; }
+      const mn = new Date().getMinutes(); if (mn !== minute) { minute = mn; peindre(); }
+      if (local && R.render && (local.n++ % 3 === 0)) { const L2 = local; L2.a += .012; L2.cam.position.set(-8.45 + Math.sin(.5 + L2.a) * 3.2, 1.7, -37 + Math.cos(.5 + L2.a) * 3.2); L2.cam.lookAt(-8.45, .85, -37);
+        const av = R.getRenderTarget(); R.setRenderTarget(L2.rt); R.render(L2.q.scene, L2.cam); R.setRenderTarget(av); if (vidTex !== L2.rt.texture) montrer(L2.rt.texture); }
+      const up = t < fin ? ease(t / monteT) : 1 - ease((t - fin - .5) / .7), ouv = t < fin ? ease((t - monteT) / ouvrirT) : 1 - ease((t - fin) / .55);
+      const portrait = TC.aspect < 1, dist = portrait ? .38 : .3;
+      P.position.set((1 - up) * .06 + ouv * .02, -.01 - (1 - up) * .34, -dist); P.rotation.set(-.1 + (1 - up) * .9, (1 - up) * .45 + .08, (1 - up) * -.3);
+      G2.rotation.y = -Math.PI * (1 - ouv) * .995; const ouvert = ouv > .995; plein.visible = ouvert; vid.visible = ouvert && direct; G1.userData.e.visible = G2.userData.e.visible = !ouvert;
+      if (R.render) { const ac = R.autoClear; R.autoClear = false; R.clearDepth(); R.render(TS, TC); R.autoClear = ac; }
+      if (t > total) { M.tel = null; tex.dispose(); if (vidTex && !vidTex.isRenderTargetTexture) vidTex.dispose(); if (local) local.rt.dispose(); if (HM) P.remove(HM.grp);
+        if (!mode0.premiere) { M.premiere = false; const p = M.gens.get(M.moiNum); if (p) { p.g.visible = true; placerCamera(true); } } } } }; }
 export function voir(numero) { envoyerWS({ t: "voir_demande", numero: Number(numero) }); }
 function filmerMoi(pour, nom) { if (!M || !M.rendu || !THREE) return; const F = M.filme || (M.filme = { pour: new Map() }); F.pour.set(pour, performance.now() + 10000);
   try { bulle("💭 " + (nom || "Quelqu'un") + " pense à toi", 2500); } catch (e) {}
