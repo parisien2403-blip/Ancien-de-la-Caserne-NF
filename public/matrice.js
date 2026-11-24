@@ -18200,6 +18200,19 @@ export async function micro(on) { if (!M) return false;
       if (vrai) { const f = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: vrai.deviceId }, echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); for (const t of VX.flux.getTracks()) t.stop(); VX.flux = f; M.ctx.surInfo && M.ctx.surInfo("🎙️ Micro : " + vrai.label); } } catch (e) {} }
     VX.on = true; VX.salle = salleVoixDe(M.lieu); VX.ws = M.ws; envoyerWS({ t: "voix", on: true }); voixEcoute(); voixInfo(); return true; }
   VX.on = false; clearInterval(VX.niveauT); VX.moiParle = VX.autreParle = false; voixToutFermer(); if (VX.flux) for (const t of VX.flux.getTracks()) t.stop(); VX.flux = null; VX.salle = null; envoyerWS({ t: "voix", on: false }); voixInfo(); return false; }
+/* (10.245) la bulle de pensée : quelqu'un, ailleurs, a touché notre nom — on filme notre bonhomme là où il est (comme le voit notre caméra), une image toutes les 0,6 s pendant dix secondes */
+export function voir(numero) { envoyerWS({ t: "voir_demande", numero: Number(numero) }); }
+function filmerMoi(pour, nom) { if (!M || !M.rendu || !THREE) return; const F = M.filme || (M.filme = { pour: new Map() }); F.pour.set(pour, performance.now() + 10000);
+  try { bulle("💭 " + (nom || "Quelqu'un") + " pense à toi", 2500); } catch (e) {}
+  if (F.t) return; const W = 384, H = 240, rt = new THREE.WebGLRenderTarget(W, H), cam = new THREE.PerspectiveCamera(55, W / H, .1, 300), px = new Uint8Array(W * H * 4), c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d"), im = x.createImageData(W, H);
+  rt.texture.colorSpace = THREE.SRGBColorSpace;
+  const tick = () => { const now = performance.now(); for (const [k, f] of F.pour) if (now > f) F.pour.delete(k); if (!M || !F.pour.size || !M.scene || !M.camera) { clearInterval(F.t); F.t = null; rt.dispose(); return; }
+    try { const moi = M.gens.get(M.moiNum), R = M.rendu; cam.position.copy(M.camera.position); cam.quaternion.copy(M.camera.quaternion);
+      if (moi) { const p = moi.g.position, tete = p.clone(); tete.y += 1.1; if (cam.position.distanceTo(tete) < 1.2) { const d = new THREE.Vector3(); M.camera.getWorldDirection(d); d.y = 0; d.normalize(); cam.position.copy(tete).addScaledVector(d, -3.4); cam.position.y += 1.2; cam.lookAt(tete); } }
+      const vis = moi && moi.g.visible; if (moi) moi.g.visible = true; const avant = R.getRenderTarget(); R.setRenderTarget(rt); R.render(M.scene, cam); R.readRenderTargetPixels(rt, 0, 0, W, H, px); R.setRenderTarget(avant); if (moi) moi.g.visible = vis;
+      for (let y = 0; y < H; y++) im.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4); x.putImageData(im, 0, 0);
+      const img = c.toDataURL("image/jpeg", .6); for (const k of F.pour.keys()) envoyerWS({ t: "voir_img", pour: k, img }); } catch (e) {} };
+  tick(); F.t = setInterval(tick, 600); }
 function envoyerWS(m) { if (M && M.ws && M.ws.readyState === 1) M.ws.send(JSON.stringify(m)); }
 export function direDansLaCour(texte) { envoyerWS({ t: "dire", texte }); }
 export function dj(action, donnees = {}) { envoyerWS({ t: "dj_" + action, ...donnees }); }
@@ -18252,7 +18265,9 @@ function connecter() {
     else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 20) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { const pos = p.g.position.clone(), q = ajouterAncien({ ...p.info, ...m.p }); if (q) q.g.position.copy(pos); } }
-    else if (m.t === "comptes") { M.comptes = m.lieux; M.qui = m.qui || {}; ctx.surComptes && ctx.surComptes(m.lieux); if (M.vfMenu) M.vfMenu.maj(); }
+    else if (m.t === "comptes") { M.comptes = m.lieux; M.qui = m.qui || {}; M.tous = m.tous || []; ctx.surComptes && ctx.surComptes(m.lieux); ctx.surTous && ctx.surTous(M.tous); if (M.vfMenu) M.vfMenu.maj(); }
+    else if (m.t === "voir_demande") filmerMoi(m.de, m.nom);
+    else if (m.t === "voir_img") { ctx.surVoir && ctx.surVoir(m); }
     else if (m.t === "occupe") { const u = universDe(m.lieu); if (universDe(M.lieu) === u) { if (M.cine) finCine(); M.comptes = { ...(M.comptes || {}), [m.lieu]: 1 }; changerLieu(u === "lb" ? "rue" : "grande", u === "lb" ? [19.1, 5.2] : undefined, u === "lb" ? Math.PI : 0); } bulle(`🔒 Quelqu'un est déjà à ${NOM_UNIVERS[u]}. Une seule personne à la fois : reviens un peu plus tard.`, 5000); }
     else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
     else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }
