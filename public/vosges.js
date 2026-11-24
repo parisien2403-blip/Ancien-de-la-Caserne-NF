@@ -825,7 +825,7 @@ function construireVosges(A, L, scene) { const THREE = __T3V();
       if (A2.paused && !A2._essai && !A2._attente) { A2._essai = true; A2.volume = 0; A2.play().then(() => { A2._essai = false; }).catch(() => { A2._essai = false; A2._attente = true; }); }
       if (A2._attente && !A2._ecoute) { A2._ecoute = true; const go = () => { A2._attente = false; A2._ecoute = false; if (M && M.L === L) A2.play().catch(() => {}); removeEventListener("pointerdown", go); removeEventListener("keydown", go); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }
       if (!A2.paused) try { const cv = Math.min(window.__ndDuck ?? .35, performance.now() < (window.__voixJusqua || 0) ? .18 : 1); A2.volume = Math.max(0, Math.min(1, A2.volume + Math.max(-.012, Math.min(.006, cv - A2.volume)))); } catch (e) {} };   /* (et le volume baisse pendant les scènes : Léopoldine, les lettres…) */
-    L.lancerBal = () => { if (L.musBal) return; const acc = new Audio("sons/montmartre-accordeon.mp3"); acc.loop = false; acc.volume = 0; const B = L.musBal = { acc };
+    L.lancerBal = (fich = "sons/montmartre-accordeon.mp3") => { if (L.musBal) return; const acc = new Audio(fich); acc.loop = false; acc.volume = 0; const B = L.musBal = { acc };
       acc.addEventListener("ended", () => { if (L.musBal !== B) return; L.musBal = null; const A2 = window.__valseND; if (A2 && M && M.L === L) { A2.volume = 0; A2.dispatchEvent(new Event("ended")); } });   /* (la liste reprend : le morceau suivant, en douceur) */
       acc.play().catch(() => { const go = () => { removeEventListener("pointerdown", go); removeEventListener("keydown", go); if (L.musBal === B) acc.play().catch(() => { L.musBal = null; }); }; addEventListener("pointerdown", go); addEventListener("keydown", go); }); };
     quitterLieu.add(() => { if (L.musBal) { try { L.musBal.acc.pause(); } catch (e) {} L.musBal = null; } });
@@ -1415,6 +1415,8 @@ function construireVosges(A, L, scene) { const THREE = __T3V();
     for (const G of scene.children.slice()) { if (!G.isGroup || !G.userData.aplatir) continue; const ms = []; G.traverse(o => { if (o.isMesh || o.isSprite || o.isPoints || o.isLine) ms.push(o); });
       for (const o of ms) { o.matrixWorld.decompose(pp, qq, ss); o.parent.remove(o); o.position.copy(pp); o.quaternion.copy(qq); o.scale.copy(ss); scene.add(o); } scene.remove(G); } }
   fusionStatique(scene, L, 0);
+  /* (10.247) dès que l'introduction commence (l'arrivée par le livre) : Una Mattina, en premier ; à sa fin, la liste habituelle reprend */
+  { const av = L.arriveeLivre; L.arriveeLivre = (coul, hugo) => { try { L.lancerBal && L.lancerBal("sons/vosges-una-mattina.mp3"); } catch (e) {} return av(coul, hugo); }; }
   // (10.190) on arrive par le livre : dès que le bonhomme est là, la cinématique des pages ; puis le voile de lumière se dissipe
   { const a2 = L.anim; L.anim = (tm) => { try { a2 && a2(tm); } catch (e) {} const A2 = window.__arriveeLivre; if (!A2 || !M || M.L !== L || !M.moiNum || !M.gens.get(M.moiNum)) return; window.__arriveeLivre = null;
       try { if (M.cine) finCine(); L.arriveeLivre(A2.coul, A2.hugo); } catch (e) { console.warn(e); } const v = A2.voile; if (v && v.sortir) setTimeout(() => v.sortir(), 1300); else if (v && v.isConnected) setTimeout(() => { v.style.opacity = "0"; setTimeout(() => v.remove(), 1500); }, 400); }; }
