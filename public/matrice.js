@@ -21,7 +21,6 @@ export const LIEUX = {
   tertre: { nom: "Montmartre, la place du Tertre", icone: "🎨" },
   corbier: { nom: "Le Corbier, le Front de Neige", icone: "🏔️" },
   vosges: { nom: "La place des Vosges", icone: "🏰" },
-  tertre2: { nom: "Montmartre (le nouveau)", icone: "🖌️" },   // (10.239 : en construction, réservé à l'administrateur)
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
@@ -7653,7 +7652,6 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "rex") construireRex(A, L, scene);
   if (id === "jouffroy") construireJouffroy(A, L, scene);
   if (id === "tertre") MD.montmartre.construireTertre(A, L, scene);
-  if (id === "tertre2") MD.montmartre2.construireMontmartre2(A, L, scene);   // (10.239 : le nouveau Montmartre, peint)
   if (id === "corbier") MD.corbier.construireCorbier(A, L, scene);
   if (id === "vosges") MD.vosges.construireVosges(A, L, scene);   // (10.190 : la place des Vosges)
   if (id === "notredame") MD.notredame.construireNotreDame(A, L, scene);   // (10.145 : Notre-Dame et les quais de Seine)   // (10.99 : Le Corbier, la station de ski de Savoie)   // (Montmartre : son propre fichier, chargé la première fois qu'on y va)
@@ -8132,7 +8130,6 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.portails.push({ dans: (x, z) => x > 10 && z > 5.4 && z < 7.6, vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     if (false) L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "corbier", arrivee: [54.5, 15], yaw: -Math.PI / 2, violet: true, pasApo: true });
-    L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x - 6, z - 9) < .6, seuil: [6, 9], vers: "tertre2", arrivee: [-54, 0], yaw: Math.PI / 2, violet: true, pasApo: true, admin: true });   // (10.239) le cercle violet de l'administrateur : le nouveau Montmartre, en construction (jamais préparé d'avance)
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
   }
 
@@ -17903,7 +17900,7 @@ function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ct
 /* Les mondes des films ont chacun leur fichier (kingston.js pour Gremlins, santacarla.js pour Génération perdue…) : on le charge la première fois
    qu'on va dans l'un de ses lieux (pas avant : l'appli s'ouvre plus vite), et on l'exécute ici même (eval direct), pour qu'il se serve de tout
    ce que la matrice a (M, THREE, voile, sonBruit…) sans rien changer à son code. MD[monde] : ce que le fichier rend (ses points d'entrée). */
-const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id), montmartre: id => id === "tertre", montmartre2: id => id === "tertre2", corbier: id => id === "corbier", notredame: id => id === "notredame", vosges: id => id === "vosges" };
+const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id), montmartre: id => id === "tertre", corbier: id => id === "corbier", notredame: id => id === "notredame", vosges: id => id === "vosges" };
 function chargerMonde(nom) { if (MD[nom]) return Promise.resolve(MD[nom]);
   return MD_P[nom] = MD_P[nom] || fetch(nom + ".js?v=" + (new URL(import.meta.url).searchParams.get("v") || DIAG_V))   /* (la version du site : chaque mise à jour recharge les mondes) */.then(r => { if (!r.ok) throw new Error(nom + ".js : " + r.status); return r.text(); })
     .then(src => (MD[nom] = eval(src + "\n//# sourceURL=" + nom + ".js"))).catch(e => { MD_P[nom] = null; throw e; }); }
