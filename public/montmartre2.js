@@ -29,9 +29,11 @@ function construireMontmartre2(A, L, scene) {
     box(w * .6, .75, .5, bois, 0, .38, -1.4, S); for (let k = 0; k < 3; k++) box(.25, .18, .25, mat({ color: [0xe8d0a0, 0xd88a5a, 0xa8c8e0][k] }), -.3 + k * .3, .85, -1.4, S);   // (la table de présentation)
     const pl = new THREE.PointLight(0xffc080, 2, 5, 1.5); pl.position.set(0, h - .3, -1.5); S.add(pl); JOUR_NUIT.push((n) => { pl.intensity = n ? (PEU ? 5 : 8) : 2; }); };
   let nRel = 0;
-  const relief = (F, g) => { const d = DEF[F], IW = d.IW, IH = d.IH, FW = IW * s, FH = IH * s, X = (px) => (px - IW / 2) * s, Y = (py) => (IH - py) * s, murC = mat({ color: d.mur, roughness: .9 }), embM = mat({ color: new THREE.Color(d.mur).multiplyScalar(.82), roughness: .95 }), appM = mat({ color: 0xe8dcc0 });
+  /* (10.241) des variantes de couleur pour ne pas voir deux fois la même maison : le mur (et la devanture) repeints, le reste du dessin intact */
+  const VAR = { fac1: [null, 0xf4ccc4, 0xd6e4bc, 0xc8daec], fac3: [null, 0xf0e0b0, 0xd0d6e0, 0xcee6d4], fac2: [[null, 0x7a2a30], [0xeee2c8, 0x2a5c3e], [0xecc8c4, 0x283862], [0xd6d6d2, 0x262428]] };
+  const relief = (F, g, v = 0) => { const d = DEF[F], IW = d.IW, IH = d.IH, FW = IW * s, FH = IH * s, X = (px) => (px - IW / 2) * s, Y = (py) => (IH - py) * s, murC = mat({ color: v ? VAR[F][v] : d.mur, roughness: .9 }), embM = mat({ color: new THREE.Color(d.mur).multiplyScalar(.82), roughness: .95 }), appM = mat({ color: 0xe8dcc0 });
     const plan = (t, x0, y0, x1, y1, z, o = {}) => { const m = new THREE.Mesh(new THREE.PlaneGeometry((x1 - x0) * s, (y1 - y0) * s), mat({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, ...o })); m.position.set(X((x0 + x1) / 2), Y((y0 + y1) / 2), z); m.receiveShadow = true; g.add(m); return m; };
-    plan(txF(F + "_perce"), 0, 0, IW, IH, 0, { bumpMap: txF(F + "_relief", false), bumpScale: 2.2 });
+    plan(txF(F + "_perce" + (v ? "_v" + v : "")), 0, 0, IW, IH, 0, { bumpMap: txF(F + "_relief", false), bumpScale: 2.2 });
     box(FW * .98, FH * .74, 6, murC, 0, FH * .37, -8.2, g); for (const sg of [-1, 1]) box(.05, Y(d.toitY), 5.2, murC, sg * FW * .49, Y(d.toitY) / 2, -2.6, g);
     d.holes.forEach(([x0, y0, x1, y1, k], i) => { const w = (x1 - x0) * s, h = (y1 - y0) * s, cx = X((x0 + x1) / 2), cy = Y((y0 + y1) / 2), P = k === "vit" ? .5 : k === "porte" ? .35 : .3, t = txF(F + "_h" + i);
       box(w, .03, P, embM, cx, cy + h / 2, -P / 2, g); box(w, .03, P, embM, cx, cy - h / 2, -P / 2, g); box(.03, h, P, embM, cx - w / 2, cy, -P / 2, g); box(.03, h, P, embM, cx + w / 2, cy, -P / 2, g);
@@ -45,14 +47,14 @@ function construireMontmartre2(A, L, scene) {
       for (const lx of d.luc) { box(1.0, 1.3, 1.2, mat({ color: 0xe8dcc0 }), X(lx), Y(d.lucY), -.45, g); box(1.3, .2, 1.4, toitM, X(lx), Y(d.lucY) + .7, -.45, g); const vm = mat({ color: 0x3a4a6a, emissive: 0xffc070, emissiveIntensity: 0 }); box(.6, .75, .04, vm, X(lx), Y(d.lucY), .16, g); NUIT.push([vm, 0, (lx + nRel) % 2 ? .8 : 0]); }
       box(.6, 1.3, .5, mat({ color: 0xc09070 }), X(d.chem[0]), Y(d.chem[1]), -.8, g); }
     nRel++; return FW; };
-  const facade = (type, g) => relief(type === "boutique" ? "fac1" : "fac3", g);
+  const facade = (type, g, v) => relief(type === "boutique" ? "fac1" : "fac3", g, v);
   // le café, en relief : la façade percée, les fenêtres creusées (embrasure, appui, garde-corps détaché), la vitrine creuse et sa salle, l'auvent, les corniches, l'enseigne
   const CAF = { perce: tx("fac2_perce"), vit: tx("fac2_vitrine"), auv: tx("fac2_auvent"), rel: tx("fac2_relief", false), fen: [0, 1, 2, 3, 4, 5].map(i => tx("fac2_fen" + i)), bal: [0, 1, 2, 3, 4, 5].map(i => tx("fac2_bal" + i)) };
   const IW = 535, IH = 1089, FW = IW * s, FH = IH * s, X = (px) => (px - IW / 2) * s, Y = (py) => (IH - py) * s;
   let nCafe = 0;
-  const cafe = (g, nom) => { const plan = (t, x0, y0, x1, y1, z, o = {}) => { const m = new THREE.Mesh(new THREE.PlaneGeometry((x1 - x0) * s, (y1 - y0) * s), mat({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, ...o })); m.position.set(X((x0 + x1) / 2), Y((y0 + y1) / 2), z); m.receiveShadow = true; g.add(m); return m; };
-    plan(CAF.perce, 0, 0, IW, IH, 0, { bumpMap: CAF.rel, bumpScale: 2.2 });
-    const murM = mat({ color: 0xd8b880 }), rougeM = mat({ color: 0x7a2a30, roughness: .8 }), embM = mat({ color: 0xc9a870, roughness: .95 }), appM = mat({ color: 0xe4d2a8 });
+  const cafe = (g, nom, v = 0) => { const plan = (t, x0, y0, x1, y1, z, o = {}) => { const m = new THREE.Mesh(new THREE.PlaneGeometry((x1 - x0) * s, (y1 - y0) * s), mat({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, ...o })); m.position.set(X((x0 + x1) / 2), Y((y0 + y1) / 2), z); m.receiveShadow = true; g.add(m); return m; };
+    plan(v ? txF("fac2_perce_v" + v) : CAF.perce, 0, 0, IW, IH, 0, { bumpMap: CAF.rel, bumpScale: 2.2 });
+    const murM = mat({ color: VAR.fac2[v][0] || 0xd8b880 }), rougeM = mat({ color: VAR.fac2[v][1], roughness: .8 }), embM = mat({ color: 0xc9a870, roughness: .95 }), appM = mat({ color: 0xe4d2a8 });
     box(FW * .98, FH * .74, 6, murM, 0, FH * .37, -8.2, g); box(FW, Y(250) - Y(700), .05, murM, 0, (Y(250) + Y(700)) / 2, -.5, g); box(FW * .98, FH * .14, 6, mat({ color: 0x7088a8, roughness: .6 }), 0, FH * .8, -8.4, g);
     [[85, 318, 150, 452], [238, 318, 302, 452], [390, 318, 455, 452], [85, 528, 150, 662], [238, 528, 302, 662], [390, 528, 455, 662]].forEach(([x0, y0, x1, y1], i) => { const w = (x1 - x0) * s, h = (y1 - y0) * s, cx = X((x0 + x1) / 2), cy = Y((y0 + y1) / 2), P = .32;
       box(w, .03, P, embM, cx, cy + h / 2, -P / 2, g); box(w, .03, P, embM, cx, cy - h / 2, -P / 2, g); box(.03, h, P, embM, cx - w / 2, cy, -P / 2, g); box(.03, h, P, embM, cx + w / 2, cy, -P / 2, g);
@@ -77,21 +79,21 @@ function construireMontmartre2(A, L, scene) {
       const lb = new THREE.Mesh(new THREE.PlaneGeometry(ww, .22), toileM); lb.position.set(cx, y - Lg * Math.sin(a) - .06, Lg * Math.cos(a) + .01); g.add(lb);
       for (const sg of [-1, 1]) box(.03, .03, Lg * Math.cos(a), mat({ color: 0x2a2a2a }), cx + sg * ww / 2, y - Lg * Math.sin(a) / 2, Lg * Math.cos(a) / 2, g).rotation.x = a; }
     // les corniches en saillie, l'enseigne peinte au nom du café, le toit et ses lucarnes en volume
-    box(FW + .1, .14, .28, mat({ color: 0x8a2a30 }), 0, Y(684), .14, g); box(FW + .15, .12, .3, mat({ color: 0xe8d4a8 }), 0, Y(255), .15, g); box(FW * .98, .08, .2, mat({ color: 0xe8d4a8 }), 0, Y(468), .1, g);
-    { const c = document.createElement("canvas"); c.width = 512; c.height = 64; const x = c.getContext("2d"); x.fillStyle = "#f4ead6"; x.fillRect(0, 0, 512, 64); x.fillStyle = "#7a2a30"; x.font = "italic bold 38px Georgia"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(nom, 256, 34); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    box(FW + .1, .14, .28, mat({ color: new THREE.Color(VAR.fac2[v][1]).multiplyScalar(1.15) }), 0, Y(684), .14, g); box(FW + .15, .12, .3, mat({ color: 0xe8d4a8 }), 0, Y(255), .15, g); box(FW * .98, .08, .2, mat({ color: 0xe8d4a8 }), 0, Y(468), .1, g);
+    { const c = document.createElement("canvas"); c.width = 512; c.height = 64; const x = c.getContext("2d"); x.fillStyle = "#f4ead6"; x.fillRect(0, 0, 512, 64); x.fillStyle = "#" + new THREE.Color(VAR.fac2[v][1]).getHexString(); x.font = "italic bold 38px Georgia"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(nom, 256, 34); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
       const ens = mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0 }), bord = mat({ color: 0xe8dcc0 }); const e = new THREE.Mesh(new THREE.BoxGeometry((452 - 80) * s, (748 - 706) * s, .06), [bord, bord, bord, bord, ens, bord]); e.position.set(X(266), Y(727), .06); g.add(e); NUIT.push([ens, 0, .35]); }
     { const toitM = mat({ color: 0x7088a8, roughness: .6 }); const t = box(FW, 1.9, 2.4, toitM, 0, Y(250) + .7, -1.0, g); t.rotation.x = -.6;
       for (const lx of [X(150), X(370)]) { box(1.0, 1.3, 1.2, mat({ color: 0xe8dcc0 }), lx, Y(190), -.45, g); box(1.3, .2, 1.4, toitM, lx, Y(140), -.45, g); const vm = mat({ color: 0x3a4a6a, emissive: 0xffc070, emissiveIntensity: 0 }); box(.6, .75, .04, vm, lx, Y(190), .16, g); NUIT.push([vm, 0, .8]); }
       box(.6, 1.2, .5, mat({ color: 0xc09070 }), X(105), Y(100), -.8, g); }
     nCafe++; return FW; };
   // ---------- les quatre côtés de la place : une suite de maisons, chacune tournée vers la place ----------
-  const COTES = [{ ax: [-PX, -PZ], dir: [1, 0], ry: 0, long: PX * 2, suite: ["boutique", "cafe:Café du Tertre", "immeuble", "boutique", "immeuble", "cafe:La Bonne Franquette"] },
-    { ax: [PX, PZ], dir: [-1, 0], ry: Math.PI, long: PX * 2, suite: ["immeuble", "boutique", "cafe:Le Consulat", "immeuble", "boutique", "immeuble"] },
-    { ax: [-PX, PZ], dir: [0, -1], ry: Math.PI / 2, long: PZ * 2, suite: ["immeuble", "boutique", "cafe:Chez Eugène", "immeuble"] },
-    { ax: [PX, -PZ], dir: [0, 1], ry: -Math.PI / 2, long: PZ * 2, suite: ["boutique", "immeuble", "cafe:Au Lapin Agile", "boutique"] }];
+  const COTES = [{ ax: [-PX, -PZ], dir: [1, 0], ry: 0, long: PX * 2, suite: ["boutique", "cafe:Café du Tertre", "immeuble:1", "boutique:2", "immeuble:2", "cafe:La Bonne Franquette:1"] },
+    { ax: [PX, PZ], dir: [-1, 0], ry: Math.PI, long: PX * 2, suite: ["immeuble:3", "boutique:1", "cafe:Le Consulat:2", "immeuble", "boutique:3", "immeuble:1"] },
+    { ax: [-PX, PZ], dir: [0, -1], ry: Math.PI / 2, long: PZ * 2, suite: ["immeuble:2", "boutique", "cafe:Chez Eugène:3", "immeuble:3"] },
+    { ax: [PX, -PZ], dir: [0, 1], ry: -Math.PI / 2, long: PZ * 2, suite: ["boutique:2", "immeuble", "cafe:Au Lapin Agile:1", "boutique:1"] }];
   const CAFES = [];
   for (const C of COTES) { let t = 0, i = 0; while (t < C.long - .2) { const type = C.suite[i % C.suite.length]; const g = new THREE.Group(); g.rotation.y = C.ry; scene.add(g);
-      const w = type.startsWith("cafe") ? cafe(g, type.slice(5)) : facade(type, g); const u = Math.min(t + w / 2, C.long - w / 2 + .3);
+      const pp = type.split(":"), w = pp[0] === "cafe" ? cafe(g, pp[1], Number(pp[2] || 0)) : facade(pp[0], g, Number(pp[1] || 0)); const u = Math.min(t + w / 2, C.long - w / 2 + .3);
       g.position.set(C.ax[0] + C.dir[0] * u, 0, C.ax[1] + C.dir[1] * u); if (type.startsWith("cafe")) CAFES.push({ x: g.position.x, z: g.position.z, ry: C.ry }); t += w; i++; } }
   // les angles de la place, fermés par un pan de mur
   for (const [x, z] of [[-PX, -PZ], [PX, -PZ], [-PX, PZ], [PX, PZ]]) box(3.5, 12.5, 3.5, mat({ color: 0xe8dcc0 }), x + Math.sign(x) * 1.4, 6.25, z + Math.sign(z) * 1.4);   /* (derrière l'angle des façades, sans déborder sur la place) */
