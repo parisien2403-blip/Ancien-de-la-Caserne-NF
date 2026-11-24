@@ -515,18 +515,11 @@ export class Compteur extends DurableObject {
   comptes() { const c = {}; for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.lieu) c[a.lieu] = (c[a.lieu] || 0) + 1; } return c; }
   // (et, pour le Video Futur : qui se trouve dans les univers des films — qui a « loué » la cassette)
   qui() { const q = {}; for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.lieu && (universDe(a.lieu) || a.lieu.startsWith("z-"))) (q[a.lieu] = q[a.lieu] || []).push(String(a.nom || "") || "Quelqu'un"); } return q; }
-  /* (10.245) qui est connecté, et où : pour voir son nom en haut même quand il est sur une autre carte, et la bulle de pensée qui le montre */
-  tous() { const vus = new Map(); for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && !a.appel && a.lieu && a.numero != null) vus.set(Number(a.numero), { numero: Number(a.numero), nom: String(a.nom || ""), lieu: a.lieu }); } return [...vus.values()]; }
-  diffuserComptes() { const t = JSON.stringify({ t: "comptes", lieux: this.comptes(), qui: this.qui(), tous: this.tous() }); for (const ws of this.ctx.getWebSockets()) { try { ws.send(t); } catch (e) {} } }
+  diffuserComptes() { const t = JSON.stringify({ t: "comptes", lieux: this.comptes(), qui: this.qui() }); for (const ws of this.ctx.getWebSockets()) { try { ws.send(t); } catch (e) {} } }
   async webSocketMessage(ws, brut) {
     let m; try { m = JSON.parse(brut); } catch (e) { return; }
     const a = ws.deserializeAttachment(); if (!a) return;
     if (a.appel) return this.messageAppel(ws, a, m);
-    /* (10.245) la bulle de pensée : on demande à voir quelqu'un d'ailleurs ; son jeu filme son bonhomme dix secondes, et l'image nous revient */
-    if (m.t === "voir_demande" || m.t === "voir_img") { const n = Number(m.t === "voir_demande" ? m.numero : m.pour); if (!a.lieu || !Number.isFinite(n) || n === Number(a.numero)) return;
-      let msg; if (m.t === "voir_demande") msg = { t: "voir_demande", de: a.numero, nom: a.nom };
-      else { const img = String(m.img || ""); if (!img.startsWith("data:image/jpeg;base64,") || img.length > 90000) return; msg = { t: "voir_img", de: a.numero, nom: a.nom, lieu: a.lieu, img }; }
-      const t = JSON.stringify(msg); for (const w of this.ctx.getWebSockets()) { const b2 = w.deserializeAttachment(); if (b2 && !b2.appel && b2.lieu && Number(b2.numero) === n) { try { w.send(t); } catch (e) {} } } return; }
     const nb = v => Math.max(-200, Math.min(200, Number(v) || 0));   // (les cours de la caserne vont jusqu'à une centaine de mètres)
     // les univers : une seule personne à la fois (l'apocalypse de Resident Evil se joue à plusieurs) ; quelqu'un y est déjà : on refuse
     if (m.t === "entrer" && universDe(m.lieu) && universDe(a.lieu) !== universDe(m.lieu) && this.ctx.getWebSockets().some(w => { const b = w.deserializeAttachment(); return w !== ws && b && b.numero !== a.numero && universDe(b.lieu) === universDe(m.lieu); })) { ws.send(JSON.stringify({ t: "occupe", lieu: m.lieu })); return; }

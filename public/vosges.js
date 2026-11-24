@@ -1414,7 +1414,22 @@ function construireVosges(A, L, scene) { const THREE = __T3V();
   { scene.updateMatrixWorld(true); const pp = new THREE.Vector3(), qq = new THREE.Quaternion(), ss = new THREE.Vector3();
     for (const G of scene.children.slice()) { if (!G.isGroup || !G.userData.aplatir) continue; const ms = []; G.traverse(o => { if (o.isMesh || o.isSprite || o.isPoints || o.isLine) ms.push(o); });
       for (const o of ms) { o.matrixWorld.decompose(pp, qq, ss); o.parent.remove(o); o.position.copy(pp); o.quaternion.copy(qq); o.scale.copy(ss); scene.add(o); } scene.remove(G); } }
+  /* (10.248) les boîtes à plusieurs matières (une par face : piliers, arcades…) ne se regroupaient pas : chacune coûtait six dessins. On les découpe face par face, avant le regroupement */
+  for (const o of scene.children.slice()) { if (!o.isMesh || !Array.isArray(o.material) || o.userData.anime || o.userData.poser || o.children.length || !o.visible) continue; const g = o.geometry; if (!g.index || !g.groups || !g.groups.length) continue;
+    const mats = o.material; if (mats.every(m => m === mats[0])) { o.material = mats[0]; g.clearGroups(); continue; }
+    for (const gr of g.groups) { const m = mats[gr.materialIndex]; if (!m) continue; const sg = g.clone(); sg.clearGroups(); sg.setIndex(Array.from(g.index.array.subarray(gr.start, gr.start + gr.count))); const s = new THREE.Mesh(sg, m); s.position.copy(o.position); s.quaternion.copy(o.quaternion); s.scale.copy(o.scale); s.castShadow = o.castShadow; s.receiveShadow = o.receiveShadow; scene.add(s); }
+    scene.remove(o); }
   fusionStatique(scene, L, 0);
+  /* (10.248) la fluidité : les passants (près de 150, une cinquantaine de pièces chacun) ne sont dessinés que près de la caméra ; ceux du fond de la place disparaissent et reviennent quand on s'approche */
+  { let PERS = [], tP = 0, k = 0; const caches = new Set(), D2 = ((MOBILE || GPU_MODESTE) ? 26 : 38) ** 2, DP2 = ((MOBILE || GPU_MODESTE) ? 8 : 12) ** 2;
+    const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} if (!M || M.L !== L || !M.camera) return; const c = M.camera.position;
+      if (tm > tP) { tP = tm + 2000; const joueurs = new Set([...M.gens.values()].map(p => p.g)); PERS = scene.children.filter(o => o.isGroup && o.userData.poser && !joueurs.has(o)); }
+      const n = PERS.length; if (!n) return; for (let i = 0; i < Math.min(n, 30); i++) { const g = PERS[k++ % n], d2 = (g.position.x - c.x) ** 2 + (g.position.z - c.z) ** 2;
+        if (d2 > D2) { if (g.visible && !g.userData.masque) { g.visible = false; caches.add(g); } } else if (caches.has(g)) { caches.delete(g); if (!g.userData.masque) g.visible = true; }
+        /* (et, de loin, les tout petits détails — yeux, boutons, doigts — ne sont plus dessinés : une vingtaine de pièces de moins par passant) */
+        if (!g.userData.petits) { g.userData.petits = []; g.updateMatrixWorld(true); const b = new THREE.Box3(), s = new THREE.Vector3(); g.traverse(o => { if (o.isMesh && o.visible) { b.setFromObject(o).getSize(s); if (Math.max(s.x, s.y, s.z) < .1) g.userData.petits.push(o); } }); }
+        const loinP = d2 > DP2; if (g.userData.loinP !== loinP) { g.userData.loinP = loinP; for (const o of g.userData.petits) { if (loinP) { if (o.visible) { o.visible = false; o.userData.lodCache = true; } } else if (o.userData.lodCache) { o.userData.lodCache = false; o.visible = true; } } } } };
+    quitterLieu.add(() => { for (const g of caches) g.visible = true; caches.clear(); }); }
   /* (10.247) dès que l'introduction commence (l'arrivée par le livre) : Una Mattina, en premier ; à sa fin, la liste habituelle reprend */
   { const av = L.arriveeLivre; L.arriveeLivre = (coul, hugo) => { try { L.lancerBal && L.lancerBal("sons/vosges-una-mattina.mp3"); } catch (e) {} return av(coul, hugo); }; }
   // (10.190) on arrive par le livre : dès que le bonhomme est là, la cinématique des pages ; puis le voile de lumière se dissipe
