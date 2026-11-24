@@ -153,6 +153,8 @@ export class Compteur extends DurableObject {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS jeux (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, console TEXT, nom_fichier TEXT, taille INTEGER, morceaux INTEGER, complet INTEGER DEFAULT 0, cree TEXT)`);
     // la discothèque du DJ : musiques déposées par les anciens, en morceaux de 1 Mo
     // le flipper de la salle des fêtes : les parties jouées, pour le classement affiché au mur
+    // (10.238) la galerie du peintre de Montmartre : le dernier croquis de chacun, accroché à son stand
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS portraits (numero INTEGER PRIMARY KEY, nom TEXT, img TEXT, cree TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS flipper_scores (id INTEGER PRIMARY KEY AUTOINCREMENT, numero INTEGER, nom TEXT, score INTEGER, cree TEXT)`);
     try { this.sql.exec("ALTER TABLE flipper_scores ADD COLUMN jeu TEXT DEFAULT 'flipper'"); } catch (e) { /* déjà là */ }   // flipper, flechettes
     this.sql.exec(`CREATE TABLE IF NOT EXISTS musiques (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, artiste TEXT, auteur INTEGER, auteur_nom TEXT, type TEXT, taille INTEGER, morceaux INTEGER, complet INTEGER DEFAULT 0, duree REAL, cree TEXT)`);
@@ -254,6 +256,7 @@ export class Compteur extends DurableObject {
     }
     this.sql.exec("DELETE FROM commentaires WHERE auteur = ?", m.email);
     this.sql.exec("DELETE FROM aimes WHERE auteur = ? OR publication NOT IN (SELECT id FROM publications)", m.email);
+    this.sql.exec("DELETE FROM portraits WHERE numero = ?", m.numero);   // (son croquis quitte la galerie du peintre)
     this.sql.exec("DELETE FROM membres WHERE numero = ?", m.numero);
     return { ok: true };
   }
@@ -840,6 +843,13 @@ export class Compteur extends DurableObject {
     return { ok: true, ouvert: this.appartOuvert() }; }
 
   /* ----- La borne de jeux : l'administrateur seul ajoute ou retire ----- */
+  // (10.238) la galerie du peintre : les croquis accrochés (les plus récents d'abord) ; on accroche le sien (il remplace le précédent)
+  async portraits(token) { await this.verifierAcces(token); return { portraits: this.sql.exec("SELECT numero, nom, img, cree FROM portraits ORDER BY cree DESC LIMIT 24").toArray() }; }
+  async accrocherPortrait(token, x) { const moi = this.moi(token), img = x && typeof x.img === "string" && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(x.img) && x.img.length <= 120000 ? x.img : null;
+    if (!img) throw new Refus("Croquis invalide ou trop lourd");
+    this.sql.exec("INSERT INTO portraits (numero, nom, img, cree) VALUES (?, ?, ?, ?) ON CONFLICT(numero) DO UPDATE SET nom = excluded.nom, img = excluded.img, cree = excluded.cree", Number(moi.numero), moi.prenom, img, new Date().toISOString());
+    return { ok: true }; }
+  async decrocherPortrait(token) { const moi = this.moi(token); this.sql.exec("DELETE FROM portraits WHERE numero = ?", Number(moi.numero)); return { ok: true }; }
   // le classement du flipper : le meilleur score de chacun, les 3 premiers
   classementFlipper(jeu = "flipper") {
     return this.sql.exec("SELECT nom, MAX(score) AS score FROM flipper_scores WHERE COALESCE(jeu, 'flipper') = ? GROUP BY numero ORDER BY score DESC LIMIT ?", jeu, jeu === "goonies" ? 5 : 3).toArray().map(r => ({ nom: r.nom, score: r.score }));
@@ -1581,6 +1591,9 @@ export default {
       else if (request.method === "DELETE" && /^\/api\/(photo|anecdote|publication)\/\d+$/.test(url.pathname)) {
         const [, , type, id] = url.pathname.split("/"); r = await registre.retirer(token, type, id);
       }
+      else if (route === "GET /api/portraits") r = await registre.portraits(token);
+      else if (route === "POST /api/portraits") r = await registre.accrocherPortrait(token, await corps());
+      else if (route === "DELETE /api/portraits") r = await registre.decrocherPortrait(token);
       else if (route === "GET /api/flipper") { await registre.verifierAcces(token); r = { top: await registre.classementFlipper() }; }
       else if (route === "POST /api/flipper") r = await registre.scoreFlipper(token, await corps(), url.searchParams.get("jeu") || "flipper");
       else if (route === "GET /api/pnj") r = await registre.infoPNJ(token, Number(url.searchParams.get("id")) || 1);
