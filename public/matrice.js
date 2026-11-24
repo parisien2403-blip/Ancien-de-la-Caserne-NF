@@ -18227,9 +18227,7 @@ export function telephone(numero, nom, lieuNom) { if (!M || !THREE || M.tel || M
   const vidM = new THREE.MeshBasicMaterial({ color: 0xffffff }), vid = new THREE.Mesh(new THREE.PlaneGeometry(SW * (W - 52) / W, SH * IH / H), vidM); vid.position.set(0, SH / 2 - SH * (IY + IH / 2) / H, .0002); vid.visible = false; plein.add(vid);
   { const cov = new THREE.Mesh(new THREE.PlaneGeometry(LW - .008, LH - .012), new THREE.MeshBasicMaterial({ color: 0x0c0e14 })); cov.rotation.y = Math.PI; cov.position.set(LW / 2, 0, -EP / 2 - .0003); G2.add(cov);
     for (const [cx, cy] of [[-.05, .06], [-.05, .046], [-.05, .032]]) { const o = new THREE.Mesh(new THREE.CylinderGeometry(.0045, .0045, .002, 16), cadre); o.rotation.x = Math.PI / 2; o.position.set(cx, cy, -EP / 2 - .001); G1.add(o); } }
-  // la main : celle de l'arrivée, à demi fermée sur la tranche gauche, le pouce devant
-  let HM = null; chargerMainPince().then(Hm => { if (!Hm || !M || !M.tel || M.cine) return; HM = Hm; const g = Hm.grp; if (g.parent) g.parent.remove(g); Hm.doigts.forEach((j, i) => j.quaternion.copy(Hm.ouverte[i]).slerp(Hm.fermee[i], .62));
-    g.scale.setScalar(.19); g.rotation.set(0, Math.PI / 2, 0); g.position.set(-LW + .026, -.03, .004); P.add(g); }).catch(() => {});
+  let HM = null;   /* (10.246 : sans la main — le téléphone seul, qui vient se placer devant soi) */
   const ouvrirT = 1.1, monteT = .7, voirT = 10, fin = monteT + ouvrirT + voirT, total = fin + 1.2;
   const mode0 = { premiere: M.premiere }; if (!M.premiere) { const f = M.camera.getWorldDirection(new THREE.Vector3()); M.fpYaw = Math.atan2(-f.x, -f.z); M.fpPitch = 0; M.premiere = true; }
   if (numero >= 0) envoyerWS({ t: "voir_demande", numero }); let redemande = performance.now(), vidTex = null, local = null;
