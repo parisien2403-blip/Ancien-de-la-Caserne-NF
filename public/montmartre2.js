@@ -137,18 +137,25 @@ function construireMontmartre2(A, L, scene) {
   let iS = 0, nTr = 0; const CAFES = [];
   const poser = (t, g) => { const pp = t.split(":"); if (pp[0] === "cafe") return cafe(g, pp[1], Number(pp[2] || 0)); if (pp[0] === "cafe2") { const g2 = new THREE.Group(); g2.scale.setScalar(1.3); g.add(g2); return relief("fac4", g2, 0); } return relief(pp[0] === "boutique" ? "fac1" : "fac3", g, Number(pp[1] || 0)); };
   /* une rangée : partant de (ax, az), tournée selon ry (la façade regarde (sin ry, cos ry)), longue de « long » ; les façades, un peu étirées ou serrées pour tomber juste */
-  const rang = (ax, az, ry, long, y = 0, terr = false) => { const dx = Math.cos(ry), dz = -Math.sin(ry), nx = Math.sin(ry), nz = Math.cos(ry), types = []; let tot = 0;
+  const rang = (ax, az, ry, long, y = 0, terr = false, sansTrot = false) => { const dx = Math.cos(ry), dz = -Math.sin(ry), nx = Math.sin(ry), nz = Math.cos(ry), types = []; let tot = 0;
     for (;;) { const t = SUITE[iS % SUITE.length], w = LARG[t.split(":")[0]]; if (types.length && tot + w / 2 > long) break; types.push(t); tot += w; iS++; }
     const k = long / tot; let u = 0;
     for (const t of types) { const w = LARG[t.split(":")[0]] * k, g = new THREE.Group(); g.rotation.y = ry; g.scale.x = k; g.position.set(ax + dx * (u + w / 2), y, az + dz * (u + w / 2)); scene.add(g); poser(t, g);
       if (terr && t.startsWith("cafe")) CAFES.push({ x: g.position.x, z: g.position.z, ry, y }); u += w; }
-    const T = new THREE.Group(); T.position.set(ax + dx * long / 2 + nx * .75, y + .06 + (nTr++ % 4) * .004, az + dz * long / 2 + nz * .75); T.rotation.y = ry; scene.add(T);
+    if (sansTrot) return; const T = new THREE.Group(); T.position.set(ax + dx * long / 2 + nx * .75, y + .06 + (nTr++ % 4) * .004, az + dz * long / 2 + nz * .75); T.rotation.y = ry; scene.add(T);
     const p = new THREE.Mesh(planUV(long, 1.5, long / 3, 1.5), troM); p.rotation.x = -Math.PI / 2; p.receiveShadow = true; T.add(p); box(long, .08, .26, borM, 0, -.02, .72, T); };
   // le bas : la place du métro, la rue Norvins, la place du Tertre, la rue Saint-Éleuthère, la place du bas
   /* (10.242) les angles où une rue débouche sur une place : un pan coupé, comme à Paris — une façade en biais ; les deux rangées s'arrêtent avant, et rien ne se traverse plus */
   const PC = 5, DIAG = [];
   const pan = (cx, cz, ux, uz, vx, vz) => { const nx = -(ux + vx) / Math.SQRT2, nz = -(uz + vz) / Math.SQRT2, ry = Math.atan2(nx, nz), dx = Math.cos(ry), dz = -Math.sin(ry), p1 = [cx + ux * PC, cz + uz * PC], p2 = [cx + vx * PC, cz + vz * PC];
-    const st = (p2[0] - p1[0]) * dx + (p2[1] - p1[1]) * dz > 0 ? p1 : p2; rang(st[0], st[1], ry, PC * Math.SQRT2); DIAG.push([p1[0], p1[1], nx, nz, cx, cz, ux, uz, vx, vz]); };
+    const st = (p2[0] - p1[0]) * dx + (p2[1] - p1[1]) * dz > 0 ? p1 : p2; rang(st[0], st[1], ry, PC * Math.SQRT2, 0, false, true);
+    /* (10.243) le trottoir de l'angle, d'un seul tenant : devant le pan coupé et jusqu'au bord des deux rues, sa bordure qui tourne avec */
+    const B = 1.5, q = (a, b) => [cx + ux * a + vx * b, cz + uz * a + vz * b], pts = [q(PC, 0), q(PC, -B), q(-B, -B), q(-B, PC), q(0, PC)];
+    const shp = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z))), sg = new THREE.ShapeGeometry(shp), puv = sg.attributes.position, uvv = sg.attributes.uv;
+    for (let i = 0; i < puv.count; i++) uvv.setXY(i, puv.getX(i) / 3, puv.getY(i) / 1.5);
+    const tm = new THREE.Mesh(sg, troM); tm.rotation.x = -Math.PI / 2; tm.position.y = .078; tm.receiveShadow = true; scene.add(tm);
+    for (const [a, b] of [[pts[1], pts[2]], [pts[2], pts[3]]]) { const lg = Math.hypot(b[0] - a[0], b[1] - a[1]) + .26, bo = box(lg, .08, .26, borM, (a[0] + b[0]) / 2, .04, (a[1] + b[1]) / 2); bo.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0]); }
+    DIAG.push([p1[0], p1[1], nx, nz, cx, cz, ux, uz, vx, vz]); };
   rang(X_MET, -10, 0, X_NOR - X_MET); rang(X_NOR, 10, Math.PI, X_NOR - X_MET);
   rang(X_NOR + PC, -RZ, 0, -PX - X_NOR - 2 * PC); rang(-PX - PC, RZ, Math.PI, -PX - X_NOR - 2 * PC);
   rang(-PX, -PZ, 0, 2 * PX, 0, true); rang(PX, PZ, Math.PI, 2 * PX, 0, true); rang(-PX, PZ, Math.PI / 2, PZ - RZ - PC, 0, true); rang(-PX, -RZ - PC, Math.PI / 2, PZ - RZ - PC, 0, true); rang(PX, -PZ, -Math.PI / 2, PZ - RZ - PC, 0, true); rang(PX, RZ + PC, -Math.PI / 2, PZ - RZ - PC, 0, true);
@@ -311,8 +318,8 @@ function construireMontmartre2(A, L, scene) {
       for (let z = za + .15; z < zb; z += .32) { const o = new THREE.Mesh(bal, PIERRE); o.position.set(X_TER, HAUT + .12, z); scene.add(o); } for (const z of [za, zb]) box(.6, 1.1, .6, PIERRE, X_TER, HAUT + .55, z); } }
   // ---------- Paris, tout en bas, vu de la balustrade (le panorama peint, sur un grand arc à l'ouest) ----------
   const PANO = new THREE.Group(); scene.add(PANO); L.__pano = PANO;
-  { const t = tx("panorama"); t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; const r = 125, la = 2.2, hh = r * la * 470 / 1408;
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, hh, 48, 1, true, Math.PI * 1.5 - la / 2, la), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false })); PANO.add(m); PANO.position.y = HAUT + 1.7 + hh * .35 - hh / 2; L.__panoM = m.material; }
+  { const PJ = tx("panorama_j"), PN = tx("panorama_n"); for (const t of [PJ, PN]) { t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; } const t = PJ;   /* (10.243 : le ciel du dessin effacé — il se fond dans notre ciel ; la nuit, Paris illuminé) */ const r = 125, la = 2.2, hh = r * la * 470 / 1408;
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, hh, 48, 1, true, Math.PI * 1.5 - la / 2, la), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false, transparent: true, depthWrite: false })); PANO.add(m); L.__panoT = [PJ, PN]; PANO.position.y = HAUT + 1.7 + hh * .35 - hh / 2; L.__panoM = m.material; }
   // ---------- le Sacré-Cœur : la façade peinte (porches creusés, statues détachées), ses deux flancs, son chevet, son volume et son grand dôme ----------
   { const SW = 32, SS = SW / 848, SH = 1076 * SS, G = new THREE.Group(); G.position.set(X_SC, HAUT, 0); G.rotation.y = -Math.PI / 2; scene.add(G);
     const X = (px) => (px - 424) * SS, Y = (py) => (1076 - py) * SS, blanc = mat({ color: 0xf0eadc, roughness: .9 }), ombre = mat({ color: 0xc8bea8, roughness: 1 });
@@ -342,7 +349,7 @@ function construireMontmartre2(A, L, scene) {
     const c = new THREE.Mesh(new THREE.CircleGeometry(130, 48), new THREE.MeshBasicMaterial({ color: haut, side: THREE.DoubleSide, fog: false })); c.rotation.x = Math.PI / 2; c.position.y = 59.9; g.add(c); CIEL.add(g); return g; };
   const CJ = ciel("ciel_jour", 3, 0x4f7fc6), CN = ciel("ciel_nuit", 5, 0x0e3a56); CN.visible = false; CIEL.position.y = 42;
   L.sansLune = true;
-  L.vueCour = (n) => { CJ.visible = !n; CN.visible = n; L.__panoM.color.setHex(n ? 0x3a4a78 : 0xffffff); scene.background = new THREE.Color(n ? 0x0e3a56 : 0x9cc0e6); if (scene.fog) { scene.fog.color.setHex(n ? 0x1c3a56 : 0xe8e4dc); scene.fog.near = 70; scene.fog.far = 230; }
+  L.vueCour = (n) => { CJ.visible = !n; CN.visible = n; L.__panoM.map = L.__panoT[n ? 1 : 0]; L.__panoM.needsUpdate = true; scene.background = new THREE.Color(n ? 0x0e3a56 : 0x9cc0e6); if (scene.fog) { scene.fog.color.setHex(n ? 0x1c3a56 : 0xe8e4dc); scene.fog.near = 70; scene.fog.far = 230; }
     for (const o of scene.children) if (o.isMesh && o.renderOrder === -1 && o.geometry && o.geometry.type === "SphereGeometry") o.visible = false;   /* (le dôme de nuages de la matrice : nos ciels peints le remplacent) */
     for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; for (const f of JOUR_NUIT) f(n); };
   // ---------- le retour : un cercle violet devant le métro, vers la cour d'honneur ----------
@@ -351,7 +358,7 @@ function construireMontmartre2(A, L, scene) {
   const M5 = .5;   /* (10.242 : on marche aussi sur les trottoirs, jusqu'à 50 cm des façades ; les rues entrent dans les places — avant, une bande infranchissable entre elles) */
   const ZONES = [[X_MET + 2, X_NOR + 1, -10 + M5, 10 - M5], [X_NOR - 1, -PX + 2, -RZ + M5, RZ - M5], [-PX + M5, PX - M5, -PZ + M5, PZ - M5], [PX - 2, X_ELE + 2, -RZ + M5, RZ - M5], [X_ELE + M5, X_PEN + .3, -BZ + M5, BZ - M5],
     [X_PEN - .5, X_TER + .5, ZE0 + .2, ZE1 - .3], [X_PEN - .5, X_TER + .5, -ZE1 + .3, -ZE0 - .2], [X_PAL0, X_PAL1, -ZE1 + .3, ZE1 - .3], [X_TER + .4, X_SC - .5, -17.6, 17.6], [X_TER + .5, X_DER - M5, 16.4, TZ - M5], [X_TER + .5, X_DER - M5, -TZ + M5, -16.4], [X_CHE + .5, X_DER - M5, -TZ + M5, TZ - M5]];
-  const dansZ = (x, z) => ZONES.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) && DIAG.every(([px, pz, nx, nz, cx, cz, ux, uz, vx, vz]) => (x - px) * nx + (z - pz) * nz > .5 || (x - cx) * ux + (z - cz) * uz < -.6 || (x - cx) * vx + (z - cz) * vz < -.6 || (x - cx) * ux + (z - cz) * uz > PC + 7 || (x - cx) * vx + (z - cz) * vz > PC + 7) && !(x < MX1 + .6 && Math.abs(z) < 2.3) && !(x > X_SC - 2.9 && x < X_SC + 1 && Math.abs(z) < 7.8);
+  const dansZ = (x, z) => (ZONES.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) || DIAG.some(([px, pz, nx, nz, cx, cz, ux, uz, vx, vz]) => (x - px) * nx + (z - pz) * nz > .5 && (x - cx) * ux + (z - cz) * uz > -1.4 && (x - cx) * vx + (z - cz) * vz > -1.4)) && DIAG.every(([px, pz, nx, nz, cx, cz, ux, uz, vx, vz]) => (x - px) * nx + (z - pz) * nz > .5 || (x - cx) * ux + (z - cz) * uz < -.6 || (x - cx) * vx + (z - cz) * vz < -.6 || (x - cx) * ux + (z - cz) * uz > PC + 7 || (x - cx) * vx + (z - cz) * vz > PC + 7) && !(x < MX1 + .6 && Math.abs(z) < 2.3) && !(x > X_SC - 2.9 && x < X_SC + 1 && Math.abs(z) < 7.8);
   L.limites = (x, z) => { if (!dansZ(x, z)) return false; for (const [ox, oz, r] of OBS) if ((x - ox) ** 2 + (z - oz) ** 2 < r * r) return false; return true; };
   L.hauteur = (x, z) => hauteur(x, z); L.solsPlus = SOLS; L.sansPNJ = true;
   L.depart = [X_MET + 8, 0]; L.taille = 1.8; L.suivi = { d: 6.5, h: 3.6, av: 3, vy: 2 }; L.fov = [58, 72];
