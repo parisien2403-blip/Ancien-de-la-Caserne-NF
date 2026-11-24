@@ -31,7 +31,8 @@ function construireMontmartre2(A, L, scene) {
   let nRel = 0;
   /* (10.241) des variantes de couleur pour ne pas voir deux fois la même maison : le mur (et la devanture) repeints, le reste du dessin intact */
   const VAR = { fac1: [null, 0xf4ccc4, 0xd6e4bc, 0xc8daec], fac3: [null, 0xf0e0b0, 0xd0d6e0, 0xcee6d4], fac2: [[null, 0x7a2a30], [0xeee2c8, 0x2a5c3e], [0xecc8c4, 0x283862], [0xd6d6d2, 0x262428]] };
-  const relief = (F, g, v = 0) => { const d = DEF[F], IW = d.IW, IH = d.IH, FW = IW * s, FH = IH * s, X = (px) => (px - IW / 2) * s, Y = (py) => (IH - py) * s, murC = mat({ color: v ? VAR[F][v] : d.mur, roughness: .9 }), embM = mat({ color: new THREE.Color(d.mur).multiplyScalar(.82), roughness: .95 }), appM = mat({ color: 0xe8dcc0 });
+  const BASE = { fac1: 1118 };   /* (la boutique : Gemini avait peint un bout de trottoir sous la façade — coupé, et la façade descendue jusqu'au sol) */
+  const relief = (F, g0, v = 0) => { const g = new THREE.Group(); g0.add(g); if (BASE[F]) g.position.y = -(DEF[F].IH - BASE[F]) * s; const d = DEF[F], IW = d.IW, IH = d.IH, FW = IW * s, FH = IH * s, X = (px) => (px - IW / 2) * s, Y = (py) => (IH - py) * s, murC = mat({ color: v ? VAR[F][v] : d.mur, roughness: .9 }), embM = mat({ color: new THREE.Color(d.mur).multiplyScalar(.82), roughness: .95 }), appM = mat({ color: 0xe8dcc0 });
     const plan = (t, x0, y0, x1, y1, z, o = {}) => { const m = new THREE.Mesh(new THREE.PlaneGeometry((x1 - x0) * s, (y1 - y0) * s), mat({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, ...o })); m.position.set(X((x0 + x1) / 2), Y((y0 + y1) / 2), z); m.receiveShadow = true; g.add(m); return m; };
     plan(txF(F + "_perce" + (v ? "_v" + v : "")), 0, 0, IW, IH, 0, { bumpMap: txF(F + "_relief", false), bumpScale: 2.2 });
     box(FW * .98, FH * .74, 6, murC, 0, FH * .37, -8.2, g); for (const sg of [-1, 1]) box(.05, Y(d.toitY), 5.2, murC, sg * FW * .49, Y(d.toitY) / 2, -2.6, g);
