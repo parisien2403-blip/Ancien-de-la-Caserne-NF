@@ -347,9 +347,9 @@ function construireMontmartre2(A, L, scene) {
   const CIEL = new THREE.Group(); scene.add(CIEL); L.__ciel = CIEL;
   const ciel = (n, rep, haut) => { const t = tx(n); t.wrapS = THREE.MirroredRepeatWrapping; t.repeat.set(rep, 1); const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.CylinderGeometry(130, 130, 120, 48, 1, true), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false })); g.add(m);
     const c = new THREE.Mesh(new THREE.CircleGeometry(130, 48), new THREE.MeshBasicMaterial({ color: haut, side: THREE.DoubleSide, fog: false })); c.rotation.x = Math.PI / 2; c.position.y = 59.9; g.add(c); CIEL.add(g); return g; };
-  const CJ = ciel("ciel_jour", 3, 0x4f7fc6), CN = ciel("ciel_nuit", 5, 0x0e3a56); CN.visible = false; CIEL.position.y = 42;
+  const CJ = ciel("ciel_jour", 3, 0x6898d6), CN = ciel("ciel_nuit", 5, 0x07384d);   /* (10.243 : le haut des ciels peints fondu dans la couleur du dessus — plus de raccord) */ CN.visible = false; CIEL.position.y = 42;
   L.sansLune = true;
-  L.vueCour = (n) => { CJ.visible = !n; CN.visible = n; L.__panoM.map = L.__panoT[n ? 1 : 0]; L.__panoM.needsUpdate = true; scene.background = new THREE.Color(n ? 0x0e3a56 : 0x9cc0e6); if (scene.fog) { scene.fog.color.setHex(n ? 0x1c3a56 : 0xe8e4dc); scene.fog.near = 70; scene.fog.far = 230; }
+  L.vueCour = (n) => { CJ.visible = !n; CN.visible = n; L.__panoM.map = L.__panoT[n ? 1 : 0]; L.__panoM.needsUpdate = true; scene.background = new THREE.Color(n ? 0x07384d : 0x6898d6); if (scene.fog) { scene.fog.color.setHex(n ? 0x1c3a56 : 0xe8e4dc); scene.fog.near = 70; scene.fog.far = 230; }
     for (const o of scene.children) if (o.isMesh && o.renderOrder === -1 && o.geometry && o.geometry.type === "SphereGeometry") o.visible = false;   /* (le dôme de nuages de la matrice : nos ciels peints le remplacent) */
     for (const [m, j, nn] of NUIT) m.emissiveIntensity = n ? nn : j; for (const f of JOUR_NUIT) f(n); };
   // ---------- le retour : un cercle violet devant le métro, vers la cour d'honneur ----------
