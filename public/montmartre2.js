@@ -20,6 +20,28 @@ function construireMontmartre2(A, L, scene) {
   const DEF = {"fac1": {"IW": 628, "IH": 1188, "mur": 16376767, "holes": [[130, 375, 200, 455, "fen"], [278, 375, 348, 460, "fen"], [428, 375, 498, 455, "fen"], [130, 615, 200, 700, "fen"], [278, 615, 348, 700, "fen"], [428, 615, 498, 700, "fen"], [140, 872, 248, 1052, "vit"], [380, 872, 492, 1052, "vit"], [270, 880, 355, 1115, "porte"]], "det": [[100, 448, 232, 512], [255, 438, 372, 516], [405, 448, 528, 512], [92, 688, 242, 762], [252, 678, 378, 752], [402, 688, 538, 762], [296, 552, 334, 622]], "awn": [[130, 908, 250, 946], [378, 908, 498, 946]], "corn": [[60, 568, 780, 12368815], [60, 568, 286, 9410712], [62, 566, 542, 14206121]], "luc": [200, 430], "lucY": 210, "toitY": 285, "chem": [500, 110]}, "fac3": {"IW": 536, "IH": 1078, "mur": 15717823, "holes": [[75, 292, 142, 405, "fen"], [235, 292, 302, 405, "fen"], [398, 292, 465, 405, "fen"], [75, 457, 142, 580, "fen"], [235, 457, 302, 580, "fen"], [398, 457, 465, 580, "fen"], [75, 632, 142, 760, "fen"], [235, 632, 302, 760, "fen"], [398, 632, 465, 760, "fen"], [78, 805, 140, 905, "fen"], [402, 805, 464, 905, "fen"], [198, 822, 338, 1062, "porte"]], "det": [[68, 358, 148, 410], [230, 358, 306, 410], [393, 358, 470, 410], [68, 532, 148, 585], [230, 532, 306, 585], [393, 532, 470, 585], [30, 712, 506, 772], [64, 868, 144, 906], [394, 868, 472, 906]], "awn": [], "corn": [[0, 536, 245, 10788242], [4, 532, 417, 15124914], [4, 532, 597, 12427403], [20, 516, 780, 13151640]], "luc": [105, 268, 428], "lucY": 190, "toitY": 245, "chem": [192, 110]}, "fac4": {"IW": 606, "IH": 672, "mur": 16049350, "holes": [[112, 215, 193, 292, "fen"], [272, 215, 338, 292, "fen"], [428, 215, 492, 292, "fen"], [82, 457, 228, 608, "vit"], [377, 457, 525, 608, "vit"], [272, 480, 335, 660, "porte"]], "det": [[75, 262, 215, 346], [250, 262, 375, 346], [395, 262, 530, 346]], "awn": [[5, 410, 600, 455]], "corn": [[20, 590, 165, 9277321], [30, 580, 353, 7032632]], "luc": [168, 438], "lucY": 120, "toitY": 165, "chem": [490, 40]}};
   /* (10.241) les matières qui s'allument le soir, partagées (une allumée, une éteinte, par dessin) : tout Montmartre se regroupe en peu d'appels de dessin */
   const MN = {}, matN = (cle, o, j, n) => { if (!MN[cle]) { MN[cle] = mat(o); NUIT.push([MN[cle], j, n]); } return MN[cle]; };
+  const MITOYEN = mat({ color: 0xe4d8c4, roughness: 1 }), MITOYEN2 = mat({ color: 0xe4d8c4, roughness: 1, side: THREE.DoubleSide });
+  /* (10.242) les toits en volume, peints : le brisis (zinc, zinc patiné, cuivre vert-de-gris ou tuiles) incliné en vrai, ses lucarnes en saillie avec leur fenêtre et leur petit toit,
+     la cheminée de pierre et ses mitrons, le dessus du toit ; çà et là, un garde-corps de fer forgé ou un jardin sur le toit. Le toit peint du dessin est effacé : celui-ci le remplace */
+  const TOITS = [["toit_zinc", 1.6, 0x8a9aa8], ["toit_zinc2", 3.4, 0x9aa4ac], ["toit_cuivre", 4.6, 0x5a8a74], ["toit_zinc", 1.6, 0x8a9aa8], ["toit_tuiles", 3.2, 0xb8644a], ["toit_zinc2", 3.4, 0x9aa4ac]];
+  let nToit = 0;
+  const toit = (g, FW, Yt, lucs, chemX) => { const st = TOITS[nToit % TOITS.length], k = nToit++, HT = 2.8, PR = 2.4, lg = Math.hypot(HT, PR), a = Math.atan2(PR, HT);
+    const tex = txF(st[0]); tex.wrapS = THREE.MirroredRepeatWrapping; const tM = matN("toit" + st[0], { map: tex, roughness: .55, side: THREE.DoubleSide }, 0, 0), dessus = matN("dessus" + st[2], { color: st[2], roughness: .7 }, 0, 0);
+    const geo = new THREE.PlaneGeometry(FW + .1, lg), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * Math.max(1, Math.round(FW / st[1])));
+    const sl = new THREE.Mesh(geo, tM); sl.rotation.x = -a; sl.position.set(0, Yt + HT / 2, .12 - PR / 2); sl.castShadow = !PEU; g.add(sl);
+    box(FW + .1, .25, 3.6, dessus, 0, Yt + HT - .1, -PR - 1.6, g); box(FW + .2, .14, .32, matN("bord", { color: 0xe8dcc6 }, 0, 0), 0, Yt + .02, .1, g);
+    { const sh = new THREE.Shape([new THREE.Vector2(.12, 0), new THREE.Vector2(.12 - PR, HT), new THREE.Vector2(-5.8, HT), new THREE.Vector2(-5.8, 0)]), sg = new THREE.ShapeGeometry(sh);
+      for (const sx of [-1, 1]) { const m = new THREE.Mesh(sg, MITOYEN2); m.rotation.y = -Math.PI / 2; m.position.set(sx * (FW / 2 + .04), Yt, 0); g.add(m); } }
+    const zf = (y) => .12 - (y - Yt) / HT * PR;   // (le brisis, à la hauteur y)
+    lucs.forEach((lx, i) => { const yb = Yt + .5, w = .95, hh = 1.25, zf0 = zf(yb) + .25, allu = (k + i) % 3 ? 1 : 0;
+      box(w + .16, hh, 1.6, matN("lucM", { color: 0xece2cc }, 0, 0), lx, yb + hh / 2, zf0 - .8, g);
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(w * .8, hh * .82), matN("lucF" + allu, { map: txF("luc_zinc"), emissive: 0xffc070, emissiveMap: txF("luc_zinc"), emissiveIntensity: 0 }, 0, allu * .7)); f.position.set(lx, yb + hh * .48, zf0 + .01); g.add(f);
+      for (const sx of [-1, 1]) { const r = box(.75, .06, 1.8, tM, lx + sx * .3, yb + hh + .2, zf0 - .8, g); r.rotation.z = -sx * .6; }
+      box(w + .2, .07, .2, matN("bord", { color: 0xe8dcc6 }, 0, 0), lx, yb - .03, zf0 + .05, g); });
+    if (chemX != null) { const cz = -PR - 1, cy = Yt + HT; box(.9, 1.3, .55, matN("chem", { map: txF("chem_pierre") }, 0, 0), chemX, cy + .55, cz, g); box(1, .1, .65, matN("chemB", { color: 0xd8ccb8 }, 0, 0), chemX, cy + 1.25, cz, g);
+      for (let i = 0; i < 3; i++) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.07, .09, .35 + (i % 2) * .15, 8), matN("mitron" + (i % 2), { color: i % 2 ? 0x8a8f96 : 0xb06a48 }, 0, 0)); p.position.set(chemX - .28 + i * .28, cy + 1.45 + (i % 2) * .07, cz); g.add(p); } }
+    if (k % 4 === 2) { const t2 = txF("garde_corps"); const m = new THREE.Mesh(new THREE.PlaneGeometry(FW * .9, .75), matN("gc", { map: t2, transparent: true, alphaTest: .4, side: THREE.DoubleSide }, 0, 0)); m.position.set(0, Yt + HT + .45, -PR + .05); g.add(m); }
+    if (k % 5 === 3) for (const r of [0, Math.PI / 2]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.2), matN("jt", { map: txF("jardin_toit"), transparent: true, alphaTest: .4, side: THREE.DoubleSide }, 0, 0)); m.position.set(FW * .25, Yt + HT + .6, -PR - 1.2); m.rotation.y = r + .4; g.add(m); } };
   const TXR = {}; const txF = (n, srgb = true) => TXR[n] || (TXR[n] = tx(n, srgb));
   const salle = (g, cx, by, w, h, P, genre) => { const D = 3.4, S = new THREE.Group(); S.position.set(cx, by, -P); g.add(S); const parquet = mat({ color: 0x8a5a34 }), mur2 = matN("salle" + genre, { color: genre === "cafe" ? 0xe8b878 : 0xf0dcc0, emissive: 0x4a2a10, emissiveIntensity: .2 }, .2, .9), bois = mat({ color: 0x6a3a20 });
     box(w, .02, D, parquet, 0, 0, -D / 2, S); box(w, h + .5, .05, mur2, 0, h / 2, -D, S); box(.05, h + .5, D, mur2, -w / 2, h / 2, -D / 2, S); box(.05, h + .5, D, mur2, w / 2, h / 2, -D / 2, S); box(w, .05, D, mur2, 0, h + .25, -D / 2, S);
@@ -37,7 +59,7 @@ function construireMontmartre2(A, L, scene) {
   const relief = (F, g0, v = 0) => { const g = new THREE.Group(); g0.add(g); if (BASE[F]) g.position.y = -(DEF[F].IH - BASE[F]) * s; const d = DEF[F], IW = d.IW, IH = d.IH, FW = IW * s, FH = IH * s, X = (px) => (px - IW / 2) * s, Y = (py) => (IH - py) * s, murC = mat({ color: v ? VAR[F][v] : d.mur, roughness: .9 }), embM = mat({ color: new THREE.Color(d.mur).multiplyScalar(.82), roughness: .95 }), appM = mat({ color: 0xe8dcc0 });
     const plan = (t, x0, y0, x1, y1, z, o = {}) => { const m = new THREE.Mesh(new THREE.PlaneGeometry((x1 - x0) * s, (y1 - y0) * s), mat({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, ...o })); m.position.set(X((x0 + x1) / 2), Y((y0 + y1) / 2), z); m.receiveShadow = true; g.add(m); return m; };
     plan(txF(F + "_perce" + (v ? "_v" + v : "")), 0, 0, IW, IH, 0, { bumpMap: txF(F + "_relief", false), bumpScale: 2.2 });
-    box(FW * .98, FH * .74, 6, murC, 0, FH * .37, -8.2, g); for (const sg of [-1, 1]) box(.05, Y(d.toitY), 5.2, murC, sg * FW * .49, Y(d.toitY) / 2, -2.6, g);
+    box(FW * .98, FH * .74, 3, murC, 0, FH * .37, -5.7, g); for (const sg of [-1, 1]) box(.05, Y(d.toitY), 4.2, MITOYEN, sg * FW * .49, Y(d.toitY) / 2, -2.1, g);   /* (10.242 : les volumes moins profonds — ils ne traversent plus la boutique du coin ; les murs mitoyens couleur d'enduit) */
     d.holes.forEach(([x0, y0, x1, y1, k], i) => { const w = (x1 - x0) * s, h = (y1 - y0) * s, cx = X((x0 + x1) / 2), cy = Y((y0 + y1) / 2), P = k === "vit" ? .5 : k === "porte" ? .35 : .3, t = txF(F + "_h" + i);
       box(w, .03, P, embM, cx, cy + h / 2, -P / 2, g); box(w, .03, P, embM, cx, cy - h / 2, -P / 2, g); box(.03, h, P, embM, cx - w / 2, cy, -P / 2, g); box(.03, h, P, embM, cx + w / 2, cy, -P / 2, g);
       if (k === "vit") { salle(g, cx, cy - h / 2, w, h, P, F === "fac4" ? "cafe" : "boutique"); const v = plan(t, x0, y0, x1, y1, -P + .01, { opacity: .35, transparent: true, alphaTest: 0, depthWrite: false, emissive: 0xffb060, emissiveMap: t, emissiveIntensity: .15 }); void v; box(w + .15, .2, .3, appM, cx, cy - h / 2 + .1, .08, g); }
@@ -46,9 +68,7 @@ function construireMontmartre2(A, L, scene) {
     d.awn.forEach(([x0, y0, x1, y1], i) => { const t = txF(F + "_d" + (d.det.length + i)), w = (x1 - x0) * s, Lg = (y1 - y0) * s * 1.6, a = .55, m = new THREE.Mesh(new THREE.PlaneGeometry(w, Lg), mat({ map: t, transparent: true, alphaTest: .3, side: THREE.DoubleSide }));
       m.rotation.x = -Math.PI / 2 + a; m.position.set(X((x0 + x1) / 2), Y(y0) - Lg * Math.sin(a) / 2, Lg * Math.cos(a) / 2); m.castShadow = !PEU; g.add(m); });
     for (const [x0, x1, y, c] of d.corn) box((x1 - x0) * s + .1, .13, .26, mat({ color: c }), X((x0 + x1) / 2), Y(y), .13, g);
-    { const toitM = mat({ color: 0x7088a8, roughness: .6 }), t = box(FW, 1.9, 2.4, toitM, 0, Y(d.toitY) + .7, -1.0, g); t.rotation.x = -.6;
-      for (const lx of d.luc) { box(1.0, 1.3, 1.2, mat({ color: 0xe8dcc0 }), X(lx), Y(d.lucY), -.45, g); box(1.3, .2, 1.4, toitM, X(lx), Y(d.lucY) + .7, -.45, g); const vm = matN("luc" + (lx + nRel) % 2, { color: 0x3a4a6a, emissive: 0xffc070, emissiveIntensity: 0 }, 0, (lx + nRel) % 2 ? .8 : 0); box(.6, .75, .04, vm, X(lx), Y(d.lucY), .16, g); }
-      box(.6, 1.3, .5, mat({ color: 0xc09070 }), X(d.chem[0]), Y(d.chem[1]), -.8, g); }
+    toit(g, FW, Y(d.toitY), d.luc.map(X), X(d.chem[0]));
     nRel++; return FW; };
   const facade = (type, g, v) => relief(type === "boutique" ? "fac1" : "fac3", g, v);
   // le café, en relief : la façade percée, les fenêtres creusées (embrasure, appui, garde-corps détaché), la vitrine creuse et sa salle, l'auvent, les corniches, l'enseigne
@@ -58,7 +78,7 @@ function construireMontmartre2(A, L, scene) {
   const cafe = (g, nom, v = 0) => { const plan = (t, x0, y0, x1, y1, z, o = {}) => { const m = new THREE.Mesh(new THREE.PlaneGeometry((x1 - x0) * s, (y1 - y0) * s), mat({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, ...o })); m.position.set(X((x0 + x1) / 2), Y((y0 + y1) / 2), z); m.receiveShadow = true; g.add(m); return m; };
     plan(v ? txF("fac2_perce_v" + v) : CAF.perce, 0, 0, IW, IH, 0, { bumpMap: CAF.rel, bumpScale: 2.2 });
     const murM = mat({ color: VAR.fac2[v][0] || 0xd8b880 }), rougeM = mat({ color: VAR.fac2[v][1], roughness: .8 }), embM = mat({ color: 0xc9a870, roughness: .95 }), appM = mat({ color: 0xe4d2a8 });
-    box(FW * .98, FH * .74, 6, murM, 0, FH * .37, -8.2, g); box(FW, Y(250) - Y(700), .05, murM, 0, (Y(250) + Y(700)) / 2, -.5, g); box(FW * .98, FH * .14, 6, mat({ color: 0x7088a8, roughness: .6 }), 0, FH * .8, -8.4, g);
+    box(FW * .98, FH * .74, 3, murM, 0, FH * .37, -5.7, g); for (const sg of [-1, 1]) box(.05, Y(250), 4.2, MITOYEN, sg * FW * .49, Y(250) / 2, -2.1, g); box(FW, Y(250) - Y(700), .05, murM, 0, (Y(250) + Y(700)) / 2, -.5, g); box(FW * .98, FH * .14, 3, mat({ color: 0x7088a8, roughness: .6 }), 0, FH * .8, -5.7, g);
     [[85, 318, 150, 452], [238, 318, 302, 452], [390, 318, 455, 452], [85, 528, 150, 662], [238, 528, 302, 662], [390, 528, 455, 662]].forEach(([x0, y0, x1, y1], i) => { const w = (x1 - x0) * s, h = (y1 - y0) * s, cx = X((x0 + x1) / 2), cy = Y((y0 + y1) / 2), P = .32;
       box(w, .03, P, embM, cx, cy + h / 2, -P / 2, g); box(w, .03, P, embM, cx, cy - h / 2, -P / 2, g); box(.03, h, P, embM, cx - w / 2, cy, -P / 2, g); box(.03, h, P, embM, cx + w / 2, cy, -P / 2, g);
       const allu = (i + nCafe) % 3 ? 1 : 0, f = plan(CAF.fen[i], x0, y0, x1, y1, -P); f.material.dispose(); f.material = matN("caf" + i + "_" + allu, { map: CAF.fen[i], transparent: true, alphaTest: .4, side: THREE.DoubleSide, emissive: 0xffc070, emissiveMap: CAF.fen[i], emissiveIntensity: 0 }, 0, allu * .5);   /* (le soir, certaines fenêtres s'allument) */
@@ -76,7 +96,7 @@ function construireMontmartre2(A, L, scene) {
       const v = plan(CAF.vit, x0, y0, x1, y1, -P + .01, { opacity: .3, transparent: true, alphaTest: 0, depthWrite: false }); v.material.emissive = new THREE.Color(0xffa850); v.material.emissiveMap = CAF.vit; v.material.emissiveIntensity = .2;
       box(w + .2, .25, .35, rougeM, cx, cy - h / 2 + .12, .1, g); }
     // l'auvent rayé : la toile inclinée au-dessus du trottoir, son lambrequin, ses bras de fer
-    { const x0 = 55, x1 = 480, ww = (x1 - x0) * s, cx = X((x0 + x1) / 2), y = Y(768), Lg = 1.6, a = .5, toileM = mat({ map: CAF.auv, side: THREE.DoubleSide });
+    { const x0 = 55, x1 = 480, ww = (x1 - x0) * s, cx = X((x0 + x1) / 2), y = Y(768), Lg = 1.6, a = .5, toileM = mat({ map: v ? txF(["store_creme", "store_bleu", "store_raye"][v - 1]) : CAF.auv, side: THREE.DoubleSide });
       const t = new THREE.Mesh(new THREE.PlaneGeometry(ww, Lg), toileM); t.rotation.x = -Math.PI / 2 + a; t.position.set(cx, y - Lg * Math.sin(a) / 2 + .05, Lg * Math.cos(a) / 2); t.castShadow = !PEU; g.add(t);
       const lb = new THREE.Mesh(new THREE.PlaneGeometry(ww, .22), toileM); lb.position.set(cx, y - Lg * Math.sin(a) - .06, Lg * Math.cos(a) + .01); g.add(lb);
       for (const sg of [-1, 1]) box(.03, .03, Lg * Math.cos(a), mat({ color: 0x2a2a2a }), cx + sg * ww / 2, y - Lg * Math.sin(a) / 2, Lg * Math.cos(a) / 2, g).rotation.x = a; }
@@ -84,9 +104,7 @@ function construireMontmartre2(A, L, scene) {
     box(FW + .1, .14, .28, mat({ color: new THREE.Color(VAR.fac2[v][1]).multiplyScalar(1.15) }), 0, Y(684), .14, g); box(FW + .15, .12, .3, mat({ color: 0xe8d4a8 }), 0, Y(255), .15, g); box(FW * .98, .08, .2, mat({ color: 0xe8d4a8 }), 0, Y(468), .1, g);
     { const c = document.createElement("canvas"); c.width = 512; c.height = 64; const x = c.getContext("2d"); x.fillStyle = "#f4ead6"; x.fillRect(0, 0, 512, 64); x.fillStyle = "#" + new THREE.Color(VAR.fac2[v][1]).getHexString(); x.font = "italic bold 38px Georgia"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(nom, 256, 34); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
       const ens = mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0 }), bord = mat({ color: 0xe8dcc0 }); const e = new THREE.Mesh(new THREE.BoxGeometry((452 - 80) * s, (748 - 706) * s, .06), [bord, bord, bord, bord, ens, bord]); e.position.set(X(266), Y(727), .06); g.add(e); NUIT.push([ens, 0, .35]); }
-    { const toitM = mat({ color: 0x7088a8, roughness: .6 }); const t = box(FW, 1.9, 2.4, toitM, 0, Y(250) + .7, -1.0, g); t.rotation.x = -.6;
-      for (const lx of [X(150), X(370)]) { box(1.0, 1.3, 1.2, mat({ color: 0xe8dcc0 }), lx, Y(190), -.45, g); box(1.3, .2, 1.4, toitM, lx, Y(140), -.45, g); const vm = matN("luc1", { color: 0x3a4a6a, emissive: 0xffc070, emissiveIntensity: 0 }, 0, .8); box(.6, .75, .04, vm, lx, Y(190), .16, g); }
-      box(.6, 1.2, .5, mat({ color: 0xc09070 }), X(105), Y(100), -.8, g); }
+    toit(g, FW, Y(250), [X(150), X(370)], X(105));
     nCafe++; return FW; };
   // =====================================================================================================================================================
   // ---------- le plan (x vers l'est) : métro → rue Norvins → place du Tertre → rue Saint-Éleuthère → place du bas → escaliers → terrasse → Sacré-Cœur ----------
@@ -113,11 +131,11 @@ function construireMontmartre2(A, L, scene) {
   // ---------- les maisons : une suite de façades peintes en relief, chacune avec son trottoir et sa bordure de pierre ----------
   const TRO = tx("trottoir"); TRO.wrapS = THREE.MirroredRepeatWrapping; TRO.wrapT = THREE.MirroredRepeatWrapping; const troM = mat({ map: TRO });
   const BOR = tx("bordure"); BOR.wrapS = THREE.MirroredRepeatWrapping; const borM = mat({ map: BOR });
-  const LARG = { boutique: DEF.fac1.IW * s, immeuble: DEF.fac3.IW * s, cafe: 535 * s, cafe2: DEF.fac4.IW * s };
+  const LARG = { boutique: DEF.fac1.IW * s, immeuble: DEF.fac3.IW * s, cafe: 535 * s, cafe2: DEF.fac4.IW * s * 1.3 };   /* (le nouveau café, agrandi : à la hauteur de ses voisins) */
   const SUITE = ["boutique", "immeuble:1", "cafe:Le Consulat", "boutique:2", "cafe2", "immeuble:2", "boutique:1", "immeuble", "cafe:La Bonne Franquette:1", "boutique:3", "immeuble:3", "cafe2",
     "boutique", "cafe:Chez Eugène:2", "immeuble:1", "boutique:2", "cafe:Au Lapin Agile:3", "immeuble", "cafe2", "boutique:1", "immeuble:2", "cafe:La Mère Catherine:2", "boutique:3", "immeuble:3", "cafe:Le Tire-Bouchon:1"];
   let iS = 0, nTr = 0; const CAFES = [];
-  const poser = (t, g) => { const pp = t.split(":"); if (pp[0] === "cafe") return cafe(g, pp[1], Number(pp[2] || 0)); if (pp[0] === "cafe2") return relief("fac4", g, 0); return relief(pp[0] === "boutique" ? "fac1" : "fac3", g, Number(pp[1] || 0)); };
+  const poser = (t, g) => { const pp = t.split(":"); if (pp[0] === "cafe") return cafe(g, pp[1], Number(pp[2] || 0)); if (pp[0] === "cafe2") { const g2 = new THREE.Group(); g2.scale.setScalar(1.3); g.add(g2); return relief("fac4", g2, 0); } return relief(pp[0] === "boutique" ? "fac1" : "fac3", g, Number(pp[1] || 0)); };
   /* une rangée : partant de (ax, az), tournée selon ry (la façade regarde (sin ry, cos ry)), longue de « long » ; les façades, un peu étirées ou serrées pour tomber juste */
   const rang = (ax, az, ry, long, y = 0, terr = false) => { const dx = Math.cos(ry), dz = -Math.sin(ry), nx = Math.sin(ry), nz = Math.cos(ry), types = []; let tot = 0;
     for (;;) { const t = SUITE[iS % SUITE.length], w = LARG[t.split(":")[0]]; if (types.length && tot + w / 2 > long) break; types.push(t); tot += w; iS++; }
@@ -127,11 +145,16 @@ function construireMontmartre2(A, L, scene) {
     const T = new THREE.Group(); T.position.set(ax + dx * long / 2 + nx * .75, y + .06 + (nTr++ % 4) * .004, az + dz * long / 2 + nz * .75); T.rotation.y = ry; scene.add(T);
     const p = new THREE.Mesh(planUV(long, 1.5, long / 3, 1.5), troM); p.rotation.x = -Math.PI / 2; p.receiveShadow = true; T.add(p); box(long, .08, .26, borM, 0, -.02, .72, T); };
   // le bas : la place du métro, la rue Norvins, la place du Tertre, la rue Saint-Éleuthère, la place du bas
-  rang(X_MET, -10, 0, X_NOR - X_MET); rang(X_NOR, 10, Math.PI, X_NOR - X_MET); rang(X_NOR, -10, -Math.PI / 2, 10 - RZ); rang(X_NOR, RZ, -Math.PI / 2, 10 - RZ);
-  rang(X_NOR, -RZ, 0, -PX - X_NOR); rang(-PX, RZ, Math.PI, -PX - X_NOR);
-  rang(-PX, -PZ, 0, 2 * PX, 0, true); rang(PX, PZ, Math.PI, 2 * PX, 0, true); rang(-PX, PZ, Math.PI / 2, PZ - RZ, 0, true); rang(-PX, -RZ, Math.PI / 2, PZ - RZ, 0, true); rang(PX, -PZ, -Math.PI / 2, PZ - RZ, 0, true); rang(PX, RZ, -Math.PI / 2, PZ - RZ, 0, true);
-  rang(PX, -RZ, 0, X_ELE - PX); rang(X_ELE, RZ, Math.PI, X_ELE - PX);
-  rang(X_ELE, BZ, Math.PI / 2, BZ - RZ, 0, true); rang(X_ELE, -RZ, Math.PI / 2, BZ - RZ, 0, true); rang(X_ELE, -BZ, 0, 14, 0, true); rang(X_ELE + 14, BZ, Math.PI, 14, 0, true);
+  /* (10.242) les angles où une rue débouche sur une place : un pan coupé, comme à Paris — une façade en biais ; les deux rangées s'arrêtent avant, et rien ne se traverse plus */
+  const PC = 5, DIAG = [];
+  const pan = (cx, cz, ux, uz, vx, vz) => { const nx = -(ux + vx) / Math.SQRT2, nz = -(uz + vz) / Math.SQRT2, ry = Math.atan2(nx, nz), dx = Math.cos(ry), dz = -Math.sin(ry), p1 = [cx + ux * PC, cz + uz * PC], p2 = [cx + vx * PC, cz + vz * PC];
+    const st = (p2[0] - p1[0]) * dx + (p2[1] - p1[1]) * dz > 0 ? p1 : p2; rang(st[0], st[1], ry, PC * Math.SQRT2); DIAG.push([p1[0], p1[1], nx, nz, cx, cz, ux, uz, vx, vz]); };
+  rang(X_MET, -10, 0, X_NOR - X_MET); rang(X_NOR, 10, Math.PI, X_NOR - X_MET);
+  rang(X_NOR + PC, -RZ, 0, -PX - X_NOR - 2 * PC); rang(-PX - PC, RZ, Math.PI, -PX - X_NOR - 2 * PC);
+  rang(-PX, -PZ, 0, 2 * PX, 0, true); rang(PX, PZ, Math.PI, 2 * PX, 0, true); rang(-PX, PZ, Math.PI / 2, PZ - RZ - PC, 0, true); rang(-PX, -RZ - PC, Math.PI / 2, PZ - RZ - PC, 0, true); rang(PX, -PZ, -Math.PI / 2, PZ - RZ - PC, 0, true); rang(PX, RZ + PC, -Math.PI / 2, PZ - RZ - PC, 0, true);
+  rang(PX + PC, -RZ, 0, X_ELE - PX - 2 * PC); rang(X_ELE - PC, RZ, Math.PI, X_ELE - PX - 2 * PC);
+  rang(X_ELE, BZ, Math.PI / 2, BZ - RZ - PC, 0, true); rang(X_ELE, -RZ - PC, Math.PI / 2, BZ - RZ - PC, 0, true); rang(X_ELE, -BZ, 0, 14, 0, true); rang(X_ELE + 14, BZ, Math.PI, 14, 0, true);
+  for (const sz of [-1, 1]) { pan(X_NOR, sz * RZ, 0, sz, 1, 0); pan(-PX, sz * RZ, -1, 0, 0, sz); pan(PX, sz * RZ, 1, 0, 0, sz); pan(X_ELE, sz * RZ, -1, 0, 0, sz); box(.6, 13, 10 - RZ - PC + .3, MITOYEN, X_NOR - .3, 6.5, sz * (10 - (10 - RZ - PC) / 2)); }
   // le haut : la rue qui fait le tour du Sacré-Cœur, la place de derrière
   rang(100, -TZ, 0, X_DER - 100, HAUT); rang(X_DER, TZ, Math.PI, X_DER - 100, HAUT); rang(X_DER, -TZ, -Math.PI / 2, 2 * TZ, HAUT);
   // ---------- le métro Abbesses : l'édicule de verre et de fonte verte, devant son immeuble, au bout de la place ----------
@@ -325,9 +348,10 @@ function construireMontmartre2(A, L, scene) {
   // ---------- le retour : un cercle violet devant le métro, vers la cour d'honneur ----------
   L.portails.push({ dans: (x, z) => Math.hypot(x - (MX1 + 1.4), z) < .6, seuil: [MX1 + 1.4, 0], vers: "grande", arrivee: [6, 6.6], yaw: Math.PI, violet: true, pasApo: true });
   // ---------- là où l'on marche : les places, les rues, les escaliers et le palier, la terrasse, la rue autour, la place de derrière (sans les arbres, les tables, les bancs…) ----------
-  const ZONES = [[X_MET + 2, X_NOR + .4, -8.4, 8.4], [X_NOR - .4, -PX + .4, -RZ + 1.6, RZ - 1.6], [-PX + 1.6, PX - 1.6, -PZ + 1.6, PZ - 1.6], [PX - .4, X_ELE + .4, -RZ + 1.6, RZ - 1.6], [X_ELE + 1.6, X_PEN + .3, -BZ + 1.6, BZ - 1.6],
-    [X_PEN - .5, X_TER + .5, ZE0 + .2, ZE1 - .3], [X_PEN - .5, X_TER + .5, -ZE1 + .3, -ZE0 - .2], [X_PAL0, X_PAL1, -ZE1 + .3, ZE1 - .3], [X_TER + .4, X_SC - .5, -17.6, 17.6], [X_TER + .5, X_DER - 1.6, 16.4, TZ - 1.6], [X_TER + .5, X_DER - 1.6, -TZ + 1.6, -16.4], [X_CHE + .5, X_DER - 1.6, -TZ + 1.6, TZ - 1.6]];
-  const dansZ = (x, z) => ZONES.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) && !(x < MX1 + .6 && Math.abs(z) < 2.3) && !(x > X_SC - 2.9 && x < X_SC + 1 && Math.abs(z) < 7.8);
+  const M5 = .5;   /* (10.242 : on marche aussi sur les trottoirs, jusqu'à 50 cm des façades ; les rues entrent dans les places — avant, une bande infranchissable entre elles) */
+  const ZONES = [[X_MET + 2, X_NOR + 1, -10 + M5, 10 - M5], [X_NOR - 1, -PX + 2, -RZ + M5, RZ - M5], [-PX + M5, PX - M5, -PZ + M5, PZ - M5], [PX - 2, X_ELE + 2, -RZ + M5, RZ - M5], [X_ELE + M5, X_PEN + .3, -BZ + M5, BZ - M5],
+    [X_PEN - .5, X_TER + .5, ZE0 + .2, ZE1 - .3], [X_PEN - .5, X_TER + .5, -ZE1 + .3, -ZE0 - .2], [X_PAL0, X_PAL1, -ZE1 + .3, ZE1 - .3], [X_TER + .4, X_SC - .5, -17.6, 17.6], [X_TER + .5, X_DER - M5, 16.4, TZ - M5], [X_TER + .5, X_DER - M5, -TZ + M5, -16.4], [X_CHE + .5, X_DER - M5, -TZ + M5, TZ - M5]];
+  const dansZ = (x, z) => ZONES.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) && DIAG.every(([px, pz, nx, nz, cx, cz, ux, uz, vx, vz]) => (x - px) * nx + (z - pz) * nz > .5 || (x - cx) * ux + (z - cz) * uz < -.6 || (x - cx) * vx + (z - cz) * vz < -.6 || (x - cx) * ux + (z - cz) * uz > PC + 7 || (x - cx) * vx + (z - cz) * vz > PC + 7) && !(x < MX1 + .6 && Math.abs(z) < 2.3) && !(x > X_SC - 2.9 && x < X_SC + 1 && Math.abs(z) < 7.8);
   L.limites = (x, z) => { if (!dansZ(x, z)) return false; for (const [ox, oz, r] of OBS) if ((x - ox) ** 2 + (z - oz) ** 2 < r * r) return false; return true; };
   L.hauteur = (x, z) => hauteur(x, z); L.solsPlus = SOLS; L.sansPNJ = true;
   L.depart = [X_MET + 8, 0]; L.taille = 1.8; L.suivi = { d: 6.5, h: 3.6, av: 3, vy: 2 }; L.fov = [58, 72];
