@@ -8132,7 +8132,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.portails.push({ dans: (x, z) => x > 10 && z > 5.4 && z < 7.6, vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     if (false) L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x + 6, z - 9) < .6, seuil: [-6, 9], vers: "corbier", arrivee: [54.5, 15], yaw: -Math.PI / 2, violet: true, pasApo: true });
-    L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x - 6, z - 9) < .6, seuil: [6, 9], vers: "tertre2", arrivee: [0, 8], yaw: Math.PI, violet: true, pasApo: true, admin: true });   // (10.239) le cercle violet de l'administrateur : le nouveau Montmartre, en construction (jamais préparé d'avance)
+    L.portails.push({ dans: (x, z) => estAdmin() && Math.hypot(x - 6, z - 9) < .6, seuil: [6, 9], vers: "tertre2", arrivee: [-54, 0], yaw: Math.PI / 2, violet: true, pasApo: true, admin: true });   // (10.239) le cercle violet de l'administrateur : le nouveau Montmartre, en construction (jamais préparé d'avance)
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
   }
 
