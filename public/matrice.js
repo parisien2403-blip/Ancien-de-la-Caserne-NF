@@ -9331,7 +9331,7 @@ export async function ouvrir(ctx) {
     else if (M.pauseRendu) {}   /* (une vidéo plein écran passe : on ne dessine pas la scène derrière, la vidéo reste fluide) */
     else if (M.porteRE) { M.porteRE.maj(performance.now()); if (M.porteRE) rendu.render(M.porteRE.sc, M.porteRE.cam); }   /* (la porte qui s'ouvre, à la place du jeu) */
     else if (M.apoIntro && !M.cine && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) { const cc = rendu.getClearColor(new THREE.Color()), ca = rendu.getClearAlpha(); rendu.setClearColor(0x000000, 1); rendu.clear(); rendu.setClearColor(cc, ca); }   /* (Resident Evil, l'arrivée : écran noir jusqu'au début de la cinématique — pas d'image fugace avant) */
-    else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera); M.dbgRendu = (M.dbgRendu || 0) + 1; { const np = (rendu.info.programs ? rendu.info.programs.length : 0) - prog0, nt = rendu.info.memory.textures - tex0; M.dbgDessin = { np, nt }; seg("dessin" + (np ? " +" + np + " matières" : "") + (nt ? " +" + nt + " images" : "")); }   /* (à Resident Evil : avec les effets d'image) */
+    else if (M.relief) rendreRelief(rendu); else if (BD.on && rendreBD(rendu, performance.now())) {} else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera); M.dbgRendu = (M.dbgRendu || 0) + 1; { const np = (rendu.info.programs ? rendu.info.programs.length : 0) - prog0, nt = rendu.info.memory.textures - tex0; M.dbgDessin = { np, nt }; seg("dessin" + (np ? " +" + np + " matières" : "") + (nt ? " +" + nt + " images" : "")); }   /* (à Resident Evil : avec les effets d'image) */
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
   M.redim();
@@ -15949,6 +15949,33 @@ function postActif() { if (M && M.course && M.course.on && M.L && !M.relief && !
 function chargerPost() { if (postMods) return postMods; postMods = Promise.all(["EffectComposer", "RenderPass", "ShaderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`./vendor/post/${n}.js?v=1`)))
     .then(([a, b, c, d, e]) => ({ ...a, ...b, ...c, ...d, ...e })).catch(e => { console.warn("post", e); return null; }); return postMods; }
 // rend l'image : avec les effets si on est à Resident Evil (et qu'ils sont prêts), sinon comme avant ; vrai si les effets ont servi
+/* (10.250) le « style BD » (essai de l'administrateur) : les couleurs en trois aplats (lumière, mi-ombre, ombre), et un trait d'encre autour des formes — tiré de la profondeur et des normales */
+const BD = { on: false, mats: new Map(), orig: new WeakMap(), scene: null, tMaj: 0 };
+export function styleBD(on) { BD.on = !!on; if (!M) return; if (!BD.on) { bdRestaurer(); } else { BD.scene = null; } M.ctx && M.ctx.surBD && M.ctx.surBD(BD.on); }
+function bdToon(m) { if (!m || !(m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial)) return m; let n = BD.mats.get(m); if (n) return n;
+  if (!BD.grad) { const d = new Uint8Array([95, 95, 95, 255, 178, 178, 178, 255, 255, 255, 255, 255]); BD.grad = new THREE.DataTexture(d, 3, 1); BD.grad.minFilter = BD.grad.magFilter = THREE.NearestFilter; BD.grad.needsUpdate = true; }
+  n = new THREE.MeshToonMaterial({ map: m.map, gradientMap: BD.grad, transparent: m.transparent, opacity: m.opacity, alphaTest: m.alphaTest, side: m.side, emissiveMap: m.emissiveMap, vertexColors: m.vertexColors, depthWrite: m.depthWrite, fog: m.fog });
+  BD.mats.set(m, n); bdSync(m, n); return n; }
+function bdSync(m, n) { n.color.copy(m.color).offsetHSL(0, .06, .02); if (m.emissive) n.emissive.copy(m.emissive); n.emissiveIntensity = m.emissiveIntensity ?? 1; n.opacity = m.opacity; n.visible = m.visible; if (n.map !== m.map) { n.map = m.map; n.needsUpdate = true; } }
+function bdAppliquer(sc) { sc.traverse(o => { if (!o.isMesh || o.userData.pasBD) return; const cur = o.material; if (o.userData.bdMat === cur) return; BD.orig.set(o, cur); o.material = o.userData.bdMat = Array.isArray(cur) ? cur.map(bdToon) : bdToon(cur); }); }
+function bdRestaurer() { const sc = M && M.scene; if (sc) sc.traverse(o => { if (o.isMesh && BD.orig.has(o)) { if (o.userData.bdMat === o.material) o.material = BD.orig.get(o); BD.orig.delete(o); delete o.userData.bdMat; } }); BD.scene = null; }
+function rendreBD(rendu, now) { const sc = M.scene, cam = M.camera; if (!sc || !cam) return false;
+  if (BD.scene !== sc || now > BD.tMaj) { BD.scene = sc; BD.tMaj = now + 3000; bdAppliquer(sc); for (const [m, n] of BD.mats) bdSync(m, n); }
+  const cv = rendu.domElement, W = cv.width, H = cv.height;
+  if (!BD.rtC || BD.rtC.width !== W || BD.rtC.height !== H) { if (BD.rtC) { BD.rtC.dispose(); BD.rtN.dispose(); } BD.rtC = new THREE.WebGLRenderTarget(W, H, { samples: MOBILE ? 0 : 4, type: THREE.HalfFloatType }); BD.rtN = new THREE.WebGLRenderTarget(W, H); BD.rtN.depthTexture = new THREE.DepthTexture(W, H);
+    if (!BD.post) { BD.nm = new THREE.MeshNormalMaterial(); BD.post = new THREE.ShaderMaterial({ uniforms: { tC: { value: null }, tN: { value: null }, tD: { value: null }, px: { value: new THREE.Vector2() }, near: { value: .1 }, far: { value: 300 } },
+      vertexShader: "varying vec2 v; void main(){ v=uv; gl_Position=vec4(position.xy,0.,1.); }",
+      fragmentShader: `uniform sampler2D tC,tN,tD; uniform vec2 px; uniform float near,far; varying vec2 v;
+        float lin(vec2 u){ float z=texture2D(tD,u).x*2.-1.; return 2.*near*far/(far+near-z*(far-near)); }
+        void main(){ vec3 col=texture2D(tC,v).rgb; float d0=lin(v); vec3 n0=texture2D(tN,v).rgb; float e=0.;
+          for(int i=0;i<4;i++){ vec2 o = i==0?vec2(1.,0.):i==1?vec2(-1.,0.):i==2?vec2(0.,1.):vec2(0.,-1.); o*=px*1.3; float d=lin(v+o); e=max(e, smoothstep(.015,.05, abs(d-d0)/max(d0,1.))); e=max(e, smoothstep(.25,.55, length(texture2D(tN,v+o).rgb-n0))); }
+          e*=1.-smoothstep(40.,160.,d0); col=pow(max(col,0.),vec3(1./2.2)); col=mix(col,vec3(.13,.1,.09),e*.92); float l=dot(col,vec3(.299,.587,.114)); col=mix(vec3(l),col,1.18); gl_FragColor=vec4(col,1.); }` });
+      BD.q = new THREE.Scene(); BD.q.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), BD.post)); BD.c2 = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); }
+    const u = BD.post.uniforms; u.tC.value = BD.rtC.texture; u.tN.value = BD.rtN.texture; u.tD.value = BD.rtN.depthTexture; u.px.value.set(1 / W, 1 / H); }
+  BD.post.uniforms.near.value = cam.near; BD.post.uniforms.far.value = cam.far;
+  const cs = rendu.outputColorSpace; rendu.setRenderTarget(BD.rtC); rendu.render(sc, cam); const ov = sc.overrideMaterial, bg = sc.background; sc.overrideMaterial = BD.nm; rendu.setRenderTarget(BD.rtN); rendu.render(sc, cam); sc.overrideMaterial = ov; sc.background = bg;
+  rendu.setRenderTarget(null); rendu.render(BD.q, BD.c2); rendu.outputColorSpace = cs; return true; }
+quitterLieu.add(() => { if (BD.on) bdRestaurer(); });
 function rendrePost(rendu, now) { if (!postActif()) return false; if (!POST.comp) { chargerPost().then(m => { if (!m || POST.comp || !M) return;
       const comp = new m.EffectComposer(rendu), rp = new m.RenderPass(M.scene, M.camera), haut = QUALITE === "haut";
       const bloom = new m.UnrealBloomPass(new THREE.Vector2(256, 256), haut ? .85 : .6, .55, .82);   /* (seul ce qui est vraiment lumineux rayonne : les flammes, les lampes, les explosions) */
