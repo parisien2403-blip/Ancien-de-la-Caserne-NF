@@ -1384,17 +1384,23 @@ function lanternesMurales(scene, L) {
     liste.forEach((l, i) => { mt.makeTranslation(l.x + l.nx * 1.3, l.yg + .03, l.z + l.nz * 1.3); im.setMatrixAt(i, mt); }); im.frustumCulled = false; im.visible = false; scene.add(im); nuit.push(im); }
   L.lanternes = liste; return n;
 }
-function fusionStatique(scene, L, depuis = 0) {
+function fusionStatique(scene, L, depuis = 0, opts = {}) {   /* (opts.ordre : on fond aussi les pièces à ordre d'affichage fixe — fenêtres allumées — entre elles, à ordre égal) */
   const garde = new Set(), gardeM = new Set(), vus = new Set(), marque = (v, d) => { if (!v || typeof v !== "object" || vus.has(v) || d > 4) return; vus.add(v);
     if (v.isObject3D) { v.traverse(o => { garde.add(o); [].concat(o.material || []).forEach(m => gardeM.add(m)); }); return; } if (v.isMaterial) { gardeM.add(v); return; } if (v.isTexture || ArrayBuffer.isView(v)) return;
     for (const k in v) { try { marque(v[k], d + 1); } catch (e) {} } };
   marque(L, 0);
+  if (opts.decouper) for (const o of scene.children.slice(depuis)) {   /* (10.253 : une boîte à une matière par face — façades, piliers — se découpe face par face, pour se fondre avec les autres) */
+    if (!o.isMesh || o.isInstancedMesh || !Array.isArray(o.material) || o.children.length || garde.has(o) || o.userData.perso || o.renderOrder || !o.visible || o.onBeforeRender !== THREE.Object3D.prototype.onBeforeRender) continue;
+    const g = o.geometry, mats = o.material; if (!g.index || !g.groups || !g.groups.length || mats.some(m => gardeM.has(m))) continue;
+    for (const gr of g.groups) { const m = mats[gr.materialIndex]; if (!m || m.visible === false) continue; const sg = g.clone(); sg.clearGroups(); sg.setIndex(Array.from(g.index.array.subarray(gr.start, gr.start + gr.count)));
+      const s = new THREE.Mesh(sg, m); s.position.copy(o.position); s.quaternion.copy(o.quaternion); s.scale.copy(o.scale); s.castShadow = o.castShadow; s.receiveShadow = o.receiveShadow; s.layers.mask = o.layers.mask; scene.add(s); }
+    scene.remove(o); }
   const groupes = new Map(), ech = scene.children.slice(depuis);
-  for (const o of ech) { if (!o.isMesh || o.isInstancedMesh || o.children.length || garde.has(o) || !o.visible || Array.isArray(o.material) || o.onBeforeRender !== THREE.Object3D.prototype.onBeforeRender || o.userData.perso || o.renderOrder) continue;
+  for (const o of ech) { if (!o.isMesh || o.isInstancedMesh || o.children.length || garde.has(o) || !o.visible || Array.isArray(o.material) || o.onBeforeRender !== THREE.Object3D.prototype.onBeforeRender || o.userData.perso || (o.renderOrder && !opts.ordre)) continue;
     const g = o.geometry, at = Object.keys(g.attributes).sort().join(","); if (!g.attributes.position || g.morphAttributes && Object.keys(g.morphAttributes).length) continue;
     const m = o.material, t = m.map, sig = gardeM.has(m) ? m.uuid : [m.type, m.color && m.color.getHexString(), t ? (t.source.uuid + t.repeat.x.toFixed(3) + t.repeat.y.toFixed(3) + t.offset.x.toFixed(3) + t.offset.y.toFixed(3) + t.rotation) : "", m.roughness, m.metalness,
       m.transparent, m.opacity, m.side, m.emissive && m.emissive.getHexString(), m.vertexColors, m.alphaTest, m.depthWrite, m.fog].join(",");   // (deux matières identiques comptent pour une)
-    const cle = sig + "|" + at + "|" + (o.castShadow ? 1 : 0);
+    const cle = sig + "|" + at + "|" + (o.castShadow ? 1 : 0) + "|" + (o.renderOrder || 0) + "|" + (o.frustumCulled ? 1 : 0);
     (groupes.get(cle) || groupes.set(cle, []).get(cle)).push(o); }
   let n = 0; const retires = new Set();   /* (10.236 : on retire tout d'un coup à la fin — un par un, c'était des millions de comparaisons, des secondes figées à Montmartre) */
   for (const liste of groupes.values()) { if (liste.length < 2) continue;
@@ -1402,11 +1408,36 @@ function fusionStatique(scene, L, depuis = 0) {
     const noms = Object.keys(parts[0].attributes), tot = parts.reduce((a, g) => a + g.attributes.position.count, 0), out = new THREE.BufferGeometry();
     for (const nm of noms) { const it = parts[0].attributes[nm].itemSize, arr = new Float32Array(tot * it); let off = 0; for (const g of parts) { const a = g.attributes[nm]; if (!a.isInterleavedBufferAttribute && !a.normalized && a.itemSize === it && a.array.length >= a.count * it) arr.set(a.array.subarray(0, a.count * it), off * it); else for (let i = 0; i < a.count; i++) for (let c = 0; c < it; c++) arr[(off + i) * it + c] = a.getComponent(i, c); off += a.count; } out.setAttribute(nm, new THREE.BufferAttribute(arr, it)); }
     out.computeBoundingSphere(); out.computeBoundingBox();
-    const m = new THREE.Mesh(out, liste[0].material); m.castShadow = liste[0].castShadow; m.receiveShadow = true; m.matrixAutoUpdate = false; scene.add(m);
+    const m = new THREE.Mesh(out, liste[0].material); m.castShadow = liste[0].castShadow; m.receiveShadow = true; m.matrixAutoUpdate = false; m.renderOrder = liste[0].renderOrder || 0; m.frustumCulled = liste[0].frustumCulled; scene.add(m);
     for (const o of liste) { retires.add(o); o.geometry.dispose(); } parts.forEach(g => g.dispose()); n += liste.length; }
   if (retires.size) { scene.children = scene.children.filter(c => !retires.has(c)); for (const o of retires) { o.parent = null; o.dispatchEvent({ type: "removed" }); } }
   return n;
 }
+/* (10.253) pendant le jeu, les groupes de décor qui ne bougent pas (bâtiments, abris, mobilier) sont fondus, chacun chez lui, par matière : bien moins de dessins à chaque image.
+   On ne touche qu'à ce qui est resté immobile et visible plusieurs secondes, et à rien de ce que le lieu garde en mémoire (portes, lumières, objets qu'on touche). Un groupe par image : pas d'à-coup */
+function fusionVivante(now) { if (!M || !M.scene || !M.L || M.cine || M.relief || (M.rendu && M.rendu.xr && M.rendu.xr.isPresenting)) return;
+  let F = M.fusV; if (!F || F.scene !== M.scene) F = M.fusV = { scene: M.scene, t0: now, etat: 0 };
+  if (F.fini) return;
+  const tout = () => { const G = []; const voir = (par, prof) => { for (const o of par.children) { if (!o.isGroup) continue; if (o.userData.maison) { if (prof < 2) voir(o, prof + 1); continue; } G.push(o); } }; voir(M.scene, 0); return G; };
+  const pieces = (g) => { const P = []; let ok = true; g.traverse(o => { if (!ok || o === g) return; if (o.isLight || o.isSprite || o.isPoints || o.isLine || o.isSkinnedMesh || o.isInstancedMesh || o.isCamera || o.isAudio) { ok = false; return; } if (!o.visible) { ok = false; return; } if (o.isMesh) P.push(o); }); return ok ? P : null; };
+  if (F.etat === 0) { if (now - F.t0 < 3000) return;   // (on laisse le lieu s'installer)
+    const garde = new Set(), vus = new Set(), marque = (v, d) => { if (!v || typeof v !== "object" || vus.has(v) || d > 4) return; vus.add(v); if (v.isObject3D) { if (v.isScene) return; let n = 0; v.traverse(() => n++); if (n > 150) garde.add(v); else v.traverse(o => garde.add(o)); return; }   /* (un très grand ensemble gardé — une rue entière — : on ne garde que lui ; ses morceaux restent observés) */ if (v.isMaterial || v.isTexture || ArrayBuffer.isView(v)) return; for (const k in v) { try { marque(v[k], d + 1); } catch (e) {} } };
+    for (const LL of [M.L, M.jumeauJ && M.jumeauJ.L]) if (LL) { vus.add(LL); for (const k in LL) if (k !== "racineJ" && k !== "scene") { try { marque(LL[k], 1); } catch (e) {} } }   /* (sauf la racine du décor entier)*/ for (const p of M.gens.values()) if (p.g) p.g.traverse(o => garde.add(o));
+    F.cands = []; F.dbg = { tous: 0, garde: 0, anime: 0, pieces: 0, peu: 0, gardeP: 0 }; for (const g of tout()) { F.dbg.tous++; if (garde.has(g)) { F.dbg.garde++; continue; } if (g.userData.anime || g.userData.poser || g.userData.parts || g.userData.perso || !g.visible) { F.dbg.anime++; continue; } const P = pieces(g); if (!P) { F.dbg.pieces++; continue; } if (P.length < 4) { F.dbg.peu++; continue; } if (P.some(o => garde.has(o))) { F.dbg.gardeP++; continue; }
+      const etat = []; g.updateMatrixWorld(true); g.traverse(o => { if (o !== g) etat.push([o, o.matrix.clone(), o.material, o.visible]); }); F.cands.push({ g, etat, mw: g.matrixWorld.clone() }); }
+    F.etat = 1; F.t1 = now; return; }
+  if (F.etat === 1) { if (now - F.t1 < 6000) return;   // (six secondes d'observation : ce qui a bougé, changé de matière ou disparu n'est pas touché)
+    F.file = F.cands.filter(c => c.g.parent && c.g.visible && c.etat.every(([o, m, mat, v]) => o.parent && o.visible === v && o.material === mat && o.matrix.equals(m))); F.dbg.cands = F.cands.length; F.dbg.file = F.file.length; F.cands = null; F.etat = 2; F.n = 0; return; }
+  if (F.etat === 2) { const c = F.file.shift(); if (!c) { F.fini = true; return; } const g = c.g; if (!g.parent) return;
+    g.updateMatrixWorld(true); const inv = g.matrixWorld.clone().invert(), groupes = new Map(), mm = new THREE.Matrix4();
+    g.traverse(o => { if (!o.isMesh || Array.isArray(o.material) || o.renderOrder || o.onBeforeRender !== THREE.Object3D.prototype.onBeforeRender || !o.geometry || !o.geometry.attributes.position || (o.geometry.morphAttributes && Object.keys(o.geometry.morphAttributes).length)) return;
+      const at = Object.keys(o.geometry.attributes).sort().join(","), k = o.material.uuid + "|" + at + "|" + (o.castShadow ? 1 : 0) + "|" + (o.receiveShadow ? 1 : 0) + "|" + o.layers.mask + "|" + (o.frustumCulled ? 1 : 0); (groupes.get(k) || groupes.set(k, []).get(k)).push(o); });
+    for (const liste of groupes.values()) { if (liste.length < 2) continue;
+      const parts = liste.map(o => { const gg = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); mm.multiplyMatrices(inv, o.matrixWorld); gg.applyMatrix4(mm); return gg; });
+      const noms = Object.keys(parts[0].attributes), tot = parts.reduce((a, q) => a + q.attributes.position.count, 0), out = new THREE.BufferGeometry();
+      for (const nm of noms) { const it = parts[0].attributes[nm].itemSize, arr = new Float32Array(tot * it); let off = 0; for (const q of parts) { const a = q.attributes[nm]; for (let i = 0; i < a.count; i++) for (let j = 0; j < it; j++) arr[(off + i) * it + j] = a.getComponent ? a.getComponent(i, j) : a.array[i * it + j]; off += a.count; } out.setAttribute(nm, new THREE.BufferAttribute(arr, it)); }
+      out.computeBoundingSphere(); out.computeBoundingBox(); const m = new THREE.Mesh(out, liste[0].material); m.castShadow = liste[0].castShadow; m.receiveShadow = liste[0].receiveShadow; m.layers.mask = liste[0].layers.mask; m.frustumCulled = liste[0].frustumCulled; m.userData.fusionV = true; g.add(m);
+      for (const o of liste) o.removeFromParent(); parts.forEach(q => q.dispose()); F.n += liste.length; } } }
 /* --- sols et ciel --- */
 let TEXTURES = null;
 function textures() {
@@ -9326,6 +9357,7 @@ export async function ouvrir(ctx) {
     if (M.lieu === "hv1955" && !M.L.kingston && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC) && MD.bttf) MD.bttf.ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
+    try { fusionVivante(performance.now()); } catch (e) { if (M) M.fusV = { fini: true, err: String(e) }; }
     seg("cinématique"); const prog0 = rendu.info.programs ? rendu.info.programs.length : 0, tex0 = rendu.info.memory.textures; if (M.trace1) trace("avant 1re image " + M.lieu);
     if (rendu.xr.isPresenting && M.vr && M.vr.cam) { if (M.porteRE) M.porteRE.maj(performance.now()); suivreVR(); try { rendreVR(rendu); } catch (e) { signalerErreurVR(e); if (M.vr.th) finCinemaVR(M.vr); rendu.xr.enabled = true; rendu.setRenderTarget(null); rendu.render(M.scene, M.vr.cam); } }
     else if (M.pauseRendu) {}   /* (une vidéo plein écran passe : on ne dessine pas la scène derrière, la vidéo reste fluide) */
@@ -11841,6 +11873,9 @@ function construireScene(id) {
   scene.add(soleil);
   const n0J = scene.children.length;
   sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); ouvrirDehors = id === "grande"; const L = construireLieu(baseLieu(id), scene); ouvrirDehors = false; sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id), /^(sh|z)-/.test(id));   /* (les climatiseurs : à Silent Hill et à l'apocalypse, pas dans la caserne de tous les jours) */
+  /* (10.253) la rue n'était pas regroupée : recopiée derrière le porche, elle coûtait à la cour près de 3 000 dessins par image. On fond ses pièces fixes, sauf celles du porche et du bout de la rue (que l'on cache ou montre selon le côté) */
+  if (id === "rue" || id === "grande") try { const b = new THREE.Box3(), c = new THREE.Vector3(); scene.updateMatrixWorld(true); L.__gardeJ = scene.children.slice(n0J).filter(o => { if (!o.isMesh) return false; b.setFromObject(o); if (b.isEmpty()) return true; b.getCenter(c); return id === "rue" ? (c.z < -8 && Math.abs(c.x) < 32) : (c.z > 13 && Math.abs(c.x) < 32); });
+    const n = fusionStatique(scene, L, n0J, { ordre: true, decouper: true }); trace("fusion " + id + " " + n); } catch (e) { console.warn("fusion rue", e); } finally { delete L.__gardeJ; }
   const contenuJ = JUMEAUX[id] ? scene.children.slice(n0J) : null;
   // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge

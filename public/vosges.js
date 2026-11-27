@@ -1421,14 +1421,13 @@ function construireVosges(A, L, scene) { const THREE = __T3V();
     scene.remove(o); }
   fusionStatique(scene, L, 0);
   /* (10.248) la fluidité : les passants (près de 150, une cinquantaine de pièces chacun) ne sont dessinés que près de la caméra ; ceux du fond de la place disparaissent et reviennent quand on s'approche */
-  { let PERS = [], tP = 0, k = 0; const caches = new Set(), D2 = ((MOBILE || GPU_MODESTE) ? 26 : 38) ** 2, DP2 = ((MOBILE || GPU_MODESTE) ? 8 : 12) ** 2;
+  { let PERS = [], tP = 0, k = 0; const caches = new Set(), MOB = MOBILE || GPU_MODESTE, D_IN = (MOB ? 30 : 42) ** 2, D_OUT = (MOB ? 36 : 50) ** 2, P_IN = (MOB ? 9 : 13) ** 2, P_OUT = (MOB ? 12 : 17) ** 2;   /* (10.253 : deux seuils — on cache plus loin qu'on ne remontre : plus de passants qui clignotent à la limite) */
+    const petitsDe = (g) => { if (g.userData.petits) return g.userData.petits; const L2 = g.userData.petits = [], b = new THREE.Box3(), s = new THREE.Vector3(); g.updateMatrixWorld(true); g.traverse(o => { if (o.isMesh && o.visible) { b.setFromObject(o).getSize(s); if (Math.max(s.x, s.y, s.z) < .1) L2.push(o); } }); return L2; };
     const a0 = L.anim; L.anim = (tm) => { try { a0 && a0(tm); } catch (e) {} if (!M || M.L !== L || !M.camera) return; const c = M.camera.position;
-      if (tm > tP) { tP = tm + 2000; const joueurs = new Set([...M.gens.values()].map(p => p.g)); PERS = scene.children.filter(o => o.isGroup && o.userData.poser && !joueurs.has(o)); }
+      if (tm > tP) { const prem = !PERS.length; tP = tm + 2000; const joueurs = new Set([...M.gens.values()].map(p => p.g)); PERS = scene.children.filter(o => o.isGroup && o.userData.poser && !joueurs.has(o)); if (prem) for (const g of PERS) petitsDe(g); }   /* (les petits détails repérés une fois pour toutes, à l'arrivée : plus d'à-coups en marchant) */
       const n = PERS.length; if (!n) return; for (let i = 0; i < Math.min(n, 30); i++) { const g = PERS[k++ % n], d2 = (g.position.x - c.x) ** 2 + (g.position.z - c.z) ** 2;
-        if (d2 > D2) { if (g.visible && !g.userData.masque) { g.visible = false; caches.add(g); } } else if (caches.has(g)) { caches.delete(g); if (!g.userData.masque) g.visible = true; }
-        /* (et, de loin, les tout petits détails — yeux, boutons, doigts — ne sont plus dessinés : une vingtaine de pièces de moins par passant) */
-        if (!g.userData.petits) { g.userData.petits = []; g.updateMatrixWorld(true); const b = new THREE.Box3(), s = new THREE.Vector3(); g.traverse(o => { if (o.isMesh && o.visible) { b.setFromObject(o).getSize(s); if (Math.max(s.x, s.y, s.z) < .1) g.userData.petits.push(o); } }); }
-        const loinP = d2 > DP2; if (g.userData.loinP !== loinP) { g.userData.loinP = loinP; for (const o of g.userData.petits) { if (loinP) { if (o.visible) { o.visible = false; o.userData.lodCache = true; } } else if (o.userData.lodCache) { o.userData.lodCache = false; o.visible = true; } } } } };
+        if (caches.has(g)) { if (d2 < D_IN) { caches.delete(g); if (!g.userData.masque) g.visible = true; } } else if (d2 > D_OUT && g.visible && !g.userData.masque) { g.visible = false; caches.add(g); }
+        const lp = g.userData.loinP, loinP = lp ? d2 > P_IN : d2 > P_OUT; if (lp !== loinP) { g.userData.loinP = loinP; for (const o of petitsDe(g)) { if (loinP) { if (o.visible) { o.visible = false; o.userData.lodCache = true; } } else if (o.userData.lodCache) { o.userData.lodCache = false; o.visible = true; } } } } };
     quitterLieu.add(() => { for (const g of caches) g.visible = true; caches.clear(); }); }
   /* (10.247) dès que l'introduction commence (l'arrivée par le livre) : Una Mattina, en premier ; à sa fin, la liste habituelle reprend */
   { const av = L.arriveeLivre; L.arriveeLivre = (coul, hugo) => { try { L.lancerBal && L.lancerBal("sons/vosges-una-mattina.mp3"); } catch (e) {} return av(coul, hugo); }; }
