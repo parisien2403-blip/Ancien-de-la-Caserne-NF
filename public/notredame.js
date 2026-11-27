@@ -1014,9 +1014,127 @@ function construireNotreDame(A, L, scene) {
         const rT = P.tete.children.length ? .108 : .108, masque = new THREE.Mesh(new THREE.SphereGeometry(rT * 1.09, 24, 16, .25, Math.PI - .5, .35, 2.2), mat({ map: fT, roughness: .7 })); masque.position.set(0, 0, .005); P.tete.add(masque); }
       OBS.push([jx - .45, jx + .45, jz - .45, jz + .45], [jx, jx + .6, jz + .7, jz + 1.3]);
       const B3 = [0xd8202a, 0x2a5ad8, 0xf2c820].map(c => { const s = new THREE.Mesh(new THREE.SphereGeometry(.06, 12, 10), mat({ color: c, roughness: .4 })); scene.add(s); return s; });
-      AMB.push((tm) => { const t = tm / 1000 * 1.15; for (let i = 0; i < 3; i++) { const u = (t + i / 3) % 1, aller = u < .5, v = aller ? u / .5 : (u - .5) / .5, xa = aller ? -.22 : .22, xb = aller ? .22 : -.22, h = aller ? .85 : .7;
+      const SPEC = { actif: false };   /* (10.254 : pendant la Fête des Fous, le jongleur ne jongle plus : c'est le spectacle qui mène ses balles) */
+      AMB.push((tm) => { if (SPEC.actif) return; const t = tm / 1000 * 1.15; for (let i = 0; i < 3; i++) { const u = (t + i / 3) % 1, aller = u < .5, v = aller ? u / .5 : (u - .5) / .5, xa = aller ? -.22 : .22, xb = aller ? .22 : -.22, h = aller ? .85 : .7;
           B3[i].position.set(jx + xa + (xb - xa) * v, 1.12 + 4 * h * v * (1 - v), jz + .36); }
-        const k = Math.sin(t * Math.PI * 4); P.bras[0].e.rotation.set(-.6 + k * .12, 0, .15); P.bras[0].c.rotation.set(-1.0, 0, 0); P.bras[1].e.rotation.set(-.6 - k * .12, 0, -.15); P.bras[1].c.rotation.set(-1.0, 0, 0); P.tete.rotation.x = -.35; }); }
+
+        const k = Math.sin(t * Math.PI * 4); P.bras[0].e.rotation.set(-.6 + k * .12, 0, .15); P.bras[0].c.rotation.set(-1.0, 0, 0); P.bras[1].e.rotation.set(-.6 - k * .12, 0, -.15); P.bras[1].c.rotation.set(-1.0, 0, 0); P.tete.rotation.x = -.35; });
+      /* (10.254) la Fête des Fous : on donne une pièce au jongleur ; il parle, lance ses balles très haut, elles retombent dans une fumée rouge —
+         et il devient Clopin Trouillefou, le roi des truands (celui du roman de Victor Hugo) : bannières, torches, confettis, acrobates, cracheur de feu, ronde,
+         la cathédrale en couleurs ; on est élu Pape des Fous et porté par la foule ; feu d'artifice au-dessus des tours ; puis la fumée revient, et il redevient jongleur.
+         La musique : sons/notredame-fete-des-fous.mp3 (au choix de l'administrateur) */
+      { const MUS = "sons/notredame-fete-des-fous.mp3", FX = -1, FZ = -69;
+        const rond = (c0, c1) => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, c0); g.addColorStop(1, c1); x.fillStyle = g; x.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+        const TFU = rond("rgba(200,30,30,.95)", "rgba(120,10,10,0)"), TFL = rond("rgba(255,240,180,1)", "rgba(255,120,20,0)"), TCO = (() => { const c = document.createElement("canvas"); c.width = 64; c.height = 64; const x = c.getContext("2d"); x.font = "52px serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("👑", 32, 36); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+        const jouer = () => { if (SPEC.actif || M.cine) return; const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p) return; SPEC.actif = true;
+          p.cible = null; p.chemin = []; p.g.position.set(jx + 2.2, 0, jz + 2.6); p.g.rotation.y = Math.atan2(-2.2, -2.6); try { envoyerWS({ t: "aller", x: jx + 2.2, z: jz + 2.6 }); } catch (e) {}   /* (on se place un peu de côté : on voit tout le numéro) */
+          const G = new THREE.Group(); scene.add(G); const lum = []; const tm0 = performance.now(), c = M.camera, fov0 = c.fov, duck0 = window.__ndDuck;
+          const add = (o) => { G.add(o); return o; }, perso = (o, x, z, ry = 0) => { const g = personne3D({ taille: 1.72, peau: PE[(x * 7 + z) & 5 & 5] || "#e8c4a0", ch: "#3a2a1a", coif: "court", pantalon: true, chaussures: "#1a1a1a", ...o }); g.position.set(x, 0, z); g.rotation.y = ry; g.userData.poser("debout", 0); g.userData.anime = true; add(g); return g; };
+          let aud = null; try { aud = new Audio(MUS); aud.volume = 0; } catch (e) {}
+          // la pièce qui vole jusqu'au panier
+          const piece = add(new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .008, 12), mat({ color: 0xd8b860, metalness: .8, roughness: .3 }))); const pA = p.g.position.clone().add(new THREE.Vector3(0, 1.1, 0)), pB = new THREE.Vector3(jx + .3, .1, jz + 1.0);
+          // la fumée rouge
+          const fumee = []; const nuage = (n, cx, cz) => { for (let i = 0; i < n; i++) { const s = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: TFU, transparent: true, depthWrite: false, opacity: 0 }))); s.userData = { a: al() * 6.28, r: al() * 2.2, v: .4 + al() * .8, t0: null, cx, cz }; fumee.push(s); } };
+          nuage(PEU ? 22 : 40, jx, jz + .4);
+          // Clopin : mi-parti vert et rouge, gants noirs, le masque vert, le grand chapeau rouge à plume d'or, la marionnette de bouffon sur la main
+          const VE = "#2e8b3a", RO = "#c8202a", CL = perso({ haut: VE, bas: VE, chaussures: VE, peau: "#c8956a", ch: "#141010", coif: "long", levres: "#5a1a1a" }, jx, jz, 0); CL.visible = false; const CP = CL.userData.parts;
+          { const T = 1.74, rT = T * .062, M2 = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: .6 }), vert = M2(0x2e8b3a), rouge = M2(0xc8202a), noir = M2(0x141010), or = new THREE.MeshStandardMaterial({ color: 0xe0b030, metalness: .6, roughness: .35 }), blanc = M2(0xf4f0e8);
+            const recolor = (grp, de, vers) => grp.traverse(o => { if (o.isMesh && o.material.color && o.material.color.getHexString() === de) o.material = vers; });
+            const peau = new THREE.Color("#c8956a").getHexString(), vH = new THREE.Color(VE).getHexString();
+            // les jambes : la droite verte chaussée de rouge, la gauche rouge chaussée de vert ; les revers, les pointes relevées
+            CP.jambes.forEach((J, i) => { J.h.traverse(o => { if (!o.isMesh) return; if (o.geometry.type === "BoxGeometry") { o.material = i ? vert : rouge; o.scale.z = 1.5; const pt = new THREE.Mesh(new THREE.ConeGeometry(T * .022, T * .07, 8), i ? vert : rouge); pt.rotation.x = -Math.PI / 2 - .6; pt.position.set(0, T * .02, T * .1); o.add(pt); } else if (o.material.color.getHexString() === vH) o.material = i ? rouge : vert; });
+              const rev = new THREE.Mesh(new THREE.TorusGeometry(T * .03, T * .012, 6, 12), vert); rev.rotation.x = Math.PI / 2; rev.position.y = -T * .2; J.gen.add(rev); });
+            // les bras : manche rouge à droite, verte à gauche ; les avant-bras et les mains gantés de noir
+            CP.bras.forEach((A, i) => { A.e.children[0].material = i ? vert : rouge; A.c.traverse(o => { if (o.isMesh && o.material.color.getHexString() === peau) o.material = noir; }); });
+            // la tunique : un pan rouge, la ceinture rouge
+            { const pan = new THREE.Mesh(new THREE.BoxGeometry(T * .07, T * .17, T * .05), rouge); pan.position.set(T * .04, T * .06, T * .045); CP.buste.add(pan); const ce = new THREE.Mesh(new THREE.TorusGeometry(T * .068, T * .012, 6, 16), rouge); ce.rotation.x = Math.PI / 2; ce.scale.y = .75; ce.position.y = T * .03; CP.buste.add(ce); }
+            // le visage : le masque vert autour des yeux, la barbiche et la moustache noires, la boucle d'oreille, le grand sourire
+            const te = CP.tete; for (const sg of [-1, 1]) { const an = new THREE.Mesh(new THREE.TorusGeometry(rT * .27, rT * .1, 6, 14), vert); an.position.set(sg * rT * .38, rT * .1, rT * .9); an.scale.set(1.25, 1, 1); te.add(an); const ai = new THREE.Mesh(new THREE.BoxGeometry(rT * .35, rT * .14, rT * .1), vert); ai.position.set(sg * rT * .78, rT * .14, rT * .7); ai.rotation.y = sg * .7; te.add(ai); }
+            { const pont = new THREE.Mesh(new THREE.BoxGeometry(rT * .32, rT * .15, rT * .12), vert); pont.position.set(0, rT * .14, rT * 1.0); te.add(pont);
+              const bar = new THREE.Mesh(new THREE.ConeGeometry(rT * .2, rT * .55, 8), noir); bar.rotation.x = Math.PI; bar.position.set(0, -rT * .95, rT * .62); te.add(bar); const mou = new THREE.Mesh(new THREE.BoxGeometry(rT * .65, rT * .08, rT * .1), noir); mou.position.set(0, -rT * .24, rT * .97); te.add(mou);
+              const bo = new THREE.Mesh(new THREE.TorusGeometry(rT * .14, rT * .035, 6, 12), or); bo.position.set(-rT * 1.02, -rT * .42, 0); bo.rotation.y = Math.PI / 2; te.add(bo);
+              const dents = new THREE.Mesh(new THREE.BoxGeometry(rT * .42, rT * .1, rT * .05), blanc); dents.position.set(0, -rT * .46, rT * .93); te.add(dents); }
+            // le grand chapeau rouge, sa plume d'or
+            { const ch = new THREE.Group(); ch.position.set(0, rT * .8, -rT * .05); ch.rotation.set(-.15, 0, .18); te.add(ch); const bord = new THREE.Mesh(new THREE.CylinderGeometry(rT * 2.4, rT * 2.4, rT * .12, 28), rouge); ch.add(bord); const cal = new THREE.Mesh(new THREE.CylinderGeometry(rT * .95, rT * 1.15, rT * 1.1, 20), rouge); cal.position.y = rT * .6; ch.add(cal);
+              const plu = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-rT * .9, rT * .5, 0), new THREE.Vector3(-rT * 1.6, rT * 1.6, -rT * .3), new THREE.Vector3(-rT * 1.2, rT * 2.6, -rT * .8), new THREE.Vector3(-rT * .2, rT * 2.9, -rT * 1.2)]), 16, rT * .16, 6); const pm = new THREE.Mesh(plu, or); pm.scale.z = .5; ch.add(pm); }
+            // la marionnette de bouffon, enfilée sur la main droite
+            { const mr = new THREE.Group(); mr.position.y = -T * .2; mr.rotation.x = Math.PI; CP.bras[0].c.add(mr); const co = new THREE.Mesh(new THREE.CylinderGeometry(T * .022, T * .034, T * .09, 10), vert); co.position.y = T * .045; mr.add(co); const co2 = new THREE.Mesh(new THREE.CylinderGeometry(T * .0225, T * .0345, T * .09, 10, 1, false, 0, Math.PI), rouge); co2.position.y = T * .045; mr.add(co2);
+              const tp = new THREE.Mesh(new THREE.SphereGeometry(T * .025, 12, 10), blanc); tp.position.y = T * .11; mr.add(tp); const nz = new THREE.Mesh(new THREE.SphereGeometry(T * .006, 6, 4), rouge); nz.position.set(0, T * .108, T * .025); mr.add(nz);
+              for (const [sx, m3] of [[-1, rouge], [1, or]]) { const cn = new THREE.Mesh(new THREE.ConeGeometry(T * .013, T * .06, 8), m3); cn.position.set(sx * T * .02, T * .14, 0); cn.rotation.z = -sx * .8; mr.add(cn); } SPEC.marionnette = mr; } }
+          // les bannières de fanions, tombées du ciel ; les torches tout autour ; les confettis
+          const COLS = [0xc8202a, 0xe0b030, 0x2a5ad8, 0x2a9a4a, 0xf2f2f0, 0x8a2a8a], banL = [];
+          for (let r = 0; r < 4; r++) { const ban = add(new THREE.Group()), z = jz - 4 + r * 4; for (let i = 0; i < 18; i++) { const x = jx - 17 + i * 2, f = new THREE.Mesh(new THREE.ConeGeometry(.35, .8, 3), mat({ color: COLS[(i + r) % COLS.length], roughness: .8 })); f.rotation.x = Math.PI; f.position.set(x, -Math.sin(i / 17 * Math.PI) * 1.2, z); ban.add(f); } ban.position.y = 40; banL.push(ban); }
+          const torches = []; for (let i = 0; i < (PEU ? 6 : 10); i++) { const a = i / (PEU ? 6 : 10) * Math.PI * 2, x = jx + Math.cos(a) * 10, z = jz + 6 + Math.sin(a) * 8; const pt = add(new THREE.Mesh(new THREE.CylinderGeometry(.05, .07, 2.2, 6), mat({ color: 0x3a2a1a }))); pt.position.set(x, 1.1, z); const fl = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: TFL, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }))); fl.position.set(x, 2.45, z); fl.scale.setScalar(.9); torches.push(fl); }
+          for (const [x, z] of [[jx - 6, jz + 3], [jx + 6, jz + 3]]) { const l = new THREE.PointLight(0xff8a30, 0, 18, 1.4); l.position.set(x, 3, z); add(l); lum.push(l); }
+          const NC = PEU ? 300 : 700, cpos = new Float32Array(NC * 3), ccol = new Float32Array(NC * 3), cvit = []; for (let i = 0; i < NC; i++) { cpos[i * 3] = jx + (al() - .5) * 30; cpos[i * 3 + 1] = 12 + al() * 18; cpos[i * 3 + 2] = jz + 6 + (al() - .5) * 24; const cc = new THREE.Color(COLS[i % COLS.length]); ccol.set([cc.r, cc.g, cc.b], i * 3); cvit.push(.8 + al() * 1.2); }
+          const cg = new THREE.BufferGeometry(); cg.setAttribute("position", new THREE.BufferAttribute(cpos, 3)); cg.setAttribute("color", new THREE.BufferAttribute(ccol, 3)); const confettis = add(new THREE.Points(cg, new THREE.PointsMaterial({ size: .14, vertexColors: true }))); confettis.visible = false;
+          // les acrobates, le cracheur de feu, la ronde
+          const ACRO = [-4, 0, 4].map((dx, i) => perso({ haut: ["#2a5ad8", "#e0b030", "#2a9a4a"][i], bas: "#f2f2f0" }, jx + dx, jz + 9, Math.PI)); ACRO.forEach(g => g.visible = false);
+          const CRA = perso({ haut: "#1a1a1a", bas: "#b01e28" }, jx - 7, jz + 4, Math.PI / 2); CRA.visible = false; const flammes = []; for (let i = 0; i < (PEU ? 10 : 18); i++) { const s = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: TFL, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }))); s.userData.k = i; flammes.push(s); }
+          const RONDE = []; for (let i = 0; i < (PEU ? 8 : 12); i++) { const g = perso({ haut: "#" + new THREE.Color(COLS[i % COLS.length]).getHexString(), bas: i % 2 ? "#3a3a4a" : "#6a3a2a" }, jx, jz + 6, 0); g.visible = false; g.userData.a = i / (PEU ? 8 : 12) * Math.PI * 2; RONDE.push(g); }
+          // la cathédrale en couleurs
+          const spots = [[-14, 0xff3060], [0, 0x30a0ff], [14, 0xffc030]].map(([dx, col]) => { const s = new THREE.SpotLight(col, 0, 80, .5, .6, 1.2); s.position.set(FX + dx, .5, FZ + 18); s.target.position.set(FX + dx * .6, 22, FZ); add(s); add(s.target); lum.push(s); return s; });
+          // les porteurs du Pape des Fous ; la couronne
+          const PORT = [[-.6, -.5], [.6, -.5], [-.6, .5], [.6, .5]].map(([dx, dz], i) => perso({ haut: ["#b01e28", "#e0b030", "#2a5ad8", "#2a9a4a"][i] }, 0, 0, 0)); PORT.forEach(g => g.visible = false);
+          const couronne = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: TCO, transparent: true, depthWrite: false }))); couronne.scale.setScalar(.6); couronne.visible = false;
+          // le feu d'artifice
+          const GERBES = []; const gerbe = (x, y, z, col) => { const n = PEU ? 50 : 90, pos = new Float32Array(n * 3), v = []; for (let i = 0; i < n; i++) { pos.set([x, y, z], i * 3); const th = al() * 6.28, ph = Math.acos(2 * al() - 1), s = 6 + al() * 4; v.push([Math.sin(ph) * Math.cos(th) * s, Math.cos(ph) * s, Math.sin(ph) * Math.sin(th) * s]); }
+            const g2 = new THREE.BufferGeometry(); g2.setAttribute("position", new THREE.BufferAttribute(pos, 3)); const m2 = new THREE.PointsMaterial({ color: col, size: .5, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }); const pt = add(new THREE.Points(g2, m2)); GERBES.push({ pt, v, t0: performance.now() }); };
+          let iG = 0;
+          const L2 = [[1, "Le jongleur", "Une pièce ! Merci, noble étranger… Approchez, approchez : Paris n'a pas fini de vous étonner…", 4500], [5.5, "Le jongleur", "Regardez bien mes balles… car ce soir, tout Paris va devenir fou !", 4000],
+            [13, "Clopin Trouillefou", "Bonnes gens de Paris ! Moi, Clopin Trouillefou, roi des truands, je déclare ouverte… la Fête des Fous !", 5500], [19, "Clopin Trouillefou", "Jongleurs, acrobates, cracheurs de feu : que la fête commence !", 4500],
+            [31, "Clopin Trouillefou", "Et maintenant… élisons notre Pape des Fous ! Le plus fou de tous, c'est… TOI !", 5000], [37, "La foule", "Vive le Pape des Fous ! Vive le Pape des Fous !", 5000],
+            [55, "Clopin Trouillefou", "Une fois par an, Paris marche sur la tête… À l'année prochaine, mes amis !", 4500], [62.5, "Le jongleur", "Psst… Ça reste entre nous.", 3500]];
+          let iL = 0, fini = false; const lisse = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); }, P0 = p.g.position.clone(), DUR = 66;
+          const finir = () => { if (fini) return; fini = true; scene.remove(G); m.visible = true; for (const b of B3) b.visible = true; SPEC.actif = false; p.leve = 0; p.g.visible = true; window.__ndDuck = duck0; if (aud) { const a = aud, v0 = a.volume, t0 = performance.now(); const f = () => { const k = (performance.now() - t0) / 2000; if (k >= 1) { try { a.pause(); } catch (e) {} return; } a.volume = v0 * (1 - k); requestAnimationFrame(f); }; f(); }
+            c.fov = fov0; c.updateProjectionMatrix(); finCine(); placerCamera(true); };
+          M.cine = { gel: true, fov: [50, 58], maj: () => { if (!M || M.L !== L) { finir(); return; } const now = performance.now(), t = (now - tm0) / 1000, tm = now;
+              while (iL < L2.length && t >= L2[iL][0]) { const [, n, tx, ms] = L2[iL++]; sousTitre(n, tx, ms); }
+              // la pièce
+              if (t < 1) { const u = lisse(t); piece.position.lerpVectors(pA, pB, u); piece.position.y += Math.sin(u * Math.PI) * .8; piece.rotation.x = t * 20; } else piece.visible = false;
+              // le jongleur : il jongle, puis lance très haut ; les balles retombent à 9 s
+              if (t < 9) { if (t < 5.5) { const tt = t * 1.15; for (let i = 0; i < 3; i++) { const u = (tt + i / 3) % 1, al2 = u < .5, v = al2 ? u / .5 : (u - .5) / .5; B3[i].position.set(jx + (al2 ? -.22 : .22) + ((al2 ? .22 : -.22) - (al2 ? -.22 : .22)) * v, 1.12 + 4 * (al2 ? .85 : .7) * v * (1 - v), jz + .36); } m.userData.poser("debout", tm); }
+                else { const u = (t - 5.5) / 3.5; for (let i = 0; i < 3; i++) { const h2 = 1.2 + 26 * 4 * u * (1 - u); B3[i].position.set(jx + (i - 1) * .3 * (1 - u), Math.max(.06, h2), jz + .36); } P.bras[0].e.rotation.x = P.bras[1].e.rotation.x = -2.6 * (1 - u); P.tete.rotation.x = -.6; } }
+              if (t >= 9 && !SPEC.boum) { SPEC.boum = true; for (const s of fumee) s.userData.t0 = t; }
+              // la fumée rouge (à 9 s, puis de nouveau à 59 s)
+              if (t >= 58.5 && !SPEC.boum2) { SPEC.boum2 = true; for (const s of fumee) { s.userData.t0 = t; s.userData.a = al() * 6.28; } }
+              for (const s of fumee) { const d = s.userData; if (d.t0 == null) continue; const k = (t - d.t0) / 5; if (k > 1) { s.material.opacity = 0; continue; } const r = d.r + k * 3.2 * d.v; s.position.set(d.cx + Math.cos(d.a) * r, .4 + k * 3 * d.v + d.v * .5, d.cz + Math.sin(d.a) * r * .7); s.scale.setScalar(1.2 + k * 3.5); s.material.opacity = Math.min(1, k * 6) * (1 - k) * .95; }
+              // la transformation, puis le retour
+              const enClopin = t >= 10.6 && t < 60; if (CL.visible !== enClopin) { CL.visible = enClopin; m.visible = !enClopin; for (const b of B3) b.visible = !enClopin; }
+              if (enClopin) { CL.position.y = Math.abs(Math.sin(t * 3.2)) * .25; CL.rotation.y = t < 12.5 ? (t - 10.6) * 3.3 : Math.sin(t * .9) * .5; const up = (t > 12.5 && t < 19) || (t > 30 && t < 37); CP.bras[0].e.rotation.x = -1.9 + Math.sin(t * 3) * .2; CP.bras[0].c.rotation.x = -.6; CP.bras[1].e.rotation.x = up ? -2.7 : -1.2; CP.bras[1].e.rotation.z = up ? .2 : .7; if (SPEC.marionnette) SPEC.marionnette.rotation.z = Math.sin(t * 9) * .25;   /* (la marionnette parle) */ CP.tete.rotation.y = Math.sin(t * 2) * .3; }
+              // la fête : bannières (15 → 18 s), torches, confettis, lumières
+              const fete = t >= 14 && t < 59; banL.forEach((b, i) => { b.position.y = fete ? 6.5 + (1 - lisse((t - 14.5 - i * .3) / 2.5)) * 34 : 40; b.children.forEach((f, j) => f.rotation.z = Math.sin(t * 3 + j) * .15); });
+              torches.forEach((f, i) => { f.material.opacity = fete ? Math.min(1, (t - 15 - i * .15) * 2) * (.8 + Math.sin(t * 13 + i) * .2) : 0; f.scale.setScalar(.8 + Math.sin(t * 9 + i * 2) * .12); });
+              for (const l of lum) if (l.isPointLight) l.intensity = fete ? (PEU ? 18 : 26) * (.85 + Math.sin(t * 11) * .15) : 0;
+              spots.forEach((s, i) => { s.intensity = fete ? 900 : 0; s.color.setHSL(((t * .08 + i / 3) % 1), .9, .55); });
+              confettis.visible = fete && t > 15; if (confettis.visible) { const a = cg.attributes.position; for (let i = 0; i < NC; i++) { let y = a.getY(i) - cvit[i] * .03; if (y < 0) y = 18 + al() * 6; a.setY(i, y); a.setX(i, a.getX(i) + Math.sin(t * 2 + i) * .01); } a.needsUpdate = true; }
+              // les acrobates (saltos), le cracheur de feu, la ronde
+              ACRO.forEach((g, i) => { g.visible = fete && t > 20; if (!g.visible) return; const ph = ((t * .7 + i / 3) % 1); g.position.y = Math.sin(ph * Math.PI) * 2.2; g.rotation.x = ph < 1 ? -ph * Math.PI * 2 : 0; g.userData.poser(ph < .1 || ph > .9 ? "debout" : "lance", tm); });
+              CRA.visible = fete && t > 21; flammes.forEach((s) => { const k2 = s.userData.k, cyc = (t * .5) % 1, souffle = CRA.visible && cyc < .45; if (!souffle) { s.material.opacity = 0; return; } const u = ((t * 4 + k2 / flammes.length) % 1); s.position.set(CRA.position.x + .3 + u * 3.2, 1.65 + u * .6 + Math.sin(k2) * .15 * u, CRA.position.z + Math.cos(k2 * 2) * .3 * u); s.scale.setScalar(.25 + u * 1.3); s.material.opacity = (1 - u) * .95; });
+              if (CRA.visible) { const cyc = (t * .5) % 1; CRA.userData.parts.tete.rotation.x = cyc < .45 ? -.3 : 0; }
+              RONDE.forEach((g) => { g.visible = fete && t > 22 && !(t > 33 && t < 46); if (!g.visible) return; const a = g.userData.a + t * .5; g.position.set(jx + Math.cos(a) * 6.5, Math.abs(Math.sin(t * 5 + g.userData.a)) * .12, jz + 6 + Math.sin(a) * 5); g.rotation.y = -a; g.userData.poser("marche", tm * 1.6); });
+              // le Pape des Fous (34 → 46 s) : porté par quatre fous, la couronne sur la tête, la foule autour
+              const pape = t >= 34 && t < 46, mp = p.g.position; PORT.forEach((g, i) => { g.visible = pape; if (!pape) return; const [dx, dz] = [[-.6, -.5], [.6, -.5], [-.6, .5], [.6, .5]][i]; g.position.set(mp.x + dx, Math.abs(Math.sin(t * 4 + i)) * .1, mp.z + dz); g.rotation.y = Math.PI; const pp = g.userData.parts; pp.bras[0].e.rotation.x = pp.bras[1].e.rotation.x = -2.9; });
+              p.leve = pape ? 1.5 * lisse((t - 34) / 1.2) * (1 - lisse((t - 44.8) / 1.2)) + Math.sin(t * 4) * .08 * (pape ? 1 : 0) : 0;
+              couronne.visible = t >= 33.5 && t < 58; if (couronne.visible) couronne.position.set(mp.x, mp.y + 2.05 + Math.sin(t * 3) * .05, mp.z);
+              if (pape) RONDE.forEach((g, i) => { g.visible = true; const a = g.userData.a; g.position.set(mp.x + Math.cos(a) * 3, 0, mp.z + Math.sin(a) * 3); g.rotation.y = Math.atan2(mp.x - g.position.x, mp.z - g.position.z); const pp = g.userData.parts; g.userData.poser("debout", tm); pp.bras[0].e.rotation.x = pp.bras[1].e.rotation.x = -2.7 + Math.sin(t * 6 + i) * .3; });
+              // le feu d'artifice (44 → 57 s)
+              if (t >= 44 && t < 57 && t > iG * .55 + 44) { iG++; gerbe(FX + (al() - .5) * 34, 38 + al() * 16, FZ + 4 + al() * 6, COLS[iG % COLS.length]); }
+              for (const G2 of GERBES) { const k = (now - G2.t0) / 1000; if (k > 2.6) { G2.pt.visible = false; continue; } const a = G2.pt.geometry.attributes.position; for (let i = 0; i < G2.v.length; i++) { const [vx, vy, vz] = G2.v[i]; a.setXYZ(i, a.getX(i) + vx * .016, a.getY(i) + (vy - k * 6) * .016, a.getZ(i) + vz * .016); } a.needsUpdate = true; G2.pt.material.opacity = Math.max(0, 1 - k / 2.6); }
+              // la musique : elle monte après la transformation ; la valse des quais se tait pendant la fête
+              if (t > 12.5 && aud && aud.paused && !SPEC.musLancee) { SPEC.musLancee = true; aud.play().catch(() => {}); } if (aud && !aud.paused) aud.volume = Math.max(0, Math.min(1, t < 58 ? (t - 12.5) / 2 : (60.5 - t) / 2.5)); window.__ndDuck = t > 11 && t < 60 ? 0 : duck0;
+              // la caméra
+              const V = (x, y, z) => new THREE.Vector3(x, y, z); let cp, cv;
+              if (t < 12) { cp = V(jx - 1.5, 2.2, jz + 6.5); cv = V(jx, t > 5.5 && t < 9 ? 1.4 + Math.min(1, (t - 5.5) / 2) * 6 : 1.4, jz); }
+              else if (t < 19) { cp = V(jx - .8, 1.8, jz + 4.2); cv = V(jx, 1.55, jz); }   /* (gros plan sur Clopin) */
+              else if (t < 30) { const a = (t - 19) * .05 - .4; cp = V(jx + Math.sin(a) * 10, 4 + Math.sin(t * .2) * .6, jz + 4 + 10 * Math.cos(a)); cv = V(jx, 3.5, jz + 4); }
+              else if (t < 44) { cp = V(mp.x + 1.2, 3.6 + p.leve * .6, mp.z + 2.4); cv = V(mp.x, 1.5 + p.leve, mp.z); }   /* (au-dessus de la foule : on voit le Pape des Fous)*/
+              else if (t < 57) { cp = V(jx, 3, jz + 22); cv = V(FX, 34, FZ); }
+              else { cp = V(jx + 2.5, 2.2, jz + 6.5); cv = V(jx, 1.4, jz); }
+              c.position.lerp(cp, t < .2 ? 1 : .06); if (!SPEC.cv) SPEC.cv = cv.clone(); SPEC.cv.lerp(cv, .06); c.lookAt(SPEC.cv);
+              if (t > DUR) finir(); } };
+          SPEC.boum = SPEC.boum2 = SPEC.musLancee = false; SPEC.cv = null; };
+        const a0j = L.actionLieu; L.actionLieu = (x, z, moi) => { const r = a0j && a0j(x, z, moi); if (r) return r; return !L.enHaut && !SPEC.actif && m.visible && Math.hypot(x - jx, z - (jz + .6)) < 2.4 ? { type: "lieu", id: "jongleur", label: "🪙 Donner une pièce au jongleur", faire: jouer } : null; }; } }
     /* ---------- (10.158) le Paris d'autrefois, paisible : la colonne Morris, l'orgue de Barbarie, la marchande de fleurs, les pêcheurs à la ligne, le manège de chevaux de bois, le vélo aux baguettes et le facteur ---------- */
     { const vertM = mat({ color: 0x1f4a36, roughness: .5, metalness: .35 }), orM = mat({ color: 0xc8a040, metalness: .75, roughness: .3 }), boisR = mat({ color: 0x6a2a1a, roughness: .6 }), noirM = mat({ color: 0x141414, roughness: .6 });
       // — la colonne Morris : le socle, le fût couvert d'affiches anciennes, la corniche et son bandeau, le dôme à écailles, l'épi —
