@@ -22,7 +22,7 @@ function construireNotreDame(A, L, scene) {
   L.sousTitre = sousTitre;
   /* (10.265) une tête dessinée (image) posée sur un corps en volume : on l'avance un peu vers la caméra au moment de la dessiner — le menton ne passe plus derrière le corps */
   const teteDevant = (sp) => { sp.userData.base = sp.position.clone(); const w = new THREE.Vector3(), d = new THREE.Vector3();
-    sp.onBeforeRender = (r, s, cam) => { const par = sp.parent; if (!par) return; w.copy(sp.userData.base); par.localToWorld(w); d.copy(cam.position).sub(w); const l = d.length(); if (l > .05) w.addScaledVector(d, Math.min(.22, l * .3) / l); sp.position.copy(par.worldToLocal(w)); sp.updateMatrixWorld(); }; };
+    sp.onBeforeRender = (r, s, cam) => { const par = sp.parent; if (!par) return; w.copy(sp.userData.base); par.localToWorld(w); d.copy(cam.position).sub(w); const l = d.length(); if (l > .05) w.addScaledVector(d, Math.min(Math.max(0, .22 + (sp.userData.dz || 0)), l * .3) / l); if (sp.userData.dx) w.addScaledVector(d.setFromMatrixColumn(cam.matrixWorld, 0), sp.userData.dx);   /* (10.270 : le décalage gauche/droite se fait à l'écran — vu de n'importe quel côté, la tête reste sur le cou) */ sp.position.copy(par.worldToLocal(w)); sp.updateMatrixWorld(); }; };
   const serif = "Georgia, 'Times New Roman', serif";
   // les repères : la Seine (z de -18 à 18, à -6,4 m), le bas-port (à -5,4 m), le quai haut (à 0)
   const YE = -6.4, YB = -5.4, XS = 150;   /* (10.145 : les quais plus hauts au-dessus de l'eau, les bateaux-mouches passent sous le pont) */
@@ -1620,7 +1620,7 @@ function construireNotreDame(A, L, scene) {
       /* (10.262) les réglages de Clopin (sa taille, sa tête), les mêmes pour tout le monde : l'administrateur les change ici, en direct, et les enregistre */
       const REG0 = { taille: 1, tete: 1, teteY: 0, teteZ: 0, teteX: 0 }; L.regClopin = { ...REG0 }; CLm.userData.y0 = CLm.position.y;
       L.appliquerClopin = (g) => { const R = L.regClopin, sp = g.userData.sprTete; g.scale.setScalar(R.taille); if (g === CLm) g.position.y = CLm.userData.y0 - (R.taille - 1) * 1.4;   /* (dans la roulotte : il reste à hauteur du rebord) */
-        if (sp) { const tb = g.userData.teteBase || new THREE.Vector3(); sp.scale.set(.5 * R.tete / R.taille, .55 * R.tete / R.taille, 1); sp.position.set(tb.x + R.teteX, tb.y + .01 + R.teteY, tb.z + .04 + R.teteZ); if (sp.userData.base) sp.userData.base.copy(sp.position); } };
+        if (sp) { const tb = g.userData.teteBase || new THREE.Vector3(); sp.scale.set(.5 * R.tete / R.taille, .55 * R.tete / R.taille, 1); sp.position.set(tb.x, tb.y + .01 + R.teteY, tb.z + .04); if (sp.userData.base) sp.userData.base.copy(sp.position); sp.userData.dx = R.teteX * R.taille; sp.userData.dz = R.teteZ * R.taille; } };
       L.clopins = [CLm]; const toutAppliquer = () => { for (const g of L.clopins) L.appliquerClopin(g); if (L.clopinFete) L.appliquerClopin(L.clopinFete); };
       try { fetch("/api/clopin", { headers: { Authorization: "Bearer " + M.ctx.token } }).then(r => r.ok ? r.json() : null).then(j => { if (j && j.valeur && M.L === L) { Object.assign(L.regClopin, j.valeur); toutAppliquer(); } }).catch(() => {}); } catch (e) {}
       let panneau = null; const camR = new THREE.Vector3(), viseR = new THREE.Vector3();
