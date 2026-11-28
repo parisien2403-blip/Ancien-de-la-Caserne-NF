@@ -11931,6 +11931,7 @@ function dansPerso(o) { for (let q = o; q; q = q.parent) if (q.userData.perso) r
 function placerCamera(net) { if (M && M.rendu && M.rendu.xr.isPresenting) return;   // (dans le casque, c'est la tête qui place la vue)
 
   if (!M || !M.L) return;
+  if (M.L.camSpeciale && !M.premiere) { try { if (M.L.camSpeciale(M.camera, net)) return; } catch (e) {} }   // (10.261 : un lieu peut placer lui-même la caméra — assis sur le banc du vieux monsieur, le gros plan de face)
   const portrait = M.camera.aspect < 1, c = M.L.cam, moi = M.moiNum && M.gens.get(M.moiNum);
   // à la première personne : la caméra à la place des yeux, notre bonhomme caché (on ne voit pas sa propre tête)
   if (M.premiere && moi) { coupeCage().constant = 1e6; moi.g.visible = false; const sv = moi.siegeV, p = sv ? new THREE.Vector3(moi.g.position.x - Math.sin(sv[2]) * .3, moi.g.position.y - (moi.leve || 0), moi.g.position.z - Math.cos(sv[2]) * .3) : moi.g.position, yeux = M.L.hauteurYeux != null ? p.y + M.L.hauteurYeux : sv ? p.y + 1.45 : p.y + tailleBonhomme() * hauteurDe(moi) * .9,   /* (10.180 : M.L.hauteurYeux — dans la peau d'un rat, les yeux au ras du sol) */ cy = Math.cos(M.fpPitch || 0);   /* (sur la Vespa : les yeux d'un homme assis sur la selle, derrière le guidon) */
