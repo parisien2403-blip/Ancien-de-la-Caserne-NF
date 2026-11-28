@@ -1481,6 +1481,16 @@ function construireNotreDame(A, L, scene) {
         const qu = new THREE.Mesh(gQueue, plumeM); qu.position.set(0, .01, -.13); g.add(qu);
         const ai = [-1, 1].map(sx => { const S = new THREE.Group(); S.scale.x = sx; S.position.set(sx * .05, .03, .02); g.add(S); const P1 = new THREE.Group(); S.add(P1); P1.add(new THREE.Mesh(gAi1, plumeM)); const P2 = new THREE.Group(); P2.position.x = .24; P1.add(P2); P2.add(new THREE.Mesh(gAi2, plumeM)); return [P1, P2]; });
         g.userData = { ai, a0: Math.random() * 6.28, r: 14 + Math.random() * 12, h: 38 + Math.random() * 22, v: .25 + Math.random() * .15, x0: -1 + (Math.random() - .5) * 30, z0: -69 + 8 + Math.random() * 12, d: Math.random() * 2.5 }; g.visible = false; g.scale.setScalar(3.2); scene.add(g); COL.push(g); }
+      /* (10.266) Quasimodo, le sonneur de cloches du roman de Victor Hugo : bossu, la tignasse rousse, la verrue sur l'œil, la tunique de toile brune ; quand la caméra monte avec les colombes,
+         il sort de l'ombre sur la grande galerie, entre les deux tours, et salue la fête de ses grands bras */
+      const QZT = new THREE.TextureLoader().load("images/notredame/quasimodo.webp?v=1"); QZT.colorSpace = THREE.SRGBColorSpace;   /* (10.266 : le Quasimodo de l'image, en personnage dessiné — comme les têtes) */
+      const QZ = new THREE.Sprite(new THREE.SpriteMaterial({ map: QZT, transparent: true, alphaTest: .4, fog: false })); QZ.center.set(.5, 0); QZ.scale.set(2.9, 3.76, 1); QZ.visible = false; scene.add(QZ);
+      const QH = new THREE.Sprite(new THREE.SpriteMaterial({ map: TET, color: 0xffd8a0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false })); QH.scale.setScalar(9); QH.visible = false; scene.add(QH);
+      const QX = FAC2.x, QY = 42.65, QZ0 = FAC2.z - 2.6, QZ1 = FAC2.z - 1.3;
+      const majQuasi = (t, tm) => { void tm; const on = t > 28.3 && t < 61; QZ.visible = QH.visible = on; if (!on) return; const u = lisseQ((t - 28.3) / 2.2), joie = t > 41 && t < 44 ? 1 : 0;
+        QZ.position.set(QX + Math.sin(t * .5) * .25, QY + Math.abs(Math.sin(t * (u < 1 ? 6 : 2.2))) * (u < 1 ? .12 : .06) + joie * Math.abs(Math.sin(t * 7)) * .35, QZ0 + (QZ1 - QZ0) * u);
+        QZ.material.rotation = Math.sin(t * 1.6) * .05; QZ.material.opacity = u; QH.position.set(QZ.position.x, QY + 2.2, QZ.position.z - 1.2); QH.material.opacity = u * (.55 + Math.sin(t * 2) * .1); };
+      const lisseQ = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
       const NE = PEU ? 160 : 320, epos = new Float32Array(NE * 3), evit = [], ecol = new Float32Array(NE * 3); for (let i = 0; i < NE; i++) { evit.push([(Math.random() - .5) * 2, 2 + Math.random() * 4, (Math.random() - .3) * 2.5]); const c = new THREE.Color().setHSL(Math.random(), .9, .65); ecol.set([c.r, c.g, c.b], i * 3); }
       const eg = new THREE.BufferGeometry(); eg.setAttribute("position", new THREE.BufferAttribute(epos, 3)); eg.setAttribute("color", new THREE.BufferAttribute(ecol, 3)); const etoiles = new THREE.Points(eg, new THREE.PointsMaterial({ size: .16, map: TET, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); etoiles.frustumCulled = false; etoiles.visible = false; scene.add(etoiles);
       /* (10.260) le grand son et lumière, quand on monte vers les tours : des faisceaux d'or et de blanc qui balaient le ciel, la façade baignée d'or, une aura derrière les tours,
@@ -1516,10 +1526,10 @@ function construireNotreDame(A, L, scene) {
         const c = M.camera, fov0 = c.fov; let aud = null; try { aud = new Audio("sons/notredame-marionnettes.mp3"); aud.volume = 1; } catch (e) {}
         const sn0 = L.setNuit, nuit0 = !!L.nuit; let demande = null; try { sn0(true); } catch (e) {} L.setNuit = (n) => { demande = n; };
         let fini = false, t0 = performance.now(), pret = false, plan = -1; const lisse = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); }, V = (x, y, z) => new THREE.Vector3(x, y, z), W = (x, y, z) => new THREE.Vector3(WX + x, y, WZ + z), mix = (a, b, u) => a.clone().lerp(b, lisse(u));
-        { const caches = [etin, roseH, etoiles, ...CLOCH, ...COL, ...SON]; for (const o of caches) o.visible = true; const fin2 = () => { if (pret) return; for (const o of caches) o.visible = false; pret = true; t0 = performance.now(); if (aud) aud.play().catch(() => {}); };
+        { const caches = [etin, roseH, etoiles, ...CLOCH, ...COL, ...SON, QZ, QH]; for (const o of caches) o.visible = true; const fin2 = () => { if (pret) return; for (const o of caches) o.visible = false; pret = true; t0 = performance.now(); if (aud) aud.play().catch(() => {}); };
           try { if (M.rendu && M.rendu.compileAsync) Promise.race([M.rendu.compileAsync(scene, c).catch(() => {}), new Promise(r => setTimeout(r, 3000))]).then(fin2); else fin2(); } catch (e) { fin2(); } }
         const finir = () => { if (fini) return; fini = true; SPEC2.actif = false; L.feteActive = false; L.duckFete = 0; if (L.setNuit !== sn0) { L.setNuit = sn0; try { sn0(demande == null ? nuit0 : demande); } catch (e) {} }
-          for (const o of [etin, roseH, etoiles, ...CLOCH, ...COL, ...SON]) o.visible = false; ouvrir(.85); for (const k of ENF) assied(k); CLm.rotation.x = 0; CPm.buste.rotation.x = 0;
+          for (const o of [etin, roseH, etoiles, ...CLOCH, ...COL, ...SON, QZ, QH]) o.visible = false; ouvrir(.85); for (const k of ENF) assied(k); CLm.rotation.x = 0; CPm.buste.rotation.x = 0;
           if (aud) { const a = aud, v0 = a.volume, ta = performance.now(); const f = () => { const k = (performance.now() - ta) / 1500; if (k >= 1) { try { a.pause(); } catch (e) {} return; } a.volume = v0 * (1 - k); requestAnimationFrame(f); }; f(); }
           c.fov = fov0; c.updateProjectionMatrix(); finCine(); placerCamera(true); };
         M.cine = { gel: true, fov: [52, 66], maj: () => { if (!M || M.L !== L) { finir(); return; } if (!pret) { L.duckFete = 1; return; } const now = performance.now(), t = (aud && !aud.paused && aud.currentTime > 0 ? aud.currentTime : (now - t0) / 1000), tm = now; L.duckFete = 1;
@@ -1533,6 +1543,7 @@ function construireNotreDame(A, L, scene) {
             // la rose s'illumine, les cloches des tours sonnent (éclats d'or sur les temps forts)
             roseH.visible = t > 30 && t < 62; roseH.material.opacity = lisse((t - 30) / 6) * (1 - lisse((t - 60) / 2)) * (.5 + Math.sin(t * 2.2) * .15); roseH.scale.setScalar(20 + Math.sin(t * 1.1) * 3 + (t > 58.8 && t < 61 ? (t - 58.8) * 8 : 0));
             CLOCH.forEach((s, i) => { s.visible = t > 36 && t < 61; const b = Math.pow(Math.max(0, Math.sin((t - 36) * Math.PI / 1.05 + i * Math.PI / 2)), 6); s.material.opacity = b * .9 * lisse((t - 36) / 2); s.scale.setScalar(8 + b * 6); });
+            majQuasi(t, tm);
             // (10.260) le son et lumière : de 33 s au grand accord final
             { const K = lisse((t - 33) / 4) * (1 - lisse((t - 60) / 1.6)), on = K > .001, fort = 1 + lisse((t - 41) / 2) * .6;
               FAIS.forEach((g, i) => { g.visible = on; if (!on) return; const U = g.userData; g.rotation.set(-.22 + Math.sin(t * .35 + U.ph) * .12, 0, Math.sin(t * .45 + U.ph) * .42); U.m.opacity = K * (.2 + Math.sin(t * 1.7 + U.ph) * .06) * fort; });
@@ -1548,13 +1559,14 @@ function construireNotreDame(A, L, scene) {
             // la pluie d'étoiles, au grand final
             const fin3 = t > 58.9 && t < 62.5; etoiles.visible = fin3; if (fin3) { const e = t - 58.9, O = W(0, 2.1, LL / 2 + .3); for (let i = 0; i < NE; i++) { const [vx, vy, vz] = evit[i]; epos[i * 3] = O.x + vx * e * 1.4; epos[i * 3 + 1] = O.y + vy * e - 2.2 * e * e; epos[i * 3 + 2] = O.z + vz * e * 1.4; } eg.attributes.position.needsUpdate = true; etoiles.material.opacity = 1 - e / 3.6; }
             // la caméra, plan par plan
-            const n = t < 6.5 ? 0 : t < 12 ? 1 : t < 17 ? 2 : t < 22 ? 3 : t < 27 ? 4 : t < 37 ? 5 : t < 48 ? 6 : t < 55 ? 7 : t < 59.2 ? 8 : 9; let cp, cv, vite = .07;
+            const n = t < 6.5 ? 0 : t < 12 ? 1 : t < 17 ? 2 : t < 22 ? 3 : t < 27 ? 4 : t < 33.2 ? 5 : t < 37 ? 10 : t < 48 ? 6 : t < 55 ? 7 : t < 59.2 ? 8 : 9; let cp, cv, vite = .07;
             if (n === 0) { const u = t / 6.5; cp = mix(V(-31.5, 6.5, -26.5), V(-29.8, 2.3, -31.8), u); cv = mix(V(-14, 30, -66), W(.2, 1.9, 0), u); vite = .12; }
             else if (n === 1) { cp = W(.35 - (t - 6.5) * .03, 1.95, LL / 2 + 2.4 - (t - 6.5) * .06); cv = W(0, 1.95, LL / 2 - .5); }
             else if (n === 2) { cp = W(-2.5 + (t - 12) * .12, 1.25, LL / 2 + 3.3 - (t - 12) * .12); cv = W(0, 1.7, LL / 2); }
             else if (n === 3) { cp = W(-1.5 + (t - 17) * .1, 1.85, LL / 2 + 1.3); cv = W(0, 1.95, LL / 2 - .3); }
             else if (n === 4) { cp = W(.22, 2.0, LL / 2 + 1.15 - (t - 22) * .08); cv = W(0, 1.95, ZF); }
-            else if (n === 5) { const u = (t - 27) / 10; cp = mix(W(1.2, 2.2, LL / 2 + 2.8), V(-20, 20, -30), u); cv = mix(W(0, 2.2, LL / 2), ROSE, u); vite = .08; }
+            else if (n === 5) { const u = (t - 27) / 6.2; cp = mix(W(1.2, 2.2, LL / 2 + 2.8), V(-16, 30, -38), u); cv = mix(W(0, 2.2, LL / 2), V(FAC2.x, 38, FAC2.z), u); vite = .08; }
+            else if (n === 10) { const u = (t - 33.2) / 3.8; cp = mix(V(-10, 40, -47), V(-6.5, 44.5, -55.5), u); cv = V(QX, QY + 3, FAC2.z - 1.5); vite = .07; }   /* (10.266 : Quasimodo, entre les deux tours) */
             else if (n === 6) { const u = (t - 37) / 11, a = -.7 + u * 1.4; cp = V(FAC2.x + Math.sin(a) * 46, 9 + u * 26, FAC2.z + Math.cos(a) * 46); cv = V(FAC2.x, 30 + u * 12, FAC2.z); vite = .05; }
             else if (n === 7) { const u = (t - 48) / 7; cp = mix(V(FAC2.x + 18, 44, FAC2.z + 30), W(3.2, 3.5, LL / 2 + 7), u); cv = mix(V(FAC2.x, 40, FAC2.z), W(0, 1.6, LL / 2), u); vite = .08; }
             else if (n === 8) { cp = W(2.4, 1.5, LL / 2 + 4.2); cv = W(0, 1.45, LL / 2 + .5); }
