@@ -1519,7 +1519,6 @@ function construireNotreDame(A, L, scene) {
           for (const o of [etin, roseH, etoiles, ...CLOCH, ...COL, ...SON]) o.visible = false; ouvrir(.85); for (const k of ENF) assied(k); CLm.rotation.x = 0; CPm.buste.rotation.x = 0;
           if (aud) { const a = aud, v0 = a.volume, ta = performance.now(); const f = () => { const k = (performance.now() - ta) / 1500; if (k >= 1) { try { a.pause(); } catch (e) {} return; } a.volume = v0 * (1 - k); requestAnimationFrame(f); }; f(); }
           c.fov = fov0; c.updateProjectionMatrix(); finCine(); placerCamera(true); };
-        sousTitre("Clopin", "Approchez, mes petits… Ce soir, je vais vous raconter l'histoire des cloches de Notre-Dame !", 5000);
         M.cine = { gel: true, fov: [52, 66], maj: () => { if (!M || M.L !== L) { finir(); return; } if (!pret) { L.duckFete = 1; return; } const now = performance.now(), t = (aud && !aud.paused && aud.currentTime > 0 ? aud.currentTime : (now - t0) / 1000), tm = now; L.duckFete = 1;
             if (t > 62.5 || (aud && aud.ended)) { finir(); return; }
             // le théâtre : les rideaux s'ouvrent, Clopin joue de plus en plus fort ; à la fin il salue, les enfants se lèvent et applaudissent
