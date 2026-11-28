@@ -9175,7 +9175,8 @@ export async function ouvrir(ctx) {
           // assis au bar : il boit une gorgée de temps en temps
           const sv = M.L && M.L.siegesSansVerre && M.L.siegesSansVerre.has(p.info.assis), ph = (t + p.info.numero * 1300) % 6000, pose = sv ? "assisSV" : ph < 1300 && !p.info.sansVerre ? "boire" : "assis";   /* (10.172 : sur un banc, pas de verre à la main) */   /* (sans verre : il ne boit pas) */
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
-          p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; p.dansait = true; }
+          const tbA = M.L && M.L.tabourets && M.L.tabourets[p.info.assis], hA = tbA && tbA[3];   /* (10.262 : sur un banc bas — 46 cm — le bonhomme dessiné pour un tabouret flottait : on le descend sur l'assise) */
+          p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = hA != null && hA < .6 ? Math.max(-.17, (hA - .66) * .8) : 0; p.dansait = true; }
         else if (partenaire) {
           // le slow : chacun tourné vers l'autre, on se balance doucement ensemble
           const pose = p.g.position.x <= partenaire.g.position.x ? "slowD" : "slow";
