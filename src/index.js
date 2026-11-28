@@ -842,6 +842,12 @@ export class Compteur extends DurableObject {
     if (x && x.meubles && typeof x.meubles === "object") { const j = JSON.stringify(x.meubles); if (j.length > 200000) throw new Refus("Aménagement trop lourd"); this.sql.exec("INSERT OR REPLACE INTO reglages (cle, valeur) VALUES ('appart_meubles', ?)", j); }
     return { ok: true, ouvert: this.appartOuvert() }; }
 
+  /* ----- (10.262) les réglages d'un personnage (Clopin : sa taille, sa tête) : tout le monde les lit, l'administrateur seul les change ----- */
+  async reglagePerso(token, cle) { await this.verifierAcces(token); let valeur = null; try { valeur = JSON.parse(this.reglage("perso_" + cle) || "null"); } catch (e) {} return { valeur }; }
+  async majReglagePerso(token, cle, x) { await this.exigerAdmin(token); const v = x && x.valeur; if (!v || typeof v !== "object") throw new Refus("Réglage invalide");
+    const propre = {}; for (const [k, n] of Object.entries(v)) { if (!/^[a-zA-Z]{1,12}$/.test(k) || typeof n !== "number" || !isFinite(n) || Math.abs(n) > 10) continue; propre[k] = Math.round(n * 1000) / 1000; }
+    this.sql.exec("INSERT OR REPLACE INTO reglages (cle, valeur) VALUES (?, ?)", "perso_" + cle, JSON.stringify(propre)); return { ok: true, valeur: propre }; }
+
   /* ----- La borne de jeux : l'administrateur seul ajoute ou retire ----- */
   // (10.238) la galerie du peintre : les croquis accrochés (les plus récents d'abord) ; on accroche le sien (il remplace le précédent)
   async portraits(token) { await this.verifierAcces(token); return { portraits: this.sql.exec("SELECT numero, nom, img, cree FROM portraits ORDER BY cree DESC LIMIT 24").toArray() }; }
@@ -1561,6 +1567,8 @@ export default {
       else if (route === "GET /api/jeux") r = await registre.jeux(token);
       else if (route === "GET /api/musiques") r = await registre.musiques(token);
       else if (route === "GET /api/tele") r = await registre.teleListe(token);
+      else if (route === "GET /api/clopin") r = await registre.reglagePerso(token, "clopin");
+      else if (route === "POST /api/clopin") r = await registre.majReglagePerso(token, "clopin", await corps());
       else if (route === "GET /api/appart") r = await registre.appart(token);
       else if (route === "POST /api/appart") r = await registre.majAppart(token, await corps());
       else if (route === "POST /api/tele") r = await registre.nouvelleTele(token, await corps());

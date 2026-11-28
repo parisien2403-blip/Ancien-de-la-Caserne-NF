@@ -2662,7 +2662,7 @@ function personne3D(o) {
       if (pose === "assis") { A.e.rotation.x = -.5; A.c.rotation.x = -.9; if (i && o.parle) { A.e.rotation.x = -.7 - Math.abs(Math.sin(t / 300)) * .5; A.c.rotation.x = -1.4; } }
       else if (pose === "lance") { A.e.rotation.x = -1.3; A.c.rotation.x = -.2; } else if (pose === "marche") { A.e.rotation.x = -sg * s2 * .5; A.c.rotation.x = -.25; } else { A.e.rotation.x = 0; A.c.rotation.x = -.1; } }
     tete.rotation.y = o.parle ? Math.sin(t / 900) * .25 : 0; bouche.scale.y = o.parle && Math.floor(t / 180) % 2 ? .4 : 1; };
-  g.userData.hipY = hipY; g.userData.parts = { bassin, buste, jambes, bras, tete }; return g; }
+  g.userData.hipY = hipY; g.userData.parts = { bassin, buste, jambes, bras, tete }; g.userData.cou = cou; return g; }
 /* le cours de judo : huit enfants en kimono, en deux rangs face au professeur ; ils saluent, s'échauffent (bras, flexions, sautillements), et recommencent (le jour) */
 function coursJudo(L, scene) {
   const d = C3.dojo; if (!d) return; const xc = (d.X0 + d.xb0) / 2, zc = (d.Z0 + d.Z1) / 2, E = [], ceint = ["#f4f2ec", "#f2d22a", "#f28a2e", "#3a9d5d", "#f2d22a", "#f4f2ec", "#f28a2e", "#2f5fae"];
