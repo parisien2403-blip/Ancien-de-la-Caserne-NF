@@ -1488,7 +1488,7 @@ function construireNotreDame(A, L, scene) {
       for (let i = 0; i < (PEU ? 6 : 8); i++) { const n = PEU ? 6 : 8, a = (i / (n - 1) - .5) * 1.75, r = 1.85 + (i % 2) * .6, x = Math.sin(a) * r, z = LL / 2 + .25 + Math.cos(a) * r;
         const k = personne3D({ taille: 1.0 + (i % 3) * .1, enfant: true, peau: PE2[i % PE2.length], ch: ["#3a2a1a", "#c89a4a", "#141010", "#6a3a1a"][i % 4], coif: i % 2 ? "long" : "court", haut: EC[i % EC.length][0], bas: EC[i % EC.length][1], robe: i % 3 === 1, pantalon: i % 3 !== 1, chaussures: "#2a1a10" });
         k.position.set(x, 0, z); k.rotation.y = Math.atan2(-x, LL / 2 - z); k.userData.anime = true; k.userData.ph = i * 1.7; R0.add(k); ENF.push(k); OBS.push([WX + x - .3, WX + x + .3, WZ + z - .3, WZ + z + .3]); }
-      const assied = (k) => { const P = k.userData.parts, hy = k.userData.hipY; k.userData.poser("assis", 0); k.position.y = .07 - hy; P.jambes.forEach((J, i) => { J.h.rotation.x = -1.4; J.h.rotation.z = (i ? 1 : -1) * .25; J.gen.rotation.x = .35; }); };
+      const assied = (k) => { const P = k.userData.parts, hy = k.userData.hipY; k.userData.poser("assis", 0); k.position.y = .1 - hy; P.jambes.forEach((J, i) => { J.h.rotation.x = -1.5; J.h.rotation.z = (i ? 1 : -1) * .22; J.gen.rotation.x = -.05; }); };   /* (10.269 : les jambes allongées sur les pavés, plus dans le sol) */
       // ce qui ne sert qu'au spectacle : les étincelles d'or qui montent vers la rose, les colombes autour des tours, le halo de la rose, l'éclat des cloches, la pluie d'étoiles finale
       const halo = (c0, c1) => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, c0); g.addColorStop(.3, c1); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); };
       const TET = halo("rgba(255,255,255,1)", "rgba(255,220,140,.5)"), FAC2 = { x: -1, z: -69 }, ROSE = new THREE.Vector3(FAC2.x, 25.5, FAC2.z + 1.5), SPEC2 = { actif: false };
@@ -1554,13 +1554,13 @@ function construireNotreDame(A, L, scene) {
         { const caches = [etin, roseH, etoiles, ...CLOCH, ...COL, ...SON, QZ, QH]; for (const o of caches) o.visible = true; const fin2 = () => { if (pret) return; for (const o of caches) o.visible = false; pret = true; t0 = performance.now(); if (aud) aud.play().catch(() => {}); };
           try { if (M.rendu && M.rendu.compileAsync) Promise.race([M.rendu.compileAsync(scene, c).catch(() => {}), new Promise(r => setTimeout(r, 3000))]).then(fin2); else fin2(); } catch (e) { fin2(); } }
         const finir = () => { if (fini) return; fini = true; SPEC2.actif = false; L.feteActive = false; L.duckFete = 0; if (L.setNuit !== sn0) { L.setNuit = sn0; try { sn0(demande == null ? nuit0 : demande); } catch (e) {} }
-          for (const o of [etin, roseH, etoiles, ...CLOCH, ...COL, ...SON, QZ, QH]) o.visible = false; ouvrir(.85); for (const k of ENF) assied(k); CLm.rotation.x = 0; CPm.buste.rotation.x = 0;
+          for (const o of [etin, roseH, etoiles, ...CLOCH, ...COL, ...SON, QZ, QH]) o.visible = false; ouvrir(.85); MAR.forEach(g => g.visible = true); for (const k of ENF) assied(k); CLm.rotation.x = 0; CPm.buste.rotation.x = 0;
           if (aud) { const a = aud, v0 = a.volume, ta = performance.now(); const f = () => { const k = (performance.now() - ta) / 1500; if (k >= 1) { try { a.pause(); } catch (e) {} return; } a.volume = v0 * (1 - k); requestAnimationFrame(f); }; f(); }
           c.fov = fov0; c.updateProjectionMatrix(); finCine(); placerCamera(true); };
         /* (10.268) le prologue (1 min 18 → 1 min 59 de la chanson) : les rideaux s'ouvrent, Clopin parle aux enfants par la bouche de ses marionnettes — chacune son tour, celle qui parle s'agite et gesticule,
            l'autre écoute ; les enfants rient, se penchent, lèvent la main ; la caméra passe de la marionnette qui parle à Clopin et aux enfants */
-        const PRE = 40.2, vM = new THREE.Vector3();
-        const prelude = (tA, tm) => { ouvrir(lisse((tA - .8) / 2.6)); jeu(tm, .8); const qui = Math.floor(tA / 3.3) % 2, B = CPm.bras, tt = tm / 1000;
+        const PRE = 41.7, vM = new THREE.Vector3();   /* (10.269 : le premier dialogue, 1,5 s de plus) */
+        const prelude = (tA, tm) => { ouvrir(lisse((tA - .8) / 2.6)); jeu(tm, .8); MAR.forEach(g => g.visible = tA > 2.4);   /* (pas de marionnette à travers le rideau fermé) */ const qui = Math.floor(tA / 3.3) % 2, B = CPm.bras, tt = tm / 1000;
           B[qui].e.rotation.x = -1.72 + Math.sin(tt * 7) * .12; B[1 - qui].e.rotation.x = -1.4; B[1 - qui].c.rotation.x = -1.0;
           MAR.forEach((g, k) => { const parle = k === qui; g.rotation.z = parle ? Math.sin(tt * 9) * .3 : Math.sin(tt * 1.5) * .05; g.userData.te.rotation.x = parle ? Math.sin(tt * 13) * .28 : .12; g.userData.te.rotation.z = parle ? Math.sin(tt * 4) * .2 : (k ? -.25 : .25);
             const b = g.userData.br; b[0].rotation.z = parle ? .9 + Math.sin(tt * 11) * .7 : .3; b[1].rotation.z = parle ? -.9 - Math.cos(tt * 10) * .7 : -.3; });
@@ -1576,7 +1576,7 @@ function construireNotreDame(A, L, scene) {
             else { cp = W(-1.7, 1.15, LL / 2 + 3.5); cv = W(0, 1.75, LL / 2); } }
           if (n2 !== plan) { plan = n2; c.position.copy(cp); c.userData.cvM = cv.clone(); } else { c.position.lerp(cp, vite); c.userData.cvM.lerp(cv, vite); } c.lookAt(c.userData.cvM); };
         M.cine = { gel: true, fov: [52, 66], maj: () => { if (!M || M.L !== L) { finir(); return; } if (!pret) { L.duckFete = 1; return; } const now = performance.now(), tA = (aud && !aud.paused && aud.currentTime > 0 ? aud.currentTime : (now - t0) / 1000), t = tA - PRE, tm = now; L.duckFete = 1;
-            if (t < 0) { prelude(tA, tm); return; }   /* (10.268 : d'abord, Clopin parle aux enfants avec ses marionnettes) */
+            if (t < 0) { prelude(tA, tm); return; } MAR.forEach(g => g.visible = true);   /* (10.268 : d'abord, Clopin parle aux enfants avec ses marionnettes) */
             if (t > 62.5 || (aud && aud.ended)) { finir(); return; }
             // le théâtre : les rideaux s'ouvrent, Clopin joue de plus en plus fort ; à la fin il salue, les enfants se lèvent et applaudissent
             ouvrir(1); const salut = t > 55.5; jeu(tm, salut ? 0 : 1 + (t > 27 ? .6 : 0));
